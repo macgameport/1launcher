@@ -3,8 +3,9 @@
 # NT1). A stub curl copies fixture archives made here: the engine a tar under its .tar.7z name, the template a
 # tar inside a tar whose files carry a quarantine attribute, as the real ones are (measured 2026-11-10). The
 # pins are rewritten in a scratch copy. The template's launcher is a stub that records its call and makes a
-# fake prefix; wine64 and wineserver are stubs. No network, no Wine, nothing written outside the scratch
-# folder (the real ~/Applications is listed before and after).
+# fake prefix; wine64 and wineserver are stubs, and so is sw_vers (this Mac's own macOS is not read). No
+# network, no Wine, nothing written outside the scratch folder (the real ~/Applications is listed before and
+# after).
 #   bash common/test-make-wrapper.sh             exit 0 = every case passed
 #   MUTANT=1  ...  the sha256 not compared; must exit 1
 #   MUTANT=2  ...  step 1's existence test removed (an existing target replaced); must exit 1
@@ -17,6 +18,9 @@
 #   MUTANT=9  ...  a live build folder removed; must exit 1
 #   MUTANT=10 ...  a pin changed in the script alone; must exit 1
 #   MUTANT=11 ...  a default engine put back; must exit 1
+#   FT3 (docs/plans/first-run-findings.md, 2.3), the line about macOS 28's notice:
+#   MUTANT=12 ...  the lines on every macOS; must exit 1
+#   MUTANT=13 ...  the lines after the prefix step; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REAL="$HERE/make-wrapper.sh"
@@ -43,6 +47,11 @@ case "${MUTANT:-0}" in
   9) mutate 's#if kill -0 "\$p" 2>/dev/null; then#if false; then#' 'if false; then' ;;
   10) mutate 's#^TEMPLATE_SHA=fbe276bb.*#TEMPLATE_SHA=1111111111111111111111111111111111111111111111111111111111111111#' '^TEMPLATE_SHA=1111' ;;
   11) mutate 's#^CHECK=0; TARGET=""; ENGINE_URL=""; ENGINE_BYTES=""; ENGINE_SHA=""$#CHECK=0; TARGET=""; ENGINE_URL=x; ENGINE_BYTES=1; ENGINE_SHA=x#' '^CHECK=0; TARGET=""; ENGINE_URL=x' ;;
+  12) mutate 's#^case "\$(sw_vers -productVersion 2>/dev/null)" in 27|27\.\*)$#case 27 in 27|27.*)#' '^case 27 in 27|27\.\*)$' ;;
+  13) mutate '/^case "\$(sw_vers -productVersion/,/^esac$/{H;d;};/^# 8\. /{x;p;x;}' '^case "\$(sw_vers -productVersion'   # the block moved to before step 8
+      [ "$(grep -n -e '^case "\$(sw_vers -productVersion' -e '^# 8\. ' "$S" | tail -n 1 | cut -d: -f2 | cut -c1-4)" = '# 8.' ] \
+        && [ "$(grep -n -e '^case "\$(sw_vers -productVersion' -e 'WSS-wineprefixcreate' "$S" | tail -n 1 | cut -d: -f2 | cut -c1-4)" = 'case' ] \
+        || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
 esac
 
 fails=0
@@ -132,6 +141,13 @@ cp "$FIXDIR/$(basename "$url")" "$out"
 C
 printf '#!/bin/bash\necho "Filesystem 1024-blocks Used Available Capacity Mounted"\necho "/dev/x 999999999 1 ${STUB_DF_KB:-99999999} 1%% /"\n' > "$T/bin/df"
 printf '#!/bin/bash\nif [ "$1" = -u ] && [ -n "${STUB_ROOT:-}" ]; then echo 0; else exec /usr/bin/id "$@"; fi\n' > "$T/bin/id"
+# sw_vers -productVersion: STUB_MACOS, 27.2 unless a case sets it; "none" is a version that cannot be read
+cat > "$T/bin/sw_vers" << 'V'
+#!/bin/bash
+v="${STUB_MACOS:-27.2}"
+[ "$v" = none ] && exit 1
+if [ "$*" = -productVersion ]; then echo "$v"; else printf 'ProductName:\t\tmacOS\nProductVersion:\t\t%s\nBuildVersion:\t\t00A000\n' "$v"; fi
+V
 chmod +x "$T/bin"/*
 export LAUNCHER_CALLS="$T/launcher.calls" CURL_CALLS="$T/curl.calls" WINESERVER_CALLS="$T/wineserver.calls"
 real_apps() { ls -A "$REALHOME/Applications" 2>/dev/null | shasum | cut -c1-12; }
@@ -238,6 +254,16 @@ newh; T9="$H/$W"; rc="$(STUB_MAKE_TARGET="$T9" run)"
 check "the target appears while the prefix is made: exit 1, its folder left as it was, nothing nested" \
   "$rc:$(cat "$T9/mark"):$(ls -A "$T9" | tr '\n' ' '):$(left)" "1:mine:mark :0"
 check "  ...caught before the move" "$(said 'appeared while the wrapper was being made')" 1
+
+# --- FT3: macOS 28's notice is foretold on macOS 27, before Wine first starts, and on no other macOS
+notice() { grep -E 'App Update Required|nothing needs updating|making the Wine prefix' "$H.out" | tr '\n' '|'; }
+N1='  macOS may show "App Update Required ... will not open in macOS 28", now or when the game starts.'
+N2='  That is expected and nothing needs updating. The game needs macOS 27: do not upgrade to macOS 28.'
+newh; check "macOS 27.2: the two lines about the notice, once, before the prefix step" "$(run):$(notice)" "0:$N1|$N2|  making the Wine prefix (about 30 s)|"
+newh; check "macOS 27 with no minor number: said" "$(STUB_MACOS=27 run):$(notice)" "0:$N1|$N2|  making the Wine prefix (about 30 s)|"
+for v in 26.4 28.0 127.2 none; do
+  newh; check "macOS $v: not said, the wrapper made" "$(STUB_MACOS="$v" run):$(notice):$(said 'macOS')" "0:  making the Wine prefix (about 30 s)|:0"
+done
 
 # --- L1_DOWNLOADS
 DL="$T/dl"; mkdir -p "$DL"; cp "$F/good/$ENGINE" "$DL/"

@@ -131,7 +131,12 @@ mv "$APP0" "$APP" || die "the template could not be renamed"   # its launcher wr
   || die "the engine has no wswine.bundle/bin/wine64 and wineserver"
 mkdir -p "$SS" && mv "$B/e/wswine.bundle" "$SS/wine" || die "the engine could not be moved into the wrapper"
 
-# 7. the prefix, made by the template's own launcher
+# 7. the prefix, made by the template's own launcher. Wine first starts here, and macOS 27 may then show its
+# notice about macOS 28: nothing else says it is expected (docs/plans/first-run-findings.md, 2.3)
+case "$(sw_vers -productVersion 2>/dev/null)" in 27|27.*)
+  say 'macOS may show "App Update Required ... will not open in macOS 28", now or when the game starts.'
+  say 'That is expected and nothing needs updating. The game needs macOS 27: do not upgrade to macOS 28.' ;;
+esac
 say "making the Wine prefix (about 30 s)"
 "$APP/Contents/MacOS/wineskinlauncher" WSS-wineprefixcreate > "$B/prefix.log" 2>&1; rc=$?
 [ "$rc" = 0 ] || fail_log "$B/prefix.log" "the prefix was not made (the template's launcher exited $rc)"

@@ -374,8 +374,8 @@ F8 compares a wrapper made this way with one made with no other Wine open.
 
 **What cannot be done.** Nothing the installer or the launcher says can keep the new prefix's account
 file out of the cloud: the game writes it before the menu can be used, and Steam uploads it at exit.
-Holding back Steam's upload would hold back saves too. So nothing is built to prevent it, and nothing
-reads or writes `account.dat`.
+Holding back Steam's upload would hold back saves too. So nothing is built to prevent it, and no code
+opens `account.dat` by name or looks into it.
 
 **Design.** The launcher's part stands between markers (`# >>> mod-notes`, `# <<< mod-notes`), as its
 update check does (`surviving-mars-relaunched/launch-relaunched.sh:278`), so that its test reads the
@@ -426,34 +426,49 @@ functions themselves.
    continue a save, here and then on your other Mac. A save loaded before that runs without its mods
    and is saved without them."
 5. **A copy of the saves before the first start** (FD3, decided yes on 2026-11-15; this item and row
-   FT4c were written that day). It is the one thing here that protects the save itself.
+   FT4c were written that day and re-checked on their own). It is the one thing here that protects the
+   save itself.
    - **When.** In a launch that found no `LocalStorage.lua` (the same look as item 1's, made once,
-     before step 1), after the cloud check of step 3 has given its answer and before step 4. Not
-     earlier: before Steam's pull at sign-in a new prefix holds no saves, or old ones. When the cloud
-     check ends the launch (a conflict, still syncing), no copy is made.
+     before step 1), after the `esac` that closes the cloud check of step 3 (`:272`) and before step 4,
+     so for each of the three answers that go on: up to date, failed, and nothing logged. Not earlier:
+     before Steam's pull at sign-in a new prefix holds no saves, or old ones. When the cloud check ends
+     the launch (a conflict, still syncing), no copy is made. After "failed", or when no sync was
+     logged, the copy is of what this Mac holds, which may be nothing or a part: then no copy protects
+     the save, and the launcher's own cloud note (`:270-271`) is the only word.
    - **What.** The folder `drive_c/users/Wineskin/Saved Games/Surviving Mars Relaunched` of the prefix,
-     whole, when it is a folder and not a link and holds at least one regular file. It holds the saves
-     and the account file as Steam pulled them. With no such folder, or an empty one, nothing is copied
-     and nothing is said: a new player has no saves.
-   - **Where.** `<state folder>/backup/first-start-<YYYYMMDD-HHMMSS>`. The copy is made by
-     `cp -Rp -- <folder> <that name>.partial` and renamed when `cp` has exited 0. If either name exists
-     already, nothing is copied. `cp -R` copies a link inside the folder as a link.
-   - **The words**, one line, the home folder as `~`:
-     `A copy of your saves as they were before this install's first start: ~/Library/.../backup/first-start-<stamp>`.
-     It is an `echo`, so it is in the app's log; there is no alert for it.
+     whole, when it is not a link (looked at first), is a folder, and holds at least one regular file
+     anywhere under it (`find <folder> -type f`, which follows no link; the real folder's top level
+     holds one folder and no file). It holds the saves and the account file as Steam pulled them. With
+     no such folder, or none with a file in it, nothing is copied and nothing is said: a new player has
+     no saves. The folder's name is never written with a slash after it: `cp` follows a link written
+     that way (measured).
+   - **Where.** `<state folder>/backup/first-start-<YYYYMMDD-HHMMSS>`. `mkdir -p <state folder>/backup`
+     comes first (nothing else makes that folder in a new install); if it fails, that is the copy's
+     failure. If either the name or the name with `.partial` exists already, nothing is copied: `cp`
+     would copy into a folder that is there, and `mv` would move inside one (both measured). The copy
+     is made by `cp -Rp -- <folder> <that name>.partial`, its output sent away (on a full disk `cp`
+     prints the target's whole path and the numbered folder's name, which is the account's number, and
+     the app keeps error output in its log), and renamed when `cp` has exited 0. `cp -R` copies a link
+     inside the folder as a link.
+   - **The words**, one line:
+     `A copy of your saves as they were on this Mac before this install's first start: <the copy's whole path>`,
+     the home folder as `~`, and the path as it is when the state folder is not under the home folder.
+     It is an `echo`, so it is in the app's log; there is no alert for it. The numbered folder inside
+     the copy is not named.
    - **When the copy fails** (a full disk): `WARNING: The saves could not be copied before this first
-     start (<the folder>). The game starts all the same.`, the `.partial` folder is left as it is, and
-     the launch goes on. From the app the line is in the log only: the note of item 1 has already said
-     what to do, and a second alert before the game would be answered without being read.
+     start (<the .partial name, with ~>). The game starts all the same.`, what was copied is left as it
+     is, and the launch goes on. From the app the line is in the log only: the note of item 1 has
+     already said what to do, and a second alert before the game would be answered without being read.
    - **Once.** The look for `LocalStorage.lua` makes it once per install in the ordinary case: the game
-     writes that file 1 s after its first start. A first launch that ends before the game has run (a
-     sign-in that fails) makes another copy at the next, under a new name; none is ever written over.
+     writes that file 1 s after its first start. A first launch that copies and then ends before the
+     game has run (an update that does not finish) makes another copy at the next, of full size, under
+     a new name; none is ever written over.
    - **Nothing restores it.** No script copies anything out of `backup/`, and the block writes nowhere
      but under `<state folder>/backup`. The guide says where it is and that putting a save back is
      done by hand, with the game and this wrapper's Steam closed; what Steam Cloud then does with it
      was not measured, and the guide says no more than that.
-   - The account file inside the copy is never read: the folder is copied as a whole, by its own name,
-     and FT6's gate (no line names `account.dat`) holds.
+   - The account file inside the copy is copied with the rest and never opened by name or looked
+     into: the folder is copied as a whole, and FT6's gate (no line names `account.dat`) holds.
 
 **No live step.** A start from a new prefix on James's account uploads that prefix's account file once
 more. The tests run on lines cut from the real logs of ML2, ML3, ML4 and P5 instead.
@@ -651,7 +666,7 @@ Every test runs with `HOME` at a scratch folder and every outside program a reco
 | FT3b | `common/test-make-wrapper.sh`, with a stub in the template's place that makes the prefix's files, the Mac Driver section and the six links, each to a scratch folder holding a file, and then waits | with another `wineserver` (a `/bin/sleep` the test starts, named by the `pgrep` stub): the stub is ended once the prefix has stood still for the set looks; each of the six links is gone, by name; each link's target still holds its file; the three registry files and `Info.plist` have mode 666 and `Logs` 777; the one line is said; no line holds "Terminated"; the wrapper is moved into place; the stand-in process is still alive. A folder named `Documents` that is not a link is left. Not ended: with no other `wineserver`, however long the stub takes; with `system.reg`, `user.reg` or `userdef.reg` missing, `users/Wineskin` a link, or no Mac Driver section; while the prefix still grows; while a `wineserver` holds this prefix, another running beside it; when `lsof` fails; when the other `wineserver` goes away during the still looks (the stub then finishes by itself: no line, exit 0). A build folder reached through a link is matched. The stub exiting 1 by itself with another Wine open: the step fails as today. The stub ignoring TERM: the step fails, and `cleanup` ends it. The script interrupted during the step: no stub left running, the build folder gone. `pgrep` is asked for this user's processes only (`-U`). The file's existing cases pass with a real Wine open on the Mac | ended with no other `wineserver`; a link left; the removal with a slash after the name and `-r` (the target's file is gone); a real folder removed; the modes not set; ended before `system.reg` is there; the Mac Driver section not asked for; the stillness not waited for; the check that no `wineserver` holds this prefix removed; an `lsof` failure read as "holds nothing"; the other Wine closed by the script; the redirection taken off the group that ends the program; the program not ended in `cleanup`; the exit code of an ended program read |
 | FT3c | `cities-skylines-2/scripts/test-install.sh` and its transcript | the lines before Steam's first start name the "Updating Steam..." window and its Cancel, and the error box, and no size | the old two lines (added to the mutants that are compared with the transcript, `:519`); a size in the lines (the existing gate) |
 | FT4 | `surviving-mars-relaunched/tools/test-mod-notes.sh`, new, reading the launcher's marked block | **The note:** with no `LocalStorage.lua` it is given once, after the lock is taken and before step 1: printed in a terminal; with the app's settings printed first and then one `display alert` to the recording `osascript`; with the file there, not at all. **After exit**, on fixtures: ML2's and ML4's scratch sessions ("which is not present"): the title named; ML2's real session ("present, but not loaded"): named; ML4's real session (definition, load, items after, neither line): no words; ML3's (items before the load): no words; P5's two (no load): no words; a load with no mod at all (ML3's, its mod lines cut): no words; two mods in the game's lines: both named once; four: three and "and 1 more"; a title with `"`, `\`, `$(...)` and an escape character: carried as it is, cut to 60 printable characters, nothing run, one argument to the alert; lines with and without carriage returns give the same; a log whose name is older than the launch: no words; no log, no log folder: no words and no failure. The words go to `_alert` from the app and to a `WARNING:` line in a terminal | the note on every start; the note as a notification; the note before the lock; the note after step 1; the note not printed before its alert; "present, but not loaded" not looked for; "which is not present" not looked for; a session with neither line named; the title placed in the script's source; the newest log read whatever its time; a missing log stops the launcher |
-| FT4c | `surviving-mars-relaunched/tools/test-mod-notes.sh`, with `SM_STATE` at a scratch folder | With no `LocalStorage.lua` and a saves folder holding two files in a numbered folder and a link: one folder `backup/first-start-<stamp>` whose files are those, byte for byte, the link copied as a link; the source unchanged; no `.partial` name left; the one line, with `~` and without the home folder's path; the copy stands in the source after step 3's cloud `case` and before `step 4`. With `LocalStorage.lua`: no copy, no line. No saves folder; an empty one; one that is a link to a folder holding a file: no copy, no line, and the link's target untouched. `cp` failing (a stub that exits 1 after making the folder): the `WARNING:` line, exit status of the function 0, the `.partial` name left, no final name, no alert asked of `osascript`. A name that exists already: nothing copied, nothing written over. The block's only write target is under `backup` in the state folder | the copy on every start; the copy before the cloud check; the saves moved instead of copied; a saves folder that is a link followed; a failed copy stops the launch; a failed copy renamed to the final name; the home folder's path in the line; an existing copy written over |
+| FT4c | `surviving-mars-relaunched/tools/test-mod-notes.sh`, with `HOME` at a scratch folder and the state folder under it, a space in its path; `cp` and `date` are called by their bare names, so stubs first on `PATH` stand in for them where a case needs one | With no `LocalStorage.lua` and a saves folder whose top level holds one numbered folder and no file, that folder holding two files and a link, and the state folder holding no `backup` yet: one folder `backup/first-start-<stamp>` whose files are those, byte for byte, the link copied as a link; the source unchanged; no `.partial` name left; the one line, with `~`, without the home folder's path and without the numbered folder's name; the scratch tree outside `backup` is the same before and after. In the launcher's own lines the copy stands after the `esac` of the cloud check and before `step 4`, and in no arm of that `case`. With `LocalStorage.lua`: no copy, no line. No saves folder; one with folders and no file; one that is a link to a folder holding a file: no copy, no line, and the link's target untouched. `cp` failing (a stub that makes the folder, prints the target's path and the numbered folder's name on its error output, and exits 1), run in a subshell with a line after it: the `WARNING:` line with the `.partial` name and `~`, the line after it reached, the `.partial` name left, no final name, no line of output holding the home folder's path or the numbered folder's name, no alert asked of `osascript`. `backup` impossible to make (a file of that name): the `WARNING:` line, the launch goes on. The final name there already (the stamp fixed by a `date` stub): nothing copied, nothing inside it changed; the `.partial` name there already: the same | the copy on every start; the copy before the cloud check; the copy only in the arm for "up to date"; the saves moved instead of copied; a saves folder that is a link followed; a failed copy stops the launch; a failed copy renamed to the final name; the home folder's path in the line; an existing copy written over; the `mkdir` removed; `cp`'s output not sent away; files looked for at the top level only |
 | FT4b | `common/test-start-steam.sh`, new | the gate: `start_steam`'s lines stand in braces whose error output is sent away, and the child's own line is as before. The watch: 30,000 starts of the core's own function with a stub program and input and output redirected print nothing, and a line printed fails the file | the braces' redirection removed; the redirection moved onto the child's line: the gate, each time. The watch is not counted (2.9) |
 | FT5 | `surviving-mars-relaunched/scripts/test-setup.sh`; `surviving-mars-relaunched/scripts/test-install.sh` | "also in Spotlight and Launchpad" for an app in `~/Applications`, and not for a scratch app; `/Applications` at the level of the function that decides it. After a Mac check that exits 3: the core's line "the check of this Mac failed (exit 3)", exit 1, and no "Open the installer again" line; after the refusal of Rosetta the closing line is still there. Cities: Skylines II's transcript is unchanged, and no case is added there. The installer's line about mods is in setup's closing block | the clause for a scratch app; the closing line put back; the closing line dropped after the Rosetta refusal too |
 | FT6 | the gates: `common/check-links.py`, `common/check-identifiers.sh` at its residual with the fixtures staged, `cities-skylines-2/scripts/check-experiments.py`, `bash -n` on every script, `common/test-launcher-parity.sh` unchanged, and a source gate that no line of `surviving-mars-relaunched/launch-relaunched.sh`, `scripts/setup.sh`, `scripts/install.sh` or `common/install-core.sh` names `account.dat` outside a comment (the launcher names it in two comments today; three test files hold it in fixtures) | no dead link, no identifier, the ledger whole, the two launchers' shared blocks still alike, the account file untouched | a line of the launcher that reads `account.dat` |
@@ -674,7 +689,8 @@ read against the installer's lines at F8.
 ## 7. Rollback
 
 - Every change is to the installers, the launcher's words and the guides: a revert of the commit puts the
-  old behaviour back, and no prefix or save is changed by any step.
+  old behaviour back, and no prefix or save is changed by any step. The launcher's copies of the saves
+  (2.6 item 5) stay under `backup/` after a revert; they are removed by hand.
 - P5 (done) and F8 start Steam on James's account from a scratch prefix; ML2's steps 1, 5, 6 and 9 (the
   Surviving Mars plan) keep that safe and name the way back.
 - P2 made prefixes in scratch folders only; they are in the Trash.
@@ -763,12 +779,34 @@ Not measured at either pass, and said where it stands: `curl`'s exit 3 on an add
 return and its 92 (from the lens's run against a test server and from its documentation); an alert
 standing above the progress window (AppKit's levels say so; not seen on screen).
 
+### Fold check of the saves copy (2026-11-15)
+
+FD3's design (2.6 item 5) and row FT4c were written after the check, so one agent on Fable, not editing,
+checked that fold alone against `surviving-mars-relaunched/launch-relaunched.sh` on the build branch
+(`d9fdac8`), with `/bin/cp` and `mv` run on scratch folders. Verdict: build-ready-with-fixes. The blocker
+was read against the launcher before it was accepted. Each is folded:
+
+| # | Finding | Where it is folded |
+|---|---|---|
+| Z1 | **Blocker.** Nothing makes `backup/` in a new install (the launcher makes `runs/` only, later; setup makes neither), so every copy would fail, with a line in the log only | 2.6 item 5 "Where"; FT4c's case and mutant |
+| Z2 | On a full disk `cp` prints the target's whole path and the numbered folder's name, and the app keeps error output in its log | "Where": the output sent away; the warning names the `.partial` path with `~`; FT4c |
+| Z3 | "Holds at least one regular file" did not say where: the real folder's top level holds a folder and no file | "What"; FT4c's fixture and mutant |
+| Z4 | When no sync is logged the pull may not have begun; the copy then finds nothing and the once-rule is spent. The line said more than is known after "failed" | "When"; the line says "on this Mac" |
+| Z5 | "Once": a failed sign-in ends before the copy, so it was the wrong example | "Once" |
+| Z6 | `cp` follows a link written with a slash; into an existing `.partial` it copies inside; `mv` onto an existing folder moves inside (all measured) | "What", "Where"; FT4c |
+| Z7 | FT4c: the place needed a gate that an arm of the `case` cannot pass; no way to fix the stamp; a `return 1` stops nothing under `set -u` alone, so "stops the launch" must be tested in a subshell; "only write target" had no method | FT4c |
+| Z8 | Smaller: section 7 said every change is words; "nothing reads `account.dat`" (`cp` reads its bytes); `~/Library/.../` read as literal | section 7; 2.6 "What cannot be done"; "The words" |
+
+Reasoned and not measured: how early the "nothing logged" answer comes; two wrappers sharing one state
+folder in the same second.
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |
 |---|---|---|---|---|---|---|
 | 2026-11-14 | 1 | architecture, safety, correctness, test plan, words and platform facts, builder simulation | six agents, none editing; the builder in a scratch worktree with the tests run; blockers read against the source inline | Fable 5.2 | `surviving-mars-install` at `283a464` (the cited files as at `75470c9`) | build-ready-with-fixes, folded |
 | 2026-11-14 | 1b | the fold of pass 1 | one agent, not editing; scratch runs of the removal loop and of ending a program | Fable 5.2 | the same | build-ready-with-fixes, folded |
+| 2026-11-15 | 1c | the saves copy (2.6 item 5, FT4c), written after the check | one agent, not editing; `cp` and `mv` run on scratch folders; the blocker read against the launcher inline | Fable 5.2 | `first-run-findings` at `d9fdac8` (the launcher as at `283a464`) | build-ready-with-fixes, folded |
 
 Key paths: `common/install-core.sh`, `common/make-wrapper.sh`, `common/test-make-wrapper.sh`,
 `cities-skylines-2/scripts/` (`test-install.sh`, its transcript), `surviving-mars-relaunched/`

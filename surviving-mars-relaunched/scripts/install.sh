@@ -18,7 +18,8 @@
 #   its report, or 1 or 3 for the refusals that come before it.
 # SM_WRAPPER=<absolute path> names another wrapper, made in step 3 if absent. That is a test: the game's
 # app starts the default wrapper, so the installer then stops before step 7 and makes no app.
-# L1_TRACE=<file> gets one line per poll while Steam starts and downloads.
+# L1_TRACE=<file> gets one line per poll while Steam starts and downloads, and one for the installer's own
+# transfer.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 GAME_ROOT="$(cd "$HERE/.." && pwd)"

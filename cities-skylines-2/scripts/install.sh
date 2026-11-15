@@ -16,7 +16,7 @@
 #   cannot go on by itself: open the installer again to carry on. --check exits 0 after its report, or 1
 #   or 3 for the refusals that come before it.
 # CS2_WRAPPER=<absolute path> names the wrapper, made in step 3 if absent. L1_TRACE=<file> gets one line per
-# poll while Steam starts and downloads (the live check of the plan's NL1).
+# poll while Steam starts and downloads, and one for the installer's own transfer (the plans' live checks).
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 GAME_ROOT="$(cd "$HERE/.." && pwd)"

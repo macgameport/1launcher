@@ -136,6 +136,10 @@ trace() {   # steam= counts by the launcher's lower-case rule; proc= is this scr
   [ -n "${L1_TRACE:-}" ] || return 0
   echo "$(date '+%H:%M:%S') steam=$(steam_family | wc -l | tr -d ' ') proc=$(steam_proc_up && echo yes || echo no) client=$1" >> "$L1_TRACE"
 }
+probe_trace() {   # <what was seen>: the one transfer's result, which no line on screen shows when Steam then comes up
+  [ -n "${L1_TRACE:-}" ] || return 0
+  echo "$(date '+%H:%M:%S') transfer=$PROBE $1" >> "$L1_TRACE"
+}
 use_wrapper() {   # <path>: the wrapper, and the game's launcher's exports for it (game_env)
   APP="$1"
   SS="$APP/Contents/SharedSupport"
@@ -209,7 +213,7 @@ update_probe() {   # sets PROBE: cut | none (no network) | working | unknown
   url="$(tail -n +"$((LOG_FROM + 1))" "$BOOTLOG" 2>/dev/null | tr -d '\r' | sed -n 's/.*Add pending download: //p' \
     | grep -E '^https://[A-Za-z0-9.-]+\.steamstatic\.com/(client/)?[A-Za-z0-9._-]+_[0-9]+$' \
     | awk -F_ '$NF + 0 > max { max = $NF + 0; u = $0 } END { if (u != "") print u }')"
-  [ -n "$url" ] || return 0
+  [ -n "$url" ] || { probe_trace "no address"; return 0; }
   # -q: the player's own curl settings are not read. -f: an error page is not a transfer that worked.
   size="$(curl -q --proto '=https' --proto-redir '=https' --tlsv1.2 --globoff -fsSL --max-time "$PROBE_SECS" \
     -o /dev/null -w '%{size_download}' -- "$url" 2> /dev/null)"; rc=$?
@@ -219,6 +223,7 @@ update_probe() {   # sets PROBE: cut | none (no network) | working | unknown
     6|7) PROBE=none ;;
     0|28) [ "$size" -ge "$PROBE_BYTES" ] && PROBE=working ;;
   esac
+  probe_trace "exit=$rc bytes=$size"
 }
 on_tunnel() { route -n get default 2>/dev/null | awk '$1 == "interface:" { print $2 }' | grep -q '^utun'; }
 update_words() {   # <update_probe's result>: Steam's own update did not arrive. No line of Steam's log is shown

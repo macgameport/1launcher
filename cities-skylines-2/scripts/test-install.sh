@@ -56,7 +56,7 @@
 #   49 the restart removed for "download location"      50 the transfer made before any failure
 #   51 the log's lines printed in these forms           52 exit 1
 #   53 the closing line for 4 printed                   54 the path with the home folder
-#   55 Steam left running at exit 4
+#   55 Steam left running at exit 4                     60 the transfer's result not written to the trace
 # curl's own words for Steam's installer (2.2, FT2); each must exit 1:
 #   56 curl's words printed when the second address works    57 nothing printed when both fail
 # The lines before Steam's start (2.10, FT3c); each must exit 1:
@@ -149,6 +149,7 @@ case "${MUTANT:-0}" in
   58) perl -0pi -e 's/      say "Steam for Windows is starting\. The first time,[^\n]*\n[^\n]*\n[^\n]*\n/      say "Steam for Windows is starting. A small box headed \\"Steam - Fatal Error\\" can appear once or twice"\n      say "and close again. That is expected: Steam is updating itself. Click nothing in it."\n/' "$C"
       grep -q '^      say "and close again\. That is expected: Steam is updating itself\. Click nothing in it\."$' "$C" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   59) mutate 's#^      say "Steam downloading its own update: leave it,#      say "Steam downloading its own update (about 330 MB): leave it,#' 'its own update (about 330 MB): leave it,' ;;
+  60) mutate 's#^  probe_trace "exit=\$rc bytes=\$size"$#  :#' '^  :$' ;;
   55) first '\n        end_steam\n        \[ "\$PROBED" = 0 \]' '\n        :\n        [ "\$PROBED" = 0 ]' '^        :$' ;;
 esac
 
@@ -588,6 +589,13 @@ stopped "download location, then needs to be online: the first restarts, the sec
 newh; bash "$MKW" "$WR" steam; dl - installed
 { cat "$FIX_BOOT"; echo "[2026-11-12 17:58:47] Error: Steam needs to be online to update. Please confirm your network connection and try again."; } | seed
 rc="$(STUB_IFACE=utun4 run)"; came_up "an earlier run's needs to be online and its addresses in the log, a tunnel, and a start that comes up" 1 0
+newh; bash "$MKW" "$WR" steam; dl - installed
+rc="$(STUB_STARTS="fatal-o ok" STUB_XFER_RC=0 STUB_XFER_BYTES=20000000 env -u CS2_WRAPPER HOME="$H" PATH="$B:$PATH" L1_KILL="$B/killrec" L1_TRACE="$T/trace$n" bash "$S" > "$H.out" 2>&1 < /dev/null; echo $?)"
+check "L1_TRACE: the transfer's result is one line of the trace, and the screen shows nothing of it" \
+  "$rc:$(grep -cE '^[0-9]{2}:[0-9]{2}:[0-9]{2} transfer=working exit=0 bytes=20000000$' "$T/trace$n"):$(grep -c 'transfer=' "$T/trace$n"):$(grep -c 'transfer' "$H.out")" "0:1:1:0"
+newh; bash "$MKW" "$WR" steam
+rc="$(STUB_STARTS="$O7" STUB_ADDS=/dev/null STUB_XFER_RC=18 env -u CS2_WRAPPER HOME="$H" PATH="$B:$PATH" L1_KILL="$B/killrec" L1_TRACE="$T/trace$n" bash "$S" > "$H.out" 2>&1 < /dev/null; echo $?)"
+check "  ...and with no address to try, the line says so" "$rc:$(grep -cE '^[0-9]{2}:[0-9]{2}:[0-9]{2} transfer=unknown no address$' "$T/trace$n"):$(grep -c 'transfer=' "$T/trace$n")" "4:1:1"
 sed -i '' 's/^START_POLLS=4 /START_POLLS=120 /' "$C"
 newh; bash "$MKW" "$WR" steam; dl - installed
 check "a one-poll gap in Steam's process: not started again" "$(STUB_STARTS=blip run):$(starts)" "0:1"

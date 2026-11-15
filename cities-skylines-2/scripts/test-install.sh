@@ -2,11 +2,14 @@
 # test-install.sh -- scripts/install.sh with HOME at a scratch folder (docs/plans/simple-install.md, NT3). The
 # script runs from a scratch copy of the repository whose setup.sh and make-wrapper.sh are recording stubs.
 # Every outside program it calls is a recording stub on PATH: curl, softwareupdate, xcode-select, python3,
-# caffeinate, id, df, pgrep, ps, lsof and sleep. The fixture wrapper's wine64 and wineserver are stubs too.
+# caffeinate, id, df, pgrep, ps, lsof, route and sleep. The fixture wrapper's wine64 and wineserver are stubs too.
 # Processes are files in a state folder: wine64 makes them as each start of Steam's plan says (STUB_STARTS),
 # wineserver -k and -shutdown remove them, and the stub sleep moves the world on one poll at a time (the
 # download, a blip in Steam's process, Apple's tools arriving). No network, no Wine, no real process is
-# signalled (the stray sweep's kill is recorded through L1_KILL).
+# signalled (the stray sweep's kill is recorded through L1_KILL). A start that ends in "Steam needs to be
+# online" writes what a real one logged: fixtures/bootstrap-ml2-failed-start.txt holds the 37 "Add pending
+# download:" lines of the failed start of 2026-11-12, without the carriage return that ends every line of
+# Steam's log (the repository stores none); the stub puts them back.
 #   bash scripts/test-install.sh            exit 0 = every case passed
 #   MUTANT=1  ...  Rosetta installed on Return; must exit 1
 #   MUTANT=2  ...  setup run when the game is absent; must exit 1
@@ -41,15 +44,29 @@
 #   MUTANT=31 ...  the look for another wrapper's Steam left out; must exit 1
 #   MUTANT=32 ...  any line naming steam.exe taken for a Steam, a Wine program or not; must exit 1
 #   MUTANT=33 ...  --desktop taken by a game whose setup has none; must exit 1
+# Steam's own update cut (docs/plans/first-run-findings.md, 2.1, FT1); each must exit 1:
+#   34 the transfer skipped and Steam started again     35 a start made before the transfer
+#   36 the first address used                           37 the largest chosen before the pattern is applied
+#   38 the count of starts begun again after the transfer (six starts)
+#   39 an address from before this start                40 the carriage return left on
+#   41 an address outside the pattern passed to curl    42 --max-time removed
+#   43 -f removed                                       44 the VPN sentence with no tunnel
+#   45 the VPN sentence when the transfer worked        46 exit 0 with 5 MB counted as working
+#   47 28 with 19,999,999 bytes counted as working      48 no restart when the transfer works
+#   49 the restart removed for "download location"      50 the transfer made before any failure
+#   51 the log's lines printed in these forms           52 exit 1
+#   53 the closing line for 4 printed                   54 the path with the home folder
+#   55 Steam left running at exit 4
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
-# the installer printed at 6a66416, before it was divided into a shared part and a game's part. A changed
-# line of that file is a changed word of the installer. Carriage returns (a case run at a terminal has them)
-# are dropped: the repository stores text with plain line ends, so a file holding them would not survive a
-# checkout.
+# the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
+# slices of docs/plans/first-run-findings.md that change its words. It was first recorded at 6a66416, before
+# the installer was divided into a shared part and a game's part. A changed line of that file is a changed
+# word of the installer. Carriage returns (a case run at a terminal has them) are dropped: the repository
+# stores text with plain line ends, so a file holding them would not survive a checkout.
 #   GOLDEN=record bash scripts/test-install.sh   write test-install.golden from this run: a deliberate act,
 #                                                 refused under a mutant and from a run with a failure
-# Under mutants 1 to 25 the transcript is not compared: each of those must be caught by its own case.
+# The transcript is compared under mutants 26, 27 and 28 only: every other one must be caught by its own case.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
@@ -101,6 +118,29 @@ case "${MUTANT:-0}" in
   32) mutate 's#^    case "\$o" in \*drive_c\*) ;; \*) continue ;; esac.*#    :#' '^    :$' ;;
   33) mutate 's#^    --desktop) \[ "\${TAKES_DESKTOP:-0}" = 1 \] || {.*#    --desktop)#' '^    --desktop)$' ;;
   24) mutate 's#^if xcode-select -p > /dev/null 2>&1; then #if xcode-select -p > /dev/null 2>\&1 \&\& py_ok; then #' '2>&1 && py_ok; then' ;;
+  34) mutate 's#grep -q "\$FATAL_ONLINE" \&\& return 2$#grep -q "$FATAL_ONLINE" \&\& continue 2#' 'FATAL_ONLINE" && continue 2$' ;;
+  35) mutate 's#^        update_probe$#        start_steam; update_probe#' '^        start_steam; update_probe$' ;;
+  36) mutate 's#^    | awk -F_ .*#    | head -n 1)"#' '^    | head -n 1)"$' ;;
+  37) perl -0pi -e 's/(    \| )(grep -E [^\n]*) \\\n    \| (awk -F_ [^\n]*)\)"\n/$1$3 \\\n    | $2)"\n/' "$C"
+      grep -q '^    | grep -E .*steamstatic.*)"$' "$C" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  38) mutate 's#^        start_until_up || { end_steam; update_words#        STARTS=0; start_until_up || { end_steam; update_words#' '^        STARTS=0; start_until_up ||' ;;
+  39) mutate 's#^  url="\$(tail -n +"\$((LOG_FROM + 1))" #  url="$(tail -n +1 #' '^  url="\$(tail -n +1 ' ;;
+  40) mutate "s#^\\(  url=.*\\) | tr -d '.r' | sed#\\1 | sed#" '^  url=.*BOOTLOG" 2>/dev/null | sed -n' ;;
+  41) mutate 's#^    | grep -E .*steamstatic.*#    | cat \\#' '^    | cat \\$' ;;
+  42) mutate 's# -fsSL --max-time "\$PROBE_SECS" \\$# -fsSL \\#' ' --globoff -fsSL \\$' ;;
+  43) mutate 's# --globoff -fsSL --max-time # --globoff -sSL --max-time #' ' --globoff -sSL --max-time ' ;;
+  44) mutate 's#^         if on_tunnel; then$#         if true; then#' '^         if true; then$' ;;
+  45) mutate 's#^    cut) say "!! Steam could not#    cut|working) say "!! Steam could not#' '^    cut|working) say ' ;;
+  46) mutate 's#^    0|28) \[ "\$size" -ge "\$PROBE_BYTES" \] \&\& PROBE=working ;;$#    0) PROBE=working ;; 28) [ "$size" -ge "$PROBE_BYTES" ] \&\& PROBE=working ;;#' '^    0) PROBE=working ;; 28) ' ;;
+  47) mutate 's#^PROBE_BYTES=20000000 #PROBE_BYTES=19999999 #' '^PROBE_BYTES=19999999 ' ;;
+  48) mutate 's#^        case "\$PROBE" in cut|none) update_words#        case "$PROBE" in cut|none|working) update_words#' 'in cut|none|working) update_words' ;;
+  49) mutate 's#^        continue 2$#        return 1#' '^        return 1$' ;;
+  50) mutate 's#^      start_until_up; rc=\$?$#      LOG_FROM=0; update_probe; PROBED=0; start_until_up; rc=$?#' '^      LOG_FROM=0; update_probe; PROBED=0; start_until_up; rc=\$?$' ;;
+  51) mutate 's#^  END=quiet   \# the closing line for 4 would.*#  tail -n 20 "$BOOTLOG" | sed "s/^/     /"; END=quiet#' '^  tail -n 20 "\$BOOTLOG" | sed "s/^/     /"; END=quiet$' ;;
+  52) mutate 's#in cut|none) update_words "\$PROBE"; exit 4 ;; esac$#in cut|none) update_words "$PROBE"; exit 1 ;; esac#' 'update_words "\$PROBE"; exit 1 ;; esac$' ;;
+  53) mutate 's#^  END=quiet   \# the closing line for 4 would.*#  :#' '^  :$' ;;
+  54) mutate 's#if you ask for help: \$(tilde "\$BOOTLOG")"$#if you ask for help: $BOOTLOG"#' 'if you ask for help: \$BOOTLOG"$' ;;
+  55) first '\n        end_steam\n        \[ "\$PROBED" = 0 \]' '\n        :\n        [ "\$PROBED" = 0 ]' '^        :$' ;;
 esac
 
 fails=0
@@ -160,7 +200,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 X
-export MKW="$T/mkw.sh" FIXBIN="$T/fixbin"
+export MKW="$T/mkw.sh" FIXBIN="$T/fixbin" FIX_BOOT="$HERE/fixtures/bootstrap-ml2-failed-start.txt"
 cat > "$T/fixbin/wine64" << 'X'
 #!/bin/bash
 echo "WINE $* dll=${WINEDLLOVERRIDES:-}" >> "$CALLS"
@@ -173,10 +213,16 @@ case "$*" in
     echo "start $n at tick $(wc -l < "$ST/ticks" | tr -d ' ') crash=$([ -e "$P/.crash" ] && echo yes || echo no)" >> "$ST/startlog"
     kind="$(echo "${STUB_STARTS:-ok}" | awk -v n="$n" '{ print $n }')"; kind="${kind:-ok}"
     BL="$P/logs/bootstrap_log.txt"; mkdir -p "$P/logs"
+    # fatal-o and fatal-both write what ML2's failed start logged: its "Add pending download:" lines (the
+    # fixture, or the file STUB_ADDS names) and then the fatal line, each ending in a carriage return as every
+    # line of Steam's log does
+    cr() { sed "s/\$/$(printf '\r')/"; }
+    online="[2026-11-12 17:58:47] Error: Steam needs to be online to update. Please confirm your network connection and try again."
     case "$kind" in
       ok) : > "$ST/steam"; : > "$ST/helper-next" ;;
       fatal-u) : > "$ST/steam"; echo "[2026-11-10 20:40:49] Error: Failed to determine download location for universe 1" >> "$BL" ;;
-      fatal-o) : > "$ST/steam"; echo "[2026-11-10 20:47:58] Error: Steam needs to be online to update. Please confirm your network connection and try again." >> "$BL" ;;
+      fatal-o) : > "$ST/steam"; { cat "${STUB_ADDS:-$FIX_BOOT}"; echo "$online"; } | cr >> "$BL" ;;
+      fatal-both) : > "$ST/steam"; { cat "$FIX_BOOT"; echo "[2026-11-12 17:58:40] Error: Failed to determine download location for universe 1"; echo "$online"; } | cr >> "$BL" ;;
       blip) : > "$ST/steam"; echo 2 > "$ST/blip" ;;
       slow) : > "$ST/steam" ;;
       gone) ;;
@@ -241,6 +287,11 @@ X
 cat > "$B/curl" << 'X'
 #!/bin/bash
 echo "CURL $*" >> "$CALLS"
+case " $* " in *" -w "*)   # the installer's own transfer: the exit code and the byte count it prints are settings
+  echo "XFER starts=$(cat "$ST/starts" 2>/dev/null || echo 0) steam=$([ -f "$ST/steam" ] && echo up || echo down)" >> "$CALLS"
+  echo "curl: (${STUB_XFER_RC:-0}) the transfer's own words" >&2
+  printf '%s' "${STUB_XFER_BYTES:-0}"; exit "${STUB_XFER_RC:-0}" ;;
+esac
 out=""; url=""; while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2 ;; *) url="$1"; shift ;; esac; done
 case "$url" in *fastly*) [ -n "${STUB_CURL_FIRST_FAIL:-}" ] && exit 6 ;; esac
 [ -n "${STUB_CURL_FAIL:-}" ] && exit 6
@@ -259,6 +310,7 @@ case "$1" in
 esac
 X
 printf '#!/bin/bash\necho "PY" >> "$CALLS"; exit "${STUB_PY_EXIT:-0}"\n' > "$B/python3"
+printf '#!/bin/bash\necho "ROUTE $*" >> "$CALLS"; [ -n "${STUB_ROUTE_FAIL:-}" ] && exit 1\necho "   route to: default"; echo "  interface: ${STUB_IFACE:-en0}"\n' > "$B/route"
 printf '#!/bin/bash\necho "CAFF $*" >> "$CALLS"\n' > "$B/caffeinate"
 printf '#!/bin/bash\necho "KILL $*" >> "$CALLS"; rm -f "$ST/steam" "$ST/helper"\n' > "$B/killrec"
 printf '#!/bin/bash\nif [ "$1" = -u ] && [ -n "${STUB_ROOT:-}" ]; then echo 0; else exec /usr/bin/id "$@"; fi\n' > "$B/id"
@@ -414,12 +466,101 @@ check "a fresh start: the stale .crash gone before it, the words, -shutdown befo
 check "  ...no wineserver call without the prefix" "$(grep '^WINESERVER' "$CALLS" | grep -c 'prefix=$')" 0
 check "  ...the lock held while it waited" "$(grep -c 'lock=yes' "$ST/ticks" | awk '{ print ($1 > 0) ? "held" : "never" }')" held
 check "  ...the home folder nowhere in the output" "$(grep -c "$H" "$H.out")" 0
-for k in fatal-u fatal-o; do
-  newh; bash "$MKW" "$WR" steam; dl - installed
-  rc="$(STUB_STARTS="$k ok" run)"
-  check "a first start that ends in its fatal line ($k): ended in this prefix, started again at once" \
-    "$rc:$(starts):$(grep -c "^WINESERVER -k prefix=$(cd "$PFX" && pwd -P)\$" "$CALLS" | awk '{ print ($1 > 0) }'):$(sed -n 2p "$ST/startlog" | awk '{ print ($5 <= 3) ? "soon" : "late" }')" "0:2:1:soon"
+newh; bash "$MKW" "$WR" steam; dl - installed
+rc="$(STUB_STARTS="fatal-u ok" STUB_IFACE=utun4 run)"
+check "a first start that ends in its fatal line (fatal-u): ended in this prefix, started again at once" \
+  "$rc:$(starts):$(grep -c "^WINESERVER -k prefix=$(cd "$PFX" && pwd -P)\$" "$CALLS" | awk '{ print ($1 > 0) }'):$(sed -n 2p "$ST/startlog" | awk '{ print ($5 <= 3) ? "soon" : "late" }')" "0:2:1:soon"
+check "  ...with no transfer of the installer's own, no look at the route and no word of a VPN" "$(calls '^XFER'):$(calls '^ROUTE'):$(grep -ci vpn "$H.out")" "0:0:0"
+
+# --- Steam's own update is cut (docs/plans/first-run-findings.md, 2.1, FT1). "Steam needs to be online" ends
+# --- that Steam and starts no other until one transfer of the installer's own has said what the path does.
+BIG="https://cdn.steamstatic.com/client/bins_cef_win32_win7-64.zip.vz.cd0b352c7e651dd695c51a894a3973eb2efbee4b_105972111"
+XFER="CURL -q --proto =https --proto-redir =https --tlsv1.2 --globoff -fsSL --max-time 20 -o /dev/null -w %{size_download} --"
+O7='fatal-o fatal-o fatal-o fatal-o fatal-o fatal-o fatal-o'   # more than the limit: a start too many fails too, and is counted
+seed() { sed "s/\$/$(printf '\r')/" >> "$SD/logs/bootstrap_log.txt"; }   # lines of an earlier run in Steam's log
+form() {   # the form of 2.1 the output ends in, whole lines with nothing after them: vpn later none reach plain, or other
+  local c="  !! Steam could not download its own update: the connection to Valve's server keeps being cut."
+  local w="     Open the installer again in a few minutes. It carries on from this step."
+  local l="     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt"
+  local nl=$'\n'
+  case "$(tail -n 4 "$H.out")" in
+    "$c$nl     This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,$nl     then open the installer again. It carries on from this step.$nl$l") echo vpn; return ;;
+  esac
+  case "$(tail -n 3 "$H.out")" in
+    "$c$nl$w$nl$l") echo later ;;
+    "  !! Steam could not download its own update: this Mac cannot reach Valve's server.$nl     Check the network, then open the installer again. It carries on from this step.$nl$l") echo none ;;
+    "  !! Steam could not download its own update, although this Mac reaches Valve's server.$nl$w$nl$l") echo reach ;;
+    "  !! Steam could not download its own update.$nl$w$nl$l") echo plain ;;
+    *) echo other ;;
+  esac
+}
+# what no such run may hold: a line of Steam's log, today's words, the core's closing line for 4, curl's own
+# words, the home folder's path; and setup is not run
+leaks() { echo $(( $(said 'Error:') + $(said 'Add pending') + $(said 'did not start') + $(said '^Open the installer again: it carries on from here') + $(said 'curl:') + $(grep -c "$H" "$H.out") + $(grep -c '^SETUP  via' "$CALLS") )); }
+stopped() {   # <name> <form> <starts> <transfers> <looks at the route>: a run that ended in one of the forms
+  check "$1: exit 4, the $2 form, $3 start(s), Steam not left running" \
+    "$rc:$(form):$(starts):$([ -f "$ST/steam" ] && echo up || echo down):$(calls '^XFER'):$(calls '^ROUTE'):$(grep -ci vpn "$H.out"):$(leaks)" \
+    "4:$2:$3:down:$4:$5:$([ "$2" = vpn ] && echo 1 || echo 0):0"
+}
+came_up() {   # <name> <starts> <transfers>: a run in which Steam came up after all: no word of any of it
+  check "$1: exit 0, $2 start(s), no words" \
+    "$rc:$(starts):$(calls '^XFER'):$(calls '^ROUTE'):$(said 'could not download'):$(grep -ci vpn "$H.out")" "0:$2:$3:0:0:0"
+}
+newh; bash "$MKW" "$WR" steam
+echo "[2026-11-09 10:00:00] Add pending download: https://cdn.steamstatic.com/client/from_an_earlier_start.zip.vz.0000_999999999" | seed
+rc="$(STUB_STARTS="$O7" STUB_XFER_RC=18 STUB_IFACE=utun4 run)"
+stopped "needs to be online, the transfer cut (18), a tunnel" vpn 1 1 1
+check "  ...that Steam was ended and no other started before the transfer" "$(grep '^XFER' "$CALLS")" "XFER starts=1 steam=down"
+check "  ...one transfer, with the options of 2.1, of the largest file asked for since that start, no carriage return on it" \
+  "$(calls '^CURL -q'):$(grep -cxF "$XFER $BIG" "$CALLS")" "1:1"
+for c in 56 92; do
+  newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="$O7" STUB_XFER_RC=$c STUB_IFACE=utun4 run)"; stopped "the transfer cut ($c), a tunnel" vpn 1 1 1
 done
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="$O7" STUB_XFER_RC=18 run)"; stopped "the transfer cut (18), no tunnel" later 1 1 1
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="$O7" STUB_XFER_RC=18 STUB_IFACE=utun4 STUB_ROUTE_FAIL=1 run)"; stopped "the transfer cut (18), the route not told" later 1 1 1
+for c in 6 7; do
+  newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="$O7" STUB_XFER_RC=$c STUB_IFACE=utun4 run)"; stopped "no network ($c), a tunnel" none 1 1 0
+done
+for c in 0 28; do
+  newh; bash "$MKW" "$WR" steam; dl - installed
+  rc="$(STUB_STARTS="fatal-o ok" STUB_XFER_RC=$c STUB_XFER_BYTES=20000000 STUB_IFACE=utun4 run)"; came_up "the transfer working ($c with 20,000,000 bytes), a tunnel, and the next start comes up" 2 1
+  newh; bash "$MKW" "$WR" steam
+  rc="$(STUB_STARTS="$O7" STUB_XFER_RC=$c STUB_XFER_BYTES=20000000 STUB_IFACE=utun4 run)"; stopped "  ...and the four starts that are left all end in a fatal line" reach 5 1 0
+done
+newh; bash "$MKW" "$WR" steam; dl - installed
+rc="$(STUB_STARTS="fatal-o ok" STUB_XFER_RC=28 STUB_XFER_BYTES=19999999 STUB_IFACE=utun4 run)"; came_up "not known (28 with 19,999,999 bytes): another start, which comes up" 2 1
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="$O7" STUB_XFER_RC=28 STUB_XFER_BYTES=19999999 STUB_IFACE=utun4 run)"; stopped "not known (28 with 19,999,999 bytes), a tunnel, the starts used up" plain 5 1 0
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="$O7" STUB_XFER_RC=0 STUB_XFER_BYTES=5572671 STUB_IFACE=utun4 run)"; stopped "not known (0 with 5 MB), a tunnel, the starts used up" plain 5 1 0
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS='fatal-o fatal-u fatal-u fatal-u fatal-u fatal-u' STUB_XFER_RC=22 STUB_XFER_BYTES=20000000 run)"
+stopped "not known (22), then four starts that end in the other fatal line" plain 5 1 0
+newh; bash "$MKW" "$WR" steam
+echo "[2026-11-09 10:00:00] Add pending download: https://cdn.steamstatic.com/client/from_an_earlier_start.zip.vz.0000_999999999" | seed
+rc="$(STUB_STARTS="$O7" STUB_ADDS=/dev/null STUB_XFER_RC=18 STUB_IFACE=utun4 run)"; stopped "no address in the log since that start: curl is not run, not known" plain 5 0 0
+cat > "$T/adds.odd" << 'X'
+[2026-11-12 17:57:24] Add pending download: http://cdn.steamstatic.com/client/plain_http.zip.vz.0000_900000001
+[2026-11-12 17:57:24] Add pending download: https://cdn.steamstatic.com.example.net/client/another_host.zip.vz.0000_900000002
+[2026-11-12 17:57:24] Add pending download: https://steamstatic.com/client/no_host_before_it.zip.vz.0000_900000003
+[2026-11-12 17:57:24] Add pending download: https://name@cdn.steamstatic.com/client/a_name_before_the_host.zip.vz.0000_900000004
+[2026-11-12 17:57:24] Add pending download: https://cdn.steamstatic.com/client/deeper/a_folder_more.zip.vz.0000_900000005
+[2026-11-12 17:57:24] Add pending download: https://cdn.steamstatic.com/client/a_question_mark.zip?vz=0000_900000006
+[2026-11-12 17:57:24] Add pending download: https://cdn.steamstatic.com/client/a space.zip.vz.0000_900000007
+[2026-11-12 17:57:24] Add pending download: https://cdn.steamstatic.com/client/no_number_at_its_end.zip.f556f4b9c7e087e07c0fef2da2b1d9f27f734cff
+X
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="$O7" STUB_ADDS="$T/adds.odd" STUB_XFER_RC=18 STUB_IFACE=utun4 run)"
+stopped "only addresses outside the pattern: curl is not run, not known" plain 5 0 0
+{ cat "$T/adds.odd"
+  echo "[2026-11-12 17:57:25] Add pending download: https://cdn.steamstatic.com/client/inside_and_smaller.zip.vz.0000_6000000"
+  echo "[2026-11-12 17:57:25] Add pending download: https://client-update.steamstatic.com/inside_with_no_client_folder.zip.vz.0000_7000000"; } > "$T/adds.mixed"
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="$O7" STUB_ADDS="$T/adds.mixed" STUB_XFER_RC=18 run)"
+stopped "larger addresses outside the pattern beside smaller ones inside it" later 1 1 1
+check "  ...the largest inside the pattern is used" "$(grep -cxF "$XFER https://client-update.steamstatic.com/inside_with_no_client_folder.zip.vz.0000_7000000" "$CALLS")" 1
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS='fatal-both fatal-u fatal-u fatal-u fatal-u fatal-u' STUB_XFER_RC=18 run)"
+stopped "both fatal lines new in one look: needs to be online is the one acted on" later 1 1 1
+newh; bash "$MKW" "$WR" steam; rc="$(STUB_STARTS="fatal-u $O7" STUB_XFER_RC=7 run)"
+stopped "download location, then needs to be online: the first restarts, the second does not" none 2 1 0
+newh; bash "$MKW" "$WR" steam; dl - installed
+{ cat "$FIX_BOOT"; echo "[2026-11-12 17:58:47] Error: Steam needs to be online to update. Please confirm your network connection and try again."; } | seed
+rc="$(STUB_IFACE=utun4 run)"; came_up "an earlier run's needs to be online and its addresses in the log, a tunnel, and a start that comes up" 1 0
 newh; bash "$MKW" "$WR" steam; dl - installed
 check "a one-poll gap in Steam's process: not started again" "$(STUB_STARTS=blip run):$(starts)" "0:1"
 newh; bash "$MKW" "$WR" steam; dl - installed
@@ -428,6 +569,7 @@ newh; bash "$MKW" "$WR" steam
 rc="$(STUB_STARTS='fatal-u fatal-u fatal-u fatal-u fatal-u ok' run)"
 check "five fatal starts: exit 1, five starts, Steam ended, its log shown, no setup" \
   "$rc:$(starts):$(said 'did not start after 5 tries'):$(said 'Failed to determine download location' | awk '{ print ($1 > 0) }'):$(grep -c '^SETUP  via' "$CALLS")" "1:5:1:1:0"
+check "  ...with no transfer: download location alone never asks for one" "$(calls '^XFER'):$(said 'could not download')" "0:0"
 newh; bash "$MKW" "$WR" steam; : > "$ST/steam"; dl - installed; sed -i '' 's/^STUCK_POLLS=12 /STUCK_POLLS=2 /' "$C"
 rc="$(run)"; sed -i '' 's/^STUCK_POLLS=2 /STUCK_POLLS=12 /' "$C"
 check "a Steam already there with no client: ended, then started" "$rc:$(calls '^WINESERVER -k'):$(starts)" "0:1:1"
@@ -508,7 +650,7 @@ newh; bash "$MKW" "$WR" steam; : > "$ST/lookalike"; dl installed
 check "a line that only names steam.exe is not a Steam: the install goes on" "$(run):$(said 'Steam is open in'):$(starts)" "0:0:1"
 
 check "no run reached the runaway guard" "$(cat "$T/runaway" 2>/dev/null | wc -l | tr -d ' ')" 0
-# --- the transcript: what the installer printed in every case above, against what it printed at 6a66416
+# --- the transcript: what the installer printed in every case above, against what it printed when last recorded
 GOLD="$HERE/test-install.golden"
 if [ "${GOLDEN:-}" = record ]; then
   [ "${MUTANT:-0}" = 0 ] || { echo "REFUSED: the transcript is not recorded under a mutant"; exit 2; }

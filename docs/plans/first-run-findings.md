@@ -3,13 +3,13 @@
 > **🔧 As-built (2026-11-15):** PARTIAL. F1 to F7 are built on the branch `first-run-findings`, cut from
 > `surviving-mars-install` at `d9fdac8` and pushed, not merged: slice A `8a67679`, C `a57d217`, H
 > `19468c6`, K `3c44bb5` (the core) and `549e46d` (setup), B `fe2a086`, D `213b814`, G `b845a37`, I with
-> the copy of the saves `d983c70`, the guides `5c357e0`. **F8, the live step, was run on 2026-11-15** (section 4; the
+> the copy of the saves `d983c70`, the guides `5c357e0`. **F8, the live step, passed in both halves on 2026-11-15** (section 4; the
 > game's `runs/f8-20261115/`): slice G passed; slice A's cut path was VOID in the
 > morning, since the VPN's path was not cut ("needs to be online" on a working path, the transfer,
 > another start, the sign-in window, no words), and passed that afternoon on another of the VPN's
 > servers, at `5e5d7b5`, with the trace's line for the transfer (`aab5d5b`): one start, the first form
-> with the VPN's lines, exit 4, no Steam left. Owed, on James's word: the same command with the VPN
-> paused, going on to the sign-in window; slice F waits for a plan of its own and slice E for ND1. Tracking: issue #22.
+> with the VPN's lines, exit 4, no Steam left; then, with the VPN paused, the same command on that
+> wrapper went on to the sign-in window in 50 s, at `36b7f18`; slice F waits for a plan of its own and slice E for ND1. Tracking: issue #22.
 > **Tests.** `cities-skylines-2/scripts/test-install.sh` 137 cases with its transcript,
 > `surviving-mars-relaunched/scripts/test-install.sh` 69, `scripts/test-setup.sh` 41,
 > `tools/test-mod-notes.sh` 89 (new), `common/test-make-wrapper.sh` 108, `common/test-start-steam.sh` 4

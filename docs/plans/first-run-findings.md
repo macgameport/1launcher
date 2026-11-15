@@ -351,11 +351,15 @@ F8 compares a wrapper made this way with one made with no other Wine open.
   present, but not loaded` (ML2's real session; that line goes on with tabs and `Lua <time>` and has no
   carriage return, so it is not matched at its end). A save that was already saved without the mod names it
   no longer, and its load logs nothing about it (ML4's real session).
-- **The mod was loaded 12 s after its file came** at P5's second start: `[PdxSDKMods] Starting install
-  of mod: <title>, version: 0, ModID: <number>`, then within 9 s the 44 "applied" lines and `Loaded mod
-  items for: <id>`. In the real wrapper's log of 2026-11-13 the same line stands at the moment James
-  opened the Mod Manager. His captures of P5's second start show the game's mods window; whether he
-  opened it or it opened by itself is asked and not yet answered.
+- **The mod was loaded when the Mod Manager was opened.** At P5's second start: `[PdxSDKMods] Starting
+  install of mod: <title>, version: 0, ModID: <number>` at 57.8 s, 12 s after the mod's file came; the
+  mod's definition 1.4 s later; within 9 s the 44 "applied" lines and `Loaded mod items for: <id>`.
+  James (2026-11-14): he clicked Mod Manager once in that start, after the game's warning, and "it all
+  felt like native game interface menus, no errors or weird behaviors". So the warning came at the
+  second start too. In the real wrapper's log of 2026-11-13 the same `version: 0` line stands at the
+  moment he opened the Mod Manager there, with the "applied" lines 1 s after it. The log of P5's second
+  start has one more such line, with `version: 17`, at 2 min 13 s, 9 s before the game was quit; one
+  click and two lines fit the second being the mods window closed again, which was not asked.
 - A prefix's own `AppData/Roaming/Surviving Mars Relaunched/LocalStorage.lua` is written 1 s after the
   game's first start. It gains `ModIdCache` (a mod's folder to its id) when the mod's definition is
   first loaded.
@@ -426,10 +430,9 @@ functions themselves.
 **No live step.** A start from a new prefix on James's account uploads that prefix's account file once
 more. The tests run on lines cut from the real logs of ML2, ML3, ML4 and P5 instead.
 
-Still to be added to this section: James's answer about the Mod Manager at P5's second start, and what
-the real wrapper's next start shows (its cloud line, and whether the mod is on before the Mod Manager is
-opened). If the Mod Manager turns out not to be what switches the mod on, the words of items 1 to 4
-change before F5.
+Still to be added to this section: what the real wrapper's next start shows (its cloud line, which was
+"saves up to date" at 22:10 on 2026-11-14, and, from the game's log once it is quit, whether the mod is
+on before the Mod Manager is opened).
 
 ### 2.7 Slice J: runtimes the new prefix lacks
 
@@ -547,7 +550,7 @@ after the game's agreements. P3 departed too: the 30 runs of the test were not m
 - **F4. Slice H** (2.9).
 - **F5. Slice I** in `surviving-mars-relaunched/launch-relaunched.sh`, the closing line in
   `surviving-mars-relaunched/scripts/setup.sh`, and the guide's paragraph. Before
-  it: James's answer about the Mod Manager, FD5, and FD3 (with its design and row if yes).
+  it: FD5, and FD3 (with its design and row if yes).
 - **F6. Slice K** (2.8).
 - **F7. Slice B**: the core's three lines and step 3 of each guide (2.10).
 - **F8. Live, on James's word, each into a scratch wrapper** (the real ones exist, so the installer
@@ -619,7 +622,7 @@ read against the installer's lines at F8.
   reason.
 - The rows SF1 to SF9 and MF1 to MF4 each say, where they are recorded, which slice built them or why
   not. SF7's says that it waits for a plan of its own.
-- Slice I has no live step (2.6), and the two facts still owed to its section are in it.
+- Slice I has no live step (2.6), and the fact still owed to its section is in it.
 
 ## 7. Rollback
 
@@ -680,8 +683,8 @@ known (James agreed to the words after a transfer that failed, not before); a ru
 whose definition is loaded and whose items are not (it would name a mod switched off on purpose at
 every exit).
 
-Not settled by this pass, and said where it stands: James's answer about the Mod Manager and the real
-wrapper's next start (2.6); what macOS 26 shows (2.3); whether a notification's length was measured
+Not settled by this pass, and said where it stands: the real wrapper's next start (2.6; James's answer
+about the Mod Manager came after the pass and is in 2.6); what macOS 26 shows (2.3); whether a notification's length was measured
 (it was not: the note is an alert instead).
 
 ### Fold check (pass 1b, 2026-11-14)

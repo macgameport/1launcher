@@ -267,7 +267,8 @@ on a pattern that is gone (`:138`; `patches/patch_asset_database.py:92-94` is on
 the same state in other words ("Some patches could not be applied. Update and run setup"). So slice F
 needs a contract of its own first: an outcome every patch script can report, read script by script; then
 the words, FD1, and the launcher's note with them. That is a plan of its own, written after this one is
-built; SF7's row says so where it is recorded. FD1 goes with it.
+built; SF7's row says so where it is recorded. FD1 goes with it. (Drafted 2026-11-15, not checked:
+`docs/plans/patch-outcomes.md`, where FD1 is PD1.)
 
 ### 2.5 Slice G: the wrapper's making waits for every other Wine
 

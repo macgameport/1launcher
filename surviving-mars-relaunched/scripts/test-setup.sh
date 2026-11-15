@@ -14,6 +14,8 @@
 #     9 14unch3r is built in the real folder with SM_APP set
 #    10 the test of who may write to the state folder is removed
 #    11 the running-game test is removed                 12 --mac-only goes on to copy
+#    13 "also in Spotlight and Launchpad" for an app in any folder
+#    14 the closing line about mods from Paradox Mods is removed
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -47,6 +49,8 @@ case "$M" in
   10) sed -i '' 's/^    own_folder "\$d" || /    true || /' "$S" ;;
   11) sed -i '' '/^if game_running; then /d' "$S" ;;
   12) sed -i '' '/^  \[ "\$ROSETTA" = 1 \] || exit 1$/{N;s/.*/  :/;}' "$S" ;;
+  13) sed -i '' 's/^  case "\$(dirname "\$1")" in "\$HOME\/Applications"|\/Applications) return 0 ;; esac$/  return 0/' "$S" ;;
+  14) sed -i '' '/^  If you use mods from Paradox Mods: /d' "$S" ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
@@ -100,6 +104,8 @@ check "  ...runs/ and backup/ are untouched, their files included" "$(cd "$STATE
 check "  ...the 14unch3r builder was called, to build beside the app" "$(cat "$T/calls")" "make-launcher-app --dest $T/apps"
 check "  ...and nothing was built in the real place" "$(ls -A "$H/Applications" | tr '\n' ' ')" "SurvivingMars.app "
 check "  ...no temporary copy is left in the state folder" "$(find "$STATE" -name '*.new.*' | wc -l | tr -d ' ')" 0
+check "  ...the closing line names the app, and for an app in a scratch folder says no more" "$(grep -c "^The game:   $APP\$" "$T/out"):$(grep -c 'Spotlight' "$T/out")" "1:0"
+check "  ...the line about mods from Paradox Mods closes the block" "$(tail -n 1 "$T/out")" "  If you use mods from Paradox Mods: at the first start, open the game's Mod Manager before you load a save."
 check "  ...the lines that say how to update speak of a checkout" "$(grep -c '^To update:  after  git pull , run  bash surviving-mars-relaunched/scripts/setup.sh  again\.$' "$T/out")" 1
 
 # --- an older copy is replaced, by a rename and not in place
@@ -157,6 +163,14 @@ cp "$HERE/tools/frame-fix.exe" "$G/tools/"
 rm -rf "$STATE"
 rc=$(run)
 check "a state folder that is not there is made, and only its owner can write to it" "$rc:$(stat -f %Lp "$STATE"):$(stat -f %Lp "$STATE/tools")" "0:755:755"
+
+# --- "also in Spotlight and Launchpad" only where that is true (docs/plans/first-run-findings.md, 2.8)
+rc=$( : > "$T/calls"; (cd "$T" && PATH="$T/bin:$PATH" HOME="$H" SM_STATE="$STATE" SM_APP="$H/Applications/Surviving Mars Relaunched.app" SM_GAME_EXE="$GAMEDIR/Mars.exe" /bin/bash "$S") > "$T/out" 2>&1 < /dev/null; echo $?)
+check "an app in ~/Applications: the closing line says it is also in Spotlight and Launchpad" "$rc:$(grep -c '^The game:   ~/Applications/Surviving Mars Relaunched\.app, also in Spotlight and Launchpad$' "$T/out")" "0:1"
+rm -rf "$H/Applications/Surviving Mars Relaunched.app"
+spot() { ( HOME="$H"; eval "$(awk '/^in_spotlight\(\) \{/ { p = 1 } p { print } p && /^\}$/ { exit }' "$S")"; in_spotlight "$1" && echo yes || echo no ); }
+check "  ...the function that decides it: /Applications yes, ~/Applications yes" "$(spot "/Applications/A Game.app"):$(spot "$H/Applications/A Game.app")" "yes:yes"
+check "  ...a folder inside one of them, a scratch folder, the home folder: no" "$(spot "/Applications/Games/A Game.app"):$(spot "$T/apps/A Game.app"):$(spot "$H/A Game.app")" "no:no:no"
 
 # --- game_running is the launcher's own, word for word
 fn() { awk '/^game_running\(\) \{$/ { p = 1 } p { print } p && /^\}$/ { exit }' "$1"; }

@@ -164,9 +164,15 @@ rm -f "$OUT"
 
 if [ "${SM_VIA_INSTALLER:-0}" = 1 ]; then UPDATE="open the installer again."
 else UPDATE="after  git pull , run  bash surviving-mars-relaunched/scripts/setup.sh  again."; fi
+in_spotlight() {   # <app>: Spotlight and Launchpad list an app in one of these two folders only
+  case "$(dirname "$1")" in "$HOME/Applications"|/Applications) return 0 ;; esac
+  return 1
+}
+if in_spotlight "$APP"; then ALSO=", also in Spotlight and Launchpad"; else ALSO=""; fi
 cat << DONE
 
 === setup complete ===
-The game:   $(tilde "$APP"), also in Spotlight and Launchpad
+The game:   $(tilde "$APP")$ALSO
 To update:  $UPDATE
+  If you use mods from Paradox Mods: at the first start, open the game's Mod Manager before you load a save.
 DONE

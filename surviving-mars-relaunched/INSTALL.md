@@ -33,11 +33,15 @@ account that owns Surviving Mars: Relaunched, and about 20 GB of free disk space
    the way: to install Rosetta 2 (type `y`); in a box from Apple, to install Apple's Command Line Tools
    (press Install, then Agree); and, once, whether to fetch Apple's D3DMetal (type `y`; see
    [Apple's licence](#apples-licence-for-d3dmetal) below). Leave the window open; the Mac is kept awake
-   while it runs.
+   while it runs. macOS 27 may show "App Update Required ... will not open in macOS 28", during the
+   install or when the game starts. That is expected and nothing needs updating: macOS 28 will not run
+   these games, so do not upgrade to it ([Compatibility](../README.md#compatibility)).
 3. When Steam's sign-in window appears, sign in with the account that owns the game, with "Remember me"
-   ticked. Steam may ask for a code from your email or the Steam app. A small box headed
-   "Steam - Fatal Error" can appear once or twice before the sign-in window and close again: that is
-   Steam updating itself, and nothing in it needs a click.
+   ticked. Steam may ask for a code from your email or the Steam app. Before the sign-in window, a
+   small window that says "Updating Steam..." shows Steam downloading its own update (about 330 MB):
+   leave it, and do not press its Cancel. A small box headed "Steam - Fatal Error" can also appear once
+   or twice and close again: nothing in it needs a click. If the installer stops there and says Steam
+   could not download its own update, do what it says and paste the line again.
 
    ![Steam's sign-in window](../cities-skylines-2/docs/images/steam-signin.png)
 4. In Steam, click **Library**, then **Surviving Mars: Relaunched**, then **Install**. The download is
@@ -58,15 +62,21 @@ Good to know:
   it, then open the installer again. Two Steams on one account push each other out, and the one pushed out
   skips its cloud upload. The installer can check this Mac only: it cannot see a Steam on another Mac, or
   the Steam of macOS. Close those yourself. The same holds every time you play.
+- **On a VPN?** Steam's own first update (about 330 MB) is sometimes cut on a VPN's route. The installer
+  says so if it happens: pause the VPN or change its server, open the installer again, and switch the
+  VPN back on once Steam's sign-in window is up.
 - **Stopped part way?** Paste the line again. It carries on from the step it stopped at. Closing the
   window or pressing Control-C stops the installer only: Steam stays open. Pasting the line again on a
   finished install is also how to update.
-- **If you already play this game somewhere else with mods from Paradox Mods.** Seen twice, on
-  2026-11-13: the first start in a new install fetches the mod again by itself and leaves it switched
-  off, and through Steam Cloud it is then switched off on the other install too. A save loaded in that
-  state runs without its mod, and is saved without it. Opening the game's Mod Manager switched the mod
-  back on both times. So after a new install, open the Mod Manager before you load or continue a save,
-  here and then on your other Mac.
+- **If you use mods from Paradox Mods.** A new install starts with them switched off, and through Steam
+  Cloud they are then switched off on your other install too. At its first start the game asks again for
+  its two agreements and for your Paradox account, and warns that the mods could not be loaded. Log in,
+  then open Mod Manager from the main menu before you load or continue a save, here and then on your
+  other Mac. A save loaded before that runs without its mods and is saved without them. The launcher
+  keeps one copy of your saves as they were on this Mac before that first start, in
+  `backup/first-start-<date>` under the folder named in [Where things are](#where-things-are). Nothing
+  puts it back by itself: putting a save back is done by hand, with the game and this wrapper's Steam
+  closed.
 - **To look before it touches anything**, give it `--check`. With the pasted form the words after the
   closing quote are a name and then the arguments:
   `... install.sh)" 1launcher-install 3215050 release --check`

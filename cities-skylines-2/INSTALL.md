@@ -25,10 +25,15 @@ about 105 GB of free disk space (the game with all its DLC is about 100 GB).
 2. The window works through six steps and says what each one is doing. It can ask for two things on the
    way: to install Rosetta 2 (type `y`), and, in a box from Apple, to install Apple's Command Line Tools
    (press Install, then Agree). Leave the window open; the Mac is kept awake while it runs.
+   macOS 27 may show "App Update Required ... will not open in macOS 28",
+   during the install or when the game starts. That is expected and nothing needs updating: macOS 28
+   will not run these games, so do not upgrade to it ([Compatibility](../README.md#compatibility)).
 3. When Steam's sign-in window appears, sign in with the account that owns the game, with "Remember me"
-   ticked. Steam may ask for a code from your email or the Steam app. A small box headed
-   "Steam - Fatal Error" can appear once or twice before the sign-in window and close again: that is
-   Steam updating itself, and nothing in it needs a click.
+   ticked. Steam may ask for a code from your email or the Steam app. Before the sign-in window, a
+   small window that says "Updating Steam..." shows Steam downloading its own update (about 330 MB):
+   leave it, and do not press its Cancel. A small box headed "Steam - Fatal Error" can also appear once
+   or twice and close again: nothing in it needs a click. If the installer stops there and says Steam
+   could not download its own update, do what it says and paste the line again.
 
    ![Steam's sign-in window](docs/images/steam-signin.png)
 4. In Steam, click **Library**, then **Cities: Skylines II**, then **Install**. The download takes hours.
@@ -47,6 +52,9 @@ Good to know:
   it, then open the installer again. Two Steams on one account push each other out, and the one pushed out
   skips its cloud upload. The installer cannot see a Steam on another Mac, or the Steam of macOS: close
   those yourself.
+- **On a VPN?** Steam's own first update (about 330 MB) is sometimes cut on a VPN's route. The installer
+  says so if it happens: pause the VPN or change its server, open the installer again, and switch the
+  VPN back on once Steam's sign-in window is up.
 - **Stopped part way?** Paste the line again. It carries on from the step it stopped at. Closing the
   window or pressing Control-C stops the installer only: Steam stays open. Pasting the line again on a
   finished install is also how to update: it fetches the current scripts and re-applies the fixes.

@@ -59,6 +59,8 @@
 #   55 Steam left running at exit 4
 # curl's own words for Steam's installer (2.2, FT2); each must exit 1:
 #   56 curl's words printed when the second address works    57 nothing printed when both fail
+# The lines before Steam's start (2.10, FT3c); each must exit 1:
+#   58 the old two lines (by its own case, and by the transcript)   59 a size in the lines
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -68,7 +70,7 @@
 # stores text with plain line ends, so a file holding them would not survive a checkout.
 #   GOLDEN=record bash scripts/test-install.sh   write test-install.golden from this run: a deliberate act,
 #                                                 refused under a mutant and from a run with a failure
-# The transcript is compared under mutants 26, 27 and 28 only: every other one must be caught by its own case.
+# The transcript is compared under mutants 26, 27, 28 and 58 only: every other one must be caught by its own case.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
@@ -144,6 +146,9 @@ case "${MUTANT:-0}" in
   54) mutate 's#if you ask for help: \$(tilde "\$BOOTLOG")"$#if you ask for help: $BOOTLOG"#' 'if you ask for help: \$BOOTLOG"$' ;;
   56) mutate 's# "\$u" 2> "\$D/curl-\$try.err" \&\& { got=1; break; }$# "$u" \&\& { got=1; break; }#' ' "\$u" && { got=1; break; }$' ;;
   57) mutate 's#^    cat "\$D"/curl-\*\.err 2>/dev/null | sed .*#    :#' '^    :$' ;;
+  58) perl -0pi -e 's/      say "Steam for Windows is starting\. The first time,[^\n]*\n[^\n]*\n[^\n]*\n/      say "Steam for Windows is starting. A small box headed \\"Steam - Fatal Error\\" can appear once or twice"\n      say "and close again. That is expected: Steam is updating itself. Click nothing in it."\n/' "$C"
+      grep -q '^      say "and close again\. That is expected: Steam is updating itself\. Click nothing in it\."$' "$C" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  59) mutate 's#^      say "Steam downloading its own update: leave it,#      say "Steam downloading its own update (about 330 MB): leave it,#' 'its own update (about 330 MB): leave it,' ;;
   55) first '\n        end_steam\n        \[ "\$PROBED" = 0 \]' '\n        :\n        [ "\$PROBED" = 0 ]' '^        :$' ;;
 esac
 
@@ -479,6 +484,10 @@ rc="$(run)"
 check "a fresh start: the stale .crash gone before it, the words, -shutdown before setup" \
   "$rc:$(sed -n 1p "$ST/startlog" | sed 's/.*crash=//'):$(said 'Do not press it'):$(awk '/-shutdown/ { s = NR } /^SETUP  via=1/ { u = NR } END { print (s && u && s < u) ? "ordered" : "not" }' "$CALLS")" "0:no:1:ordered"
 check "  ...no wineserver call without the prefix" "$(grep '^WINESERVER' "$CALLS" | grep -c 'prefix=$')" 0
+# docs/plans/first-run-findings.md, 2.10, FT3c: Steam's updater cannot be kept off screen, so it is named
+check "  ...before Steam's start: the updater's window and its Cancel are named, and the error box, with no size or time in them" \
+  "$(grep -A 3 '^Step 5 of 6: The game$' "$H.out" | sed 1d | tr '\n' '|'):$(grep -A 3 '^Step 5 of 6: The game$' "$H.out" | sed 1d | grep -c '[0-9]'):$(said 'That is expected: Steam is updating itself')" \
+  '  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows|  Steam downloading its own update: leave it, and do not press its Cancel. A box headed|  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.|:0:0'
 check "  ...the lock held while it waited" "$(grep -c 'lock=yes' "$ST/ticks" | awk '{ print ($1 > 0) ? "held" : "never" }')" held
 check "  ...the home folder nowhere in the output" "$(grep -c "$H" "$H.out")" 0
 newh; bash "$MKW" "$WR" steam; dl - installed
@@ -492,6 +501,9 @@ check "  ...with no transfer of the installer's own, no look at the route and no
 BIG="https://cdn.steamstatic.com/client/bins_cef_win32_win7-64.zip.vz.cd0b352c7e651dd695c51a894a3973eb2efbee4b_105972111"
 XFER="CURL -q --proto =https --proto-redir =https --tlsv1.2 --globoff -fsSL --max-time 20 -o /dev/null -w %{size_download} --"
 O7='fatal-o fatal-o fatal-o fatal-o fatal-o fatal-o fatal-o'   # more than the limit: a start too many fails too, and is counted
+# No start of these cases waits past its first look. The limit of one start is shortened for them, so that a
+# mutant under which the fatal line is not seen ends each case in seconds, not at the runaway guard.
+sed -i '' 's/^START_POLLS=120 /START_POLLS=4 /' "$C"
 seed() { sed "s/\$/$(printf '\r')/" >> "$SD/logs/bootstrap_log.txt"; }   # lines of an earlier run in Steam's log
 form() {   # the form of 2.1 the output ends in, whole lines with nothing after them: vpn later none reach plain, or other
   local c="  !! Steam could not download its own update: the connection to Valve's server keeps being cut."
@@ -576,6 +588,7 @@ stopped "download location, then needs to be online: the first restarts, the sec
 newh; bash "$MKW" "$WR" steam; dl - installed
 { cat "$FIX_BOOT"; echo "[2026-11-12 17:58:47] Error: Steam needs to be online to update. Please confirm your network connection and try again."; } | seed
 rc="$(STUB_IFACE=utun4 run)"; came_up "an earlier run's needs to be online and its addresses in the log, a tunnel, and a start that comes up" 1 0
+sed -i '' 's/^START_POLLS=4 /START_POLLS=120 /' "$C"
 newh; bash "$MKW" "$WR" steam; dl - installed
 check "a one-poll gap in Steam's process: not started again" "$(STUB_STARTS=blip run):$(starts)" "0:1"
 newh; bash "$MKW" "$WR" steam; dl - installed
@@ -673,7 +686,7 @@ if [ "${GOLDEN:-}" = record ]; then
   cp "$T/transcript" "$GOLD" && echo "RECORDED  $(grep -c '^== ' "$GOLD") cases in $(basename "$GOLD")"
 else
   case "${MUTANT:-0}" in
-    0|26|27|28)
+    0|26|27|28|58)
       if cmp -s "$T/transcript" "$GOLD"; then echo "PASS  the transcript equals $(basename "$GOLD") ($(grep -c '^== ' "$GOLD") cases)"
       else
         echo "FAIL  the transcript differs from $(basename "$GOLD"):"

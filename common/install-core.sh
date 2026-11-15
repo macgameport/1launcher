@@ -407,8 +407,9 @@ case "$STATE" in
     up=0
     if webhelper_up; then up=1; say "Steam for Windows is open."
     else
-      say "Steam for Windows is starting. A small box headed \"Steam - Fatal Error\" can appear once or twice"
-      say "and close again. That is expected: Steam is updating itself. Click nothing in it."
+      say "Steam for Windows is starting. The first time, a small window that says \"Updating Steam...\" shows"
+      say "Steam downloading its own update: leave it, and do not press its Cancel. A box headed"
+      say "\"Steam - Fatal Error\" can also appear once or twice and close again: click nothing in it."
     fi
     if [ "$up" = 1 ]; then :
     elif steam_proc_up; then   # a Steam already there: up, or stuck at its box

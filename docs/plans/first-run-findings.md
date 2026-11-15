@@ -45,9 +45,8 @@
 > is not built from this plan (2.4). Decisions FD3, FD4 and FD5 were taken as recommended on 2026-11-15
 > (section 8); ND1 is open and James's. FD3's design (2.6, item 5) and its row FT4c were written that
 > day, after the check, and re-checked on their own ("Review corrections"). F8 was run on 2026-11-15
-> (section 4): slice G passed; slice A's cut path was VOID in the morning, since the VPN's path was not
-> cut, and passed that afternoon on another of the VPN's servers; the same command with the VPN paused
-> is owed.
+> (section 4) and passed in both halves: slice G in the morning; slice A that afternoon, on another of
+> the VPN's servers and then with the VPN paused, after a morning in which the VPN's path was not cut.
 >
 > Tracking: issue #22. The code it speaks of exists only on the branch `surviving-mars-install` (cut from
 > `simple-install`): every `file:line` below is as of that branch at `75470c9`, and holds at `283a464` too (the cited files did not change between them). A path is relative to the
@@ -707,8 +706,11 @@ after the game's agreements. P3 departed too: the 30 runs of the test were not m
     online" 37 s later; the installer ended it, and its transfer was cut (the trace: `transfer=cut
     exit=18 bytes=2272561`). On screen, once each: the first form's line, the VPN's two lines and the
     log's line; nothing of curl's, of bash's or of Steam's log; exit 4, 47 s after Steam's start; no
-    Steam left. Owed: the last sentence, the same command with the VPN paused going on to the sign-in
-    window.*
+    Steam left. Then, with the VPN paused by James (two transfers whole in 4 s each), the same command on
+    that wrapper (run a3): steps 1 to 4 said "OK", Steam started once (three `Startup - updater built`
+    lines, no fatal line), and the sign-in window was on screen 50 s after the command, with no word of
+    a VPN. Stopped as a closed window stops it; `-shutdown` then left nothing. **F8 has passed in both
+    halves.***
 
 The recorded transcript of Cities: Skylines II's installer changes in F1 (cases changed and added), F2
 (cases added) and F7 (the lines before Steam's start, wherever they stand: 55 places at the recording): each time it is recorded

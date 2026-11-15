@@ -430,9 +430,27 @@ functions themselves.
 **No live step.** A start from a new prefix on James's account uploads that prefix's account file once
 more. The tests run on lines cut from the real logs of ML2, ML3, ML4 and P5 instead.
 
-Still to be added to this section: what the real wrapper's next start shows (its cloud line, which was
-"saves up to date" at 22:10 on 2026-11-14, and, from the game's log once it is quit, whether the mod is
-on before the Mod Manager is opened).
+**The real wrapper's next start (2026-11-14, 22:10; its log read after the game was quit).** It was
+the first start of the real wrapper after P5, whose second start had left the mod switched on in the
+scratch install and uploaded the account file. The launcher's cloud line was "saves up to date" before
+the game and "saves uploaded" after it. In the game's log:
+
+- `Account storage loaded` at 13.427 s, the mod's definition at 13.440 s, the 44 "applied" lines, and
+  `Loaded mod items for: SMR_CommunityFixPack` at 15.9 s. There is no `Starting install of mod` line in
+  the whole session of 2 hours 2 minutes, so the Mod Manager was not what loaded it.
+- `Load Game` at 20.4 s, with `mods: SMR_CommunityFixPack`, and neither of the game's two lines about a
+  mod that is not present or not loaded.
+- So the state travels both ways in the account file: switched on in the new install and uploaded at
+  its exit, the mod was on in the other install at its next start with nothing clicked there. Seen
+  once. The guide's "here and then on your other Mac" (item 4) stays as written: it is the form that is
+  right whichever install was quit last.
+- One line is new: `[PdxSDK] Startup autologin failed Unknown. Took 2031`, where each of the seven
+  sessions of 2026-11-13 has `[PdxSDK] Started up` and `[PdxSDKMods] Mod <number> v 17 is up to date`.
+  This session has no `[PdxSDKMods]` line at all. The mod loaded all the same, from the file already in
+  the prefix. Why the log-in failed is not known. Two things differed from the day before: the scratch
+  install had logged in to the same Paradox account earlier that evening ("Account Link Found"), and the
+  VPN was on again. Whether the game showed anything about the account at this start has been asked of
+  James and is not answered yet.
 
 ### 2.7 Slice J: runtimes the new prefix lacks
 
@@ -683,8 +701,9 @@ known (James agreed to the words after a transfer that failed, not before); a ru
 whose definition is loaded and whose items are not (it would name a mod switched off on purpose at
 every exit).
 
-Not settled by this pass, and said where it stands: the real wrapper's next start (2.6; James's answer
-about the Mod Manager came after the pass and is in 2.6); what macOS 26 shows (2.3); whether a notification's length was measured
+Not settled by this pass, and said where it stands: why the real wrapper's log-in to Paradox failed at its
+next start (2.6; that start, and James's answer about the Mod Manager, came after the pass and are in
+2.6); what macOS 26 shows (2.3); whether a notification's length was measured
 (it was not: the note is an alert instead).
 
 ### Fold check (pass 1b, 2026-11-14)

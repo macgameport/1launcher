@@ -37,7 +37,9 @@
 > corrections"). Drafted 2026-11-13; its six probes (section 3) were done by 2026-11-14. Slice F
 > is not built from this plan (2.4). Decisions FD3, FD4 and FD5 were taken as recommended on 2026-11-15
 > (section 8); ND1 is open and James's. FD3's design (2.6, item 5) and its row FT4c were written that
-> day, after the check, and re-checked on their own ("Review corrections").
+> day, after the check, and re-checked on their own ("Review corrections"). F8 was run on 2026-11-15
+> (section 4): slice G passed; slice A's cut path is VOID that day, since the VPN's path was not cut, and
+> is owed.
 >
 > Tracking: issue #22. The code it speaks of exists only on the branch `surviving-mars-install` (cut from
 > `simple-install`): every `file:line` below is as of that branch at `75470c9`, and holds at `283a464` too (the cited files did not change between them). A path is relative to the
@@ -181,6 +183,12 @@ of the installer's own.
 9. Each guide's "Good to know" gains: "**On a VPN?** Steam's own first update (about 330 MB) is
    sometimes cut on a VPN's route. The installer says so if it happens: pause the VPN or change its
    server, open the installer again, and switch the VPN back on once Steam's sign-in window is up."
+
+**Seen at F8 (2026-11-15).** A first start in a new prefix ended in "Steam needs to be online" on a path
+that carried a 106 MB package whole, twice, minutes before (the VPN on, its route a tunnel); the start
+after the installer's transfer worked. So the line by itself says nothing about the path, which is what
+this slice rests on, and the VPN's sentence was rightly not said. P1's four first starts the day before,
+with the VPN paused, had no fatal line.
 
 **Not designed here:** a box instead of a line (SF2's row). P1 saw no error box of Steam's in four first
 starts (2.10), so it learned nothing about one covering the installer's window, and the line stays.
@@ -660,6 +668,26 @@ after the game's agreements. P3 departed too: the 30 runs of the test were not m
     randomly named installer file, everything Steam's installer added, and the modes of the three
     registry files (Wine writes them again with 644: 2.5). The run then stops at the game step with "Steam is open in ..." and exit 3
     (`common/install-core.sh:338-343`), which is the expected end.
+
+  *Run 2026-11-15 on the Studio, on James's word; the record is the game's `runs/f8-20261115/`,
+  `notes.md` first. It departed from the words above in three ways: both halves used the Cities: Skylines
+  II installer, started from the session's shell and not from a Terminal window; the template and the
+  engine came from copies already on the Mac (`L1_DOWNLOADS`); and nobody signed in.*
+  - *Slice G: **passed**, every condition. The whole run took 55 s; the one line was said; no link among
+    the six names, and the Mac's own six folders untouched; Steam's installer OK; the Steam app still
+    open; against a wrapper made the same day by `common/make-wrapper.sh` alone (36 s, no other Wine
+    open) the list of names and modes differs by the randomly named installer file, the three registry
+    files' modes and 43 entries of Steam's installer, and by nothing else; exit 3 at the game step.*
+  - *Slice A: the cut path is **VOID that day**. Two transfers of a 106 MB package over the VPN (default
+    route a tunnel) each arrived whole in 5 s. The installer was run all the same, with the VPN on. Steam's
+    first start ended in "Steam needs to be online" although the path was not cut (three packages "failed
+    after 0 bytes" first; the error box was on screen for 5 s); the installer ended that Steam, made its
+    transfer, started Steam again, and the sign-in window came up 53 s later: no words on screen, one
+    failed start and one that worked (four `Startup - updater built` lines: one and three). The core's
+    own `update_probe` and `on_tunnel`, run for real on the log as it stood at the fatal line, gave
+    "working" in 8 s and a tunnel. Stopped as a closed window stops it: Steam stayed up, and
+    `-shutdown` then left nothing. Owed: the first form's lines, exit 4 and one start, on a day or a
+    server whose path is cut. Since that run the trace records what the transfer found (`L1_TRACE`).*
 
 The recorded transcript of Cities: Skylines II's installer changes in F1 (cases changed and added), F2
 (cases added) and F7 (the lines before Steam's start, wherever they stand: 55 places at the recording): each time it is recorded

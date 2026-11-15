@@ -1,8 +1,8 @@
 # What a new player meets: the findings of the installers' live steps
 
-> **Status:** Triple-checked 2026-11-14 — build-ready-with-fixes (pass 1: six lenses; its corrections
-> are folded into the sections they concern and listed in "Review corrections"; a fitted re-check of the
-> fold comes before F1). Drafted 2026-11-13; its six probes (section 3) were done by 2026-11-14. Slice F
+> **Status:** Triple-checked 2026-11-14 — build-ready-with-fixes (pass 1: six lenses; pass 1b: a fitted
+> re-check of that fold; both are folded into the sections they concern and listed in "Review
+> corrections"). Drafted 2026-11-13; its six probes (section 3) were done by 2026-11-14. Slice F
 > is not built from this plan (2.4). Decisions FD3, FD4, FD5 and ND1 are open and James's.
 >
 > Tracking: issue #22. The code it speaks of exists only on the branch `surviving-mars-install` (cut from
@@ -31,7 +31,7 @@ James's.
 | F. A fix not yet available for a new game build | SF7 | "setup finished with 1 problem(s)" and "The install stopped", the same on every later run | not from this plan: the patch scripts cannot say it today (2.4) |
 | G. The wrapper's making waits for every other Wine | SF8, MF1 | "making the Wine prefix (about 30 s)" for as long as any other Wine is open | yes, since P2 (2.5) |
 | H. A line of bash's in the installer's output | SF9 | perhaps `child setpgid (...): Operation not permitted`; and a test that fails now and then | yes, since P3 (2.9) |
-| I. A mod switched off by a new install | MF3, and what P5 showed besides | a save runs, and is saved, without its Paradox mod, here and on the player's other install; and a first start asks again for the game's two agreements and the Paradox account, with the game's own mod warning behind the agreements | yes, since P4 and P5 (2.6); one decision (FD5) |
+| I. A mod switched off by a new install | MF3, and what P5 showed besides | a save runs, and is saved, without its Paradox mod, here and on the player's other install; and a first start asks again for the game's two agreements and the Paradox account, with the game's own mod warning behind the agreements | yes, since P4 and P5 (2.6); two decisions (FD3, FD5) |
 | J. Runtimes the new prefix lacks | MF4 | nothing so far | nothing to build (2.7) |
 | K. Small things seen at ML4 and at the re-check | | two lines that say something untrue | yes (2.8) |
 
@@ -64,8 +64,11 @@ of the installer's own.
 
 - Every line ends in a carriage return (291 of 291 and 478 of 478). An address cut from a line carries
   it, and `curl` refuses such an address with exit 3.
-- An `Add pending download:` line holds a whole address. All are `https://` on a `steamstatic.com` host
-  (`cdn.`, `client-update.`, `client-update.fastly.`), and most end `_<bytes>`.
+- An `Add pending download:` line holds a whole address. All are `https://` on a `steamstatic.com` host,
+  and most end `_<bytes>` (5 of ML2's 37 do not). In ML2's failed start all 37 are
+  `https://cdn.steamstatic.com/client/<file>`; in a start that worked, 14 of 35 are
+  `https://client-update.steamstatic.com/<file>`, with no `/client/`, and the largest of all is one of
+  those.
 - The first such line is a 5.6 MB file; the largest is about 106 MB. ML2's cuts came after 1.1 MB and
   after 12.9 MB, so a small file can pass whole on a path that cuts.
 - None of the six logs read holds a home folder's path or an account number.
@@ -76,12 +79,16 @@ of the installer's own.
    and returns 2 without starting another. It leaves in a variable of the core (`LOG_FROM`) the number of
    the log's last line before that start. On "Failed to determine download location", and on "needs to
    be online" once the transfer of step 2 has been made, it starts another as today. Every start counts
-   in `MAX_STARTS`. When both lines are new in one look, "needs to be online" is the one acted on.
+   in `MAX_STARTS`: the count is a variable of the core too, and the second call does not begin it
+   again. When both lines are new in one look, "needs to be online" is the one acted on.
 2. The caller then makes one transfer, once in a run:
-   - **The address.** Among the `Add pending download:` lines after `LOG_FROM`, carriage returns
-     removed, the one with the largest number after its last `_`. It is used only if the whole of it
-     matches `^https://[A-Za-z0-9.-]+\.steamstatic\.com/client/[A-Za-z0-9._-]+$`. With no such address
-     `curl` is not run and the result is "not known".
+   - **The address.** From the `Add pending download:` lines after `LOG_FROM`, carriage returns
+     removed, those whose whole address matches
+     `^https://[A-Za-z0-9.-]+\.steamstatic\.com/(client/)?[A-Za-z0-9._-]+_[0-9]+$` are kept (a line with
+     no number at its end is passed over), and of those the one with the largest number after its last
+     `_` is used: from ML2's failed log a file of 105,972,111 bytes. With no such address `curl` is not
+     run and the result is "not known". Whether a Mac with no network logs any such line is not known;
+     if it logs none, its run ends in the plain form, not the "no network" one.
    - **The transfer.**
      `curl -q --proto '=https' --proto-redir '=https' --tlsv1.2 --globoff -fsSL --max-time 20 -o /dev/null -w '%{size_download}' -- "$address"`,
      its error output sent away. (`-q` first: the player's own `curl` settings are not read. Measured
@@ -176,7 +183,7 @@ shell ran in. So it has been seen twice with two kinds of name, the wrapper bein
 the shell ran in. Which name it shows, and when it comes, is not known; what macOS 26 shows is not known
 either. The line below quotes no name for that reason.
 
-**Design.** One line where Wine first starts, in `common/make-wrapper.sh` before "making the Wine prefix"
+**Design.** Two lines where Wine first starts, in `common/make-wrapper.sh` before "making the Wine prefix"
 (`:135`), printed only when the major number of `sw_vers -productVersion` is 27:
 
 ```
@@ -199,10 +206,10 @@ install stopped. The lines above say why. Open the installer again to carry on f
 SL2, with `patch_cohtml.py` on build 26404411; fixed on 2026-11-12, `e14bbae`).
 
 **Not built from this plan (found at the check, 2026-11-14).** The words this section held rest on
-telling "no pattern for this build" from a failure, and nothing can tell them apart today: each of the
-16 patch scripts exits 1 for a pattern it does not find as for any other failure, `repatch.sh`'s `run`
-counts both alike (`cities-skylines-2/repatch.sh:55-58`), and its own comment says two of the scripts
-cannot tell an applied patch from a moved pattern (`:138`). The Cities: Skylines II launcher speaks of
+telling "no pattern for this build" from a failure, and nothing can tell them apart today: the 16
+patch scripts report a pattern they do not find as they report any other failure, `repatch.sh`'s `run`
+counts both alike (`cities-skylines-2/repatch.sh:55-58`), and two of the scripts finish without error
+on a pattern that is gone (`:138`; `patches/patch_asset_database.py:92-94` is one). The Cities: Skylines II launcher speaks of
 the same state in other words ("Some patches could not be applied. Update and run setup"). So slice F
 needs a contract of its own first: an outcome every patch script can report, read script by script; then
 the words, FD1, and the launcher's note with them. That is a plan of its own, written after this one is
@@ -250,8 +257,10 @@ code is read as now (`:137`), and no time limit is added (the step has none toda
 program itself only when all of these hold at one look:
 
 - `system.reg`, `user.reg` and `userdef.reg` are in the prefix, `drive_c/users/Wineskin` is a folder
-  and not a link, and `user.reg` holds the section `[Software\\Wine\\Mac Driver]` (the sign that the
-  program's second Wine step has run: a prefix made by `wineboot` alone lacks it);
+  and not a link, and `user.reg` holds the section `[Software\\Wine\\Mac Driver]` (taken as the sign
+  that the program's second Wine step has run: (a) and (c) hold it and (b), made by `wineboot` alone,
+  does not; when it is written was not timed. If a later template wrote it after its wait, the script
+  would wait as today, which is the safe side);
 - no `wineserver` of this user holds this prefix;
 - the number of entries in the prefix (`find <prefix> | wc -l`, which does not follow links) has stood
   still for 10 looks;
@@ -264,10 +273,12 @@ the prefix's own `wineserver` that way (`p2c-kill.txt`). An `lsof` that fails or
 "not known", and the program is not ended at that look. The counts of looks are variables at the
 script's head, as the core's are (`common/install-core.sh:29-34`).
 
-**Ending it.** TERM to the program's own process (`$!`), at the look that found it alive; then
-`wait <pid> 2> /dev/null`, so that bash's "Terminated: 15" line, which holds the build folder's path, is
-not printed. Its exit code is not read: P2's ended program gave 0, and bash gives 143 for one that does
-not catch the signal. If it is still there after 10 looks the step fails as a failed step does today.
+**Ending it.** TERM to the program's own process (`$!`), at the look that found it alive; then up to 10
+looks until it is gone; then `wait <pid>`. All three stand inside `{ ...; } 2> /dev/null`: bash prints a
+line "Terminated: 15", with the script's own path in it, at the first command after the program dies, so
+a redirection on the `wait` alone comes too late (measured, bash 3.2). The program's exit code is not
+read: P2's ended program gave 0, and bash gives 143 for one that does not catch the signal. If it is
+still there after the 10 looks the step fails as a failed step does today.
 
 **Then what the program does after its wait**, in this form and no other:
 
@@ -276,8 +287,11 @@ for n in Desktop Documents Downloads Music Pictures Videos; do
   p="$SS/prefix/drive_c/users/Wineskin/$n"; [ -L "$p" ] && rm -f -- "$p"
 done
 chmod 666 "$SS/prefix/system.reg" "$SS/prefix/user.reg" "$SS/prefix/userdef.reg" "$APP/Contents/Info.plist"
-chmod 777 "$APP/Contents/SharedSupport/Logs"; chmod 777 "$APP/Contents/SharedSupport/Logs"/* 2> /dev/null
+chmod 777 "$APP/Contents/SharedSupport/Logs" 2> /dev/null; chmod 777 "$APP/Contents/SharedSupport/Logs"/* 2> /dev/null
 ```
+
+Neither the loop nor the last `chmod` is the last command of something whose status is read: each ends
+with status 1 in ordinary cases (a last name that is no link, an empty `Logs`).
 
 The six links point at the player's own Desktop, Documents, Downloads, Music, Pictures and Movies. A
 name with a slash after it, `rm -r`, a pattern under a link, or any command that follows links would
@@ -295,8 +309,9 @@ The checks of `:138-140` and step 8 stand. The other Wine is never closed and ne
 is asked of the player at this step.
 
 **The script's own exit.** `cleanup` (`:90-97`) ends the template's program if it is still running
-(TERM; after 5 looks KILL, which is safe for this program: it is not Steam) before `wineserver -k` and
-the removal of the build folder, on every path out. That is needed for Control-C too: a program started
+(TERM; after 5 looks KILL, which is safe for this program: it is not Steam; inside the same kind of
+group, since the trap prints bash's line too) before `wineserver -k` and the removal of the build
+folder, on every path out. That is needed for Control-C too: a program started
 in the background by a script is not reached by it (measured, bash 3.2), where today's foreground
 program is.
 
@@ -333,7 +348,8 @@ F8 compares a wrapper made this way with one made with no other Wine open.
   two lines when it loads a save that names a mod it has not loaded: `[mod] Savegame references Mod
   <title> (id <id>, <version>) which is not present` (the mod's file not yet on disk: ML2's and ML4's
   scratch sessions) and `[mod] This savegame tries to load Mod <title> (id <id>, <version>), which is
-  present, but not loaded` (ML2's real session). A save that was already saved without the mod names it
+  present, but not loaded` (ML2's real session; that line goes on with tabs and `Lua <time>` and has no
+  carriage return, so it is not matched at its end). A save that was already saved without the mod names it
   no longer, and its load logs nothing about it (ML4's real session).
 - **The mod was loaded 12 s after its file came** at P5's second start: `[PdxSDKMods] Starting install
   of mod: <title>, version: 0, ModID: <number>`, then within 9 s the 44 "applied" lines and `Loaded mod
@@ -366,12 +382,17 @@ functions themselves.
    Before you load or continue a save in this new install: if you use mods from Paradox Mods, they start switched off. Accept the game's two agreements (scroll each to its end), log in to your Paradox account when the game offers it, then open Mod Manager from the main menu.
    ```
 
-   It is one line in the script (262 characters; the parity test wants one plain literal with no `"` and
-   no `\`, `common/test-launcher-parity.sh:98`). In a terminal it is printed. From the app it is an
-   alert (`_alert "<text>" warning`, as the cloud message is shown at `:409-411`), and the start goes on
-   when it is answered: a notification, which is all `note` gives from the app (`:111-115`), shows two
-   lines for a few seconds, and the progress window shows step lines only
-   (`common/launch-progress.swift:38`). How long the note keeps coming is FD5.
+   It is one line in the script (272 characters). It is given as the cloud message is (`:409-411`):
+   `echo`, and `_alert "<text>" warning` when `QUIET` is 1. It is not a `note` call, so the parity
+   test's lists do not change: a notification, which is all `note` gives from the app (`:111-115`),
+   shows two lines for a few seconds, and the progress window shows step lines only
+   (`common/launch-progress.swift:38`). It comes after the lock is taken (`:184-185`) and before
+   `step 1`, so nothing of Steam runs yet, and its text is in the app's log before the alert is up.
+   `_alert` waits until it is answered. Unanswered, the launcher waits with the lock held, a second
+   launch is refused as it is today, and the progress window closes by its own rule after 15 minutes
+   without a new line (`common/launch-progress.swift:71`; its comment at `:65-66` about the longest
+   silence is brought up to date). How long the note keeps coming, and whether it should give up by
+   itself, is FD5.
 2. **After the game exits.** The launcher reads the game's own log of this session:
    `drive_c/users/Wineskin/AppData/Roaming/Surviving Mars Relaunched/logs/Mars.exe-<date>-<time>-<n>.log`
    in the prefix, the one whose name's time is at or after the time the launcher noted before its step
@@ -516,30 +537,32 @@ after the game's agreements. P3 departed too: the 30 runs of the test were not m
 ## 4. Steps
 
 - **F0. The probes of section 3.** All six are done, their results are in section 2, and slices B, G
-  and I are designed from them. The plan was checked on 2026-11-14; a fitted re-check of that fold comes
-  before F1.
+  and I are designed from them. The plan was checked on 2026-11-14 and the fold re-checked the same
+  day.
 - **F1. Slice A** in `common/install-core.sh` (2.1), and its sentence in both guides. The existing case
   in which "needs to be online" simply restarts (`cities-skylines-2/scripts/test-install.sh:417-422`)
-  is changed on purpose.
+  is changed on purpose, and the test's `curl` stub is extended (section 5).
 - **F2. Slices C and D** (the core, `common/make-wrapper.sh`, both guides).
 - **F3. Slice G** in `common/make-wrapper.sh` (2.5), with the stubs its test file lacks.
 - **F4. Slice H** (2.9).
 - **F5. Slice I** in `surviving-mars-relaunched/launch-relaunched.sh`, the closing line in
-  `surviving-mars-relaunched/scripts/setup.sh`, the guide's paragraph, and the parity test's list. Before
+  `surviving-mars-relaunched/scripts/setup.sh`, and the guide's paragraph. Before
   it: James's answer about the Mod Manager, FD5, and FD3 (with its design and row if yes).
 - **F6. Slice K** (2.8).
 - **F7. Slice B**: the core's three lines and step 3 of each guide (2.10).
 - **F8. Live, on James's word, each into a scratch wrapper** (the real ones exist, so the installer
   would find nothing to do):
   - **Slice A**, with the VPN on. First one transfer of a package's address by `curl`: if it is not cut
-    (18 or 56), the step is VOID that day and is tried on another of the VPN's servers. Pass: the first
-    form's three lines and the log's line, once; one start of Steam (`L1_TRACE`); exit 4; no Steam left
-    running. Then, with the VPN paused, the same command goes on to Steam's sign-in window.
+    (18, 56 or 92), the step is VOID that day and is tried on another of the VPN's servers. Pass: the first
+    form's three lines and the log's line, once; one start of Steam (Steam's `bootstrap_log.txt` gains one
+    `Startup - updater built` line in the run: ML2's failed start logged one, and a start that works
+    logs three, one for each updater in turn); exit 4; no Steam left running. Then, with the VPN paused, the same command goes on to Steam's sign-in window.
   - **Slice G**, with this project's Steam app open. Pass: the wrapper is made within two minutes; the
     one line is said; none of the six links is in `users/Wineskin`; Steam's installer exits 0; the Steam
-    app is still open; and the wrapper's list of names and modes is that of one made the same day with
-    no other Wine open, the wrapper's name, `MachineGuid`, times and the randomly named installer file
-    aside. The run then stops at the game step with "Steam is open in ..." and exit 3
+    app is still open; and the wrapper's list of names and modes is that of one made the same day by
+    `common/make-wrapper.sh` alone with no other Wine open. Aside: the wrapper's name, times, the
+    randomly named installer file, everything Steam's installer added, and the modes of the three
+    registry files (Wine writes them again with 644: 2.5). The run then stops at the game step with "Steam is open in ..." and exit 3
     (`common/install-core.sh:338-343`), which is the expected end.
 
 The recorded transcript of Cities: Skylines II's installer changes in F1 (cases changed and added), F2
@@ -564,7 +587,8 @@ Every test runs with `HOME` at a scratch folder and every outside program a reco
 - **No test follows a link out of its scratch folder.** Where the script removes links, each link's
   target is a scratch folder holding a file, and the file must still be there.
 - **The shared core is tested in the Cities: Skylines II file**, which has Steam's starts, its log and a
-  `curl` stub that answers `-w`. The Surviving Mars file has none of that today, and gains nothing for
+  `curl` stub. F1 extends that stub: by a setting it exits with a given code and prints a byte count for
+  `-w` (today it reads `-o` only). The Surviving Mars file has none of that today, and gains nothing for
   slices A, B and C.
 - **Fixtures cut from the game's logs** are the marker lines only, with the Windows user's folder name
   and the machine's lines replaced; they are named `.txt` (`*.log` is ignored, `.gitignore:46`); the
@@ -572,15 +596,15 @@ Every test runs with `HOME` at a scratch folder and every outside program a reco
 
 | # | Test | What it shows | Mutants, each must turn it red |
 |---|---|---|---|
-| FT1 | `cities-skylines-2/scripts/test-install.sh`, with the 37 real `Add pending download:` lines of ML2's failed start, carriage returns kept | "needs to be online": that Steam is ended and no other started before the transfer. The address is the largest of the lines after this start (not the first, not one from before it), its carriage return gone; the options are 2.1's. No address, or one that is not `https://<host>.steamstatic.com/client/...`: `curl` is not run. Cut (18; 56; 92) with a tunnel: the first form; with no tunnel, or with `route` failing: the "in a few minutes" line and no word of a VPN. No network (6; 7): its form. In those: no further start, exit 4, the log's line with `~`, no line of Steam's log, and the core's closing line for 4 absent. Working (exit 0 with 20,000,000 bytes; exit 28 with 20,000,000) with a tunnel: another start; when that one comes up, no words at all; when five fatal starts follow, the "although" form, exit 4, no word of a VPN. Exit 28 with 19,999,999 bytes, exit 0 with 5 MB, exit 22: not known, another start; five fatal starts then give the plain form. "Failed to determine download location" restarts up to five times, with no transfer. An old "needs to be online" line in the log and a start that works: no transfer. A Steam that comes up is never followed by a transfer or a word of a VPN. Five starts ended some other way: today's words and twenty lines, exit 1 | the transfer skipped and Steam started again; a start made before the transfer; the first address used; an address from before this start; the carriage return left on; an address outside the pattern passed to `curl`; `--max-time` removed; `-f` removed; the VPN sentence with no tunnel; the VPN sentence when the transfer worked; exit 0 with 5 MB counted as working; 28 with 19,999,999 counted as working; no restart when the transfer works; the restart removed for "download location"; the transfer made before any failure; the log's lines printed in these forms; exit 1; the closing line for 4 printed; the path with the home folder; Steam left running at exit 4 |
+| FT1 | `cities-skylines-2/scripts/test-install.sh`, with the 37 real `Add pending download:` lines of ML2's failed start, carriage returns kept | "needs to be online": that Steam is ended and no other started before the transfer. The address is the largest of the lines after this start (not the first, not one from before it), its carriage return gone; the options are 2.1's. No address, or one that is not `https://<host>.steamstatic.com/client/...`: `curl` is not run. Cut (18; 56; 92) with a tunnel: the first form; with no tunnel, or with `route` failing: the "in a few minutes" line and no word of a VPN. No network (6; 7): its form. In those: no further start, exit 4, the log's line with `~`, no line of Steam's log, and the core's closing line for 4 absent. Working (exit 0 with 20,000,000 bytes; exit 28 with 20,000,000) with a tunnel: another start; when that one comes up, no words at all; when the four starts that are left all end in a fatal line, the "although" form, exit 4, no word of a VPN. Exit 28 with 19,999,999 bytes, exit 0 with 5 MB, exit 22: not known, another start; the four starts that are left all ending in a fatal line give the plain form. Both fatal lines new in one look: "needs to be online" is acted on. A larger address outside the pattern beside a smaller one inside it: the inside one is used. "Failed to determine download location" restarts up to five times, with no transfer. An old "needs to be online" line in the log and a start that works: no transfer. A Steam that comes up is never followed by a transfer or a word of a VPN. Five starts ended some other way: today's words and twenty lines, exit 1 | the transfer skipped and Steam started again; a start made before the transfer; the first address used; the largest chosen before the pattern is applied; the count of starts begun again after the transfer (six starts); an address from before this start; the carriage return left on; an address outside the pattern passed to `curl`; `--max-time` removed; `-f` removed; the VPN sentence with no tunnel; the VPN sentence when the transfer worked; exit 0 with 5 MB counted as working; 28 with 19,999,999 counted as working; no restart when the transfer works; the restart removed for "download location"; the transfer made before any failure; the log's lines printed in these forms; exit 1; the closing line for 4 printed; the path with the home folder; Steam left running at exit 4 |
 | FT2 | `cities-skylines-2/scripts/test-install.sh` | the first address of Steam's installer failing with words on its error output and the second working: none of those words on screen (the stub's words are switched on by a setting, so the existing case's transcript stays); both failing: the installer's sentence, then both tries' words indented under it | curl's words printed when the second address works; nothing printed when both fail |
 | FT3 | `common/test-make-wrapper.sh`, with a `sw_vers` stub | on 27 the two lines are printed once, before "making the Wine prefix"; on 26, on 28 and with a version that cannot be read: not printed | the lines on every macOS; the lines after the prefix step |
-| FT3b | `common/test-make-wrapper.sh`, with a stub in the template's place that makes the prefix's files, the Mac Driver section and the six links, each to a scratch folder holding a file, and then waits | with another `wineserver` (a `/bin/sleep` the test starts, named by the `pgrep` stub): the stub is ended once the prefix has stood still for the set looks; each of the six links is gone, by name; each link's target still holds its file; the three registry files and `Info.plist` have mode 666 and `Logs` 777; the one line is said; no line holds "Terminated"; the wrapper is moved into place; the stand-in process is still alive. A folder named `Documents` that is not a link is left. Not ended: with no other `wineserver`, however long the stub takes; with `system.reg`, `user.reg` or `userdef.reg` missing, `users/Wineskin` a link, or no Mac Driver section; while the prefix still grows; while a `wineserver` holds this prefix, another running beside it; when `lsof` fails; when the other `wineserver` goes away during the still looks (the stub then finishes by itself: no line, exit 0). A build folder reached through a link is matched. The stub exiting 1 by itself with another Wine open: the step fails as today. The stub ignoring TERM: the step fails, and `cleanup` ends it. The script interrupted during the step: no stub left running, the build folder gone. The file's existing cases pass with a real Wine open on the Mac | ended with no other `wineserver`; a link left; the removal with a slash after the name and `-r` (the target's file is gone); a real folder removed; the modes not set; ended before `system.reg` is there; the Mac Driver section not asked for; the stillness not waited for; the check that no `wineserver` holds this prefix removed; an `lsof` failure read as "holds nothing"; the other Wine closed by the script; the redirection taken off the `wait`; the program not ended in `cleanup`; the exit code of an ended program read |
+| FT3b | `common/test-make-wrapper.sh`, with a stub in the template's place that makes the prefix's files, the Mac Driver section and the six links, each to a scratch folder holding a file, and then waits | with another `wineserver` (a `/bin/sleep` the test starts, named by the `pgrep` stub): the stub is ended once the prefix has stood still for the set looks; each of the six links is gone, by name; each link's target still holds its file; the three registry files and `Info.plist` have mode 666 and `Logs` 777; the one line is said; no line holds "Terminated"; the wrapper is moved into place; the stand-in process is still alive. A folder named `Documents` that is not a link is left. Not ended: with no other `wineserver`, however long the stub takes; with `system.reg`, `user.reg` or `userdef.reg` missing, `users/Wineskin` a link, or no Mac Driver section; while the prefix still grows; while a `wineserver` holds this prefix, another running beside it; when `lsof` fails; when the other `wineserver` goes away during the still looks (the stub then finishes by itself: no line, exit 0). A build folder reached through a link is matched. The stub exiting 1 by itself with another Wine open: the step fails as today. The stub ignoring TERM: the step fails, and `cleanup` ends it. The script interrupted during the step: no stub left running, the build folder gone. `pgrep` is asked for this user's processes only (`-U`). The file's existing cases pass with a real Wine open on the Mac | ended with no other `wineserver`; a link left; the removal with a slash after the name and `-r` (the target's file is gone); a real folder removed; the modes not set; ended before `system.reg` is there; the Mac Driver section not asked for; the stillness not waited for; the check that no `wineserver` holds this prefix removed; an `lsof` failure read as "holds nothing"; the other Wine closed by the script; the redirection taken off the group that ends the program; the program not ended in `cleanup`; the exit code of an ended program read |
 | FT3c | `cities-skylines-2/scripts/test-install.sh` and its transcript | the lines before Steam's first start name the "Updating Steam..." window and its Cancel, and the error box, and no size | the old two lines (added to the mutants that are compared with the transcript, `:519`); a size in the lines (the existing gate) |
-| FT4 | `surviving-mars-relaunched/tools/test-mod-notes.sh`, new, reading the launcher's marked block | **The note:** with no `LocalStorage.lua` it is given once, before step 1: printed in a terminal, one `display alert` to the recording `osascript` with the app's settings; with the file there, not at all. **After exit**, on fixtures: ML2's and ML4's scratch sessions ("which is not present"): the title named; ML2's real session ("present, but not loaded"): named; ML4's real session (definition, load, items after, neither line): no words; ML3's (items before the load): no words; P5's two (no load): no words; a load with no mod at all (ML3's, its mod lines cut): no words; two mods in the game's lines: both named once; four: three and "and 1 more"; a title with `"`, `\`, `$(...)` and an escape character: carried as it is, cut to 60 printable characters, nothing run, one argument to the alert; lines with and without carriage returns give the same; a log whose name is older than the launch: no words; no log, no log folder: no words and no failure. The words go to `_alert` from the app and to a `WARNING:` line in a terminal | the note on every start; the note as a notification; the note after step 5; "present, but not loaded" not looked for; "which is not present" not looked for; a session with neither line named; the carriage return kept in the title; the title placed in the script's source; the newest log read whatever its time; a missing log stops the launcher |
-| FT4b | `common/test-start-steam.sh`, new | the gate: `start_steam`'s lines stand in braces whose error output is sent away, and the child's own line is as before. The watch: 30,000 starts of the core's own function with a stub program and input and output redirected print nothing | the braces' redirection removed; the redirection moved onto the child's line: the gate, each time. The watch is not counted (2.9) |
+| FT4 | `surviving-mars-relaunched/tools/test-mod-notes.sh`, new, reading the launcher's marked block | **The note:** with no `LocalStorage.lua` it is given once, after the lock is taken and before step 1: printed in a terminal; with the app's settings printed first and then one `display alert` to the recording `osascript`; with the file there, not at all. **After exit**, on fixtures: ML2's and ML4's scratch sessions ("which is not present"): the title named; ML2's real session ("present, but not loaded"): named; ML4's real session (definition, load, items after, neither line): no words; ML3's (items before the load): no words; P5's two (no load): no words; a load with no mod at all (ML3's, its mod lines cut): no words; two mods in the game's lines: both named once; four: three and "and 1 more"; a title with `"`, `\`, `$(...)` and an escape character: carried as it is, cut to 60 printable characters, nothing run, one argument to the alert; lines with and without carriage returns give the same; a log whose name is older than the launch: no words; no log, no log folder: no words and no failure. The words go to `_alert` from the app and to a `WARNING:` line in a terminal | the note on every start; the note as a notification; the note before the lock; the note after step 1; the note not printed before its alert; "present, but not loaded" not looked for; "which is not present" not looked for; a session with neither line named; the title placed in the script's source; the newest log read whatever its time; a missing log stops the launcher |
+| FT4b | `common/test-start-steam.sh`, new | the gate: `start_steam`'s lines stand in braces whose error output is sent away, and the child's own line is as before. The watch: 30,000 starts of the core's own function with a stub program and input and output redirected print nothing, and a line printed fails the file | the braces' redirection removed; the redirection moved onto the child's line: the gate, each time. The watch is not counted (2.9) |
 | FT5 | `surviving-mars-relaunched/scripts/test-setup.sh`; `surviving-mars-relaunched/scripts/test-install.sh` | "also in Spotlight and Launchpad" for an app in `~/Applications`, and not for a scratch app; `/Applications` at the level of the function that decides it. After a Mac check that exits 3: the core's line "the check of this Mac failed (exit 3)", exit 1, and no "Open the installer again" line; after the refusal of Rosetta the closing line is still there. Cities: Skylines II's transcript is unchanged, and no case is added there. The installer's line about mods is in setup's closing block | the clause for a scratch app; the closing line put back; the closing line dropped after the Rosetta refusal too |
-| FT6 | the gates: `common/check-links.py`, `common/check-identifiers.sh` at its residual with the fixtures staged, `cities-skylines-2/scripts/check-experiments.py`, `bash -n` on every script, `common/test-launcher-parity.sh` with its list, and a source gate that no script names `account.dat` outside a comment | no dead link, no identifier, the ledger whole, the launchers' kept differences listed, the account file untouched | the first-start note left out of the parity test's list; a line that reads `account.dat` |
+| FT6 | the gates: `common/check-links.py`, `common/check-identifiers.sh` at its residual with the fixtures staged, `cities-skylines-2/scripts/check-experiments.py`, `bash -n` on every script, `common/test-launcher-parity.sh` unchanged, and a source gate that no line of `surviving-mars-relaunched/launch-relaunched.sh`, `scripts/setup.sh`, `scripts/install.sh` or `common/install-core.sh` names `account.dat` outside a comment (the launcher names it in two comments today; three test files hold it in fixtures) | no dead link, no identifier, the ledger whole, the two launchers' shared blocks still alike, the account file untouched | a line of the launcher that reads `account.dat` |
 
 The guides' sentences (slices A, B, D and I) have no test of their own beyond the link check: they are
 read against the installer's lines at F8.
@@ -615,7 +639,7 @@ read against the installer's lines at F8.
 | FD2 | If the game goes to the last save by itself (P4): what then | Not needed: P4 found that it does not |
 | FD3 | Whether the launcher keeps a copy of the saves folder before the first start in a new prefix | Yes: it is small (about 250 MB for James's eight saves), it is the way back the guide can point at, and it is made once per install. Never restored by a script |
 | FD4 | Slice A's four new word forms (2.1, step 4): cut with no tunnel, no network, "although this Mac reaches Valve's server", and the plain form; and the log's line | As written. The first form is the one already agreed |
-| FD5 | How long the note before the first start keeps coming (2.6, item 1) | Once, at the first start in a prefix. It misses a first start that is quit before the Paradox login, as P5's was; the game's own warning and the words after exit cover that. The other way, every start until a save has been loaded in this install, shows it again and again to a player with no mods |
+| FD5 | How long the note before the first start keeps coming, and whether its alert gives up by itself (2.6, item 1) | Once, at the first start in a prefix, and it waits until it is answered: it is the one message that must be read, and nothing of Steam runs while it waits. The other way for the second half is an alert that goes away after a time, as the update question's does. It misses a first start that is quit before the Paradox login, as P5's was; the game's own warning and the words after exit cover that. The other way, every start until a save has been loaded in this install, shows it again and again to a player with no mods |
 | ND1 | The app is published, or only the pasted line (the installer plan's; slice E waits for it) | open |
 
 ## Review corrections (triple-check 2026-11-14)
@@ -660,11 +684,36 @@ Not settled by this pass, and said where it stands: James's answer about the Mod
 wrapper's next start (2.6); what macOS 26 shows (2.3); whether a notification's length was measured
 (it was not: the note is an alert instead).
 
+### Fold check (pass 1b, 2026-11-14)
+
+One agent on Fable, briefed on the fold alone: every row X1 to X21 against the normative text, the stale
+looked for, each new claim opened in the source, and the removal loop and the ending of a program run on
+scratch. All 21 rows had landed; nine defects were the fold's own, none needing a design reworked. Each
+is folded:
+
+| # | Finding | Where it is folded |
+|---|---|---|
+| Y1 | The address pattern required `/client/`, which 14 of 35 addresses of a working start lack, the largest among them; lines with no number had no rule | 2.1 "What Steam's log gives", step 2; FT1's case and mutant |
+| Y2 | "Five fatal starts follow" after a start already used is six; the count of starts was local to one call | 2.1 step 1; FT1 |
+| Y3 | "Ending it" could not pass its own two cases: a `wait` at once blocks for ever on a program that ignores TERM, and a `wait` after the looks lets bash print its line first (measured) | 2.5 "Ending it", "The script's own exit"; FT3b's mutant |
+| Y4 | The alert before step 1 had no place and no behaviour when unanswered | 2.6 item 1; FT4; FD5 |
+| Y5 | The note is no longer a `note` call, yet F5 and FT6 still changed the parity test's list; the note is 272 characters, not 262 | 2.6 item 1; F5; FT6 |
+| Y6 | FT6's new gate on `account.dat` was red before any change (three test files hold the name) | FT6 |
+| Y7 | F8's comparison could not be met: Steam's installer adds 43 entries and Wine rewrites the registry files' modes | F8 |
+| Y8 | FT4's mutant "the carriage return kept in the title" was equivalent | FT4 |
+| Y9 | "A `curl` stub that answers `-w`" is not true of the test file | section 5's preamble; F1 |
+| Y10 | Smaller: bash's line holds the script's path, not the build folder's; two patch scripts finish without error on a missing pattern; the second game line's tail; "one decision" for slice I; 18, 56 or 92 in F8; how one start is read at F8; "One line" over two; the loop's and `chmod`'s status; the Mac Driver sign is inferred, not timed; `-U` and "both lines in one look" had no case; an offline Mac may log no address | 2.5, 2.4, 2.6, section 1, section 4, 2.3, FT3b, FT1, 2.1 |
+
+Not measured at either pass, and said where it stands: `curl`'s exit 3 on an address with a carriage
+return and its 92 (from the lens's run against a test server and from its documentation); an alert
+standing above the progress window (AppKit's levels say so; not seen on screen).
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |
 |---|---|---|---|---|---|---|
-| 2026-11-14 | 1 | architecture, safety, correctness, test plan, words and platform facts, builder simulation | six agents, none editing; the builder in a scratch worktree with the tests run; blockers read against the source inline | Fable 5.2 | `surviving-mars-install` at `283a464` (the cited files as at `75470c9`) | build-ready-with-fixes, folded; a fitted re-check of the fold before F1 |
+| 2026-11-14 | 1 | architecture, safety, correctness, test plan, words and platform facts, builder simulation | six agents, none editing; the builder in a scratch worktree with the tests run; blockers read against the source inline | Fable 5.2 | `surviving-mars-install` at `283a464` (the cited files as at `75470c9`) | build-ready-with-fixes, folded |
+| 2026-11-14 | 1b | the fold of pass 1 | one agent, not editing; scratch runs of the removal loop and of ending a program | Fable 5.2 | the same | build-ready-with-fixes, folded |
 
 Key paths: `common/install-core.sh`, `common/make-wrapper.sh`, `common/test-make-wrapper.sh`,
 `cities-skylines-2/scripts/` (`test-install.sh`, its transcript), `surviving-mars-relaunched/`

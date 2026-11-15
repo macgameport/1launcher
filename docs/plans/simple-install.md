@@ -4,7 +4,11 @@
 > pass 1b: a fitted check of that fold, one blocker, folded too). Written 2026-11-10.
 >
 > **🔧 As-built (2026-11-11):** PARTIAL: N1 to N6a are built on the local branch `simple-install` (`86c83d8`, and
-> `a9eeaa7` for a defect the first live step found), pushed on 2026-11-11 and merged into `main` on 2026-11-15; nothing is published. NL1
+> `a9eeaa7` for a defect the first live step found), pushed on 2026-11-11 and merged into `main` on 2026-11-15; nothing is published. **That merge came
+> before NL3, against this plan** (2.8, section 5): it was a fast-forward, pushed without `release`, with
+> the note to Porting Kit undecided. So the documents on `main` named a `release` that does not exist;
+> since the same day each of the four carries a "Not published yet" note that says so and names the
+> installer run from a clone. NL3 and section 7 say what follows from it. NL1
 > passed on 2026-11-11 (the last paragraph of this header); no other live step has been run. Tests, each with `HOME` at a
 > scratch folder: NT1 59 cases and 10 mutants; NT2 94 cases, mutants 17 to 21 beside the sixteen older ones;
 > NT3 96 cases and 25 mutants; NT4 31 cases and 5 mutants; NT5 with NT7 42 cases and 7 mutants;
@@ -805,6 +809,10 @@ Steam, a sign-in, the game, a closed Terminal window, and Gatekeeper.
   `release` that does not exist (2.8); the pasted line is run once in Terminal with `--check`; when NL2 passed, the `installer-1` release with the ZIP built for `release`, whose link must
   download a file with the sha256 the builder printed; then N6b is committed and `release` moved to it;
   then the issue #22 note.
+  *As it went (2026-11-15): the merge was made early, by fast-forward to `685a539` with the two branches
+  cut from this one, and `main` was pushed alone. What is left of NL3 is the note, then one push that
+  makes `release` at a commit of `main` in which the four "Not published yet" notes are taken out
+  (`README.md`, `cities-skylines-2/README.md` and the two `INSTALL.md`), then the rest as written.*
 - **NL4. A Mac account with nothing in it.** A new macOS user account (James makes it) or any Mac without
   the wrapper. From the public page: the ZIP downloaded, the app opened and approved, the installer run to
   Steam's sign-in window; and the pasted line, copied from Safari into Terminal, with what macOS says of
@@ -832,6 +840,10 @@ Steam, a sign-in, the game, a closed Terminal window, and Gatekeeper.
 - **Before NL3:** the branch is all there is in the repository. On the Studio, NL2 ran setup from the
   branch's code on the real install: run `bash cities-skylines-2/scripts/setup.sh` from `main` to put
   `main`'s files back in `~/cs2-patch` and rebuild the apps.
+- **Since the early merge (2026-11-15) and before NL3:** there is no merge commit to revert. `main`
+  before it is `b75105a`; taking the scripts and documents back is a revert of the range
+  `b75105a..685a539` and of what was committed on top. Nothing published reads `main`, so nobody's
+  install depends on it yet.
 - **After NL3:** a `git revert` of N6b, then `git revert -m 1` of the merge (a `--no-ff` merge, NL3),
   takes the scripts and the documents back on `main`, with one exception: the root `install.sh` is kept as a short file that prints "This installer has been
   withdrawn" and the guide's address, and `release` is moved forward to that commit. Every published app

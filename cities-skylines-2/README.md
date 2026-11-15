@@ -24,6 +24,11 @@ overlay is Metal's own performance HUD, enabled with `CS2_HUD=1`.*
 
 ## Quick start
 
+> **Not published yet (2026-11-15).** The line below reads the installer from this repository's `release`
+> branch. That branch is made at the first release and does not exist yet, so today the line ends in a
+> 404 error. Until then, use "With git" below, or run the same installer from a clone
+> ([the guide](INSTALL.md), "Have a clone?"). This note goes when the release is out.
+
 Own the game on Steam, on an Apple Silicon Mac? Paste one line into Terminal:
 
 ```bash

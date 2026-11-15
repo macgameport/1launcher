@@ -304,7 +304,9 @@ if [ "$rc" = 1 ]; then
       *) say "To install it later, run this in Terminal:  softwareupdate --install-rosetta --agree-to-license"; exit 3 ;;
     esac
   fi
-elif [ "$rc" != 0 ]; then say "!! the check of this Mac failed (exit $rc)"; exit 1
+elif [ "$rc" != 0 ]; then
+  [ "$rc" = 3 ] && END=quiet   # a Mac the game cannot run on: setup has said why, and opening the installer again cannot help
+  say "!! the check of this Mac failed (exit $rc)"; exit 1
 fi
 }
 core_tools() {

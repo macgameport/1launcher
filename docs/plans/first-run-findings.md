@@ -3,7 +3,9 @@
 > **Status:** Triple-checked 2026-11-14 — build-ready-with-fixes (pass 1: six lenses; pass 1b: a fitted
 > re-check of that fold; both are folded into the sections they concern and listed in "Review
 > corrections"). Drafted 2026-11-13; its six probes (section 3) were done by 2026-11-14. Slice F
-> is not built from this plan (2.4). Decisions FD3, FD4, FD5 and ND1 are open and James's.
+> is not built from this plan (2.4). Decisions FD3, FD4 and FD5 were taken as recommended on 2026-11-15
+> (section 8); ND1 is open and James's. FD3's design (2.6, item 5) and its row FT4c were written that
+> day, after the check, and re-checked on their own ("Review corrections").
 >
 > Tracking: issue #22. The code it speaks of exists only on the branch `surviving-mars-install` (cut from
 > `simple-install`): every `file:line` below is as of that branch at `75470c9`, and holds at `283a464` too (the cited files did not change between them). A path is relative to the
@@ -31,7 +33,7 @@ James's.
 | F. A fix not yet available for a new game build | SF7 | "setup finished with 1 problem(s)" and "The install stopped", the same on every later run | not from this plan: the patch scripts cannot say it today (2.4) |
 | G. The wrapper's making waits for every other Wine | SF8, MF1 | "making the Wine prefix (about 30 s)" for as long as any other Wine is open | yes, since P2 (2.5) |
 | H. A line of bash's in the installer's output | SF9 | perhaps `child setpgid (...): Operation not permitted`; and a test that fails now and then | yes, since P3 (2.9) |
-| I. A mod switched off by a new install | MF3, and what P5 showed besides | a save runs, and is saved, without its Paradox mod, here and on the player's other install; and a first start asks again for the game's two agreements and the Paradox account, with the game's own mod warning behind the agreements | yes, since P4 and P5 (2.6); two decisions (FD3, FD5) |
+| I. A mod switched off by a new install | MF3, and what P5 showed besides | a save runs, and is saved, without its Paradox mod, here and on the player's other install; and a first start asks again for the game's two agreements and the Paradox account, with the game's own mod warning behind the agreements | yes, since P4 and P5 (2.6); two decisions (FD3, FD5), both taken |
 | J. Runtimes the new prefix lacks | MF4 | nothing so far | nothing to build (2.7) |
 | K. Small things seen at ML4 and at the re-check | | two lines that say something untrue | yes (2.8) |
 
@@ -395,8 +397,8 @@ functions themselves.
    `_alert` waits until it is answered. Unanswered, the launcher waits with the lock held, a second
    launch is refused as it is today, and the progress window closes by its own rule after 15 minutes
    without a new line (`common/launch-progress.swift:71`; its comment at `:65-66` about the longest
-   silence is brought up to date). How long the note keeps coming, and whether it should give up by
-   itself, is FD5.
+   silence is brought up to date). It comes once, at the first start in a prefix, and does not give up
+   by itself (FD5, decided 2026-11-15).
 2. **After the game exits.** The launcher reads the game's own log of this session:
    `drive_c/users/Wineskin/AppData/Roaming/Surviving Mars Relaunched/logs/Mars.exe-<date>-<time>-<n>.log`
    in the prefix, the one whose name's time is at or after the time the launcher noted before its step
@@ -423,9 +425,35 @@ functions themselves.
    mods could not be loaded. Log in, then open Mod Manager from the main menu before you load or
    continue a save, here and then on your other Mac. A save loaded before that runs without its mods
    and is saved without them."
-5. **FD3**, if James says yes: a copy of the saves folder, made once, when the prefix has no
-   `LocalStorage.lua`, into the state folder's `backup/`; no script ever restores it. It is the one
-   thing here that protects the save itself. Its test row is written with it.
+5. **A copy of the saves before the first start** (FD3, decided yes on 2026-11-15; this item and row
+   FT4c were written that day). It is the one thing here that protects the save itself.
+   - **When.** In a launch that found no `LocalStorage.lua` (the same look as item 1's, made once,
+     before step 1), after the cloud check of step 3 has given its answer and before step 4. Not
+     earlier: before Steam's pull at sign-in a new prefix holds no saves, or old ones. When the cloud
+     check ends the launch (a conflict, still syncing), no copy is made.
+   - **What.** The folder `drive_c/users/Wineskin/Saved Games/Surviving Mars Relaunched` of the prefix,
+     whole, when it is a folder and not a link and holds at least one regular file. It holds the saves
+     and the account file as Steam pulled them. With no such folder, or an empty one, nothing is copied
+     and nothing is said: a new player has no saves.
+   - **Where.** `<state folder>/backup/first-start-<YYYYMMDD-HHMMSS>`. The copy is made by
+     `cp -Rp -- <folder> <that name>.partial` and renamed when `cp` has exited 0. If either name exists
+     already, nothing is copied. `cp -R` copies a link inside the folder as a link.
+   - **The words**, one line, the home folder as `~`:
+     `A copy of your saves as they were before this install's first start: ~/Library/.../backup/first-start-<stamp>`.
+     It is an `echo`, so it is in the app's log; there is no alert for it.
+   - **When the copy fails** (a full disk): `WARNING: The saves could not be copied before this first
+     start (<the folder>). The game starts all the same.`, the `.partial` folder is left as it is, and
+     the launch goes on. From the app the line is in the log only: the note of item 1 has already said
+     what to do, and a second alert before the game would be answered without being read.
+   - **Once.** The look for `LocalStorage.lua` makes it once per install in the ordinary case: the game
+     writes that file 1 s after its first start. A first launch that ends before the game has run (a
+     sign-in that fails) makes another copy at the next, under a new name; none is ever written over.
+   - **Nothing restores it.** No script copies anything out of `backup/`, and the block writes nowhere
+     but under `<state folder>/backup`. The guide says where it is and that putting a save back is
+     done by hand, with the game and this wrapper's Steam closed; what Steam Cloud then does with it
+     was not measured, and the guide says no more than that.
+   - The account file inside the copy is never read: the folder is copied as a whole, by its own name,
+     and FT6's gate (no line names `account.dat`) holds.
 
 **No live step.** A start from a new prefix on James's account uploads that prefix's account file once
 more. The tests run on lines cut from the real logs of ML2, ML3, ML4 and P5 instead.
@@ -567,8 +595,8 @@ after the game's agreements. P3 departed too: the 30 runs of the test were not m
 - **F3. Slice G** in `common/make-wrapper.sh` (2.5), with the stubs its test file lacks.
 - **F4. Slice H** (2.9).
 - **F5. Slice I** in `surviving-mars-relaunched/launch-relaunched.sh`, the closing line in
-  `surviving-mars-relaunched/scripts/setup.sh`, and the guide's paragraph. Before
-  it: FD5, and FD3 (with its design and row if yes).
+  `surviving-mars-relaunched/scripts/setup.sh`, and the guide's paragraph, with the copy of the saves
+  (2.6 item 5, FT4c) and one sentence about it in the guide.
 - **F6. Slice K** (2.8).
 - **F7. Slice B**: the core's three lines and step 3 of each guide (2.10).
 - **F8. Live, on James's word, each into a scratch wrapper** (the real ones exist, so the installer
@@ -623,6 +651,7 @@ Every test runs with `HOME` at a scratch folder and every outside program a reco
 | FT3b | `common/test-make-wrapper.sh`, with a stub in the template's place that makes the prefix's files, the Mac Driver section and the six links, each to a scratch folder holding a file, and then waits | with another `wineserver` (a `/bin/sleep` the test starts, named by the `pgrep` stub): the stub is ended once the prefix has stood still for the set looks; each of the six links is gone, by name; each link's target still holds its file; the three registry files and `Info.plist` have mode 666 and `Logs` 777; the one line is said; no line holds "Terminated"; the wrapper is moved into place; the stand-in process is still alive. A folder named `Documents` that is not a link is left. Not ended: with no other `wineserver`, however long the stub takes; with `system.reg`, `user.reg` or `userdef.reg` missing, `users/Wineskin` a link, or no Mac Driver section; while the prefix still grows; while a `wineserver` holds this prefix, another running beside it; when `lsof` fails; when the other `wineserver` goes away during the still looks (the stub then finishes by itself: no line, exit 0). A build folder reached through a link is matched. The stub exiting 1 by itself with another Wine open: the step fails as today. The stub ignoring TERM: the step fails, and `cleanup` ends it. The script interrupted during the step: no stub left running, the build folder gone. `pgrep` is asked for this user's processes only (`-U`). The file's existing cases pass with a real Wine open on the Mac | ended with no other `wineserver`; a link left; the removal with a slash after the name and `-r` (the target's file is gone); a real folder removed; the modes not set; ended before `system.reg` is there; the Mac Driver section not asked for; the stillness not waited for; the check that no `wineserver` holds this prefix removed; an `lsof` failure read as "holds nothing"; the other Wine closed by the script; the redirection taken off the group that ends the program; the program not ended in `cleanup`; the exit code of an ended program read |
 | FT3c | `cities-skylines-2/scripts/test-install.sh` and its transcript | the lines before Steam's first start name the "Updating Steam..." window and its Cancel, and the error box, and no size | the old two lines (added to the mutants that are compared with the transcript, `:519`); a size in the lines (the existing gate) |
 | FT4 | `surviving-mars-relaunched/tools/test-mod-notes.sh`, new, reading the launcher's marked block | **The note:** with no `LocalStorage.lua` it is given once, after the lock is taken and before step 1: printed in a terminal; with the app's settings printed first and then one `display alert` to the recording `osascript`; with the file there, not at all. **After exit**, on fixtures: ML2's and ML4's scratch sessions ("which is not present"): the title named; ML2's real session ("present, but not loaded"): named; ML4's real session (definition, load, items after, neither line): no words; ML3's (items before the load): no words; P5's two (no load): no words; a load with no mod at all (ML3's, its mod lines cut): no words; two mods in the game's lines: both named once; four: three and "and 1 more"; a title with `"`, `\`, `$(...)` and an escape character: carried as it is, cut to 60 printable characters, nothing run, one argument to the alert; lines with and without carriage returns give the same; a log whose name is older than the launch: no words; no log, no log folder: no words and no failure. The words go to `_alert` from the app and to a `WARNING:` line in a terminal | the note on every start; the note as a notification; the note before the lock; the note after step 1; the note not printed before its alert; "present, but not loaded" not looked for; "which is not present" not looked for; a session with neither line named; the title placed in the script's source; the newest log read whatever its time; a missing log stops the launcher |
+| FT4c | `surviving-mars-relaunched/tools/test-mod-notes.sh`, with `SM_STATE` at a scratch folder | With no `LocalStorage.lua` and a saves folder holding two files in a numbered folder and a link: one folder `backup/first-start-<stamp>` whose files are those, byte for byte, the link copied as a link; the source unchanged; no `.partial` name left; the one line, with `~` and without the home folder's path; the copy stands in the source after step 3's cloud `case` and before `step 4`. With `LocalStorage.lua`: no copy, no line. No saves folder; an empty one; one that is a link to a folder holding a file: no copy, no line, and the link's target untouched. `cp` failing (a stub that exits 1 after making the folder): the `WARNING:` line, exit status of the function 0, the `.partial` name left, no final name, no alert asked of `osascript`. A name that exists already: nothing copied, nothing written over. The block's only write target is under `backup` in the state folder | the copy on every start; the copy before the cloud check; the saves moved instead of copied; a saves folder that is a link followed; a failed copy stops the launch; a failed copy renamed to the final name; the home folder's path in the line; an existing copy written over |
 | FT4b | `common/test-start-steam.sh`, new | the gate: `start_steam`'s lines stand in braces whose error output is sent away, and the child's own line is as before. The watch: 30,000 starts of the core's own function with a stub program and input and output redirected print nothing, and a line printed fails the file | the braces' redirection removed; the redirection moved onto the child's line: the gate, each time. The watch is not counted (2.9) |
 | FT5 | `surviving-mars-relaunched/scripts/test-setup.sh`; `surviving-mars-relaunched/scripts/test-install.sh` | "also in Spotlight and Launchpad" for an app in `~/Applications`, and not for a scratch app; `/Applications` at the level of the function that decides it. After a Mac check that exits 3: the core's line "the check of this Mac failed (exit 3)", exit 1, and no "Open the installer again" line; after the refusal of Rosetta the closing line is still there. Cities: Skylines II's transcript is unchanged, and no case is added there. The installer's line about mods is in setup's closing block | the clause for a scratch app; the closing line put back; the closing line dropped after the Rosetta refusal too |
 | FT6 | the gates: `common/check-links.py`, `common/check-identifiers.sh` at its residual with the fixtures staged, `cities-skylines-2/scripts/check-experiments.py`, `bash -n` on every script, `common/test-launcher-parity.sh` unchanged, and a source gate that no line of `surviving-mars-relaunched/launch-relaunched.sh`, `scripts/setup.sh`, `scripts/install.sh` or `common/install-core.sh` names `account.dat` outside a comment (the launcher names it in two comments today; three test files hold it in fixtures) | no dead link, no identifier, the ledger whole, the two launchers' shared blocks still alike, the account file untouched | a line of the launcher that reads `account.dat` |
@@ -654,13 +683,17 @@ read against the installer's lines at F8.
 
 ## 8. Decisions, each James's
 
+FD3, FD4 and FD5 were decided on 2026-11-15: asked whether he took them as recommended or wanted to go
+through them one by one, James answered "Complete as much as possible", which was read as the first.
+Each is a matter of words or of one copy, and a revert puts the old state back (section 7).
+
 | # | Decision | Recommendation |
 |---|---|---|
 | FD1 | A run in which the only problem is a fix not yet available for a new game build: exit 0 or 1 | Goes with slice F's own plan (2.4). Whichever it is, the core's "Done. Start the game" must not stand under "a fix is not yet available" |
 | FD2 | If the game goes to the last save by itself (P4): what then | Not needed: P4 found that it does not |
-| FD3 | Whether the launcher keeps a copy of the saves folder before the first start in a new prefix | Yes: it is small (about 250 MB for James's eight saves), it is the way back the guide can point at, and it is made once per install. Never restored by a script |
-| FD4 | Slice A's four new word forms (2.1, step 4): cut with no tunnel, no network, "although this Mac reaches Valve's server", and the plain form; and the log's line | As written. The first form is the one already agreed |
-| FD5 | How long the note before the first start keeps coming, and whether its alert gives up by itself (2.6, item 1) | Once, at the first start in a prefix, and it waits until it is answered: it is the one message that must be read, and nothing of Steam runs while it waits. The other way for the second half is an alert that goes away after a time, as the update question's does. It misses a first start that is quit before the Paradox login, as P5's was; the game's own warning and the words after exit cover that. The other way, every start until a save has been loaded in this install, shows it again and again to a player with no mods |
+| FD3 | Whether the launcher keeps a copy of the saves folder before the first start in a new prefix | **Decided 2026-11-15: yes** (2.6 item 5). Yes: it is small (about 250 MB for James's eight saves), it is the way back the guide can point at, and it is made once per install. Never restored by a script |
+| FD4 | Slice A's four new word forms (2.1, step 4): cut with no tunnel, no network, "although this Mac reaches Valve's server", and the plain form; and the log's line | **Decided 2026-11-15: as written.** The first form is the one already agreed |
+| FD5 | How long the note before the first start keeps coming, and whether its alert gives up by itself (2.6, item 1) | **Decided 2026-11-15: as recommended.** Once, at the first start in a prefix, and it waits until it is answered: it is the one message that must be read, and nothing of Steam runs while it waits. The other way for the second half is an alert that goes away after a time, as the update question's does. It misses a first start that is quit before the Paradox login, as P5's was; the game's own warning and the words after exit cover that. The other way, every start until a save has been loaded in this install, shows it again and again to a player with no mods |
 | ND1 | The app is published, or only the pasted line (the installer plan's; slice E waits for it) | open |
 
 ## Review corrections (triple-check 2026-11-14)

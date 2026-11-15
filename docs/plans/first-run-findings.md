@@ -6,7 +6,8 @@
 > is not built from this plan (2.4). Decisions FD3, FD4 and FD5 were taken as recommended on 2026-11-15
 > (section 8); ND1 is open and James's. FD3's design (2.6, item 5) and its row FT4c were written that
 > day, after the check, and re-checked on their own ("Review corrections"). F8 was run on 2026-11-15
-> (section 4): slice G passed; slice A's cut path is VOID that day, since the VPN's path was not cut, and
+> (section 4): slice G passed; slice A's cut path was VOID in the morning, since the VPN's path was not
+> cut, and passed that afternoon on another of the VPN's servers; the same command with the VPN paused
 > is owed.
 >
 > Tracking: issue #22. The code it speaks of exists only on the branch `surviving-mars-install` (cut from
@@ -157,6 +158,9 @@ that carried a 106 MB package whole, twice, minutes before (the VPN on, its rout
 after the installer's transfer worked. So the line by itself says nothing about the path, which is what
 this slice rests on, and the VPN's sentence was rightly not said. P1's four first starts the day before,
 with the VPN paused, had no fatal line.
+The same afternoon, on a VPN server whose path was cut (three transfers of three, exit 18), the same
+line came 37 s after Steam's start, the installer's transfer was cut after 2.3 MB, and the first form
+was said with the VPN's sentence.
 
 **Not designed here:** a box instead of a line (SF2's row). P1 saw no error box of Steam's in four first
 starts (2.10), so it learned nothing about one covering the installer's window, and the line stays.
@@ -654,8 +658,18 @@ after the game's agreements. P3 departed too: the 30 runs of the test were not m
     failed start and one that worked (four `Startup - updater built` lines: one and three). The core's
     own `update_probe` and `on_tunnel`, run for real on the log as it stood at the fatal line, gave
     "working" in 8 s and a tunnel. Stopped as a closed window stops it: Steam stayed up, and
-    `-shutdown` then left nothing. Owed: the first form's lines, exit 4 and one start, on a day or a
-    server whose path is cut. Since that run the trace records what the transfer found (`L1_TRACE`).*
+    `-shutdown` then left nothing. The trace has recorded what the transfer found since that run
+    (`L1_TRACE`).*
+  - *Slice A, retried the same afternoon after James changed the VPN's server (`notes.md`, run a2): the
+    cut path **passed**, every condition of its first sentence. Three transfers of the 106 MB package
+    from `cdn.steamstatic.com` were cut first (curl exit 18 after 0.8 to 7.1 MB; the morning's transfers
+    had been from `client-update.steamstatic.com`, which is not the host that was cut on 11 to 13
+    November, though the transfer replayed that morning was from `cdn.steamstatic.com` and worked). Steam started once (one `Startup - updater built` line) and wrote "Steam needs to be
+    online" 37 s later; the installer ended it, and its transfer was cut (the trace: `transfer=cut
+    exit=18 bytes=2272561`). On screen, once each: the first form's line, the VPN's two lines and the
+    log's line; nothing of curl's, of bash's or of Steam's log; exit 4, 47 s after Steam's start; no
+    Steam left. Owed: the last sentence, the same command with the VPN paused going on to the sign-in
+    window.*
 
 The recorded transcript of Cities: Skylines II's installer changes in F1 (cases changed and added), F2
 (cases added) and F7 (the two lines before Steam's start, in all 29 places): each time it is recorded

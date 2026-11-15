@@ -357,11 +357,16 @@ if [ -f "$STEAMDIR/steam.exe" ] || [ -f "$STEAMDIR/Steam.exe" ]; then say "OK"
 elif [ "$CHECK" = 1 ]; then say "would be downloaded from Valve and installed in the wrapper"
 else
   D="$(mktemp -d "${TMPDIR:-/tmp}/1launcher-steam.XXXXXX")" || { say "!! a temporary folder could not be made"; exit 1; }
-  got=0
-  for u in $STEAM_URLS; do
-    curl --proto '=https' --tlsv1.2 -fsSL --retry 2 -o "$D/SteamSetup.exe" "$u" && { got=1; break; }
+  got=0; try=0
+  for u in $STEAM_URLS; do   # curl's own words go to a file: for an address that failed before one that worked they say nothing true
+    try=$((try + 1))
+    curl --proto '=https' --tlsv1.2 -fsSL --retry 2 -o "$D/SteamSetup.exe" "$u" 2> "$D/curl-$try.err" && { got=1; break; }
   done
-  if [ "$got" = 0 ]; then rm -rf "$D"; say "!! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again."; exit 1; fi
+  if [ "$got" = 0 ]; then
+    say "!! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again."
+    cat "$D"/curl-*.err 2>/dev/null | sed 's/^/     /'
+    rm -rf "$D"; exit 1
+  fi
   sz="$(stat -f %z "$D/SteamSetup.exe")"
   if [ "$sz" -le 1048576 ] || [ "$(head -c 2 "$D/SteamSetup.exe")" != MZ ] || ! grep -q -a 'Valve Corp' "$D/SteamSetup.exe"; then
     rm -rf "$D"; say "!! the file downloaded from Valve is not Steam's installer (a cut download, or an error page)"; exit 1

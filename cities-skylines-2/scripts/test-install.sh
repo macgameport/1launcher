@@ -57,6 +57,8 @@
 #   51 the log's lines printed in these forms           52 exit 1
 #   53 the closing line for 4 printed                   54 the path with the home folder
 #   55 Steam left running at exit 4
+# curl's own words for Steam's installer (2.2, FT2); each must exit 1:
+#   56 curl's words printed when the second address works    57 nothing printed when both fail
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -140,6 +142,8 @@ case "${MUTANT:-0}" in
   52) mutate 's#in cut|none) update_words "\$PROBE"; exit 4 ;; esac$#in cut|none) update_words "$PROBE"; exit 1 ;; esac#' 'update_words "\$PROBE"; exit 1 ;; esac$' ;;
   53) mutate 's#^  END=quiet   \# the closing line for 4 would.*#  :#' '^  :$' ;;
   54) mutate 's#if you ask for help: \$(tilde "\$BOOTLOG")"$#if you ask for help: $BOOTLOG"#' 'if you ask for help: \$BOOTLOG"$' ;;
+  56) mutate 's# "\$u" 2> "\$D/curl-\$try.err" \&\& { got=1; break; }$# "$u" \&\& { got=1; break; }#' ' "\$u" && { got=1; break; }$' ;;
+  57) mutate 's#^    cat "\$D"/curl-\*\.err 2>/dev/null | sed .*#    :#' '^    :$' ;;
   55) first '\n        end_steam\n        \[ "\$PROBED" = 0 \]' '\n        :\n        [ "\$PROBED" = 0 ]' '^        :$' ;;
 esac
 
@@ -293,8 +297,10 @@ case " $* " in *" -w "*)   # the installer's own transfer: the exit code and the
   printf '%s' "${STUB_XFER_BYTES:-0}"; exit "${STUB_XFER_RC:-0}" ;;
 esac
 out=""; url=""; while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2 ;; *) url="$1"; shift ;; esac; done
-case "$url" in *fastly*) [ -n "${STUB_CURL_FIRST_FAIL:-}" ] && exit 6 ;; esac
-[ -n "${STUB_CURL_FAIL:-}" ] && exit 6
+host="${url#https://}"; host="${host%%/*}"
+fail() { [ -z "${STUB_CURL_WORDS:-}" ] || echo "curl: ($1) $2" >&2; exit "$1"; }   # curl's own words only when a case asks for them
+case "$url" in *fastly*) [ -n "${STUB_CURL_FIRST_FAIL:-}" ] && fail 18 "Transferred a partial file" ;; esac
+[ -n "${STUB_CURL_FAIL:-}" ] && fail 6 "Could not resolve host: $host"
 cp "$FIXBIN/SteamSetup.${STUB_STEAMFILE:-good}" "$out"
 X
 cat > "$B/softwareupdate" << 'X'
@@ -444,6 +450,15 @@ check "  ...an unknown sha256: a CAUTION line" "$(said 'CAUTION: this is a newer
 check "  ...wineserver waited for in this prefix" "$(grep -c "^WINESERVER -w prefix=$(cd "$PFX" && pwd -P)\$" "$CALLS")" 2
 newh; bash "$MKW" "$WR"; dl installed; rc="$(STUB_CURL_FIRST_FAIL=1 run)"
 check "the first address fails: the second is tried" "$rc:$(grep -c 'cdn.akamai.steamstatic.com' "$CALLS")" "0:1"
+# curl's own words (docs/plans/first-run-findings.md, 2.2, FT2): shown only when every address has failed
+newh; bash "$MKW" "$WR"; dl installed; rc="$(STUB_CURL_FIRST_FAIL=1 STUB_CURL_WORDS=1 run)"
+check "the first address fails with curl's words and the second works: none of them on screen" \
+  "$rc:$(grep -c 'cdn.akamai.steamstatic.com' "$CALLS"):$(said 'curl:'):$(said 'partial file')" "0:1:0:0"
+newh; bash "$MKW" "$WR"; mkdir "$T/tmp$n"; rc="$(STUB_CURL_FAIL=1 STUB_CURL_WORDS=1 TMPDIR="$T/tmp$n" run)"
+check "both addresses fail: exit 1, the installer's sentence, then both tries' words indented under it" \
+  "$rc:$(grep -A 2 "^  !! Steam's installer could not be downloaded from Valve\. Check the network, then open the installer again\.\$" "$H.out" | sed 1d | tr '\n' '|')" \
+  "1:     curl: (6) Could not resolve host: cdn.fastly.steamstatic.com|     curl: (6) Could not resolve host: cdn.akamai.steamstatic.com|"
+check "  ...Steam's installer not run, and nothing left in the temporary folder" "$(calls 'SteamSetup.exe /S'):$(ls -A "$T/tmp$n" | wc -l | tr -d ' ')" "0:0"
 for k in nomz novalve small; do
   newh; bash "$MKW" "$WR"; rc="$(STUB_STEAMFILE=$k run)"
   check "a downloaded file that fails one test ($k): exit 1, not run" "$rc:$(calls 'SteamSetup.exe /S')" "1:0"

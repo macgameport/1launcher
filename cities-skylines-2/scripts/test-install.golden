@@ -930,6 +930,83 @@ Step 5 of 6: The game
 Step 6 of 6: The Mac fixes and the game's app
 
 Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== the first address fails with curl's words and the second works: none of them on screen :: 0:1:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
+  CAUTION: this is a newer installer from Valve than the one this was tested with.
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
+  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+  The game is installed. Closing Steam.
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== both addresses fail: exit 1, the installer's sentence, then both tries' words indented under it :: 1:     curl: (6) Could not resolve host: cdn.fastly.steamstatic.com|     curl: (6) Could not resolve host: cdn.akamai.steamstatic.com|
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  !! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again.
+     curl: (6) Could not resolve host: cdn.fastly.steamstatic.com
+     curl: (6) Could not resolve host: cdn.akamai.steamstatic.com
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+==   ...Steam's installer not run, and nothing left in the temporary folder :: 0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  !! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again.
+     curl: (6) Could not resolve host: cdn.fastly.steamstatic.com
+     curl: (6) Could not resolve host: cdn.akamai.steamstatic.com
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
 == a downloaded file that fails one test (nomz): exit 1, not run :: 1:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.

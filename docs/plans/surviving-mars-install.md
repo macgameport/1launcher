@@ -820,6 +820,11 @@ of it is built.
 | MF3 | A player who already has the game elsewhere with a Paradox mod: the first start warns that the mod could not be loaded, the game fetches it again by itself, and it stays switched off, here and, through Steam Cloud, on the player's other installs, until the mod manager is opened. A save loaded meanwhile runs without its mod | One paragraph in this game's guide and one line where the installer ends: after a new install, open the mod manager before loading a save if you use mods. Measured first: 1.7's item 8. **Seen again at ML4, and worse than a warning:** in the new install the save was loaded one second after the game had fetched the mod, ran without it for the whole session, and was saved and uploaded in that state; in the real install, which pulled the switched-off state from the cloud, a save was again loaded and saved before the Mod Manager was opened. So the wanted words must say to open the Mod Manager before a save is loaded or continued, and whether the launcher or the installer can do more than say so is to be planned |
 | MF4 | The new prefix has none of the Visual C++ runtimes, `d3dcompiler_47` and fonts that the old one holds, and the game reached the map | Nothing is added to the installer for them on this evidence. ML4's session of 8 minutes in such a prefix went without a fault (1.4). If longer play fails for a missing runtime, the runtime's source and licence are a decision of their own |
 
+**What became of each row (2026-11-15).** They were planned in `docs/plans/first-run-findings.md`, checked
+on 2026-11-14 and built on the branch `first-run-findings` on 2026-11-15, the live step still owed: MF1 by
+its slice G; MF2 by slice A; MF3 by slice I (a note before the first start, the game's own log read after
+exit, and one copy of the saves), which can warn and cannot prevent. For MF4 nothing is built.
+
 ## 6. Exit criteria
 
 - M0's three probes are recorded, and the design is unchanged by them or the change was checked. (ML1:

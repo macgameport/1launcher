@@ -358,6 +358,14 @@ of `docs/plans/surviving-mars-install.md` (its 1.4 and 5a) added SF8 and saw SF1
 | SF8 | At ML2 `make-wrapper.sh` stood at "making the Wine prefix (about 30 s)" for 85 minutes. The prefix was complete within a minute; the template's `wineskinlauncher WSS-wineprefixcreate` then waits until no process named `wineserver` runs anywhere on the Mac (`killall -0 wineserver` in its own loop), and a storefront Steam was open in another wrapper. It returned with exit 0 23 s after that Steam was quit. SL1, SL2, NL1 and NL2 did not show it because no other Wine ran | Measured first: whether the wait can be avoided (the prefix made with the engine's own `wineboot` instead of the template's program, or that program told to return), or only announced. Then either the installer does not wait, or before that step it names what is running (another game's wrapper, the Steam app, CrossOver) and says to quit it, and says so again if the step runs long. Its test starts a second Wine before the step |
 | SF9 | Found 2026-11-13 while the Surviving Mars plan's M6 was built: `cities-skylines-2/scripts/test-install.sh` fails now and then. Of 9 runs on the Studio (5 on the core as it was, 4 with one line added to its exit handler), 4 failed, in two ways, each seen with and without the line. One: "the Mac kept awake while it runs" read 0, because the installer starts `caffeinate` in the background and the stub's line can land after the installer exits; the test now waits up to 3 s for it. Two: the transcript gained a line `install-core.sh: child setpgid (<n> to <n>): Operation not permitted`, bash's own, from `start_steam`'s `set -m` (`common/install-core.sh:144`). **Not known:** whether a player can see that line in a real install, and why the call is refused | The cause of the second, measured: whether it needs a shell with no terminal (the test's), and whether the line can reach a player. Then either the line is kept out of the installer's output or `start_steam` gets its own process group another way. Until then a red run of that test whose only difference is that line is this finding, not a changed word |
 
+**What became of each row (2026-11-15).** They were planned in `docs/plans/first-run-findings.md`, checked
+on 2026-11-14 and built on the branch `first-run-findings` on 2026-11-15, the live step still owed: SF1 and
+SF2 by its slice A (one transfer of the installer's own tells a cut path from a first start's stumble, and
+the words follow from it); SF3 by slice B (the updater's window cannot be hidden, so it is named); SF4 by
+slice C; SF5 by slice D; SF8 by slice G; SF9 by slice H. SF6 is not built: it waits for James's decision
+ND1. SF7 is not built: it waits for a plan of its own, since no patch script can report "no pattern for
+this build" apart from a failure.
+
 **SF1 and SF2, the words (put to James on 2026-11-11, who answered "ok"; not checked, not built).** With the
 default route on a tunnel:
 

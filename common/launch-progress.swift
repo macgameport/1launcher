@@ -62,8 +62,9 @@ func reading(ofLog path: String) -> Reading {
 
 // Whether the window stays up. It ends by what the log says, with no process matching. The limits:
 // `die` has shown its own alert; 5 s after the final step the game's window is on its way; the longest
-// designed silence is the Surviving Mars cloud sync, 5 minutes, so 15 without a line means the launcher
-// is stuck or gone; a game update is allowed 60 minutes and can run a little past that, so 90 in all;
+// designed silence of a launch that is moving is the Surviving Mars cloud sync, 5 minutes, so 15 without
+// a line means the launcher is stuck, gone, or waiting at an alert nobody has answered (Surviving Mars's
+// note before a first start waits without a limit; its alert stays up when this window goes); a game update is allowed 60 minutes and can run a little past that, so 90 in all;
 // and a window whose shim has gone has nothing left to report.
 func staysUp(_ r: Reading, sinceGrew: Double, sinceFinal: Double, sinceStart: Double, parentIsStarter: Bool) -> Bool {
     if case .error = r { return false }

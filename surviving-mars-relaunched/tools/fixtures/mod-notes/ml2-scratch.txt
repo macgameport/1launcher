@@ -1,0 +1,6 @@
+Account storage loaded successfully in 6 ms
+[PdxSDK] Startup autologin failed NoSessionTokenFound. Took 342<CR>
+[Braze] Deinit due to new user.<CR>
+[PdxSDKMods] Updated/installed mod 156049  to version  17 { InstalledPath = C:\users\<name>\AppData\Roaming\Surviving Mars Relaunched\PdxMods/pdx_156049_17, 1 = {...} }<CR>
+Load Game: 
+[mod] Savegame references Mod Relaunched Fix Pack (id SMR_CommunityFixPack, v1.00-024) which is not present<CR>

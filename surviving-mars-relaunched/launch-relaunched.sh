@@ -184,6 +184,91 @@ release_lock() { [ "$(lock_holder)" = "$$" ] && rm -f "$LOCK"; return 0; }
 acquire_lock 90 || die "Another launch in this wrapper is still running (pid $(lock_holder)). Wait for it to finish, then try again."
 trap release_lock EXIT
 
+# Mods from Paradox Mods in a new install (docs/plans/first-run-findings.md, 2.6). Which mods are on
+# travels with the player's account by Steam Cloud; a new prefix is not logged in to Paradox, so the
+# game starts with them off, writes that to the account about 19 s after its start, and says so in a
+# box behind its two agreements. A save loaded before the Mod Manager was opened runs, and is saved,
+# without its mods. Nothing here can prevent that, and nothing here reads or writes the account's
+# file: the launcher says it before the first start, keeps one copy of the saves, and after the game
+# has exited repeats what the game's own log says about a save loaded without a mod.
+# >>> mod-notes — tools/test-mod-notes.sh sources everything between these markers
+GAME_DATA="$WINEPREFIX/drive_c/users/Wineskin/AppData/Roaming/Surviving Mars Relaunched"
+SAVES_DIR="$WINEPREFIX/drive_c/users/Wineskin/Saved Games/Surviving Mars Relaunched"
+MOD_NOTE="Before you load or continue a save in this new install: if you use mods from Paradox Mods, they start switched off. Accept the game's two agreements (scroll each to its end), log in to your Paradox account when the game offers it, then open Mod Manager from the main menu."
+first_start_look() {   # the game writes LocalStorage.lua 1 s after its first start in a prefix
+  FIRST_START=0
+  [ -e "$GAME_DATA/LocalStorage.lua" ] || FIRST_START=1
+}
+first_start_note() {   # given as the cloud message is: a line for the log, then an alert that waits.
+  # Not a `note`: from the app that is a notification, two lines for a few seconds, and this is the one
+  # message that has to be read. Nothing of Steam runs yet while its alert waits.
+  [ "$FIRST_START" = 1 ] || return 0
+  echo "$MOD_NOTE"
+  [ "$QUIET" = 1 ] && _alert "$MOD_NOTE" warning
+  return 0
+}
+home_tilde() { case "$1" in "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;; *) printf '%s' "$1" ;; esac; }
+first_start_copy() {   # one copy of the saves as Steam pulled them, before the game can save over one
+  # Called after the cloud check has answered. The folder is copied whole and by its own name (it holds
+  # the account's file too, which is never opened here), into the state folder's backup/ and nowhere
+  # else; nothing ever copies it back. Never a slash after the folder's name: cp follows a link then.
+  local dest
+  [ "$FIRST_START" = 1 ] || return 0
+  [ ! -L "$SAVES_DIR" ] && [ -d "$SAVES_DIR" ] || return 0
+  [ -n "$(find "$SAVES_DIR" -type f 2>/dev/null | head -n 1)" ] || return 0   # a new player has no saves
+  dest="$SM_STATE/backup/first-start-$(date +%Y%m%d-%H%M%S)"
+  # cp copies into a folder that is there and mv moves inside one, so a name in use is left alone.
+  if [ -e "$dest" ] || [ -e "$dest.partial" ]; then return 0; fi
+  # cp's own words go nowhere: on a full disk they hold the home folder's path and the account's number.
+  if mkdir -p "$SM_STATE/backup" 2>/dev/null &&
+     cp -Rp -- "$SAVES_DIR" "$dest.partial" >/dev/null 2>&1 && mv -- "$dest.partial" "$dest"; then
+    echo "A copy of your saves as they were on this Mac before this install's first start: $(home_tilde "$dest")"
+  else
+    echo "WARNING: The saves could not be copied before this first start ($(home_tilde "$dest.partial")). The game starts all the same."
+  fi
+  return 0
+}
+mods_missed() {   # the game's log on stdin -> the title of each mod a save was loaded without, one a line
+  # Only the game's own two lines count, so a mod the player switched off on purpose is never named.
+  # A title is the game's text: control characters go, 60 bytes at most are kept, and iconv drops a
+  # character cut in half (osascript refuses an argument that is not UTF-8, and no alert would show).
+  LC_ALL=C awk '
+    { sub(/\r$/, "") }
+    /^\[mod\] Savegame references Mod .* \(id .*which is not present/ ||
+    /^\[mod\] This savegame tries to load Mod .* \(id .*which is present, but not loaded/ {
+      t = $0
+      sub(/^\[mod\] (Savegame references|This savegame tries to load) Mod /, "", t)
+      sub(/ \(id .*$/, "", t)
+      gsub(/[[:cntrl:]]/, "", t)
+      t = substr(t, 1, 60)
+      if (t != "" && !(t in seen)) { seen[t] = 1; print t }
+    }' | iconv -c -f UTF-8 -t UTF-8 2>/dev/null
+}
+mod_report() {   # <this launch as YYYYMMDD-HHMMSS>: MOD_MSG, from the log the game wrote in this session
+  local g f="" stamp names n first3
+  MOD_MSG=""
+  for g in "$GAME_DATA/logs"/Mars.exe-*.log; do   # the game names its log by its own start, local time
+    [ -f "$g" ] || continue
+    stamp=$(basename "$g" | sed -n 's/^Mars\.exe-\([0-9]\{8\}\)-\([0-9][0-9]\)\.\([0-9][0-9]\)\.\([0-9][0-9]\)-.*$/\1-\2\3\4/p')
+    [ -n "$stamp" ] || continue
+    [ "$stamp" \< "$1" ] && continue              # an older session's log
+    f="$g"; break
+  done
+  [ -n "$f" ] || return 0
+  names=$(mods_missed < "$f")
+  [ -n "$names" ] || return 0
+  n=$(printf '%s\n' "$names" | grep -c '')
+  first3=$(printf '%s\n' "$names" | head -n 3 | awk 'NR > 1 { printf ", " } { printf "%s", $0 }')
+  if [ "$n" = 1 ]; then
+    MOD_MSG="This session loaded a save that uses the mod $first3 while it was switched off: it ran without it, and anything saved in it was saved without it. Open Mod Manager from the main menu before you load a save again."
+  else
+    [ "$n" -gt 3 ] && first3="$first3 and $((n - 3)) more"
+    MOD_MSG="This session loaded a save that uses the mods $first3 while they were switched off: it ran without them, and anything saved in it was saved without them. Open Mod Manager from the main menu before you load a save again."
+  fi
+}
+# <<< mod-notes
+first_start_look; first_start_note
+
 # Attribute Steam by open files against THIS prefix, never by command line (cs2 GOTCHAS 2026-08-24).
 _owns() { lsof -p "$1" 2>/dev/null | grep -q "$WINEPREFIX"; }
 steam_exe_up() {
@@ -270,6 +355,7 @@ case "$SIGNIN" in
   failed) note "Steam Cloud could not sync at sign-in (Steam's logs/cloud_log.txt says why); playing with this Mac's saves." ;;
   *) note "Steam Cloud: no sign-in sync logged; playing with this Mac's saves." ;;
 esac
+first_start_copy
 
 # 2b) Is a game update waiting? Copied from cs2's launch-cs2-dxmt11.sh § 2b (its #17). This launcher runs
 #     Steam -silent and shuts it down when the game exits, and the manifest reads AutoUpdateBehavior 1,
@@ -359,7 +445,7 @@ step 4 "Checking for a game update…"
 check_game_update
 
 echo 3215050 > "$GAME/steam_appid.txt"
-mkdir -p "$RUNS"; LOG="$RUNS/launch-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p "$RUNS"; LSTAMP="$(date +%Y%m%d-%H%M%S)"; LOG="$RUNS/launch-$LSTAMP.log"
 step 5 "Starting Surviving Mars: Relaunched…"
 cd "$GAME" || die "cannot enter the game directory"
 CBEFORE=$(wc -l < "$CLOUD" 2>/dev/null || echo 0)
@@ -376,6 +462,7 @@ else
 fi
 wait "$GAME_PID"
 echo "Game exited (rc=$?). Shutting down Steam…"
+mod_report "$LSTAMP"   # the game writes its log out as it exits
 # The watcher exits by itself ~5 s after the window is gone (it waits that long for a recreated one).
 if [ -n "$FIX_PID" ]; then
   for _ in $(seq 1 8); do kill -0 "$FIX_PID" 2>/dev/null || break; sleep 1; done
@@ -409,5 +496,9 @@ note "Surviving Mars: Relaunched closed."
 if [ -n "$CLOUD_MSG" ]; then
   echo "WARNING: $CLOUD_MSG"
   [ "$QUIET" = 1 ] && _alert "$CLOUD_MSG" warning
+fi
+if [ -n "$MOD_MSG" ]; then
+  echo "WARNING: $MOD_MSG"
+  [ "$QUIET" = 1 ] && _alert "$MOD_MSG" warning
 fi
 exit 0

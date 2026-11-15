@@ -23,6 +23,8 @@
 #    23 GAME taken from the resolved path        24 the swap finished under --check
 #    25 the lock's holder not looked at before the finish
 #    26 the finish made only when wine64 is gone 27 a refused finish passed on to the core's test
+#    28 the closing line put back after a Mac check that exits 3 (docs/plans/first-run-findings.md, 2.8, FT5)
+#    29 the closing line dropped after the refusal of Rosetta too
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -101,6 +103,8 @@ assert s.count(a) == 1
 open(p, "w").write(s.replace(a, a.replace("  exit 3\n", "  return 0\n")))
 PY
      ;;
+  28) sed -i '' '/^  \[ "\$rc" = 3 \] && END=quiet /d' "$CORE" ;;
+  29) sed -i '' 's|softwareupdate --install-rosetta --agree-to-license"; exit 3 ;;$|softwareupdate --install-rosetta --agree-to-license"; END=quiet; exit 3 ;;|' "$CORE" ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
@@ -305,6 +309,13 @@ check "the installer's own files gone: exit 4" "$(run --):$(c '^SETUP')" "4:0"
 : > "$G/tools/frame-fix.exe"
 rc=$(run STUB_MAC_RC=3 STUB_MAC_WORDS="!! This Mac has an Intel processor." --)
 check "a Mac check that exits 3 stops the install, setup's words above the core's" "$rc:$(grep -n -E 'Intel processor|the check of this Mac failed \(exit 3\)' "$T/out" | cut -d: -f2 | cut -c1-14 | tr '\n' '|')" "1:  !! This Mac |  !! the check|"
+# the core's closing line sends the player to the installer again, which cannot help on such a Mac
+# (docs/plans/first-run-findings.md, 2.8, FT5): after setup's exit 3, and that code only, it is not said
+check "  ...and the core's closing line is not said: no \"Open the installer again\", and its own line is the last" "$(o 'Open the installer again'):$(o '^The install stopped'):$(tail -n 1 "$T/out")" "0:0:  !! the check of this Mac failed (exit 3)"
+rc=$(run STUB_MAC_RC=5 STUB_MAC_WORDS="!! something else." --)
+check "a Mac check that fails with another code keeps the closing line" "$rc:$(o 'the check of this Mac failed (exit 5)'):$(o '^The install stopped\. The lines above say why\. Open the installer again to carry on from that step\.$')" "1:1:1"
+rc=$(run STUB_MAC_RC=1 --)
+check "the refusal of Rosetta keeps the closing line: there, opening the installer again does help" "$rc:$(o 'softwareupdate --install-rosetta --agree-to-license$'):$(c '^SOFTWAREUPDATE'):$(o '^The install stopped\. The lines above say why\. Open the installer again to carry on from that step\.$')" "3:1:0:1"
 
 # --- a swap stopped part way: a finished wine.new beside the BAK
 part() {   # <what is left of wine/: gone | noserver | whole21 | whole30>: the default wrapper in that state

@@ -729,8 +729,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -765,8 +766,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -802,8 +804,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -839,8 +842,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -876,8 +880,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -913,8 +918,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -930,6 +936,84 @@ Step 5 of 6: The game
 Step 6 of 6: The Mac fixes and the game's app
 
 Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== the first address fails with curl's words and the second works: none of them on screen :: 0:1:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
+  CAUTION: this is a newer installer from Valve than the one this was tested with.
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+  The game is installed. Closing Steam.
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== both addresses fail: exit 1, the installer's sentence, then both tries' words indented under it :: 1:     curl: (6) Could not resolve host: cdn.fastly.steamstatic.com|     curl: (6) Could not resolve host: cdn.akamai.steamstatic.com|
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  !! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again.
+     curl: (6) Could not resolve host: cdn.fastly.steamstatic.com
+     curl: (6) Could not resolve host: cdn.akamai.steamstatic.com
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+==   ...Steam's installer not run, and nothing left in the temporary folder :: 0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  !! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again.
+     curl: (6) Could not resolve host: cdn.fastly.steamstatic.com
+     curl: (6) Could not resolve host: cdn.akamai.steamstatic.com
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
 == a downloaded file that fails one test (nomz): exit 1, not run :: 1:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1088,8 +1172,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1123,8 +1208,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1158,8 +1244,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1193,8 +1280,45 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+  The game is installed. Closing Steam.
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+==   ...before Steam's start: the updater's window and its Cancel are named, and the error box, with no size or time in them ::   Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows|  Steam downloading its own update: leave it, and do not press its Cancel. A box headed|  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.|:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1228,8 +1352,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1263,8 +1388,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1298,8 +1424,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1315,7 +1442,7 @@ Step 5 of 6: The game
 Step 6 of 6: The Mac fixes and the game's app
 
 Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
-== a first start that ends in its fatal line (fatal-o): ended in this prefix, started again at once :: 0:2:1:soon
+==   ...with no transfer of the installer's own, no look at the route and no word of a VPN :: 0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -1333,8 +1460,638 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+  The game is installed. Closing Steam.
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== needs to be online, the transfer cut (18), a tunnel: exit 4, the vpn form, 1 start(s), Steam not left running :: 4:vpn:1:down:1:1:1:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
+     then open the installer again. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+==   ...that Steam was ended and no other started before the transfer :: XFER starts=1 steam=down
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
+     then open the installer again. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+==   ...one transfer, with the options of 2.1, of the largest file asked for since that start, no carriage return on it :: 1:1
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
+     then open the installer again. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== the transfer cut (56), a tunnel: exit 4, the vpn form, 1 start(s), Steam not left running :: 4:vpn:1:down:1:1:1:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
+     then open the installer again. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== the transfer cut (92), a tunnel: exit 4, the vpn form, 1 start(s), Steam not left running :: 4:vpn:1:down:1:1:1:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
+     then open the installer again. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== the transfer cut (18), no tunnel: exit 4, the later form, 1 start(s), Steam not left running :: 4:later:1:down:1:1:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== the transfer cut (18), the route not told: exit 4, the later form, 1 start(s), Steam not left running :: 4:later:1:down:1:1:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== no network (6), a tunnel: exit 4, the none form, 1 start(s), Steam not left running :: 4:none:1:down:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: this Mac cannot reach Valve's server.
+     Check the network, then open the installer again. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== no network (7), a tunnel: exit 4, the none form, 1 start(s), Steam not left running :: 4:none:1:down:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: this Mac cannot reach Valve's server.
+     Check the network, then open the installer again. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== the transfer working (0 with 20,000,000 bytes), a tunnel, and the next start comes up: exit 0, 2 start(s), no words :: 0:2:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+  The game is installed. Closing Steam.
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+==   ...and the four starts that are left all end in a fatal line: exit 4, the reach form, 5 start(s), Steam not left running :: 4:reach:5:down:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update, although this Mac reaches Valve's server.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== the transfer working (28 with 20,000,000 bytes), a tunnel, and the next start comes up: exit 0, 2 start(s), no words :: 0:2:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+  The game is installed. Closing Steam.
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+==   ...and the four starts that are left all end in a fatal line: exit 4, the reach form, 5 start(s), Steam not left running :: 4:reach:5:down:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update, although this Mac reaches Valve's server.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== not known (28 with 19,999,999 bytes): another start, which comes up: exit 0, 2 start(s), no words :: 0:2:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+  The game is installed. Closing Steam.
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== not known (28 with 19,999,999 bytes), a tunnel, the starts used up: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== not known (0 with 5 MB), a tunnel, the starts used up: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== not known (22), then four starts that end in the other fatal line: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== no address in the log since that start: curl is not run, not known: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:0:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== only addresses outside the pattern: curl is not run, not known: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:0:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== larger addresses outside the pattern beside smaller ones inside it: exit 4, the later form, 1 start(s), Steam not left running :: 4:later:1:down:1:1:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+==   ...the largest inside the pattern is used :: 1
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== both fatal lines new in one look: needs to be online is the one acted on: exit 4, the later form, 1 start(s), Steam not left running :: 4:later:1:down:1:1:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: the connection to Valve's server keeps being cut.
+     Open the installer again in a few minutes. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== download location, then needs to be online: the first restarts, the second does not: exit 4, the none form, 2 start(s), Steam not left running :: 4:none:2:down:1:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam could not download its own update: this Mac cannot reach Valve's server.
+     Check the network, then open the installer again. It carries on from this step.
+     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+== an earlier run's needs to be online and its addresses in the log, a tunnel, and a start that comes up: exit 0, 1 start(s), no words :: 0:1:0:0:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1368,8 +2125,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1403,8 +2161,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1438,8 +2197,38 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
+  !! Steam did not start after 5 tries. The last lines of its log:
+     [2026-11-10 20:40:49] Error: Failed to determine download location for universe 1
+     [2026-11-10 20:40:49] Error: Failed to determine download location for universe 1
+     [2026-11-10 20:40:49] Error: Failed to determine download location for universe 1
+     [2026-11-10 20:40:49] Error: Failed to determine download location for universe 1
+     [2026-11-10 20:40:49] Error: Failed to determine download location for universe 1
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+==   ...with no transfer: download location alone never asks for one :: 0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam did not start after 5 tries. The last lines of its log:
      [2026-11-10 20:40:49] Error: Failed to determine download location for universe 1
      [2026-11-10 20:40:49] Error: Failed to determine download location for universe 1
@@ -1466,8 +2255,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1501,8 +2291,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1570,8 +2361,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1605,8 +2397,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1641,8 +2434,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1677,8 +2471,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1709,8 +2504,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1744,8 +2540,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1779,8 +2576,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -1934,8 +2732,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -2275,8 +3074,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.
@@ -2310,8 +3110,9 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. A small box headed "Steam - Fatal Error" can appear once or twice
-  and close again. That is expected: Steam is updating itself. Click nothing in it.
+  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
+  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
+  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   When Steam's sign-in window appears:
     1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
        Steam may ask for a code from your email or the Steam app on your phone.

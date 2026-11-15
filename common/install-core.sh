@@ -33,6 +33,9 @@ GONE_POLLS=3      # Steam gone for this many polls in a row is gone (its updater
 START_POLLS=120   # ten minutes for one start of Steam to bring its client up
 MAX_STARTS=5
 FATAL='Error: (Failed to determine download location|Steam needs to be online)'
+FATAL_ONLINE='Error: Steam needs to be online'   # of the two, the one a cut path gives (docs/plans/first-run-findings.md, 2.1)
+PROBE_SECS=20          # the longest the installer's own transfer from Valve's server may take
+PROBE_BYTES=20000000   # that transfer counts as working from this many bytes: cuts were seen after 1.1 and 12.9 million
 KILL_CMD="${L1_KILL:-kill}"   # the tests record the stray sweep's kill instead of sending it
 
 CHECK=0; YES=0; DESKTOP=0; NO_SETUP=0; END=""
@@ -145,9 +148,12 @@ use_wrapper() {   # <path>: the wrapper, and the game's launcher's exports for i
 }
 steam_exe() { if [ -f "$STEAMDIR/steam.exe" ]; then echo "$STEAMDIR/steam.exe"; else echo "$STEAMDIR/Steam.exe"; fi; }
 start_steam() {   # its own process group, hang-up ignored: Control-C or a closed window does not reach it
-  set -m
-  ( trap '' HUP; exec "$WINE" "$(steam_exe)" $STEAM_ARGS ) < /dev/null > /dev/null 2>&1 & disown
-  set +m
+  # The braces send error output away: with job control on, the forked child now and then prints bash's own
+  # "child setpgid (...): Operation not permitted" before its redirections take effect (4 of 3,200 starts
+  # with no terminal; 0 of 6,400 with this: docs/plans/first-run-findings.md, 2.9).
+  { set -m
+    ( trap '' HUP; exec "$WINE" "$(steam_exe)" $STEAM_ARGS ) < /dev/null > /dev/null 2>&1 & disown
+    set +m; } 2> /dev/null
 }
 end_steam() {   # wineserver -k for this prefix, then up to 10 s until nothing holds it
   local i=0
@@ -165,19 +171,26 @@ game_state() {   # installed | update | absent | partial
   else echo partial; fi
 }
 
-start_until_up() {   # 0 = the client is up; 1 = five starts and no client
-  local starts=0 i gone before
-  while [ "$starts" -lt "$MAX_STARTS" ]; do
-    starts=$((starts + 1))
+STARTS=0; PROBED=0   # the starts of Steam in this run, and whether its one transfer was made: both outlive a call
+start_until_up() {   # 0 = the client is up; 1 = five starts in this run and no client; 2 = "needs to be online"
+  # before the transfer was made: that Steam is ended and none is started. LOG_FROM is the number of the log's
+  # last line before the last start.
+  local i gone
+  while [ "$STARTS" -lt "$MAX_STARTS" ]; do
+    STARTS=$((STARTS + 1))
     rm -f "$STEAMDIR/.crash"
-    before=0; [ -f "$BOOTLOG" ] && before="$(wc -l < "$BOOTLOG" | tr -d ' ')"   # no log before Steam's first start
+    LOG_FROM=0; [ -f "$BOOTLOG" ] && LOG_FROM="$(wc -l < "$BOOTLOG" | tr -d ' ')"   # no log before Steam's first start
     start_steam
     i=0; gone=0
     while [ "$i" -lt "$START_POLLS" ]; do
       sleep "$POLL"; i=$((i + 1))
       if webhelper_up; then trace up; return 0; fi
       trace no
-      if tail -n +"$((before + 1))" "$BOOTLOG" 2>/dev/null | grep -Eq "$FATAL"; then end_steam; continue 2; fi
+      if tail -n +"$((LOG_FROM + 1))" "$BOOTLOG" 2>/dev/null | grep -Eq "$FATAL"; then
+        end_steam
+        [ "$PROBED" = 0 ] && tail -n +"$((LOG_FROM + 1))" "$BOOTLOG" 2>/dev/null | grep -q "$FATAL_ONLINE" && return 2
+        continue 2
+      fi
       if steam_proc_up; then gone=0
       else gone=$((gone + 1)); [ "$gone" -ge "$GONE_POLLS" ] && continue 2
       fi
@@ -185,6 +198,47 @@ start_until_up() {   # 0 = the client is up; 1 = five starts and no client
     end_steam
   done
   return 1
+}
+# Both fatal lines are cured by another start now and then, so neither says the path to Valve is cut. One
+# transfer of the installer's own says it, once in a run, after the first "needs to be online".
+update_probe() {   # sets PROBE: cut | none (no network) | working | unknown
+  local url size rc
+  PROBED=1; PROBE=unknown
+  # the largest file Steam asked for since its last start: a small one passes whole on a path that cuts.
+  # Steam's log ends every line in a carriage return, and curl refuses an address that carries one.
+  url="$(tail -n +"$((LOG_FROM + 1))" "$BOOTLOG" 2>/dev/null | tr -d '\r' | sed -n 's/.*Add pending download: //p' \
+    | grep -E '^https://[A-Za-z0-9.-]+\.steamstatic\.com/(client/)?[A-Za-z0-9._-]+_[0-9]+$' \
+    | awk -F_ '$NF + 0 > max { max = $NF + 0; u = $0 } END { if (u != "") print u }')"
+  [ -n "$url" ] || return 0
+  # -q: the player's own curl settings are not read. -f: an error page is not a transfer that worked.
+  size="$(curl -q --proto '=https' --proto-redir '=https' --tlsv1.2 --globoff -fsSL --max-time "$PROBE_SECS" \
+    -o /dev/null -w '%{size_download}' -- "$url" 2> /dev/null)"; rc=$?
+  case "$size" in ''|*[!0-9]*) size=0 ;; esac
+  case "$rc" in
+    18|56|92) PROBE=cut ;;
+    6|7) PROBE=none ;;
+    0|28) [ "$size" -ge "$PROBE_BYTES" ] && PROBE=working ;;
+  esac
+}
+on_tunnel() { route -n get default 2>/dev/null | awk '$1 == "interface:" { print $2 }' | grep -q '^utun'; }
+update_words() {   # <update_probe's result>: Steam's own update did not arrive. No line of Steam's log is shown
+  local later="   Open the installer again in a few minutes. It carries on from this step."
+  case "$1" in
+    cut) say "!! Steam could not download its own update: the connection to Valve's server keeps being cut."
+         if on_tunnel; then
+           say "   This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,"
+           say "   then open the installer again. It carries on from this step."
+         else say "$later"
+         fi ;;
+    none) say "!! Steam could not download its own update: this Mac cannot reach Valve's server."
+          say "   Check the network, then open the installer again. It carries on from this step." ;;
+    working) say "!! Steam could not download its own update, although this Mac reaches Valve's server."
+             say "$later" ;;
+    *) say "!! Steam could not download its own update."
+       say "$later" ;;
+  esac
+  say "   Steam's own log, if you ask for help: $(tilde "$BOOTLOG")"
+  END=quiet   # the closing line for 4 would say "open the installer again" a second time
 }
 other_steam() {   # a Steam for Windows that is not this prefix's: its wrapper's name, or "another Wine prefix"
   local p o f
@@ -250,7 +304,9 @@ if [ "$rc" = 1 ]; then
       *) say "To install it later, run this in Terminal:  softwareupdate --install-rosetta --agree-to-license"; exit 3 ;;
     esac
   fi
-elif [ "$rc" != 0 ]; then say "!! the check of this Mac failed (exit $rc)"; exit 1
+elif [ "$rc" != 0 ]; then
+  [ "$rc" = 3 ] && END=quiet   # a Mac the game cannot run on: setup has said why, and opening the installer again cannot help
+  say "!! the check of this Mac failed (exit $rc)"; exit 1
 fi
 }
 core_tools() {
@@ -306,11 +362,16 @@ if [ -f "$STEAMDIR/steam.exe" ] || [ -f "$STEAMDIR/Steam.exe" ]; then say "OK"
 elif [ "$CHECK" = 1 ]; then say "would be downloaded from Valve and installed in the wrapper"
 else
   D="$(mktemp -d "${TMPDIR:-/tmp}/1launcher-steam.XXXXXX")" || { say "!! a temporary folder could not be made"; exit 1; }
-  got=0
-  for u in $STEAM_URLS; do
-    curl --proto '=https' --tlsv1.2 -fsSL --retry 2 -o "$D/SteamSetup.exe" "$u" && { got=1; break; }
+  got=0; try=0
+  for u in $STEAM_URLS; do   # curl's own words go to a file: for an address that failed before one that worked they say nothing true
+    try=$((try + 1))
+    curl --proto '=https' --tlsv1.2 -fsSL --retry 2 -o "$D/SteamSetup.exe" "$u" 2> "$D/curl-$try.err" && { got=1; break; }
   done
-  if [ "$got" = 0 ]; then rm -rf "$D"; say "!! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again."; exit 1; fi
+  if [ "$got" = 0 ]; then
+    say "!! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again."
+    cat "$D"/curl-*.err 2>/dev/null | sed 's/^/     /'
+    rm -rf "$D"; exit 1
+  fi
   sz="$(stat -f %z "$D/SteamSetup.exe")"
   if [ "$sz" -le 1048576 ] || [ "$(head -c 2 "$D/SteamSetup.exe")" != MZ ] || ! grep -q -a 'Valve Corp' "$D/SteamSetup.exe"; then
     rm -rf "$D"; say "!! the file downloaded from Valve is not Steam's installer (a cut download, or an error page)"; exit 1
@@ -346,8 +407,9 @@ case "$STATE" in
     up=0
     if webhelper_up; then up=1; say "Steam for Windows is open."
     else
-      say "Steam for Windows is starting. A small box headed \"Steam - Fatal Error\" can appear once or twice"
-      say "and close again. That is expected: Steam is updating itself. Click nothing in it."
+      say "Steam for Windows is starting. The first time, a small window that says \"Updating Steam...\" shows"
+      say "Steam downloading its own update: leave it, and do not press its Cancel. A box headed"
+      say "\"Steam - Fatal Error\" can also appear once or twice and close again: click nothing in it."
     fi
     if [ "$up" = 1 ]; then :
     elif steam_proc_up; then   # a Steam already there: up, or stuck at its box
@@ -359,12 +421,17 @@ case "$STATE" in
       [ "$up" = 1 ] || end_steam
     fi
     if [ "$up" = 0 ]; then
-      start_until_up || {
+      start_until_up; rc=$?
+      if [ "$rc" = 2 ]; then
+        update_probe
+        case "$PROBE" in cut|none) update_words "$PROBE"; exit 4 ;; esac
+        start_until_up || { end_steam; update_words "$PROBE"; exit 4; }
+      elif [ "$rc" != 0 ]; then
         end_steam
         say "!! Steam did not start after $MAX_STARTS tries. The last lines of its log:"
         tail -n 20 "$BOOTLOG" 2>/dev/null | sed 's/^/     /'
         exit 1
-      }
+      fi
     fi
     cat << WORDS
   When Steam's sign-in window appears:

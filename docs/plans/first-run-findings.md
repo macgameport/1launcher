@@ -1,7 +1,8 @@
 # What a new player meets: the findings of the installers' live steps
 
-> **Status:** Draft, 2026-11-13. Not yet checked: its probes (section 3) come first, because three of its
-> slices cannot be designed until something is measured (a fourth, H, was measured the same day). No code is built from this before a check.
+> **Status:** Draft, 2026-11-13. Not yet checked. Its six probes (section 3) are done, the last three on
+> 2026-11-14, and slices B, G and I are designed from them (2.10, 2.5, 2.6); the check comes next. No code
+> is built from this before a check.
 >
 > Tracking: issue #22. The code it speaks of exists only on the branch `surviving-mars-install` (cut from
 > `simple-install`): every `file:line` below is as of that branch at `75470c9`. A path is relative to the
@@ -22,14 +23,14 @@ James's.
 | Slice | Findings | What a player meets | Can be designed now |
 |---|---|---|---|
 | A. Steam's own update is cut | SF1, SF2, MF2 | Steam is started five times in 90 s, then twenty lines of its log and "Steam did not start after 5 tries" | yes (2.1) |
-| B. Steam's updater on screen | SF3 | Steam's own update windows and its "Fatal Error" box, on every start | no: probe P1 |
+| B. Steam's updater on screen | SF3 | Steam's own "Updating Steam..." window, with a Cancel button, at its first start in a new wrapper; sometimes its "Fatal Error" box | yes, since P1: it cannot be hidden, so it is named (2.10) |
 | C. curl's own words | SF4 | `curl: (18) Transferred a partial file` although the next address worked | yes (2.2) |
 | D. The macOS 28 notice | SF5 | "App Update Required ... will not open in macOS 28" at the wrapper's first start, and nothing says it is expected | yes (2.3) |
 | E. The downloaded app's approval | SF6 | Finder's "not responding" after the approval was stranded | no: James's ND1 first |
 | F. A fix not yet available for a new game build | SF7 | "setup finished with 1 problem(s)" and "The install stopped", the same on every later run | words yes; one decision (2.4) |
-| G. The wrapper's making waits for every other Wine | SF8, MF1 | "making the Wine prefix (about 30 s)" for as long as any other Wine is open | no: probe P2; a fallback is designed (2.5) |
+| G. The wrapper's making waits for every other Wine | SF8, MF1 | "making the Wine prefix (about 30 s)" for as long as any other Wine is open | yes, since P2 (2.5) |
 | H. A line of bash's in the installer's output | SF9 | perhaps `child setpgid (...): Operation not permitted`; and a test that fails now and then | yes, since P3 (2.9) |
-| I. A mod switched off by a new install | MF3 | a save runs, and is saved, without its Paradox mod, here and on the player's other install | in part (2.6); probes P4 and P5 |
+| I. A mod switched off by a new install | MF3, and what P5 showed besides | a save runs, and is saved, without its Paradox mod, here and on the player's other install; and a first start asks again for the game's two agreements and the Paradox account, with the game's own mod warning behind the agreements | yes, since P4 and P5 (2.6) |
 | J. Runtimes the new prefix lacks | MF4 | nothing so far | nothing to build (2.7) |
 | K. Small things seen at ML4 and at the re-check | | two lines that say something untrue | yes (2.8) |
 
@@ -85,8 +86,8 @@ first start and worked on the second (3 of 3). That case keeps its restarts.
    carry on", which is what the header of each installer says 4 means and what is true here.
 5. A VPN that works is never mentioned, and nothing is tested before a failure.
 
-**Not designed here:** a box instead of a line. It is looked at again only if probe P1 finds that Steam's
-own error box cannot be hidden and would cover the installer's window (SF2's row).
+**Not designed here:** a box instead of a line (SF2's row). P1 saw no error box of Steam's in four first
+starts (2.10), so it learned nothing about one covering the installer's window, and the line stays.
 
 ### 2.2 Slice C: curl's own words
 
@@ -111,6 +112,13 @@ ML4. That is what he saw, not a measurement of what macOS did: nothing was captu
 came for one new wrapper (SL1) and was not seen for another (ML4) is not known. Both were made by
 `common/make-wrapper.sh` on the same Mac and the same macOS. So the line below keeps its "may", and is
 printed for every game.
+
+**Seen again on 2026-11-14 (P5's second start; James's capture).** The notice came while the scratch game
+was starting, 35 minutes after its wrapper was made, and read `This version of "Claude Code" includes a
+component ...`: it names the app the Wine program was started from, which that evening was the app this
+session runs in. So what a player reads in it is the name of Terminal or of the installer's app, not the
+wrapper's or the game's, and when it comes is macOS's choice. The line below quotes no name for that
+reason.
 
 **Design.** One line where Wine first starts, in `common/make-wrapper.sh` before "making the Wine prefix"
 (`:135`), printed only on macOS 27:
@@ -154,21 +162,52 @@ program then waits until no process named `wineserver` runs anywhere on the Mac 
 in its own loop). At ML2 that was 85 minutes, ended 23 s after a Steam in another wrapper was quit. For
 this project it matters twice over: its own second game, or its Steam app, may be the Wine that is open.
 
-**Design, in two parts. The first rests on probe P2.**
+**From probe P2 (2026-11-14; the game's `runs/findings-probes-20261114/`, `notes.md` and
+`p2-compare.txt`).** Three bare wrappers, each the template's app with the engine moved in, as
+`make-wrapper.sh` has them before its step 7:
 
-1. If P2 finds a way to make the prefix that does not wait and gives the same prefix, the installer uses
-   it, and the rest of this slice is not needed.
-2. Otherwise, and in any case until P2 is done, the fallback: before the step, `make-wrapper.sh` looks
-   for a `wineserver` (`pgrep -x wineserver`), finds the wrapper each belongs to (`lsof -p`, the first
-   path that ends `.app/Contents/SharedSupport/prefix`), and says
+- **(a) The template's step with no other Wine open: 27 s.** `wineboot` until 16 s; `system.reg` at 17 s;
+  a second Wine program from 18 to 21 s; at 23 to 24 s the prefix goes from 1,989 entries to 1,983; the
+  program ends at 27 s with exit 0.
+- **(c) The same step with another Wine open** (the scratch game of P5): the same course to 21 s and
+  1,989 entries, then nothing changes. The program was ended (TERM) after 10 s without change. Against
+  (a): the same 1,793 regular files with the same contents, one installer file's random name aside; the
+  same registry, the wrapper's own name in paths, `MachineGuid` and times aside; the same `Info.plist`,
+  the name aside. What (c) has and (a) has not: six links in `drive_c/users/Wineskin` to the Mac's own
+  Desktop, Documents, Downloads, Music, Pictures and Movies (as `Videos`), and `user.reg` with mode 777
+  where (a) has 666. So after its wait the program removes those six links and sets that mode, and
+  nothing else that a comparison shows. With the links removed and the mode set, (c)'s list of names is
+  (a)'s, and Steam's installer ran in it (exit 0, 7 s).
+- **(b) `wineboot -u` by hand** in a prefix folder of its own: 15 s and no wait, but not the same
+  prefix. The user's folder carries the Mac user's name and there is no `Wineskin` folder, which every
+  path of this project's launchers names; 980 lines of `system.reg` and 17 of `user.reg` differ (the Mac
+  driver's keys, font smoothing, the Direct3D key, file associations). It is not used.
 
-   ```
-     Another Windows program is open on this Mac: <the wrapper's name, or "CrossOver", or "another Wine">.
-     The next step waits until it is closed. Quit it now, or leave this window open and quit it later.
-   ```
+**Design.** Step 7 of `make-wrapper.sh` starts the template's program in the background and looks once a
+second. While no other Wine is open nothing differs from today: the program ends by itself and its exit
+code is read as now. The script ends the program itself (TERM) only when all of these hold:
 
-   and, while the step runs longer than 60 s, says once a minute that it is still waiting and for what.
-   It does not close anything itself: another game may be running.
+- `system.reg`, `user.reg` and `userdef.reg` are in the prefix, and `drive_c/users/Wineskin` is a folder;
+- no `wineserver` holds this prefix (`lsof -p`, the prefix's path);
+- the number of entries in the prefix has stood still for 10 s;
+- a `wineserver` that does not hold this prefix is running (`pgrep -x wineserver`).
+
+It then does what the program does after its wait: in `drive_c/users/Wineskin` it removes `Desktop`,
+`Documents`, `Downloads`, `Music`, `Pictures` and `Videos`, each only if it is a symbolic link, and sets
+`user.reg` to mode 666. It says one line, for whoever reads a transcript later:
+
+```
+  Another Windows program is open on this Mac, so the installer finished this step itself.
+```
+
+The checks after the step stand as they are (`:137-140`). A prefix that is not complete after 180 s
+fails as a failed step does today, with the last lines of the program's output. The other Wine is never
+closed and never named: nothing is asked of the player. The announcing fallback this section held before
+P2 is dropped.
+
+This rests on the pinned template (`:19-21`): what its program does after the wait was found by
+comparing two prefixes, not read from its source. A line in the script's header says that a new pin
+repeats that comparison, and FT3b holds the two things the script does in its place.
 
 ### 2.6 Slice I: a mod switched off by a new install (Surviving Mars)
 
@@ -176,7 +215,9 @@ this project it matters twice over: its own second game, or its Steam app, may b
 
 - Which mods are on is kept with the player's account. `account.dat` in the saves folder travels by
   Steam Cloud; it is a container the tools cannot read (it begins `BPUL`; 28 printable strings in 4,633
-  bytes), so its size is the only sign: 4,633 to 4,690 bytes with the mod on, 4,585 to 4,609 with it off.
+  bytes). Its size was taken for a sign (4,633 to 4,690 bytes with the mod on, 4,585 to 4,609 with it
+  off); P5 found sizes of 4,673 and 4,675 bytes together with the game's own warning that the mod could
+  not be loaded, so a size says nothing and no design below reads it.
 - A prefix's own `AppData/Roaming/Surviving Mars Relaunched/LocalStorage.lua` is text. It holds
   `ModIdCache`, a table from a mod's folder to its id, once the mod's file has been fetched there. A new
   prefix has neither that key nor the mod's file.
@@ -218,8 +259,54 @@ player chooses Load Game and then a save (James, with a capture of the menu; the
 "Mod Manager (1)", the number of mods). So the loads 24 s and 12 s after the start at ML4 were his, and
 a note before the game starts can be acted on: the Mod Manager is one click from the same menu.
 
-**What rests on a probe.** Whether the launcher can keep the account file from being uploaded in its
-switched-off state depends on P5; it is not designed here.
+**P5, done 2026-11-14 (the game's `runs/findings-probes-20261114/`, `notes.md`).** A scratch wrapper
+made from nothing, James signed in, the game started twice from it and quit at the menu both times with
+nothing loaded; `account.dat` was read once a second.
+
+- **The account file is written 19 s after the game's start, with nothing clicked.** First start:
+  `Account storage loaded` at 16.4 s, and at 19 s the file pulled from the cloud (4,714 bytes) was
+  replaced by one of 4,673 bytes. It was written again when the game's agreements were accepted
+  (4,675 bytes), and Steam uploaded it at exit although no save had been loaded or made.
+- **The new prefix is not logged in to Paradox.** `[PdxSDK] Startup autologin failed NoSessionTokenFound`
+  at 19 s in both starts. At the second start the game asked "Account Link Found. Your Steam account is
+  linked to a Paradox account. Do you wish to automatically log in to your Paradox account?" Until that
+  login no mod is fetched: the first start has no line about a mod at all. After it the mod's file came
+  within 2 s (the login at 43.2 s, the file at 45.4 s; at ML4 21.0 s and 22.9 s).
+- **The game says it itself.** At the first start it shows "Warning. The following mods couldn't be
+  loaded. Open the mod manager for more information: SMR_CommunityFixPack". That box stands behind the
+  game's two agreements, which a new install asks for again, and its OK cannot be pressed until both are
+  scrolled to their end and accepted (James's capture; he has seen that layering three times).
+- **The mod is loaded after the Mod Manager's line.** `[PdxSDKMods] Starting install of mod: <name>,
+  version: 0` came 12 s after the file, and the 44 "applied" lines and `Loaded mod items for:` within 9 s
+  of it; the account file was then 4,705 bytes, and that is what was uploaded. In the real wrapper's log
+  of 2026-11-13 the same line stands at the moment James opened the Mod Manager. His captures of the
+  second start show the game's mods window; whether he opened it or it opened by itself is asked and
+  not yet answered.
+- **"Mod Manager (1)" is on the menu in both states**, so the number is no sign either.
+
+**What follows for the design.**
+
+- Nothing the installer or the launcher says can keep the new prefix's account file out of the cloud: the
+  game writes it before the menu can be used, and Steam uploads it at exit. Holding back Steam's upload
+  would hold back saves too. So nothing is built to prevent it, and nothing touches `account.dat`.
+- Item 1 above stands, with words that fit what the player will see, in the order it comes:
+
+  ```
+  First start in this install. The game asks again for its two agreements (scroll each to its end) and
+  for your Paradox account. If you use mods from Paradox Mods it then warns that they could not be
+  loaded: once you are logged in, open its Mod Manager, before you load or continue a save.
+  ```
+
+- Item 2 above stands, with one rule in place of its two: the session ran without a mod when the log has
+  a `Load Game` line and, for a mod the log names (`Loaded mod def`, `Updated/installed mod`, or a
+  `Savegame references Mod` line), no `Loaded mod items for: <its id>` before that `Load Game`. A log with
+  no `Load Game` line, like both of P5's, gets no words.
+- Item 3: the guide's paragraph is written again from what was seen, in the same order as the note.
+- FD3 stands, and is the one thing here that protects the save itself.
+
+Still to be added to this section: James's answer about the Mod Manager at P5's second start, and what
+the real wrapper's next start shows (its cloud line, and whether the mod is on before the Mod Manager is
+opened).
 
 ### 2.7 Slice J: runtimes the new prefix lacks
 
@@ -259,51 +346,87 @@ own function with a stub program and no terminal, which must print nothing, and 
 turns red only most of the time (about 98 in 100, from the rate measured). The transcript of Cities:
 Skylines II's installer needs no change.
 
-## 3. Probes, before the design of slices B, G and I
+### 2.10 Slice B: Steam's updater on screen
 
-Each is recorded in a run folder of the game it concerns, with a `notes.md`. None changes the real
-wrappers. P1, P2 and P5 start Wine or Steam, so they wait until nothing else of Wine runs on the Mac and
-are done on James's word.
+**True, from probe P1 (2026-11-14; the game's `runs/findings-probes-20261114/`, `notes.md`).** Four
+first starts of a Steam that Valve's installer had just put into a new prefix, each in a prefix of its
+own, with the launcher's environment and the VPN paused:
+
+| Start | On screen | Client up |
+|---|---|---|
+| as the installer starts it (`-no-cef-sandbox`) | a window "Steam", 394 by 129, for 51 s, then "Sign in to Steam" | 49 s |
+| with `-silent` | the same window for 49 s, then the sign-in window | 50 s |
+| with the update files of another prefix's `package/` folder copied in (247 MB) | the same window for 47 s, then the sign-in window | 49 s |
+| both | the same window for 46 s, then the sign-in window | 48 s |
+
+The small window is Steam's updater: "Updating Steam...", a bar, "Downloading update (267,963 of
+336,229 KB)..." and a Cancel button. With the files copied in it still downloaded 324,932 KB. No "Fatal
+Error" box came and no fatal line was logged in any of the four; all four came up in one start. Not
+tried: Steam's own switches for skipping its update, and hiding a window by Wine's means.
+
+**Design.** Neither way hides the window, so the installer names it, where it already names the error
+box (`common/install-core.sh:349-350`):
+
+```
+  Steam for Windows is starting. A small window "Updating Steam..." shows its own update (about
+  330 MB, about a minute): leave it, and do not press its Cancel. A box headed "Steam - Fatal Error"
+  can also appear once or twice and close again. Click nothing in it.
+```
+
+Step 3 of each guide's quick way says the same. Nothing else is built: the window is Steam's, it closes
+by itself, and what goes wrong behind it is slice A's.
+
+## 3. Probes (all done)
+
+Each is recorded in a run folder of the game it concerns, with a `notes.md`. None changed the real
+wrappers. P1, P2 and P5 started Wine or Steam, and were done in one sitting on James's word, on
+2026-11-14, with nothing else of Wine running at its start and the VPN paused. They departed from the
+rows below in four ways: P1 had a fourth start (`-silent` with the files copied in); P2's other Wine was
+P5's scratch game, not this project's Steam app; Steam's installer was run in the result of (c), since
+(b) was not the same prefix; and P5 started the game twice, because the first start was quit 4 s after
+the game's agreements.
 
 | # | Question | How | Needs |
 |---|---|---|---|
-| P1 | Can Steam's updater and its error box be kept off screen in a new prefix? | A scratch wrapper with Steam's installer run and Steam never started. Started once each way with the launcher's environment: plain, `-silent`, and with the update files already in place from a copy of another prefix's `package/` folder. Recorded with a capture of the Steam windows' region only: what appears, and whether the client comes up | Wine; no sign-in |
-| P2 | Can the prefix be made without the template's wait, and is it the same prefix? | With another Wine open (this project's Steam app), in a scratch folder: (a) the template's program, timed, as the control; (b) `wineboot -u` of the engine in a prefix folder made by hand, then what the template's program adds found by `diff -r` of the two prefixes and of the wrapper's `Info.plist`; (c) the template's program ended once the prefix is complete (its log line, or `system.reg` present and `wineserver -w` returned for that prefix). Then Steam's installer run in the result of (b) | Wine; another Wine open on purpose |
+| P1 (done 2026-11-14: 2.10) | Can Steam's updater and its error box be kept off screen in a new prefix? | A scratch wrapper with Steam's installer run and Steam never started. Started once each way with the launcher's environment: plain, `-silent`, and with the update files already in place from a copy of another prefix's `package/` folder. Recorded with a capture of the Steam windows' region only: what appears, and whether the client comes up | Wine; no sign-in |
+| P2 (done 2026-11-14: 2.5) | Can the prefix be made without the template's wait, and is it the same prefix? | With another Wine open (this project's Steam app), in a scratch folder: (a) the template's program, timed, as the control; (b) `wineboot -u` of the engine in a prefix folder made by hand, then what the template's program adds found by `diff -r` of the two prefixes and of the wrapper's `Info.plist`; (c) the template's program ended once the prefix is complete (its log line, or `system.reg` present and `wineserver -w` returned for that prefix). Then Steam's installer run in the result of (b) | Wine; another Wine open on purpose |
 | P3 (done 2026-11-13: 2.9) | Why does bash print `child setpgid (...): Operation not permitted`, and can a player see it? | `cities-skylines-2/scripts/test-install.sh` run 30 times, counting the runs that hold the line; then `start_steam` (`common/install-core.sh:147-151`) in a ten-line script of its own, 200 times each: with and without a terminal, and with the block's error output sent to `/dev/null` at the outer level. No Wine: a stub program | nothing: can run at any time |
 | P4 (done 2026-11-13: 2.6) | Does the game go to the last save by itself at its start? | James is asked. If he does not know: one start of the real game with nothing pressed for two minutes, and the log read after exit | James |
-| P5 | When is the switched-off account file written: at the menu, at the load of a save, or at exit? | In a scratch prefix signed in with James's account, under ML2's steps 1, 5, 6 and 9: the size and time of `account.dat` read every second from the start; quit at the menu with nothing loaded. It uploads a switched-off file once more, so James opens the Mod Manager in the real game afterwards | Wine; James's sign-in; his word |
+| P5 (done 2026-11-14: 2.6) | When is the switched-off account file written: at the menu, at the load of a save, or at exit? | In a scratch prefix signed in with James's account, under ML2's steps 1, 5, 6 and 9: the size and time of `account.dat` read every second from the start; quit at the menu with nothing loaded. It uploads a switched-off file once more, so James opens the Mod Manager in the real game afterwards | Wine; James's sign-in; his word |
 | P6 (done 2026-11-14: 2.3) | Does Surviving Mars's new wrapper show the macOS 28 notice? | James is asked what he saw at ML4; else it is looked for at the next wrapper made | James |
 
 ## 4. Steps
 
-- **F0. The probes of section 3.** P3, P4 and P6 are done. Then P1, P2 and P5 in one
-  sitting on James's word. Their results are written into section 2, slices B, G and I are designed, and **the plan is checked** (`check it`) before F1.
+- **F0. The probes of section 3.** All six are done, their results are in section 2, and slices B, G
+  and I are designed from them. **The plan is checked** (`check it`) before F1.
 - **F1. Slice A** in `common/install-core.sh`, with its cases in both games' `test-install.sh` and the
   recorded transcript of Cities: Skylines II recorded again on purpose.
 - **F2. Slices C and D** (the core, `common/make-wrapper.sh`, both guides).
-- **F3. Slice G**, as P2 decides.
+- **F3. Slice G** in `common/make-wrapper.sh` (2.5).
 - **F4. Slice H**, as P3 decides.
 - **F5. Slice I** in `surviving-mars-relaunched/launch-relaunched.sh` and the game's installer, with the
   parity test's list.
 - **F6. Slice F**, after FD1; and slice K.
-- **F7. Slice B**, as P1 decides.
+- **F7. Slice B**: the core's two lines and step 3 of each guide (2.10).
 - **F8. Live: the installer once for each game on the Studio with the VPN on**, to see slice A's words
-  where they belong, and whatever F3 and F7 changed. On James's word.
+  where they belong; and once with this project's Steam app open, to see slice G: the wrapper is made
+  in about a minute, the one line is said, and Steam's installer runs in it. On James's word.
 
 The work is done on a branch cut from `surviving-mars-install`.
 
 ## 5. Test plan
 
 Every test runs with `HOME` at a scratch folder and every outside program a recording stub, as the two
-`test-install.sh` files do. Each mutant is applied to the real source, seen red, and removed. Rows for
-slices B and G are written after their probes.
+`test-install.sh` files do. Each mutant is applied to the real source, seen red, and removed. 
 
 | # | Test | What it shows | Mutants, each must turn it red |
 |---|---|---|---|
 | FT1 | both `test-install.sh`, cases added | "Steam needs to be online" in the log after a start: no second start; one transfer of the installer's own, to the address the log named, with `--max-time 20`; cut (curl 18, and 56) with a tunnel as the default route gives the three lines with the VPN sentence; cut with no tunnel gives the "in a few minutes" line and no word of a VPN; the transfer working (exit 0; exit 28 with 20 MB or more) gives the "although this Mac reaches" line; no address in the log, and curl's 7, count as not known; no line of Steam's log is printed; the log's path is, with `~`; exit 4; "Failed to determine download location" still restarts, up to five times; a Steam that comes up is never followed by a transfer or a word of a VPN | a second start after "needs to be online"; the restart removed for "download location"; the VPN sentence with no tunnel; the VPN sentence when the transfer worked; the transfer made before any failure; the log's lines printed; exit 1; 28 with 1 MB counted as working |
 | FT2 | both `test-install.sh` | the first address of Steam's installer failing with words on its error output and the second working: none of those words on screen; both failing: the installer's sentence and both tries' words | curl's words printed when the second address works; nothing printed when both fail |
-| FT3 | `common/test-make-wrapper.sh` | the macOS 28 line is printed on macOS 27 before the prefix step and not on 26; with a `wineserver` in the process list the wrapper it belongs to is named before the step, and the minute line comes while the step runs long; with none, neither line | the line printed on every macOS; the other Wine not looked for; the wrong wrapper named; something closed by the script |
-| FT4 | `surviving-mars-relaunched/tools/test-mod-notes.sh`, new, on log fixtures cut from the four real logs of ML2, ML3 and ML4 with identifiers replaced | first start (no `LocalStorage.lua`): the note is shown once, before the game starts, and not on a second start; the log of ML4's scratch session: the closing words name the mod and "not present"; ML4's real session (definition loaded, items loaded only after the load): named; ML3's session (items loaded before the load): no words; a log with no mod at all: no words; no log: no words and no failure | the note on every start; the "not present" line not looked for; the order of items and load not looked at; a healthy session named; a missing log stops the launcher |
+| FT3 | `common/test-make-wrapper.sh` | the macOS 28 line is printed on macOS 27 before the prefix step and not on 26 | the line printed on every macOS |
+| FT3b | `common/test-make-wrapper.sh`, with a stub in the template's place that makes the prefix's files and the six links and then waits | with another `wineserver` in the process list: the stub is ended once the prefix has stood still for 10 s, the six links are gone, `user.reg` has mode 666, the one line is said, and the wrapper is moved into place; a folder named `Documents` that is not a link is left; with no other `wineserver` the stub is never ended, however long it takes, and the line is not said; a prefix with no `system.reg` is never ended early; a `wineserver` that holds this prefix does not count as another | ended with no other `wineserver`; the links left; a real folder removed; the mode not set; ended before `system.reg` is there; the prefix's own `wineserver` counted as another; the other Wine closed by the script |
+| FT3c | both `test-install.sh` | the lines before Steam's first start name the "Updating Steam..." window and its Cancel, and the error box | the old two lines |
+| FT4 | `surviving-mars-relaunched/tools/test-mod-notes.sh`, new, on log fixtures cut from the real logs of ML2, ML3, ML4 and P5 with identifiers replaced | first start (no `LocalStorage.lua`): the note is shown once, before the game starts, and not on a second start; the log of ML4's scratch session (the mod's file fetched, then a load): the closing words name the mod; ML4's real session (definition loaded, items loaded only after the load): named; ML3's session (items loaded before the load): no words; P5's two sessions (no load at all, the second with the items loaded): no words; a log with no mod at all: no words; no log: no words and no failure | the note on every start; a fetched mod with no definition not counted; the order of items and load not looked at; a healthy session named; a session with no load named; a missing log stops the launcher |
 | FT4b | `common/test-start-steam.sh`, new | the source gate: `start_steam`'s block sends its error output away; and 3,000 starts of the core's own function with a stub program and no terminal print nothing | the redirection removed: the gate every time, the starts about 98 times in 100 |
 | FT5 | `surviving-mars-relaunched/scripts/test-setup.sh`, both `test-install.sh` | "also in Spotlight and Launchpad" only for an app in an Applications folder; after a Mac check that exits 3 there is no "Open the installer again" line, and Cities: Skylines II's transcript is unchanged | the clause for a scratch app; the closing line put back |
 | FT6 | the gates: `common/check-links.py`, `common/check-identifiers.sh` at its residual, `cities-skylines-2/scripts/check-experiments.py`, `bash -n` on every script, `common/test-launcher-parity.sh` with its list | no dead link, no identifier, the ledger whole, the launchers' kept differences listed | the parity test's own |
@@ -322,10 +445,9 @@ slices B and G are written after their probes.
 
 - Every change is to the installers, the launcher's words and the guides: a revert of the commit puts the
   old behaviour back, and no prefix or save is changed by any step.
-- P5 and F8 start Steam on James's account from a scratch prefix; ML2's steps 1, 5, 6 and 9 (the
+- P5 (done) and F8 start Steam on James's account from a scratch prefix; ML2's steps 1, 5, 6 and 9 (the
   Surviving Mars plan) keep that safe and name the way back.
-- P2 makes prefixes in scratch folders only, and its other Wine is this project's Steam app, opened and
-  closed for the purpose.
+- P2 made prefixes in scratch folders only; they are in the Trash.
 
 ## 8. Decisions, each James's
 

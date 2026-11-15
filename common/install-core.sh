@@ -148,9 +148,12 @@ use_wrapper() {   # <path>: the wrapper, and the game's launcher's exports for i
 }
 steam_exe() { if [ -f "$STEAMDIR/steam.exe" ]; then echo "$STEAMDIR/steam.exe"; else echo "$STEAMDIR/Steam.exe"; fi; }
 start_steam() {   # its own process group, hang-up ignored: Control-C or a closed window does not reach it
-  set -m
-  ( trap '' HUP; exec "$WINE" "$(steam_exe)" $STEAM_ARGS ) < /dev/null > /dev/null 2>&1 & disown
-  set +m
+  # The braces send error output away: with job control on, the forked child now and then prints bash's own
+  # "child setpgid (...): Operation not permitted" before its redirections take effect (4 of 3,200 starts
+  # with no terminal; 0 of 6,400 with this: docs/plans/first-run-findings.md, 2.9).
+  { set -m
+    ( trap '' HUP; exec "$WINE" "$(steam_exe)" $STEAM_ARGS ) < /dev/null > /dev/null 2>&1 & disown
+    set +m; } 2> /dev/null
 }
 end_steam() {   # wineserver -k for this prefix, then up to 10 s until nothing holds it
   local i=0

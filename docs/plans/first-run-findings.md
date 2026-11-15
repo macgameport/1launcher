@@ -3,13 +3,16 @@
 > **🔧 As-built (2026-11-15):** PARTIAL. F1 to F7 are built on the branch `first-run-findings`, cut from
 > `surviving-mars-install` at `d9fdac8` and pushed, not merged: slice A `8a67679`, C `a57d217`, H
 > `19468c6`, K `3c44bb5` (the core) and `549e46d` (setup), B `fe2a086`, D `213b814`, G `b845a37`, I with
-> the copy of the saves `d983c70`, the guides `5c357e0`. **F8, the live step, is owed in both halves**, on
-> James's word; slice F waits for a plan of its own and slice E for ND1. Tracking: issue #22.
-> **Tests.** `cities-skylines-2/scripts/test-install.sh` 135 cases with its transcript,
+> the copy of the saves `d983c70`, the guides `5c357e0`. **F8, the live step, was run on 2026-11-15** (section 4; the
+> game's `runs/f8-20261115/`): slice G passed; slice A's cut path is VOID that day, since the VPN's path
+> was not cut, and is owed, on James's word. What was seen in its place: "needs to be online" on a working
+> path, the transfer, another start, the sign-in window, no words. The trace's line for the transfer
+> came after that run (`aab5d5b`); slice F waits for a plan of its own and slice E for ND1. Tracking: issue #22.
+> **Tests.** `cities-skylines-2/scripts/test-install.sh` 137 cases with its transcript,
 > `surviving-mars-relaunched/scripts/test-install.sh` 69, `scripts/test-setup.sh` 41,
 > `tools/test-mod-notes.sh` 89 (new), `common/test-make-wrapper.sh` 108, `common/test-start-steam.sh` 4
 > (new; its watch of 30,000 starts printed nothing); every other test of the two games and of `common/`
-> passes on the merged branch. **Mutants applied to the source and seen red: 79** (FT1 22, FT2 2, FT3c 2,
+> passes on the merged branch. **Mutants applied to the source and seen red: 80** (the trace's line 1, FT1 22, FT2 2, FT3c 2,
 > FT4b's gate 2, FT5 4, FT3 2, FT3b 15 and 5 more, FT4 12, FT4c 12, FT6's gate 1). None was equivalent.
 > **How it was built.** In three parts: the core (A, C, H, K, B) and the wrapper script (D, G) each by an
 > agent in a worktree of its own, the launcher, setup and the guides in the session. Both agents' changes
@@ -24,9 +27,11 @@
 > the words after exit have a plural form; a title is cut at 60 bytes and `iconv` drops a character cut
 > in half, since `osascript` refuses an argument that is not UTF-8. (5) The copy of the saves was
 > designed after the check and re-checked on its own (pass 1c).
-> **Not run.** Nothing of Wine or Steam was started. Real `curl` (its exit codes, `-q`, what it prints
-> on a timeout), real `route`, real `lsof` against a real `wineserver`, and the wrapper test with a real
-> Wine open rest on stubs and on the probes' measurements: F8 is where they are run.
+> **Run for real at F8:** `curl` with the core's options where the transfer works (exit 0), `route` on a
+> tunnel, `lsof` against a real `wineserver`, and the wrapper's making with another Wine open; `common/test-make-wrapper.sh` passed (108) with the Steam
+> app's Wine open. **Not run
+> for real:** `curl` on a cut path (18, 56, 92) or with no network, and so the words of those forms and
+> exit 4; they rest on the stubs and on the cuts measured at ML2 and SL1.
 > **Verify against:** `common/install-core.sh` (`start_until_up`, `update_probe`, `update_words`,
 > `start_steam`), `common/make-wrapper.sh` (step 7, `cleanup`), `surviving-mars-relaunched/launch-relaunched.sh`
 > (the `mod-notes` block and its three calls), `surviving-mars-relaunched/scripts/setup.sh`

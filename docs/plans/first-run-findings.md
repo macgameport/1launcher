@@ -1,7 +1,9 @@
 # What a new player meets: the findings of the installers' live steps
 
 > **🔧 As-built (2026-11-15):** PARTIAL. F1 to F7 are built on the branch `first-run-findings`, cut from
-> `surviving-mars-install` at `d9fdac8` and pushed, not merged: slice A `8a67679`, C `a57d217`, H
+> `surviving-mars-install` at `d9fdac8`; it was merged into `main` on 2026-11-15 (fast-forward to `685a539`, after
+> `simple-install` and `surviving-mars-install`, on James's word; all 37 test files passed on that
+> commit before and after): slice A `8a67679`, C `a57d217`, H
 > `19468c6`, K `3c44bb5` (the core) and `549e46d` (setup), B `fe2a086`, D `213b814`, G `b845a37`, I with
 > the copy of the saves `d983c70`, the guides `5c357e0`. **F8, the live step, passed in both halves on 2026-11-15** (section 4; the
 > game's `runs/f8-20261115/`): slice G passed; slice A's cut path was VOID in the
@@ -48,10 +50,10 @@
 > (section 4) and passed in both halves: slice G in the morning; slice A that afternoon, on another of
 > the VPN's servers and then with the VPN paused, after a morning in which the VPN's path was not cut.
 >
-> Tracking: issue #22. The code it speaks of exists only on the branch `surviving-mars-install` (cut from
-> `simple-install`): every `file:line` below is as of that branch at `75470c9`, and holds at `283a464` too (the cited files did not change between them). A path is relative to the
+> Tracking: issue #22. The code it speaks of was only on the branch `surviving-mars-install` (cut from
+> `simple-install`) when this was written; that branch is in `main` since 2026-11-15. Every `file:line` below is as of that branch at `75470c9`, and holds at `283a464` too (the cited files did not change between them). A path is relative to the
 > repository's root. The findings were recorded where they were seen, and stay there as the record:
-> SF1 to SF9 in section 9 of `docs/plans/shared-installer.md` (on the branches), MF1 to MF4 in section 5a
+> SF1 to SF9 in section 9 of `docs/plans/shared-installer.md` (on the branches then), MF1 to MF4 in section 5a
 > of `docs/plans/surviving-mars-install.md`. This plan is where they are planned.
 
 ## 0. What this is for
@@ -718,7 +720,8 @@ again on purpose and the difference is read line by line. Its header's sentence 
 recorded at is brought up to date.
 
 The work is done on a branch cut from `surviving-mars-install`, itself cut from `simple-install`. It
-reaches `main` after the two under it, each merge on James's word.
+reaches `main` after the two under it, each merge on James's word. (Done 2026-11-15: the three were
+merged in that order, each a fast-forward.)
 
 ## 5. Test plan
 

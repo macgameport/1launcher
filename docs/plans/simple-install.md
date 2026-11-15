@@ -4,7 +4,7 @@
 > pass 1b: a fitted check of that fold, one blocker, folded too). Written 2026-11-10.
 >
 > **🔧 As-built (2026-11-11):** PARTIAL: N1 to N6a are built on the local branch `simple-install` (`86c83d8`, and
-> `a9eeaa7` for a defect the first live step found), not merged and not pushed; nothing is published. NL1
+> `a9eeaa7` for a defect the first live step found), pushed on 2026-11-11 and merged into `main` on 2026-11-15; nothing is published. NL1
 > passed on 2026-11-11 (the last paragraph of this header); no other live step has been run. Tests, each with `HOME` at a
 > scratch folder: NT1 59 cases and 10 mutants; NT2 94 cases, mutants 17 to 21 beside the sixteen older ones;
 > NT3 96 cases and 25 mutants; NT4 31 cases and 5 mutants; NT5 with NT7 42 cases and 7 mutants;

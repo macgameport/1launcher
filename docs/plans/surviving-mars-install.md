@@ -1,7 +1,7 @@
 # Surviving Mars: Relaunched from nothing, without CrossOver, on one shared installer
 
 > **🔧 As-built (2026-11-13):** PARTIAL. M2 to M7 are built on the branch `surviving-mars-install`, cut
-> from `simple-install` at `4d339dd` and pushed, not merged: M2 `f71fb6d`, M3 `6ed2048`, M4 `962f33d`,
+> from `simple-install` at `4d339dd`; it was merged into `main` on 2026-11-15: M2 `f71fb6d`, M3 `6ed2048`, M4 `962f33d`,
 > M5 `82c74c8`, M6 `6ade090`, M7 `fd1b821`. **Of M8, ML4 passed on 2026-11-13** (1.4): the installer made
 > a wrapper from the three downloads, exit 0, and the game ran in it; so section 6's criterion "a wrapper
 > made by the installer from the three downloads starts the game" is met, with both things its record must
@@ -821,7 +821,7 @@ of it is built.
 | MF4 | The new prefix has none of the Visual C++ runtimes, `d3dcompiler_47` and fonts that the old one holds, and the game reached the map | Nothing is added to the installer for them on this evidence. ML4's session of 8 minutes in such a prefix went without a fault (1.4). If longer play fails for a missing runtime, the runtime's source and licence are a decision of their own |
 
 **What became of each row (2026-11-15).** They were planned in `docs/plans/first-run-findings.md`, checked
-on 2026-11-14 and built on the branch `first-run-findings` on 2026-11-15, the live step still owed: MF1 by
+on 2026-11-14 and built on the branch `first-run-findings` on 2026-11-15; its live step F8 passed that day: MF1 by
 its slice G; MF2 by slice A; MF3 by slice I (a note before the first start, the game's own log read after
 exit, and one copy of the saves), which can warn and cannot prevent. For MF4 nothing is built.
 

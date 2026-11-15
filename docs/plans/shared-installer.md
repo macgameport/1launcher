@@ -11,7 +11,7 @@
 > 2.2 and M6, on the branch `surviving-mars-install`). Cities: Skylines II defines none, and its
 > `test-install.sh` passes unchanged.
 >
-> **🔧 As-built (2026-11-11):** BUILT: S1 to S4 are done on `simple-install`, and SL1 passed; SL2, the
+> **🔧 As-built (2026-11-11):** BUILT: S1 to S4 are done on `simple-install` (merged into `main` on 2026-11-15), and SL1 passed; SL2, the
 > installer plan's NL2, ran on 2026-11-12 and met its pass condition, with one finding (that plan's header;
 > SF6 and SF7 in section 9 here). S1 is `00108f7`, with `7b102a1`
 > for a defect in it found the same evening; S2 is `1df6f27`; S3 is `2577207`. **SL1 passed 2026-11-11**
@@ -359,7 +359,7 @@ of `docs/plans/surviving-mars-install.md` (its 1.4 and 5a) added SF8 and saw SF1
 | SF9 | Found 2026-11-13 while the Surviving Mars plan's M6 was built: `cities-skylines-2/scripts/test-install.sh` fails now and then. Of 9 runs on the Studio (5 on the core as it was, 4 with one line added to its exit handler), 4 failed, in two ways, each seen with and without the line. One: "the Mac kept awake while it runs" read 0, because the installer starts `caffeinate` in the background and the stub's line can land after the installer exits; the test now waits up to 3 s for it. Two: the transcript gained a line `install-core.sh: child setpgid (<n> to <n>): Operation not permitted`, bash's own, from `start_steam`'s `set -m` (`common/install-core.sh:144`). **Not known:** whether a player can see that line in a real install, and why the call is refused | The cause of the second, measured: whether it needs a shell with no terminal (the test's), and whether the line can reach a player. Then either the line is kept out of the installer's output or `start_steam` gets its own process group another way. Until then a red run of that test whose only difference is that line is this finding, not a changed word |
 
 **What became of each row (2026-11-15).** They were planned in `docs/plans/first-run-findings.md`, checked
-on 2026-11-14 and built on the branch `first-run-findings` on 2026-11-15, the live step still owed: SF1 and
+on 2026-11-14 and built on the branch `first-run-findings` on 2026-11-15; its live step F8 passed that day: SF1 and
 SF2 by its slice A (one transfer of the installer's own tells a cut path from a first start's stumble, and
 the words follow from it); SF3 by slice B (the updater's window cannot be hidden, so it is named); SF4 by
 slice C; SF5 by slice D; SF8 by slice G; SF9 by slice H. SF6 is not built: it waits for James's decision

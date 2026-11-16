@@ -1,8 +1,9 @@
 #!/bin/bash
 # test-update-check.sh — exercises the launcher's pending-game-update check (step 2b, #17) without
 # Steam, wine or the game. It sources the launcher's own code between the `>>> update-check` and
-# `<<< update-check` markers, stubs what that code calls (note, step, die, steam_exe_up, ensure_patches),
-# and writes minimal appmanifest_949230.acf fixtures. The apply path runs against a fake `wine`
+# `<<< update-check` markers, stubs what that code calls (note, step, die, steam_exe_up, ensure_patches,
+# and _alert, which records), takes patches_note from the launcher as it is, and writes minimal
+# appmanifest_949230.acf fixtures. The apply path runs against a fake `wine`
 # that records its arguments and then rewrites the fixture the way Steam does when an update lands.
 #
 #   bash scripts/test-update-check.sh [path/to/launch-cs2-dxmt11.sh]
@@ -15,6 +16,9 @@
 #   MUTANT=3 ...   "Game updated" is a pop-up again and no step; must exit 1
 #   MUTANT=4 ...   a total of 0 bytes is shown to the player as a size; must exit 1
 #   MUTANT=5 ...   the dialog's answer is tested inside `[` again (lost to bash 3.2's brace expansion); must exit 1
+#   MUTANT=6 ...   repatch.sh's exit 3 (no fix yet for this build) treated as 1 after an update; must exit 1
+#   MUTANT=7 ...   the alert after an update made a note again (PD6); must exit 1
+# (6 and 7: docs/plans/patch-outcomes.md, 2.6 and PT7.)
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 LAUNCHER="${1:-$REPO/launchers/launch-cs2-dxmt11.sh}"
@@ -23,6 +27,9 @@ T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 BLOCK="$T/block.sh"
 sed -n '/^# >>> update-check/,/^# <<< update-check/p' "$LAUNCHER" > "$BLOCK"
 [ -s "$BLOCK" ] || { echo "FAIL: no update-check block in $LAUNCHER"; exit 1; }
+PNOTE="$T/patches-note.sh"   # defined outside the block; the block's second ensure_patches call uses it
+sed -n '/^patches_note() {/,/^}/p' "$LAUNCHER" > "$PNOTE"
+[ -s "$PNOTE" ] || { echo "FAIL: no patches_note in $LAUNCHER"; exit 1; }
 mutated() { echo "REFUSED: mutant did not apply"; exit 2; }
 case "${MUTANT:-0}" in
   0) ;;
@@ -42,6 +49,10 @@ s = s[:a] + '        [ "' + cmd + '" = "Update first" ] && ans=update' + s[c:]
 io.open(p, 'w', encoding='utf-8').write(s)
 PY
      grep -q '^        \[ "\$(osascript ' "$BLOCK" || mutated ;;
+  6) sed -i '' 's/^  ensure_patches || patches_note \$? update$/  ensure_patches || patches_note 1 update/' "$BLOCK"
+     grep -q '^  ensure_patches || patches_note 1 update$' "$BLOCK" || mutated ;;
+  7) sed -i '' 's/^  \[ "\$QUIET" = 1 \] && _alert "\$s" warning$/  note "$s"/' "$PNOTE"
+     grep -q '^  note "\$s"$' "$PNOTE" || mutated ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 
@@ -98,7 +109,9 @@ run_case() {
       step() { echo "STEP $1: $2"; }
       die()  { echo "DIE: $1"; exit 1; }
       steam_exe_up() { [ "${FAKE_STEAM_GONE:-0}" = 1 ] && return 1; return 0; }
-      ensure_patches() { echo "ENSURE_PATCHES"; }
+      ensure_patches() { echo "ENSURE_PATCHES"; return "${PATCHES_RC:-0}"; }
+      _alert() { echo "ALERT: $1 [${2:-}]"; }
+      . "'"$PNOTE"'"
       . "'"$BLOCK"'"
       check_game_update
       echo "RC:$?"
@@ -159,6 +172,21 @@ expect apply has '^STEP 4: Updating the game: 0 min so far, 0\.0 of 5\.1 GB…$'
 expect apply has '^Game updated to build 25127643\.$'
 expect apply has '^STEP 4: The game is updated…$'
 expect apply lacks '^NOTE: (Updating the game|Still updating|Game updated)'
+
+# 7c. a fix not out yet for the new build (ensure_patches returns 3), or another failure (1), after the update:
+#     from the app (QUIET=1) an alert that waits and no notification; from a terminal the printed line
+NOFIX_SENT='The game is updated\. Not every Mac fix is out yet for the new build; it may still run\. See INSTALL\.md, After a game update\.'
+FAIL_SENT="WARNING: some fixes did not apply to the new game build — see INSTALL\.md 'After a game update'\."
+for q in 1 0; do for prc in 3 1; do
+  mk_manifest 6 23700737 25127643
+  run_case "patches$prc-q$q" $NUL QUIET=$q PATCHES_RC=$prc CS2_UPDATE=apply CS2_UPDATE_POLL=1 FAKE_DELAY=1 FAKE_NEWBUILD=25127643
+done; done
+expect patches3-q1 has "^$NOFIX_SENT\$"; expect patches3-q1 has "^ALERT: $NOFIX_SENT \[warning\]\$"
+expect patches3-q1 lacks '^NOTE: |not every patch|some fixes did not apply'; expect patches3-q1 has 'RC:0'
+expect patches3-q0 has "^$NOFIX_SENT\$"; expect patches3-q0 lacks '^ALERT|^NOTE: '
+expect patches1-q1 has "^$FAIL_SENT\$"; expect patches1-q1 has "^ALERT: $FAIL_SENT \[warning\]\$"
+expect patches1-q1 lacks '^NOTE: |Not every Mac fix'
+expect patches1-q0 has "^$FAIL_SENT\$"; expect patches1-q0 lacks '^ALERT|^NOTE: '
 
 # 8. apply, Steam never finishes -> dies at the timeout and does not repatch
 mk_manifest 6 23700737 25127643

@@ -27,6 +27,13 @@
 #   MUTANT=20 ...  L1_FETCHED_REF is ignored; must exit 1
 #   MUTANT=21 ...  the path helper returns its argument unchanged; must exit 1
 # (17 to 21: docs/plans/simple-install.md, NT2.)
+#   MUTANT=22 ...  exit 5 made 0; must exit 1
+#   MUTANT=23 ...  exit 5 made 1; must exit 1
+#   MUTANT=24 ...  the >> block counted in problems; must exit 1
+#   MUTANT=25 ...  the app not built when repatch.sh exits 3; must exit 1
+#   MUTANT=26 ...  the Desktop step skipped when setup will exit 5; must exit 1
+#   MUTANT=27 ...  the >> block's middle form of its fifth line dropped (the installer in a clone); must exit 1
+# (22 to 27: docs/plans/patch-outcomes.md, 2.4 and PT5. A stub patcher exits 3 when STUB_NOFIX names it.)
 # The window builder is a recording stub beside the scratch repo, at $T/common, where setup.sh looks for it.
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -62,9 +69,15 @@ case "${MUTANT:-0}" in
   20) mutate 's#\[ -n "\${L1_FETCHED_REF:-}" \]#false#g' 'false && GUIDE=' ;;
   21) mutate "s#^tilde() { case .*#tilde() { printf '%s' \"\$1\"; }#" "^tilde() { printf '%s' \"\$1\"; }$" ;;
   8) perl -0pi -e 's/\nelse\n  # 14unch3r/\nfi\nif true; then\n  # 14unch3r/' "$S"; grep -q '^if true; then$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  22) sed -i '' 's#^  exit 5$#  exit 0#' "$S"; grep -q '^  exit 5$' "$S" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  23) sed -i '' 's#^  exit 5$#  exit 1#' "$S"; grep -q '^  exit 5$' "$S" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  24) mutate 's#^  NOFIX=1; nofix_block$#  NOFIX=1; nofix_block; problems=$((problems+1))#' '^  NOFIX=1; nofix_block; problems=' ;;
+  25) mutate 's#^if ! bash "\$REPO/scripts/make-shortcut.sh" #if [ "$NOFIX" = 1 ] || ! bash "$REPO/scripts/make-shortcut.sh" #' '^if \[ "\$NOFIX" = 1 \] || ! bash' ;;
+  26) mutate 's#^desktop_step$#[ "$NOFIX" = 1 ] || desktop_step#' '^\[ "\$NOFIX" = 1 \] || desktop_step$' ;;
+  27) mutate 's#^  elif \[ "\${CS2_VIA_INSTALLER:-0}" = 1 \]; then$#  elif false; then#' '^  elif false; then$' ;;
 esac
 for f in "$REPO"/patches/patch_*.py; do
-  echo 'import os, sys; sys.exit(1 if os.environ.get("STUB_FAIL") == os.path.basename(sys.argv[0]) else 0)' > "$R/patches/$(basename "$f")"
+  echo 'import os, sys; n = os.path.basename(sys.argv[0]); sys.exit(1 if os.environ.get("STUB_FAIL") == n else 3 if os.environ.get("STUB_NOFIX") == n else 0)' > "$R/patches/$(basename "$f")"
 done
 NPATCH=$(ls "$R/patches" | wc -l | tr -d ' ')
 mkdir -p "$R/patches/_vendor/lib"; echo vendored > "$R/patches/_vendor/lib/file.py"
@@ -313,6 +326,53 @@ check "the lines setup itself prints give the home folder as ~" \
   "$(run "$H" --hide-mod-badges):$(said "$H" '^Installing launcher + patches into ~/cs2-patch$'):$(said "$H" 'Your wrapper is ~/Applications/CS2.app,')" "0:1:1"
 check "  ...and none of them holds the home folder whole" \
   "$(grep -E '^(repo:|Installing launcher|  !! the badge patch|Full walkthrough)' "$H.out" | grep -c "$H")" 0
+
+# --- a fix not out yet for this build: repatch.sh exits 3 (docs/plans/patch-outcomes.md, 2.4; PT5)
+manifest() {   # <home> [buildid]: the game's Steam manifest, two folders above the game's, with that build
+  printf '"AppState"\n{\n\t"appid"\t\t"949230"\n\t"buildid"\t\t"%s"\n}\n' "${2:-26404411}" \
+    > "$1/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_949230.acf"
+}
+CLOSE5='=== setup finished, but not every Mac fix is out yet for this build of the game: see the lines marked >> above ==='
+L1='  >> Not every Mac fix works with this build of the game (build 26404411). The NO FIX YET lines'
+R_FETCHED='     Open the installer again later: it fetches the newest fixes. Until the fix is out it says this again.'
+R_CLONE='     Update your copy (git pull in its folder), then open the installer again. If it says this again, the fix is not out yet.'
+R_PLAIN='     Update this checkout (git pull) and run setup again. If it says this again, the fix is not out yet.'
+G_LOCAL="     More, and where a fix in progress is listed: \"When a fix is not out yet\" in the guide: $R/INSTALL.md"
+G_WEB='     More, and where a fix in progress is listed: "When a fix is not out yet" in the guide: https://github.com/macgameport/1launcher/blob/main/cities-skylines-2/INSTALL.md'
+block5() {   # <home>: the >> block, from its first line to the guide's, as printed
+  sed -n '/^  >> /,/^     More, and where a fix in progress is listed: /p' "$1.out"
+}
+H="$T/hn"; home "$H"; manifest "$H"; mkdir -p "$H/Desktop"; : > "$WINDOW_CALLS"
+check "no fix yet: exit 5" "$(STUB_NOFIX=patch_cohtml.py run "$H")" 5
+check "  ...repatch.sh's NO FIX YET line above, then the >> block with the build from the manifest, six lines" \
+  "$(said "$H" '^NO FIX YET FOR THIS BUILD: patch_cohtml.py$'):$(grep -cxF "$L1" "$H.out"):$(block5 "$H" | wc -l | tr -d ' ')" "1:1:6"
+cat > "$T/block5.want" << WANT
+$L1
+     above name each one and say what you may see without it. The other fixes are in place.
+     The usual cause: Steam has updated the game, and the Mac fix for the new build is not out yet.
+     You can try the game. It may run well, or show what those lines name.
+$R_PLAIN
+$G_LOCAL
+WANT
+check "  ...the block word for word, for a plain setup" "$(block5 "$H" | diff - "$T/block5.want" > /dev/null && echo same || echo differs)" same
+check "  ...the app built, and the window builder called once" "$(has "$H/Applications/Cities Skylines II.app/Contents/MacOS/launch"):$(lines "$WINDOW_CALLS")" "yes:1"
+check "  ...the Desktop step reached and its line shown, with the lines a clean run ends with" "$(said "$H" '^Desktop:   no shortcut made\.'):$(said "$H" '^Play:'):$(said "$H" '^After a game update: ')" "1:1:1"
+check "  ...no setup complete, no !!, no problem count, and the closing line last" \
+  "$(said "$H" 'setup complete'):$(said "$H" '!!'):$(said "$H" 'problem(s)'):$(tail -n 1 "$H.out")" "0:0:0:$CLOSE5"
+rm "$H/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_949230.acf"
+check "no manifest: exit 5, the first line without the parenthesis" \
+  "$(STUB_NOFIX=patch_cohtml.py run "$H"):$(said "$H" '^  >> Not every Mac fix works with this build of the game\. The NO FIX YET lines$'):$(said "$H" '(build ')" "5:1:0"
+manifest "$H"
+check "the installer from a clone (CS2_VIA_INSTALLER=1): its fifth line, and the guide in the checkout" \
+  "$(CS2_VIA_INSTALLER=1 STUB_NOFIX=patch_cohtml.py run "$H"):$(block5 "$H" | sed -n 5p):$(block5 "$H" | sed -n 6p)" "5:$R_CLONE:$G_LOCAL"
+check "the fetched route (L1_FETCHED_REF): its fifth line, and the guide's web address" \
+  "$(L1_FETCHED_REF=release CS2_VIA_INSTALLER=1 STUB_NOFIX=patch_cohtml.py run "$H"):$(block5 "$H" | sed -n 5p):$(block5 "$H" | sed -n 6p)" "5:$R_FETCHED:$G_WEB"
+check "a plain setup: its fifth line" "$(STUB_NOFIX=patch_cohtml.py run "$H"):$(block5 "$H" | sed -n 5p)" "5:$R_PLAIN"
+check "repatch.sh exits 1 with a NO FIX YET line: exit 1, the !! block with its added sentence, no >> block" \
+  "$(STUB_FAIL=patch_mkparent.py STUB_NOFIX=patch_cohtml.py run "$H"):$(said "$H" '^NO FIX YET FOR THIS BUILD: patch_cohtml.py$'):$(said "$H" '^  !! not every patch is in place'):$(said "$H" '^     A NO FIX YET line above, if there is one, names fixes that do not work with this build of the game\.$'):$(said "$H" '^  >> ')" "1:1:1:1:0"
+check "  ...and the !! ending last" "$(tail -n 1 "$H.out")" '=== setup finished with 1 problem(s): see the lines marked !! above ==='
+check "repatch.sh exits 3 and the app's builder fails: exit 1, both blocks, the !! ending" \
+  "$(SETUP_REPO="$T/repo2" STUB_NOFIX=patch_cohtml.py run "$H"):$(said "$H" '^  >> Not every Mac fix'):$(said "$H" '^  !! the app was not built'):$(tail -n 1 "$H.out")" "1:1:1:=== setup finished with 1 problem(s): see the lines marked !! above ==="
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

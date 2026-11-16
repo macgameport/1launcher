@@ -220,14 +220,16 @@ trap release_lock EXIT
 
 # 0) Ensure the binary patches are applied — a game update reverts them. All are idempotent and
 #    refuse to write if the pattern moved, so re-running is always safe. Step 2b calls this again
-#    after it updates the game. Returns non-zero when repatch.sh reported a problem.
+#    after it updates the game. Returns what repatch.sh returned: 3 when a fix is not out yet for this
+#    build of the game (docs/plans/patch-outcomes.md, 2.3), other non-zero for any other problem.
 ensure_patches() {
   local rc=0
   if [ -x "$PATCH_DIR/repatch.sh" ]; then
-    if RP_OUT=$(CS2_GAME_DIR="$GDIR" bash "$PATCH_DIR/repatch.sh" dxmt11 2>&1); then
+    RP_OUT=$(CS2_GAME_DIR="$GDIR" bash "$PATCH_DIR/repatch.sh" dxmt11 2>&1); rc=$?
+    if [ "$rc" = 0 ]; then
       echo "Patches ensured (10, dxmt11 target)."
     else
-      echo "WARNING: repatch reported an issue — continuing (patches are idempotent). $(printf '%s\n' "$RP_OUT" | grep '^FAILED:' || printf '%s\n' "$RP_OUT" | tail -1)"; rc=1
+      echo "WARNING: repatch reported an issue — continuing (patches are idempotent). $(printf '%s\n' "$RP_OUT" | grep -E '^(NO FIX YET FOR THIS BUILD|FAILED):' || printf '%s\n' "$RP_OUT" | tail -1)"
     fi
   else
     echo "NOTE: no repatch.sh in $PATCH_DIR — skipping the patch check. Run scripts/setup.sh to install it."
@@ -241,8 +243,21 @@ ensure_patches() {
   fi
   return $rc
 }
+patches_note() {   # <ensure_patches's code> <start|update>: what the player is told (docs/plans/patch-outcomes.md, 2.6)
+  local s
+  case "$1:$2" in
+    3:start) note "Not every Mac fix is out yet for this build of the game. It may still run. See INSTALL.md, After a game update."; return 0 ;;
+    *:start) note "Some patches could not be applied. Update and run setup: INSTALL.md, After a game update."; return 0 ;;
+    3:update) s="The game is updated. Not every Mac fix is out yet for the new build; it may still run. See INSTALL.md, After a game update." ;;
+    *) s="WARNING: some fixes did not apply to the new game build — see INSTALL.md 'After a game update'." ;;
+  esac
+  # after an update, from the app: an alert that waits (PD6). On 2026-11-10 this was a notification, and nobody read it
+  echo "$s"
+  [ "$QUIET" = 1 ] && _alert "$s" warning
+  return 0
+}
 step 1 "Checking the Mac fixes for the game…"
-ensure_patches || note "Some patches could not be applied. Update and run setup: INSTALL.md, After a game update."
+ensure_patches || patches_note $? start
 
 # 1) Steam up + FRESHLY logged in — scoped to THIS wrapper. Two wrappers can each have a Steam
 #    resident, and `pgrep steamwebhelper` cannot tell them apart: webhelper children carry
@@ -374,7 +389,7 @@ check_game_update() {
     return 0
   fi
   apply_game_update
-  ensure_patches || note "WARNING: some fixes did not apply to the new game build — see INSTALL.md 'After a game update'."
+  ensure_patches || patches_note $? update
 }
 # <<< update-check
 step 4 "Checking for a game update…"

@@ -14,9 +14,8 @@
 > branch against `main` touches none of the ten default scripts.
 > **Tests.** Every one of the 38 tracked test files passes on the branch, with real exit codes: among them
 > `test-vendor.sh` 99 cases (ET1; 88 before), `test-patch-outcomes.sh` 174 (37 of the five, 137 of ET2),
-> run on clones of the Studio's game, on P0's file, ending `0 case(s) not run` (the builder writes
-> nothing outside its worktree, so its output and every mutant's are in `/private/tmp/errno-build-logs/`
-> until they are copied beside P0's), `test-repatch.sh` 41, `test-setup.sh` 107. ET3's gates: links,
+> run on clones of the Studio's game, on P0's file, ending `0 case(s) not run` (its output and every mutant's are kept in
+> `~/cs2-patch/errno-by-name-p0/build/builder/`), `test-repatch.sh` 41, `test-setup.sh` 107. ET3's gates: links,
 > identifiers at 9, the experiments ledger, `bash -n`, the six compiled under both pythons, no
 > `__pycache__`. **New mutants applied and seen red: 18** (`test-vendor.sh` 31 to 35,
 > `test-patch-outcomes.sh` 5 to 17). Every older mutant is still exit 1 (`test-vendor.sh` 1 to 21 and 25
@@ -46,9 +45,15 @@
 > Studio under Apple's `python3` (the plan: three and a half), and so does each of its mutants.
 > (10) `patch_dirdel.py`'s header became a docstring, and the script takes the folder too (2.5).
 > **Not run:** section 5 (the start with all sixteen: #25); setup on either Mac, `repatch.sh` on the
-> real game, `boot-verify.sh`; ET2 on a file that is not P0's, so the `n case(s) not run` path and the
-> `STALE .bak` line were read, not seen; a moved `RemoveDirectoryRecursive`, a renumbered `mscorlib.dll`
+> real game, `boot-verify.sh`; ET2 on a file that is not P0's was not run by the builder (see the check below); a moved `RemoveDirectoryRecursive`, a renumbered `mscorlib.dll`
 > and the IL size check by a mutant (section 4, "Not tested").
+> **Checked after the build, by the session that asked for it** (Opus 5.5, not by the builder): every
+> one of the 38 tracked test files again on `dcde1a6`, each exit 0, `test-patch-outcomes.sh` ending
+> `0 case(s) not run`; 14 mutants applied again (`test-vendor.sh` 31 to 35, `test-patch-outcomes.sh` 1,
+> 5, 9, 12, 13, 16 and 17: each exit 1; 22 and an unknown 99: exit 2); and ET2 run once on a scratch game
+> of APFS clones whose `mscorlib.dll.bak` is another file: it printed `STALE .bak`, took the installed
+> file as unpatched, ran 160 cases, and ended exit 0 with `14 case(s) not run`. Kept in
+> `~/cs2-patch/errno-by-name-p0/build/verify/`.
 > **Verify against:** `patches/patch_dirdel.py` and its five siblings (the errno block: `SITES`,
 > `METHODS`, `form`, `locate`, `show_form`, `run`), `patches/errno-forms/`, `scripts/test-vendor.sh` (the
 > gate, `EWANT`, `ROWS`), `scripts/test-patch-outcomes.sh` (from `=== ET2`: `site`, `others`, `formsha`,

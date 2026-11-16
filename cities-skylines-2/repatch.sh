@@ -4,7 +4,8 @@
 #   bash repatch.sh dxmt11           the same
 #   bash repatch.sh <game folder>    that folder
 # Each patch pattern-matches and REFUSES to write if the code moved (a game update), rather than
-# corrupting the binary. Every one writes a .bak on first run.
+# corrupting the binary. A script that finds nothing of its fix in the file and cannot put it there exits 3:
+# not for this build (docs/plans/patch-outcomes.md, 2.1). Most keep a .bak of the file they first patched.
 # There is one stack, Wine 11 + DXMT. It needs ten of the sixteen patch scripts. The other six tolerate a
 # file-error defect that Wine 10 had and that some Wine 11 builds bring back: CS2_ERRNO_PATCHES, below.
 # patch_fshandle is among the ten: handle-0 is a separate defect that Wine 11 does not fix.
@@ -32,7 +33,8 @@ esac
 #     CS2_ERRNO_PATCHES=1 bash repatch.sh dxmt11
 # Verify which you need by running the probe in scripts/ — see docs/wine-bugs/README.md.
 # ⚠ To go BACK to the wine-11 set afterwards it is not enough to re-run without the flag: the
-#   patches are already written into mscorlib.dll. Restore the pristine backup first:
+#   patches are already written into mscorlib.dll. Restore the pristine backup first, and only when that .bak
+#   is this build's (a game update leaves the previous build's .bak in place; Steam's verify is the other way):
 #     cp "<game>/Cities2_Data/Managed/mscorlib.dll.bak" "<game>/Cities2_Data/Managed/mscorlib.dll"
 #     bash repatch.sh dxmt11
 # ⚠ The patch scripts take no --check/--dry flag: running one ALWAYS applies it. To inspect state
@@ -51,10 +53,29 @@ echo "Target game dir: $GAME"
 EXPECTED=10
 if [ "$ERRNO_PATCHES" = 1 ]; then EXPECTED=16; fi
 RAN_OK=0
-FAILED=""
-run() {   # <patch script> <its arguments>
-  local p="$1"; shift
-  if python3 "$HERE/$p" "$@"; then RAN_OK=$((RAN_OK + 1)); else FAILED="$FAILED $p"; fi
+NOFIX=""; NOFIX_N=0
+FAILED=""; FAILED_N=0
+run() {   # <patch script> <its arguments>: finished (exit 0), not for this build (exit 3), or failed
+  local p="$1" rc=0; shift
+  python3 "$HERE/$p" "$@" || rc=$?
+  case "$rc" in
+    0) RAN_OK=$((RAN_OK + 1)) ;;
+    3) NOFIX="$NOFIX $p"; NOFIX_N=$((NOFIX_N + 1)) ;;
+    *) FAILED="$FAILED $p"; FAILED_N=$((FAILED_N + 1)) ;;
+  esac
+}
+# What the player may see without each fix (docs/plans/patch-outcomes.md, 2.4). scripts/test-repatch.sh holds
+# it complete: every script run above has a row.
+without() {   # <patch script>
+  case "$1" in
+    patch_cohtml.py) echo "the game's menus may not appear, or the game may crash as they start" ;;
+    patch_colossal_io.py) echo "the game can crash as it starts" ;;
+    patch_longfile.py) echo "error boxes when settings are read or saved" ;;
+    patch_asset_database.py) echo "the game can misread its list of assets; what that looks like in play is not known" ;;
+    patch_fshandle.py) echo "an error box at every start, and settings can go back to their defaults" ;;
+    patch_mkparent.py|patch_lockbypass.py|patch_longdelete.py|patch_createfile.py|patch_lockleak.py) echo "mods may not download (stuck at \"Preparing\")" ;;
+    patch_dirdel.py|patch_dirhandle.py|patch_delfile.py|patch_delrec.py|patch_dirrec_nx.py|patch_delchild.py) echo "deleting files and folders can fail, which stops mod downloads on some versions of Wine" ;;
+  esac
 }
 # Find the Wine user's folder in the prefix: a Porting Kit wrapper's is Wineskin, others use the Mac's user name.
 PREFIX_ROOT="${GAME%%/drive_c/*}"
@@ -130,12 +151,34 @@ run patch_lockleak.py "$GAME/Cities2_Data/Managed/PDX.SDK.dll"
 # failure (the dir is never actually deleted) and BREAKS BOOT on empty mod-state (NRE in PdxSdk.Initialize,
 # GOTCHAS #18b). patch_dirdel is the correct layer. Do not re-add patch_pdxsdk_io.
 
-# JetBrains Toolbox stub (stops the modding-tools DirectoryNotFoundException)
+# JetBrains Toolbox stub (stops the modding-tools DirectoryNotFoundException). Written on every run; its line
+# comes after the summary, and a failure here is counted, not fatal: under set -e it once ended the run unsummed.
 TB="$PREFIX_ROOT/drive_c/users/${WUSER:-crossover}/AppData/Local/JetBrains/Toolbox"
-mkdir -p "$TB"; printf '{}' > "$TB/.settings.json"
-echo "JetBrains Toolbox stub: written"
-echo "== Done. Patched: $GAME (wine user: ${WUSER:-crossover}) =="
-# "finished without error", not "applied": two of the scripts cannot tell an applied patch from a moved pattern.
+STUB_OK=0
+if mkdir -p "$TB" 2>/dev/null && printf '{}' 2>/dev/null > "$TB/.settings.json"; then STUB_OK=1; fi
+
+# The summary (docs/plans/patch-outcomes.md, 2.3). The game folder is on the first lines and not repeated here:
+# a player asked to paste from NO FIX YET down then pastes no path with their home folder in it.
 echo "$RAN_OK of $EXPECTED patch scripts finished without error"
-if [ -n "$FAILED" ]; then echo "FAILED:$FAILED"; exit 1; fi
-if [ "$RAN_OK" != "$EXPECTED" ]; then echo "FAILED: $RAN_OK patch scripts ran where $EXPECTED were expected"; exit 1; fi
+if [ -n "$NOFIX" ]; then
+  echo "NO FIX YET FOR THIS BUILD:$NOFIX"
+  SEEN=""
+  for p in $NOFIX; do
+    w="$(without "$p")"
+    case "$SEEN" in *"|$w|"*) continue ;; esac
+    SEEN="$SEEN|$w|"
+    names=""
+    for q in $NOFIX; do if [ "$(without "$q")" = "$w" ]; then names="$names $q"; fi; done
+    echo "  without$names: $w"
+  done
+fi
+BAD=0
+if [ -n "$FAILED" ]; then echo "FAILED:$FAILED"; BAD=1; fi
+RAN=$((RAN_OK + NOFIX_N + FAILED_N))
+if [ "$RAN" != "$EXPECTED" ]; then echo "FAILED: $RAN patch scripts ran where $EXPECTED were expected"; BAD=1; fi
+if [ "$STUB_OK" = 1 ]; then echo "JetBrains Toolbox stub: written"
+else echo "FAILED: the JetBrains Toolbox stub could not be written"; BAD=1; fi
+echo "== Finished =="
+if [ "$BAD" = 1 ]; then exit 1; fi
+if [ -n "$NOFIX" ]; then exit 3; fi
+exit 0

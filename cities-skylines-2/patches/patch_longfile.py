@@ -48,11 +48,11 @@ def find_pattern(data, pat):
     return [i for i in range(len(data) - len(pat)) if matches_at(data, i, pat)]
 
 
-def is_patched(data):
+def patched_sites(data):
     patched = list(PATTERN)
     for k in range(NOP_START, NOP_END):
         patched[k] = 0x00
-    return len(find_pattern(data, patched)) > 0
+    return find_pattern(data, patched)
 
 
 def main():
@@ -67,17 +67,25 @@ def main():
     print(f"Patching: {dll}")
     data = bytearray(open(dll, 'rb').read())
 
-    if is_patched(data):
+    # Count both forms before anything is written: this fix is in place only when the patched sites alone
+    # make up the expected number, and anything else that holds part of it does not add up.
+    matches = find_pattern(data, PATTERN)
+    o, p = len(matches), len(patched_sites(data))
+    if p == EXPECTED_MATCHES and o == 0:
         print("  Already patched (GetFileHandle throw NOP'd).")
         return
-
-    matches = find_pattern(data, PATTERN)
+    if p > 0:
+        print(f"  ERROR: part of this fix is in the file and the sites do not add up ({o} original, {p} patched,"
+              f" {EXPECTED_MATCHES} expected). No change made.")
+        sys.exit(1)
     if not matches:
         print("  WARNING: GetFileHandle throw pattern not found — game may have")
         print("  updated its LongFile IL. No change made.")
-        sys.exit(1)  # neither the original bytes nor the patched ones: the patch is NOT in place
-    if len(matches) != EXPECTED_MATCHES:
-        print(f"  WARNING: expected {EXPECTED_MATCHES} match, found {len(matches)}; patching all.")
+        sys.exit(3)  # neither the original bytes nor the patched ones: not for this build
+    if o != EXPECTED_MATCHES:
+        print(f"  WARNING: nothing of this fix is in the file and the code it changes is not as expected"
+              f" ({o} of {EXPECTED_MATCHES} sites). No change made.")
+        sys.exit(3)
 
     # Preserve the pristine original backup made by patch_colossal_io.py; only
     # create .bak here if none exists (standalone use).

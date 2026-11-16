@@ -34,13 +34,19 @@ import struct
 EXPECTED_MATCHES = 1
 
 
-def find_priority_file_exists_pattern(data):
-    """Find the File.Exists + brfalse pattern for .priority in PopulateFromDirectory."""
+PATCHED = b"\x26\x16\x00\x00\x00"  # pop; ldc.i4.0; nop; nop; nop -- what the call becomes
+
+
+def find_priority_file_exists_pattern(data, patched=False):
+    """Find the File.Exists + brfalse pattern for .priority in PopulateFromDirectory. With patched=True, the
+    same context with the call already replaced by PATCHED."""
     matches = []
 
     for i in range(len(data) - 15):
         # Look for: call (28) followed by brfalse (39) 5 bytes later
-        if data[i] != 0x28 or data[i + 5] != 0x39:
+        if data[i + 5] != 0x39:
+            continue
+        if (data[i:i + 5] != PATCHED) if patched else (data[i] != 0x28):
             continue
 
         # Check if ~2 bytes after brfalse there's ldloc.s (11) then call (28)
@@ -82,47 +88,6 @@ def find_priority_file_exists_pattern(data):
     return matches
 
 
-def patch_dll(dll_path):
-    """Patch Colossal.IO.AssetDatabase.dll to skip .priority file reading."""
-    with open(dll_path, 'rb') as f:
-        data = bytearray(f.read())
-
-    matches = find_priority_file_exists_pattern(data)
-
-    if len(matches) == 0:
-        print("  No File.Exists/.priority patterns found. DLL may already be patched.")
-        return False
-
-    if len(matches) != EXPECTED_MATCHES:
-        print(f"  WARNING: Expected {EXPECTED_MATCHES} pattern(s) but found {len(matches)}.")
-        print(f"  The game may have been updated. Review carefully.")
-
-    print(f"  Found {len(matches)} pattern(s) to patch.")
-
-    for idx, match in enumerate(matches):
-        file_exists_pos = match['file_exists_pos']
-
-        print(f"  Patching pattern {idx+1}: call File::Exists at 0x{file_exists_pos:X}")
-
-        # Replace 'call File::Exists' (5 bytes: 28 xx xx xx xx) with:
-        #   pop          (26)  — consume the path argument from ldloc.s
-        #   ldc.i4.0     (16)  — push false for brfalse to consume
-        #   nop          (00)
-        #   nop          (00)
-        #   nop          (00)
-        data[file_exists_pos]     = 0x26  # pop
-        data[file_exists_pos + 1] = 0x16  # ldc.i4.0
-        data[file_exists_pos + 2] = 0x00  # nop
-        data[file_exists_pos + 3] = 0x00  # nop
-        data[file_exists_pos + 4] = 0x00  # nop
-        # brfalse stays unchanged — it will always branch since we pushed 0
-
-    with open(dll_path, 'wb') as f:
-        f.write(data)
-
-    return True
-
-
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     game_root = os.path.dirname(script_dir)
@@ -139,24 +104,50 @@ def main():
 
     print(f"Patching: {dll_path}")
 
-    # Create or refresh backup when DLL is unpatched (has patterns to fix)
-    needs_patch = len(find_priority_file_exists_pattern(open(dll_path, 'rb').read())) > 0
+    # Classify first: count the original sites and the patched ones before any byte is written to the DLL
+    # or to its .bak. Copying the live file over the .bak before this could replace a pristine .bak.
+    data = bytearray(open(dll_path, 'rb').read())
+    matches = find_priority_file_exists_pattern(data)
+    o, p = len(matches), len(find_priority_file_exists_pattern(data, patched=True))
 
-    if needs_patch:
-        shutil.copy2(dll_path, backup_path)
-        if os.path.exists(backup_path):
-            print(f"Backup refreshed: {backup_path}")
-        else:
-            print(f"Backup created: {backup_path}")
-    elif not os.path.exists(backup_path):
-        print(f"  (no backup needed — DLL already patched)")
-    else:
-        print(f"Backup exists: {backup_path}")
-
-    if patch_dll(dll_path):
-        print("\nSuccess! Colossal.IO.AssetDatabase.dll has been patched.")
-    else:
+    if p == EXPECTED_MATCHES and o == 0:
+        print("  Already patched: File::Exists is pop; ldc.i4.0.")
         print("\nNo changes needed.")
+        return
+    if p == 0 and o != EXPECTED_MATCHES:
+        print(f"  WARNING: nothing of this fix is in the file and the code it changes is not as expected"
+              f" ({o} of {EXPECTED_MATCHES} sites). No change made.")
+        sys.exit(3)
+    if o + p != EXPECTED_MATCHES:
+        print(f"  ERROR: part of this fix is in the file and the sites do not add up ({o} original, {p} patched,"
+              f" {EXPECTED_MATCHES} expected). No change made.")
+        sys.exit(1)
+
+    # every site is original here (with one site expected, o + p = 1 and p = 0): refresh the backup so it
+    # matches the current game version
+    had_backup = os.path.exists(backup_path)
+    shutil.copy2(dll_path, backup_path)
+    print(f"Backup {'refreshed' if had_backup else 'created'}: {backup_path}")
+
+    print(f"  Found {len(matches)} pattern(s) to patch.")
+
+    for idx, match in enumerate(matches):
+        file_exists_pos = match['file_exists_pos']
+
+        print(f"  Patching pattern {idx+1}: call File::Exists at 0x{file_exists_pos:X}")
+
+        # Replace 'call File::Exists' (5 bytes: 28 xx xx xx xx) with:
+        #   pop          (26)  — consume the path argument from ldloc.s
+        #   ldc.i4.0     (16)  — push false for brfalse to consume
+        #   nop          (00)
+        #   nop          (00)
+        #   nop          (00)
+        data[file_exists_pos:file_exists_pos + 5] = PATCHED
+        # brfalse stays unchanged — it will always branch since we pushed 0
+
+    with open(dll_path, 'wb') as f:
+        f.write(data)
+    print("\nSuccess! Colossal.IO.AssetDatabase.dll has been patched.")
 
 
 if __name__ == '__main__':

@@ -84,52 +84,49 @@ def find_error_check_patterns(data):
     return matches
 
 
-def patch_dll(dll_path):
-    """Patch Colossal.IO.dll to remove Win32 error checks."""
-    with open(dll_path, 'rb') as f:
-        data = bytearray(f.read())
+# A site this script knows how to patch: the beq.s lands on the byte after the throw (so br.s over nops lands
+# where the beq.s did), and the site is long enough for the patched form below to recognise it again.
+MIN_SITE = 18
+# The patched form: br.s nn, exactly nn nops, then a byte that is not a nop. The floor keeps false matches
+# away: from 3 up the form matched ten places in a pristine mscorlib.dll, from 16 none in any patched file.
+PATCHED_MIN, PATCHED_MAX = 16, 42
 
-    matches = find_error_check_patterns(data)
 
-    if len(matches) == 0:
-        print("  No error check patterns found. DLL may already be patched.")
-        return False
+def known_sites(data):
+    """The matches of find_error_check_patterns that this script can patch and recognise afterwards."""
+    sites = []
+    for m in find_error_check_patterns(data):
+        beq_target_absolute = m['beq_s_pos'] + 2 + m['beq_s_target_offset']
+        if beq_target_absolute == m['throw_pos'] + 1 and m['length'] >= MIN_SITE:
+            sites.append(m)
+    return sites
 
-    if len(matches) != EXPECTED_MATCHES:
-        print(f"  WARNING: Expected {EXPECTED_MATCHES} patterns but found {len(matches)}.")
-        print(f"  The game may have been updated. Review carefully.")
 
-    print(f"  Found {len(matches)} error check pattern(s) to patch.")
+def patched_sites(data):
+    """File offsets of every br.s nn followed by exactly nn nops and a byte that is not a nop."""
+    hits = []
+    i = data.find(b"\x2b")
+    while i != -1 and i + 2 < len(data):
+        nn = data[i + 1]
+        if PATCHED_MIN <= nn <= PATCHED_MAX and i + 2 + nn < len(data) \
+                and not any(data[i + 2:i + 2 + nn]) and data[i + 2 + nn] != 0:
+            hits.append(i)
+        i = data.find(b"\x2b", i + 1)
+    return hits
 
-    for idx, match in enumerate(matches):
+
+def patch_sites(data, sites):
+    """Replace each site with br.s to the beq.s target, then nops."""
+    for idx, match in enumerate(sites):
         start = match['call_start']
         end = match['throw_pos'] + 1
-        length = match['length']
-
-        # Calculate the br.s offset: we want to jump to the same target as beq.s
-        # beq.s is at match['beq_s_pos'], its target = beq_s_pos + 2 + offset
-        # br.s will be at 'start', its target = start + 2 + new_offset
-        # So: start + 2 + new_offset = beq_s_pos + 2 + beq_s_offset
-        # new_offset = beq_s_pos + beq_s_offset - start
-        beq_target_absolute = match['beq_s_pos'] + 2 + match['beq_s_target_offset']
-        br_s_offset = beq_target_absolute - (start + 2)
-
-        if br_s_offset < 0 or br_s_offset > 127:
-            print(f"  WARNING: Pattern {idx+1} at 0x{start:X} - branch offset {br_s_offset} out of range for br.s, skipping")
-            continue
-
-        print(f"  Patching pattern {idx+1} at file offset 0x{start:X} ({length} bytes)")
-
-        # Replace with: br.s <offset>, then NOPs for the rest
+        # br.s at 'start' must reach the beq.s target, which known_sites put at 'end'
+        br_s_offset = end - (start + 2)
+        print(f"  Patching pattern {idx+1} at file offset 0x{start:X} ({match['length']} bytes)")
         data[start] = 0x2B  # br.s
         data[start + 1] = br_s_offset & 0xFF
         for i in range(start + 2, end):
             data[i] = 0x00  # nop
-
-    with open(dll_path, 'wb') as f:
-        f.write(data)
-
-    return True
 
 
 def main():
@@ -148,25 +145,46 @@ def main():
 
     print(f"Patching: {dll_path}")
 
-    # Create or refresh backup. If the DLL has patterns to patch (unpatched),
-    # always update the backup so it matches the current game version.
-    needs_patch = len(find_error_check_patterns(open(dll_path, 'rb').read())) > 0
+    # Classify first: count the original sites and the patched ones before any byte is written to the DLL
+    # or to its .bak. Copying the live file over the .bak before this once replaced a pristine .bak with a
+    # half-patched file.
+    data = bytearray(open(dll_path, 'rb').read())
+    sites = known_sites(data)
+    o, p = len(sites), len(patched_sites(data))
 
-    if needs_patch:
-        shutil.copy2(dll_path, backup_path)
-        if os.path.exists(backup_path):
-            print(f"Backup refreshed: {backup_path}")
-        else:
-            print(f"Backup created: {backup_path}")
-    elif not os.path.exists(backup_path):
-        print(f"  (no backup needed — DLL already patched)")
-    else:
-        print(f"Backup exists: {backup_path}")
-
-    if patch_dll(dll_path):
-        print("\nSuccess! Colossal.IO.dll has been patched.")
-    else:
+    if p == EXPECTED_MATCHES and o == 0:
+        print("  Already patched: both error checks are branches over nops.")
         print("\nNo changes needed.")
+        return
+    if p == 0 and o != EXPECTED_MATCHES:
+        print(f"  WARNING: nothing of this fix is in the file and the code it changes is not as expected"
+              f" ({o} of {EXPECTED_MATCHES} sites). No change made.")
+        sys.exit(3)
+    if o + p != EXPECTED_MATCHES:
+        print(f"  ERROR: part of this fix is in the file and the sites do not add up ({o} original, {p} patched,"
+              f" {EXPECTED_MATCHES} expected). No change made.")
+        sys.exit(1)
+
+    print(f"  Found {o} error check pattern(s) to patch" + (f", {p} already patched." if p else "."))
+    patch_sites(data, sites)
+    if len(patched_sites(data)) != EXPECTED_MATCHES:
+        print("  ERROR: the patched file would not show the patched form at every site. No change made.")
+        sys.exit(1)
+
+    # With every site original, refresh the backup so it matches the current game version. With part of the
+    # fix already in the file, the live file is not pristine: an existing .bak is left as it is, none is made.
+    if p == 0:
+        had_backup = os.path.exists(backup_path)
+        shutil.copy2(dll_path, backup_path)
+        print(f"Backup {'refreshed' if had_backup else 'created'}: {backup_path}")
+    elif os.path.exists(backup_path):
+        print(f"Backup exists: {backup_path}")
+    else:
+        print(f"  (no backup made — DLL already partly patched)")
+
+    with open(dll_path, 'wb') as f:
+        f.write(data)
+    print("\nSuccess! Colossal.IO.dll has been patched.")
 
 
 if __name__ == '__main__':

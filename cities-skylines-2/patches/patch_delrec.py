@@ -10,9 +10,10 @@ def main():
     p=sys.argv[1]
     if os.path.isdir(p): p=os.path.join(p,"Cities2_Data","Managed","mscorlib.dll")
     d=bytearray(open(p,'rb').read()); O=0x1546ca
+    if len(d)<=O+1: print(f"UNEXPECTED: file is {len(d)} bytes, too short for 0x{O:x}"); sys.exit(3)
     if d[O]==0x26: print("already patched"); return
-    if d[O]!=0x7a: print(f"UNEXPECTED 0x{d[O]:02x} at 0x{O:x}"); sys.exit(1)
-    if d[O+1]!=0x2a: print(f"WARN next byte not ret (0x{d[O+1]:02x}) — aborting"); sys.exit(1)
+    if d[O]!=0x7a: print(f"UNEXPECTED 0x{d[O]:02x} at 0x{O:x}"); sys.exit(3)
+    if d[O+1]!=0x2a: print(f"WARN next byte not ret (0x{d[O+1]:02x}) — aborting"); sys.exit(3)
     if not os.path.exists(p+".bak"): shutil.copy2(p,p+".bak")
     d[O]=0x26; open(p,'wb').write(d)
     print(f"patched 0x{O:x}: 7a->26 (RemoveDirectoryInternal graceful; falls to ret)")

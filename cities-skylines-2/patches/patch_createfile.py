@@ -44,6 +44,13 @@ def die(msg):
     sys.exit(1)
 
 
+def moved(msg):
+    """The same line, exit 3: nothing of this patch is in the file, and what the file holds (a name, a body,
+    the room for one) is not what this script can patch. Not for this build; nothing is written."""
+    print(f"UNEXPECTED: {msg} — refusing to patch (game updated? re-derive)")
+    sys.exit(3)
+
+
 def find_dll(arg):
     if os.path.isdir(arg):
         for c in (os.path.join(arg, "Cities2_Data", "Managed", "PDX.SDK.dll"), os.path.join(arg, "PDX.SDK.dll")):
@@ -195,15 +202,15 @@ class PDX:
 
     def method(self, type_pattern, name):
         tis = self.types(type_pattern)
-        if len(tis) != 1: die(f"type /{type_pattern}/ matched {len(tis)} types")
+        if len(tis) != 1: moved(f"type /{type_pattern}/ matched {len(tis)} types")
         rids = [m.row_index for m in self.md.TypeDef.rows[tis[0] - 1].MethodList if str(m.row.Name) == name]
-        if len(rids) != 1: die(f"{self.tdname(tis[0])}::{name} matched {len(rids)} methods")
+        if len(rids) != 1: moved(f"{self.tdname(tis[0])}::{name} matched {len(rids)} methods")
         return rids[0]
 
     def memberref(self, cls, name, sig):
         hits = [i + 1 for i, r in enumerate(self.md.MemberRef.rows)
                 if str(r.Name) == name and self.trname(r.Class.row) == cls and self.sig(r) == sig]
-        if not hits: die(f"no MemberRef {cls}::{name} with sig {sig.hex()}")
+        if not hits: moved(f"no MemberRef {cls}::{name} with sig {sig.hex()}")
         return 0x0A000000 | hits[0]
 
     # -- PE / bodies (Mono maps an RVA against each section's RAW size) --
@@ -264,11 +271,11 @@ def text_slack(px, nbytes, data):
     """First 4-aligned run of `nbytes` zero bytes past .text's VirtualSize (linker file-alignment padding),
     verified unreferenced: no MethodDef/FieldRVA/PE-or-CLI data directory/debug data points into it."""
     s = px.pe.sections[0]
-    if not bytes(s.Name).startswith(b".text"): die("first section is not .text")
+    if not bytes(s.Name).startswith(b".text"): moved("first section is not .text")
     start = (s.PointerToRawData + s.Misc_VirtualSize + 3) & ~3
     end = s.PointerToRawData + s.SizeOfRawData
-    if start + nbytes > end: die(f".text tail slack is {end - start} B, need {nbytes}")
-    if any(data[start:start + nbytes]): die(f".text tail slack at {start:#x} is not zero")
+    if start + nbytes > end: moved(f".text tail slack is {end - start} B, need {nbytes}")
+    if any(data[start:start + nbytes]): moved(f".text tail slack at {start:#x} is not zero")
     lo, hi = px.off2rva(start), px.off2rva(start) + nbytes
     refs = [r.Rva for r in px.md.MethodDef.rows if r.Rva]
     if px.md.FieldRva: refs += [r.Rva for r in px.md.FieldRva.rows]
@@ -282,7 +289,7 @@ def text_slack(px, nbytes, data):
         if d.struct.AddressOfRawData: refs += [d.struct.AddressOfRawData, d.struct.AddressOfRawData + d.struct.SizeOfData - 1]
     text_end = s.VirtualAddress + s.SizeOfRawData
     bad = [hex(r) for r in refs if lo <= r < text_end]
-    if bad: die(f".text slack RVA {lo:#x}.. is referenced or followed by referenced data ({bad})")
+    if bad: moved(f".text slack RVA {lo:#x}.. is referenced or followed by referenced data ({bad})")
     return start, lo
 def match(px, il, pos, template):
     """template items: bytes (literal) | (name,) a 4-byte token that must resolve to `name` |
@@ -341,8 +348,8 @@ def tokens(px):
     want = (0x00, ["class Microsoft.Win32.SafeHandles.SafeFileHandle", "string", "valuetype System.IO.FileAccess",
                    "valuetype System.IO.FileShare", "native int", "valuetype System.IO.FileMode", "int32", "native int"])
     got = sig_types(px, px.sig(r))
-    if got != want: die(f"NativeMethods.CreateFile signature is {got}")
-    if r.Rva: die("NativeMethods.CreateFile has an IL body (expected a P/Invoke)")
+    if got != want: moved(f"NativeMethods.CreateFile signature is {got}")
+    if r.Rva: moved("NativeMethods.CreateFile has an IL body (expected a P/Invoke)")
     inv = px.memberref("System.Runtime.InteropServices.SafeHandle", "get_IsInvalid", bytes.fromhex("200002"))
     return 0x06000000 | glp, 0x06000000 | cf, inv
 
@@ -358,23 +365,28 @@ def main():
     d = bytearray(open(p, "rb").read()); px = PDX(d)
     glp, cf, inv = tokens(px)
     plan = []
+    seen = False  # a method already patched: part of this patch is in the file, so a refusal after it is exit 1
     for nm, bit, flags_push in (("LongPathFileExists", 0x20, b"\x16"),
                                 ("LongPathDirectoryExists", 0x10, b"\x20\x00\x00\x00\x02")):
         il_new = new_il(glp, cf, inv, flags_push)
         check_body(il_new, [])
         body = bytes([(len(il_new) << 2) | 0x02]) + il_new
         assert len(il_new) < 64 and len(body) <= SLOT
-        rid = px.method(TYPE, nm); rva = px.rva_of(rid); off = px.rva2off(rva)
-        if off is None: die(f"{nm} MethodDef#{rid} RVA {rva:#x} maps to no section")
-        b = body_at(d, off)
-        if not b["fat"] and il_of(d, b) == il_new:
-            print(f"  already patched: {nm} (in place, RVA {rva:#x})"); continue
-        if not b["fat"] or b["flags"] & 0xFFF != 0x013 or b["size"] != 28 or b["eh"] or off & 3:
-            die(f"{nm} body at {off:#x}: fat={b['fat']} flags={b['flags']:#x} size={b['size']} (want fat 0x3013, 28 B, no EH)")
-        got, end = match(px, il_of(d, b), 0, orig(bit))
-        if got is None or end != 28: die(f"{nm} original IL differs: {end}")
-        others = [r.Rva for r in px.md.MethodDef.rows if r.Rva and rva < r.Rva < rva + SLOT]
-        if others: die(f"{nm}: another method body starts inside its 40-byte slot ({others})")
+        try:
+            rid = px.method(TYPE, nm); rva = px.rva_of(rid); off = px.rva2off(rva)
+            if off is None: moved(f"{nm} MethodDef#{rid} RVA {rva:#x} maps to no section")
+            b = body_at(d, off)
+            if not b["fat"] and il_of(d, b) == il_new:
+                print(f"  already patched: {nm} (in place, RVA {rva:#x})"); seen = True; continue
+            if not b["fat"] or b["flags"] & 0xFFF != 0x013 or b["size"] != 28 or b["eh"] or off & 3:
+                moved(f"{nm} body at {off:#x}: fat={b['fat']} flags={b['flags']:#x} size={b['size']} (want fat 0x3013, 28 B, no EH)")
+            got, end = match(px, il_of(d, b), 0, orig(bit))
+            if got is None or end != 28: moved(f"{nm} original IL differs: {end}")
+            others = [r.Rva for r in px.md.MethodDef.rows if r.Rva and rva < r.Rva < rva + SLOT]
+            if others: moved(f"{nm}: another method body starts inside its 40-byte slot ({others})")
+        except SystemExit as e:
+            if e.code == 3 and seen: sys.exit(1)
+            raise
         plan.append((nm, rid, rva, off, body))
     if not plan: print("nothing to do"); return
     for nm, rid, rva, off, body in plan:

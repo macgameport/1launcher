@@ -27,6 +27,13 @@ def die(msg):
     sys.exit(1)
 
 
+def moved(msg):
+    """The same line, exit 3: nothing of this patch is in the file, and what the file holds (a name, a body,
+    the room for one) is not what this script can patch. Not for this build; nothing is written."""
+    print(f"UNEXPECTED: {msg} — refusing to patch (game updated? re-derive)")
+    sys.exit(3)
+
+
 def find_dll(arg):
     if os.path.isdir(arg):
         for c in (os.path.join(arg, "Cities2_Data", "Managed", "PDX.SDK.dll"), os.path.join(arg, "PDX.SDK.dll")):
@@ -178,15 +185,15 @@ class PDX:
 
     def method(self, type_pattern, name):
         tis = self.types(type_pattern)
-        if len(tis) != 1: die(f"type /{type_pattern}/ matched {len(tis)} types")
+        if len(tis) != 1: moved(f"type /{type_pattern}/ matched {len(tis)} types")
         rids = [m.row_index for m in self.md.TypeDef.rows[tis[0] - 1].MethodList if str(m.row.Name) == name]
-        if len(rids) != 1: die(f"{self.tdname(tis[0])}::{name} matched {len(rids)} methods")
+        if len(rids) != 1: moved(f"{self.tdname(tis[0])}::{name} matched {len(rids)} methods")
         return rids[0]
 
     def memberref(self, cls, name, sig):
         hits = [i + 1 for i, r in enumerate(self.md.MemberRef.rows)
                 if str(r.Name) == name and self.trname(r.Class.row) == cls and self.sig(r) == sig]
-        if not hits: die(f"no MemberRef {cls}::{name} with sig {sig.hex()}")
+        if not hits: moved(f"no MemberRef {cls}::{name} with sig {sig.hex()}")
         return 0x0A000000 | hits[0]
 
     # -- PE / bodies (Mono maps an RVA against each section's RAW size) --
@@ -247,11 +254,11 @@ def text_slack(px, nbytes, data):
     """First 4-aligned run of `nbytes` zero bytes past .text's VirtualSize (linker file-alignment padding),
     verified unreferenced: no MethodDef/FieldRVA/PE-or-CLI data directory/debug data points into it."""
     s = px.pe.sections[0]
-    if not bytes(s.Name).startswith(b".text"): die("first section is not .text")
+    if not bytes(s.Name).startswith(b".text"): moved("first section is not .text")
     start = (s.PointerToRawData + s.Misc_VirtualSize + 3) & ~3
     end = s.PointerToRawData + s.SizeOfRawData
-    if start + nbytes > end: die(f".text tail slack is {end - start} B, need {nbytes}")
-    if any(data[start:start + nbytes]): die(f".text tail slack at {start:#x} is not zero")
+    if start + nbytes > end: moved(f".text tail slack is {end - start} B, need {nbytes}")
+    if any(data[start:start + nbytes]): moved(f".text tail slack at {start:#x} is not zero")
     lo, hi = px.off2rva(start), px.off2rva(start) + nbytes
     refs = [r.Rva for r in px.md.MethodDef.rows if r.Rva]
     if px.md.FieldRva: refs += [r.Rva for r in px.md.FieldRva.rows]
@@ -265,7 +272,7 @@ def text_slack(px, nbytes, data):
         if d.struct.AddressOfRawData: refs += [d.struct.AddressOfRawData, d.struct.AddressOfRawData + d.struct.SizeOfData - 1]
     text_end = s.VirtualAddress + s.SizeOfRawData
     bad = [hex(r) for r in refs if lo <= r < text_end]
-    if bad: die(f".text slack RVA {lo:#x}.. is referenced or followed by referenced data ({bad})")
+    if bad: moved(f".text slack RVA {lo:#x}.. is referenced or followed by referenced data ({bad})")
     return start, lo
 def match(px, il, pos, template):
     """template items: bytes (literal) | (name,) a 4-byte token that must resolve to `name` |
@@ -320,21 +327,26 @@ def tail(native, op):
 def main():
     p = find_dll(sys.argv[1])
     d = bytearray(open(p, "rb").read()); px = PDX(d); todo = []
+    seen = False  # a method already patched: part of this patch is in the file, so a refusal after it is exit 1
     for nm, native in (("DeleteLongPathFile", "DeleteFileW"), ("DeleteLongPathDirectory", "RemoveDirectory")):
-        rid = px.method(TYPE, nm); off = px.rva2off(px.rva_of(rid))
-        if off is None: die(f"{nm} RVA maps to no section")
-        b = body_at(d, off); il = il_of(d, b)
-        if b["size"] < 21: die(f"{nm} body only {b['size']} bytes")
-        t0 = b["size"] - 21
-        ins = check_body(il, b["eh"])
-        if t0 not in {o for o, *_ in ins}: die(f"{nm}: tail at IL {t0:#x} is not an instruction boundary")
-        for (_f, to, tl, ho, hl, _x) in b["eh"]:
-            if max(to + tl, ho + hl) > t0: die(f"{nm}: an EH clause reaches into the throw tail")
-        O = b["il"] + b["size"] - 2
-        if match(px, il, t0, tail(native, 0x26)) == ({}, b["size"]):
-            print(f"  already patched: {nm}"); continue
-        got, end = match(px, il, t0, tail(native, 0x7a))
-        if got is None or end != b["size"]: die(f"0x{d[O]:02x} at {O:#x} ({nm}): {end}")
+        try:
+            rid = px.method(TYPE, nm); off = px.rva2off(px.rva_of(rid))
+            if off is None: moved(f"{nm} RVA maps to no section")
+            b = body_at(d, off); il = il_of(d, b)
+            if b["size"] < 21: moved(f"{nm} body only {b['size']} bytes")
+            t0 = b["size"] - 21
+            ins = check_body(il, b["eh"])
+            if t0 not in {o for o, *_ in ins}: moved(f"{nm}: tail at IL {t0:#x} is not an instruction boundary")
+            for (_f, to, tl, ho, hl, _x) in b["eh"]:
+                if max(to + tl, ho + hl) > t0: moved(f"{nm}: an EH clause reaches into the throw tail")
+            O = b["il"] + b["size"] - 2
+            if match(px, il, t0, tail(native, 0x26)) == ({}, b["size"]):
+                print(f"  already patched: {nm}"); seen = True; continue
+            got, end = match(px, il, t0, tail(native, 0x7a))
+            if got is None or end != b["size"]: moved(f"0x{d[O]:02x} at {O:#x} ({nm}): {end}")
+        except SystemExit as e:
+            if e.code == 3 and seen: sys.exit(1)
+            raise
         new = il[:-2] + b"\x26\x2a"
         check_body(new, b["eh"])
         todo.append((O, nm))

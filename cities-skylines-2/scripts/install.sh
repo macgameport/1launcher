@@ -13,8 +13,9 @@
 #
 #   exit 0 = done; 1 = a step failed, said why; 2 = a wrong option; 3 = stopped at a question (answered no,
 #   or nobody to ask) or because the game, another install, or another wrapper's Steam is running; 4 = it
-#   cannot go on by itself: open the installer again to carry on. --check exits 0 after its report, or 1
-#   or 3 for the refusals that come before it.
+#   cannot go on by itself: open the installer again to carry on; 5 = finished, but a Mac fix is not out yet
+#   for this build of the game (setup's exit 5). --check exits 0 after its report, or 1 or 3 for the
+#   refusals that come before it.
 # CS2_WRAPPER=<absolute path> names the wrapper, made in step 3 if absent. L1_TRACE=<file> gets one line per
 # poll while Steam starts and downloads, and one for the installer's own transfer (the plans' live checks).
 set -u
@@ -37,6 +38,7 @@ WORDS_SPACE="The game with its DLC takes about 100 GB, and Wine and Steam about 
 WORDS_WINE="about 235 MB"
 WORDS_DOWNLOAD="The download is about 100 GB and takes hours."
 WORDS_DONE="Cities Skylines II, or 14unch3r"
+WORDS_NOFIX="The install is finished, but not every Mac fix is out yet for this build of the game: the lines marked >> above say more. You can try the game from Applications: $WORDS_DONE."
 TOOLS_PART=python3          # what this game needs of Apple's Command Line Tools: python3, for the patches
 STEAM_ARGS="-no-cef-sandbox"
 TAKES_DESKTOP=1             # setup.sh takes --desktop

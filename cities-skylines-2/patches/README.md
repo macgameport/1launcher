@@ -32,12 +32,27 @@ adding one are declined.
   fingerprint, or (the five `PDX.SDK.dll` patches since 1.6.2f1) the target method found **by name**
   with its full original IL matched. A game update that moves or changes the code makes the patch
   **refuse and tell you** rather than corrupt the binary.
-- **Backed up.** First run writes `<file>.bak` — the pristine original.
+- **Backed up.** A `.bak` is made before the first write to a file whose fix is not yet in, never from a
+  file that already holds it. After a game update a `.bak` can be the previous build's: do not copy one
+  back by hand, have Steam verify the game's files.
 - **Idempotent.** Re-running is a no-op.
 - **Revertible.** `patch_fshandle.py <dir> --revert`, or restore from `.bak`.
 - **Dry-runnable.** Several accept `--dry-run`.
 
 ## If a game update breaks them
+
+A script that finds nothing of its own patch in a file, and cannot put it there because of what the file
+holds (the code it changes is absent, changed, there more or fewer times than expected, or leaves no
+room), writes nothing and **exits 3**: not for this build. Any other refusal is exit 1, and so is a file
+that holds part of a script's patch in a way that does not add up. `repatch.sh` names the exit-3 scripts
+on a `NO FIX YET FOR THIS BUILD:` line with what the player may see without each, and exits 3 when
+nothing else failed; setup then finishes the install and says a fix is not out yet (exit 5). The design
+is `docs/plans/patch-outcomes.md` at the repository's root.
+
+The six errno scripts (`patch_dirdel`, `patch_dirhandle`, `patch_delfile`, `patch_delrec`,
+`patch_dirrec_nx`, `patch_delchild`) are held to a weaker test than the other ten: each reads one to seven
+bytes at a fixed offset, so on an `mscorlib.dll` whose code moved one of them can say "already patched"
+or write into unrelated code. They are off by default.
 
 Offsets need re-deriving. `dis_pdx.py` is the IL disassembler used to find them:
 

@@ -105,11 +105,13 @@ def main():
             if bytes(data[i:i + 4]) == PATCH and data[i + 5] == 0x6f and data[i + 12] == 0x72:
                 print(f"already patched at {i:#x}: {dll}")
                 return
-        sys.exit("ERROR: FileStream.Init guard not found — IL has moved. Re-derive with:\n"
-                 "  dis_pdx.py <mscorlib.dll> FileStream Init")
+        print("ERROR: FileStream.Init guard not found — IL has moved. Re-derive with:\n"
+              "  dis_pdx.py <mscorlib.dll> FileStream Init", file=sys.stderr)
+        sys.exit(1 if dry else 3)  # not for this build (exit 3); a dry run keeps its own ending
     if len(hits) != 1:
-        sys.exit(f"ERROR: {len(hits)} candidate sites {[hex(h) for h in hits]} — refusing "
-                 f"(expected exactly 1). Inspect before patching.")
+        print(f"ERROR: {len(hits)} candidate sites {[hex(h) for h in hits]} — refusing "
+              f"(expected exactly 1). Inspect before patching.", file=sys.stderr)
+        sys.exit(1 if dry else 3)  # more than one: not for this build either
 
     off = hits[0]
     bak = dll + ".bak"

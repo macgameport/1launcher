@@ -80,6 +80,13 @@ def die(msg):
     sys.exit(1)
 
 
+def moved(msg):
+    """The same line, exit 3: nothing of this patch is in the file, and what the file holds (a name, a body,
+    the room for one) is not what this script can patch. Not for this build; nothing is written."""
+    print(f"UNEXPECTED: {msg} — refusing to patch (game updated? re-derive)")
+    sys.exit(3)
+
+
 def find_dll(arg):
     if os.path.isdir(arg):
         for c in (os.path.join(arg, "Cities2_Data", "Managed", "PDX.SDK.dll"), os.path.join(arg, "PDX.SDK.dll")):
@@ -231,15 +238,15 @@ class PDX:
 
     def method(self, type_pattern, name):
         tis = self.types(type_pattern)
-        if len(tis) != 1: die(f"type /{type_pattern}/ matched {len(tis)} types")
+        if len(tis) != 1: moved(f"type /{type_pattern}/ matched {len(tis)} types")
         rids = [m.row_index for m in self.md.TypeDef.rows[tis[0] - 1].MethodList if str(m.row.Name) == name]
-        if len(rids) != 1: die(f"{self.tdname(tis[0])}::{name} matched {len(rids)} methods")
+        if len(rids) != 1: moved(f"{self.tdname(tis[0])}::{name} matched {len(rids)} methods")
         return rids[0]
 
     def memberref(self, cls, name, sig):
         hits = [i + 1 for i, r in enumerate(self.md.MemberRef.rows)
                 if str(r.Name) == name and self.trname(r.Class.row) == cls and self.sig(r) == sig]
-        if not hits: die(f"no MemberRef {cls}::{name} with sig {sig.hex()}")
+        if not hits: moved(f"no MemberRef {cls}::{name} with sig {sig.hex()}")
         return 0x0A000000 | hits[0]
 
     # -- PE / bodies (Mono maps an RVA against each section's RAW size) --
@@ -300,11 +307,11 @@ def text_slack(px, nbytes, data):
     """First 4-aligned run of `nbytes` zero bytes past .text's VirtualSize (linker file-alignment padding),
     verified unreferenced: no MethodDef/FieldRVA/PE-or-CLI data directory/debug data points into it."""
     s = px.pe.sections[0]
-    if not bytes(s.Name).startswith(b".text"): die("first section is not .text")
+    if not bytes(s.Name).startswith(b".text"): moved("first section is not .text")
     start = (s.PointerToRawData + s.Misc_VirtualSize + 3) & ~3
     end = s.PointerToRawData + s.SizeOfRawData
-    if start + nbytes > end: die(f".text tail slack is {end - start} B, need {nbytes}")
-    if any(data[start:start + nbytes]): die(f".text tail slack at {start:#x} is not zero")
+    if start + nbytes > end: moved(f".text tail slack is {end - start} B, need {nbytes}")
+    if any(data[start:start + nbytes]): moved(f".text tail slack at {start:#x} is not zero")
     lo, hi = px.off2rva(start), px.off2rva(start) + nbytes
     refs = [r.Rva for r in px.md.MethodDef.rows if r.Rva]
     if px.md.FieldRva: refs += [r.Rva for r in px.md.FieldRva.rows]
@@ -318,7 +325,7 @@ def text_slack(px, nbytes, data):
         if d.struct.AddressOfRawData: refs += [d.struct.AddressOfRawData, d.struct.AddressOfRawData + d.struct.SizeOfData - 1]
     text_end = s.VirtualAddress + s.SizeOfRawData
     bad = [hex(r) for r in refs if lo <= r < text_end]
-    if bad: die(f".text slack RVA {lo:#x}.. is referenced or followed by referenced data ({bad})")
+    if bad: moved(f".text slack RVA {lo:#x}.. is referenced or followed by referenced data ({bad})")
     return start, lo
 def match(px, il, pos, template):
     """template items: bytes (literal) | (name,) a 4-byte token that must resolve to `name` |
@@ -383,9 +390,9 @@ def locate(px, data):
     """-> (body, log_start_file_off, lock_local, dispose_tok_bytes, state)"""
     rid = px.method(ENC, "MoveNext")
     off = px.rva2off(px.rva_of(rid))
-    if off is None: die("MoveNext RVA maps to no section")
+    if off is None: moved("MoveNext RVA maps to no section")
     b = body_at(data, off); il = il_of(data, b)
-    if not b["fat"] or not b["eh"]: die("MoveNext has no EH table")
+    if not b["fat"] or not b["eh"]: moved("MoveNext has no EH table")
     ins = check_body(il, b["eh"])
     # lock local + Dispose token from the method's own Dispose call site(s)
     sites = set()
@@ -393,7 +400,7 @@ def locate(px, data):
         po, popc, parg, _, _ = ins[k - 1]; o, opc, arg, _, _ = ins[k]
         if opc == 0x6F and px.tokname(arg) == DISPOSE and popc == 0x11:
             sites.add((parg, arg))
-    if len(sites) != 1: die(f"AcquireLockResult::Dispose call sites (ldloc.s N; callvirt) = {sites}")
+    if len(sites) != 1: moved(f"AcquireLockResult::Dispose call sites (ldloc.s N; callvirt) = {sites}")
     loc, dtok = sites.pop()
     cands = []
     for (flags, toff, tlen, hoff, hlen, _x) in b["eh"]:
@@ -401,20 +408,20 @@ def locate(px, data):
         got, pos = match(px, il, hoff, HANDLER)
         if got is None: continue
         cands.append((hoff, hlen, pos))
-    if len(cands) != 1: die(f"{len(cands)} catch handlers start with CreateIoResultFromException")
+    if len(cands) != 1: moved(f"{len(cands)} catch handlers start with CreateIoResultFromException")
     hoff, hlen, run = cands[0]
     end = run + LOG_LEN
-    if end + 2 > hoff + hlen or il[end:end + 2] != AFTER: die(f"IL {end:#x} is not ldnull; call (handler layout changed)")
+    if end + 2 > hoff + hlen or il[end:end + 2] != AFTER: moved(f"IL {end:#x} is not ldnull; call (handler layout changed)")
     bounds_inside = [t for o, *_, tg in ins if not run <= o < end for t in tg if run < t < end]  # our own brfalse.s excluded
     for (_f, to, tl, ho, hl, _x) in b["eh"]:
         bounds_inside += [x for x in (to, to + tl, ho, ho + hl) if run < x < end]
-    if bounds_inside: die(f"branch/EH boundary inside the Log run: {bounds_inside}")
+    if bounds_inside: moved(f"branch/EH boundary inside the Log run: {bounds_inside}")
     patched = build_patch(loc, struct.pack("<I", dtok))
     if il[run:end] == patched:
         state = "patched"
     else:
         got, pos = match(px, il, run, RUN)
-        if got is None or pos != end: die(f"Log run at IL {run:#x} differs: {pos}")
+        if got is None or pos != end: moved(f"Log run at IL {run:#x} differs: {pos}")
         state = "pristine"
     new = il[:run] + patched + il[end:]
     check_body(new, b["eh"])
@@ -423,6 +430,15 @@ def locate(px, data):
 
 def find_dll2(arg):
     return find_dll(arg)
+
+
+def own_ending(fn, *a):
+    """--dry-run and --revert keep their own endings: an exit 3 from inside them is made 1."""
+    try:
+        return fn(*a)
+    except SystemExit as e:
+        if e.code == 3: sys.exit(1)
+        raise
 
 
 def main():
@@ -434,7 +450,7 @@ def main():
     dll = find_dll2(args[0])
     data = bytearray(open(dll, "rb").read())
     px = PDX(data)
-    b, LOG_START, loc, dispose_tok, state, patched = locate(px, data)
+    b, LOG_START, loc, dispose_tok, state, patched = own_ending(locate, px, data) if dry or revert else locate(px, data)
     run = bytes(data[LOG_START:LOG_START + LOG_LEN])
 
     if state == "patched":
@@ -446,7 +462,7 @@ def main():
         if not os.path.exists(bak):
             sys.exit("ERROR: no .bak to revert from")
         orig = bytearray(open(bak, "rb").read())
-        ob = locate(PDX(orig), orig)
+        ob = own_ending(locate, PDX(orig), orig)
         if ob[1] != LOG_START or ob[4] != "pristine":
             sys.exit("ERROR: .bak is not the pristine form of this build — refusing to revert from it")
         data[LOG_START:LOG_START + LOG_LEN] = orig[LOG_START:LOG_START + LOG_LEN]

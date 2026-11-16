@@ -8,10 +8,12 @@ import sys, shutil, os
 p = sys.argv[1]
 d = bytearray(open(p, 'rb').read())
 OFF = 0x15461f  # the `throw` (0x7A) at IL 0x0163 of FileSystem.RemoveDirectoryRecursive; next byte 0xDE=leave.s
+if len(d) <= OFF:
+    print(f"UNEXPECTED: file is {len(d)} bytes, too short for 0x{OFF:x} — IL moved? aborting"); sys.exit(3)
 if d[OFF] == 0x00:
     print("already patched (nop)"); sys.exit(0)
 if d[OFF] != 0x7a:
-    print(f"UNEXPECTED byte 0x{d[OFF]:02x} at 0x{OFF:x} (expected 0x7a throw) — IL moved? aborting"); sys.exit(1)
+    print(f"UNEXPECTED byte 0x{d[OFF]:02x} at 0x{OFF:x} (expected 0x7a throw) — IL moved? aborting"); sys.exit(3)
 if not os.path.exists(p + ".bak"): shutil.copy(p, p + ".bak")
 d[OFF] = 0x00  # throw -> nop; execution falls to leave -> RemoveDirectoryInternal (non-recursive, works on Wine)
 open(p, 'wb').write(d)

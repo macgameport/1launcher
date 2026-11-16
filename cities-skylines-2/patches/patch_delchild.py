@@ -9,8 +9,9 @@ def main():
     p=sys.argv[1]
     if os.path.isdir(p): p=os.path.join(p,"Cities2_Data","Managed","mscorlib.dll")
     d=bytearray(open(p,'rb').read()); O=0x154609
+    if len(d)<=O: print(f"UNEXPECTED: file is {len(d)} bytes, too short for 0x{O:x}"); sys.exit(3)
     if d[O]==0x26: print("already patched"); return
-    if d[O]!=0x7a: print(f"UNEXPECTED 0x{d[O]:02x} at 0x{O:x}"); sys.exit(1)
+    if d[O]!=0x7a: print(f"UNEXPECTED 0x{d[O]:02x} at 0x{O:x}"); sys.exit(3)
     if not os.path.exists(p+".bak"): shutil.copy2(p,p+".bak")
     d[O]=0x26; open(p,'wb').write(d)
     print(f"patched 0x{O:x}: 7a->26 (child-delete failure not rethrown; recursive delete fully graceful)")

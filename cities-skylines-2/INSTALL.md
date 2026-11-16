@@ -394,11 +394,31 @@ If you installed with [the quick way](#the-quick-way), paste its line again inst
 current scripts and re-applies the fixes.
 
 Each patch finds its target by name or by a byte pattern and refuses to write if what it finds is
-not exactly what it expects, so it will never corrupt a file. If one reports a miss, please open an
-issue. (1.6.2f1, October 2026: the cohtml and Paradox SDK patches needed re-deriving; the SDK ones
+not exactly what it expects, so it will never corrupt a file. If one does not work with a new build of
+the game, see [When a fix is not out yet](#when-a-fix-is-not-out-yet) below. (1.6.2f1, October 2026: the cohtml and Paradox SDK patches needed re-deriving; the SDK ones
 now resolve their methods by name, so later updates should not break them the same way. 1.6.4f1,
 November 2026: the cohtml patch needed re-deriving again, because the compiler had moved the function to
 another register.)
+
+### When a fix is not out yet
+
+After a game update, setup or the launcher may say that not every Mac fix is out yet for this build of
+the game. The lines beginning `NO FIX YET` name the patch scripts that do not work with the new build and
+say what you may see without each. The other fixes are in place, and you can try the game.
+
+A fix is out when the installer fetches it. Fixes in progress are listed under the label
+[game-update](https://github.com/macgameport/1launcher/labels/game-update): look there first, and open
+an issue only if none is there for your build. When the fix is out, open the installer again (or, in a
+clone, `git pull` and run it again).
+
+If the game has not updated lately (the launcher's log says "Game updated to build ..." when it has), a
+file may be damaged. In the Steam inside the wrapper, right-click the game, Properties, Installed Files,
+Verify integrity of game files; then open the installer again. Verify puts every patched file back, and
+can bring a game update with it. After an update, never copy a `.bak` file back by hand: it may be the
+previous build's.
+
+If you ask for help, paste the lines from `NO FIX YET` down. The lines above them hold your home
+folder's path.
 
 ## Troubleshooting
 
@@ -407,8 +427,8 @@ another register.)
 | "Steam did not auto-login" | The saved token expired. Open Steam inside the wrapper, sign in until the library loads, then relaunch. |
 | No main menu after a fresh start, and `platform service integration failed` in the game's `SceneFlow.log` | The game started before Steam had confirmed your licence. Start it once from Terminal with a longer wait, `CS2_LICENCE_WAIT=45 bash ~/cs2-patch/launch-cs2-dxmt11.sh`, and please open an issue: the default of 15 seconds rests on two Macs. |
 | Game exits immediately, launch fails with code 1 | A stale `.crash` marker from a force-kill. The launcher clears it automatically now; if it persists, delete `.../Steam/.crash` inside the prefix. |
-| Black screen with a working cursor | The Coherent Gameface UI fix didn't apply. Re-run `bash scripts/setup.sh` and check its patch output. |
-| Mods won't download ("Preparing 2%", IO errors) | The patches are not all in place. Run `bash scripts/setup.sh` again and read its last lines: it says how many patch scripts finished and names any that failed. |
+| Black screen with a working cursor | The Coherent Gameface UI fix didn't apply. Re-run `bash scripts/setup.sh` and check its patch output, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |
+| Mods won't download ("Preparing 2%", IO errors) | The patches are not all in place. Run `bash scripts/setup.sh` again and read its last lines: it says how many patch scripts finished and names any that failed, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |
 | Screen freezes after alt-tab | Exclusive Fullscreen. Switch to Fullscreen Window (see step 5). |
 | "IOEXCEPTION — Failed to read settings file with GUID ... Invalid handle to path [Unknown]" | **Cosmetic — press Continue.** The game asks for optional settings files that were never created; on Wine an absent file surfaces as an invalid handle instead of a clean not-found, so the game shows its error dialog. Your settings are still applied and saved. Most common right after changing graphics options or at boot. |
 | Mods show a ⚠ badge | Usually not a real conflict, and the same on Windows: it clears when you open that Options section. The section "Mod keybinding ⚠ badges" above says what it is and how to hide it. |

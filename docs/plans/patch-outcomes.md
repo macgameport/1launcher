@@ -1,5 +1,45 @@
 # A game update with no fix yet: what the patch scripts report, and what the player is told
 
+> **🔧 As-built (2026-11-15):** PARTIAL. P0 to P6 are built on the branch `patch-outcomes`, cut from `main`
+> at `656d0dc`, pushed and not merged: P1 `8eee371` (the sixteen scripts, PT1 to PT3), P2 `0ea1257`
+> (`repatch.sh`), P3 `7135e57` (setup), P4 `effd68d` (the core and the installer), P5 `3d384ef` (the
+> launcher), P6 `b5494ef` and the commit that carries this header. P0 is recorded in
+> `~/cs2-patch/patch-outcomes-p0/`. **PL1 passed on 2026-11-15** (section 5): its six steps on clones,
+> then setup from the branch on the real install and `boot-verify.sh` `VERDICT: PASS`. The real install
+> runs the branch's scripts since then. What is left before the merge: James reads the words (PD5), the
+> `--no-ff` merge on his word, and at the merge the issue of 2.8 and the label `game-update`. Tracking:
+> issue #22.
+> **Tests.** Every one of the 38 tracked test files passes on the merged branch, with real exit codes:
+> among them `test-vendor.sh` 86 cases, the new `test-patch-outcomes.sh` 37 (run on clones of the installed
+> game; `SKIPPED` with no game), `test-repatch.sh` 41, `test-setup.sh` 107, `test-install.sh` 139 with its
+> transcript recorded again (46 lines added, none changed), `test-launcher-notes.sh` 16,
+> `test-update-check.sh`, `common/test-launcher-parity.sh` 36. **New mutants applied and seen red: 46**
+> (`test-vendor.sh` 7 to 29, `test-patch-outcomes.sh` 1 to 4, `test-repatch.sh` 3 to 8, `test-setup.sh`
+> 22 to 27, `test-install.sh` 61 to 63, `test-launcher-notes.sh` 4 and 5, `test-update-check.sh` 6 and 7);
+> every older mutant of the eight test files touched is red, four of them anchored again
+> (`test-vendor.sh` 4, `test-repatch.sh` 1, `test-launcher-notes.sh` 1 and 3; `test-install.sh` 27 now uses
+> 6). On clones of the game's files the built scripts gave P0's sha256 for all five files, restored from
+> the `.bak`s and as installed, and changed nothing on a second run.
+> **How it was built.** P1 and P2 to P5 each by an agent in a worktree of its own, from this plan; P0 and
+> P6 in the session. Both builds were read against sections 2.1 to 2.6 before they were merged, every
+> test file was run again on the merged branch, and 11 of the 46 new mutants and one older one were applied again there.
+> **Departures.** (1) After an update, the launcher shows today's sentence for a failure as an alert too,
+> not only the one for a fix not out yet: the same moment and the same unread channel (2.6 does not
+> limit PD6 to exit 3). (2) The stub is written before the summary and its line printed after it; the
+> summary still always prints. (3) PT1 gained a case that makes the floor of `nn` testable (`2b 05`, five
+> zeros, `01` beside the two real sites is exit 0): the cases listed could not turn that mutant red.
+> (4) In `patch_longdelete.py` and `patch_createfile.py`, a refusal of the first method while the second
+> is already patched is still exit 3; the catch covers the order the plan names. Today's scripts write
+> both methods at once, so that file does not arise from them.
+> **Not done.** The issue of 2.8 and the label `game-update` (PD2) are made when the branch is
+> merged, since both are public and the guide's link goes live with the merge.
+> **Not run for real:** the alert (it shows only after the launcher has updated the game and a fix does
+> not apply); setup's `>>` block from the installer's two routes (PL1's step 5 ran the plain one).
+> **Verify against:** `cities-skylines-2/patches/` (`moved` in the block; `known_sites`, `patched_sites`
+> in `patch_colossal_io.py`), `cities-skylines-2/repatch.sh` (`run`, `without`), `scripts/setup.sh`
+> (`nofix_block`), `common/install-core.sh` (`on_exit`), `launchers/launch-cs2-dxmt11.sh`
+> (`ensure_patches`, `patches_note`), and the test files above.
+
 > **Status:** Triple-checked 2026-11-15 — build-ready-with-fixes (pass 1: six lenses, three blockers and
 > the other corrections folded into the sections they concern and listed in "Review corrections"; pass
 > 1b: a fitted re-check of that fold, two blockers in the tests and the live step, folded too). Drafted
@@ -454,6 +494,21 @@ words beyond the links gate; the installer header's list of codes.
   6. `PT3`, not skipped.
   Pass: all six. The real install is then brought to the new scripts by setup, with the game closed,
   and `boot-verify.sh` is run once, detached, with its log.
+  *Steps 1 to 6 run 2026-11-15 on the Studio, on James's word, with the branch at `90e1057`; the record
+  is `~/cs2-patch/patch-outcomes-pl1/` (`pl1.txt` first, with the script that made it). All six passed.
+  Step 1: exit 3, `9 of 10`, the `NO FIX YET` line and its `without` line, the plugin unchanged, the other
+  four patched. Steps 2 and 3: `10 of 10`, exit 0, all five at P0's hashes, nothing changed by step 3;
+  the same on a second folder restored afresh. Step 4: `10 of 10`, exit 0, nothing changed, no `.bak`
+  made or changed (the one new file is the JetBrains stub, which every run writes). Step 5: the `>>`
+  block with build 26404411 and the plain route's line, the app built, the closing line last, exit 5;
+  `xcrun` was a stub so nothing was compiled while a game ran, so the progress panel and 14unch3r were
+  skipped. Step 6: 37 passed, not skipped, on the older build's `.bak` as the unpatched file.*
+  *Then, with every game closed: setup from the branch on the real install (`real-setup.out`, with a
+  snapshot before and after and a copy of the scripts it replaced in `real-before-cs2-patch/`): `10 of
+  10`, `=== setup complete ===`, exit 0; the game's five files and their `.bak`s unchanged in hash and
+  time; the deployed launcher, `repatch.sh` and the sixteen scripts replaced; 14unch3r rebuilt, the
+  game's app unchanged. `boot-verify.sh`, detached (run `20261115-231947`): the launcher's "Patches
+  ensured (10, dxmt11 target)", `MainMenu reached`, `GRACEFUL: yes`, `VERDICT: PASS`. **PL1 passed.***
 
 ## 6. Exit criteria
 

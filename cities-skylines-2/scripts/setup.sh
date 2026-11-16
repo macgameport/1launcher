@@ -19,7 +19,8 @@
 #   1. verifies the wrapper, Steam and the game are where they should be
 #   2. copies the launcher + repatch.sh + patches/ into ~/cs2-patch/   (macOS TCC blocks .app
 #      bundles from executing scripts inside ~/Documents, so they cannot live in the repo)
-#   3. applies the binary patches (idempotent; each refuses to write if the pattern moved)
+#   3. applies the binary patches (idempotent; each refuses to write if the pattern moved). When the only
+#      shortfall is a fix not out yet for this build of the game, setup finishes, says so, and exits 5
 #   4. builds "Cities Skylines II.app" in ~/Applications with the game's own icon, then 14unch3r.app,
 #      the window that lists every game set up on this Mac (common/make-launcher-app.sh)
 set -u
@@ -219,10 +220,35 @@ case "$BADGES" in
 esac
 chmod +x "$DEST"/*.sh 2>/dev/null
 
+# repatch.sh's exit 3: every script that ran either finished or is not for this build of the game, and at least
+# one is not (docs/plans/patch-outcomes.md, 2.4). Not a problem: the rest of setup runs, and it exits 5 (PD1).
+# repatch.sh's output is not captured, so this names nothing and points up at its NO FIX YET lines.
+nofix_block() {
+  local build route
+  build="$(sed -n 's/^[[:space:]]*"buildid"[[:space:]]*"\([^"]*\)".*/\1/p' "$GDIR/../../appmanifest_949230.acf" 2>/dev/null | head -1)"
+  if [ -n "${L1_FETCHED_REF:-}" ]; then
+    route="Open the installer again later: it fetches the newest fixes. Until the fix is out it says this again."
+  elif [ "${CS2_VIA_INSTALLER:-0}" = 1 ]; then
+    route="Update your copy (git pull in its folder), then open the installer again. If it says this again, the fix is not out yet."
+  else
+    route="Update this checkout (git pull) and run setup again. If it says this again, the fix is not out yet."
+  fi
+  echo "  >> Not every Mac fix works with this build of the game${build:+ (build $build)}. The NO FIX YET lines"
+  echo "     above name each one and say what you may see without it. The other fixes are in place."
+  echo "     The usual cause: Steam has updated the game, and the Mac fix for the new build is not out yet."
+  echo "     You can try the game. It may run well, or show what those lines name."
+  echo "     $route"
+  echo "     More, and where a fix in progress is listed: \"When a fix is not out yet\" in the guide: $GUIDE"
+}
 echo
 echo "Applying binary patches (idempotent — safe to re-run after every game update):"
-if CS2_GAME_DIR="$GDIR" bash "$DEST/repatch.sh" dxmt11; then
+NOFIX=0
+RP_RC=0
+CS2_GAME_DIR="$GDIR" bash "$DEST/repatch.sh" dxmt11 || RP_RC=$?
+if [ "$RP_RC" = 0 ]; then
   echo "  every patch script finished without error."
+elif [ "$RP_RC" = 3 ]; then
+  NOFIX=1; nofix_block
 else
   problems=$((problems+1))
   echo "  !! not every patch is in place: the FAILED line above names the ones that are not. They refuse to write"
@@ -233,6 +259,7 @@ else
     echo "     rather than corrupt a file. If the game has just updated, a pattern may have moved: update this"
     echo "     checkout (git pull), run setup again, and see INSTALL.md, 'After a game update'."
   fi
+  echo "     A NO FIX YET line above, if there is one, names fixes that do not work with this build of the game."
 fi
 
 echo
@@ -305,10 +332,9 @@ if [ "$problems" -gt 0 ]; then
 fi
 desktop_step
 
+echo
+if [ "$NOFIX" = 0 ]; then echo "=== setup complete ==="; echo; fi
 cat << DONE
-
-=== setup complete ===
-
 Play:      double-click  ~/Applications/Cities Skylines II.app$([ "${WINDOW_BUILT:-0}" = 1 ] && printf '\n           or open 14unch3r, which lists every game set up on this Mac')$([ -n "$DESKTOP_LINE" ] && printf '\n%s' "$DESKTOP_LINE")
 Log:       ~/Library/Logs/cs2-launcher.log
 
@@ -322,3 +348,8 @@ In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
 After a game update: $AFTER_UPDATE
 Troubleshooting: INSTALL.md, then GOTCHAS.md.
 DONE
+if [ "$NOFIX" = 1 ]; then
+  echo
+  echo "=== setup finished, but not every Mac fix is out yet for this build of the game: see the lines marked >> above ==="
+  exit 5
+fi

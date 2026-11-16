@@ -399,6 +399,52 @@ Step 5 of 6: The game
 Step 6 of 6: The Mac fixes and the game's app
 
 The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== setup exits 5 (a fix not out yet): exit 5, WORDS_NOFIX's sentence last, neither Done. nor The install stopped :: 5:The install is finished, but not every Mac fix is out yet for this build of the game: the lines marked >> above say more. You can try the game from Applications: Cities Skylines II, or 14unch3r.:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+The install is finished, but not every Mac fix is out yet for this build of the game: the lines marked >> above say more. You can try the game from Applications: Cities Skylines II, or 14unch3r.
+==   ...a game that sets no WORDS_NOFIX: 5 is any other code, the stopped line :: 5:0:1:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
 == --yes and --desktop reach setup :: 1
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.

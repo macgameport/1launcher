@@ -138,8 +138,9 @@ kept > "$T/uc.kept" <<'KEPT'
 # the question's wording: "takes several minutes" was measured there (6.5 min), "can take" was not
 <         btn=$(osascript -e "button returned of (display dialog \"$msg Updating takes several minutes.\" buttons {\"Play anyway\", \"Update first\"} default button \"Update first\" with title \"TITLE\" giving up after $UPDATE_ASK_SECS)" 2>/dev/null)
 >         btn=$(osascript -e "button returned of (display dialog \"$msg Updating can take several minutes.\" buttons {\"Play anyway\", \"Update first\"} default button \"Update first\" with title \"TITLE\" giving up after $UPDATE_ASK_SECS)" 2>/dev/null)
-# only Cities: Skylines II patches game files, so only it applies them again after an update
-<   ensure_patches || note "WARNING: some fixes did not apply to the new game build — see INSTALL.md 'After a game update'."
+# only Cities: Skylines II patches game files, so only it applies them again after an update; what the player is
+# told then is patches_note's, outside the block (an alert that waits, from the app: docs/plans/patch-outcomes.md, PD6)
+<   ensure_patches || patches_note $? update
 KEPT
 check "2. the list of kept differences holds 15 lines" "$(wc -l < "$T/uc.kept" | tr -d ' ')" 15
 check "2. the update-check blocks differ in no line outside the list" "$(LC_ALL=C comm -23 "$T/uc.got" "$T/uc.kept")" ""
@@ -160,10 +161,12 @@ kept > "$T/notes.cs2" <<'KEPT'
 This Mac runs macOS $_osv, which this has not been tested on. See the README's Compatibility section.
 # a patch failed (the text is asserted by scripts/test-launcher-notes.sh and quoted in the install guide)
 Some patches could not be applied. Update and run setup: INSTALL.md, After a game update.
+# a fix is not out yet for this build of the game (repatch.sh exit 3; asserted by scripts/test-launcher-notes.sh).
+# After the launcher has updated the game, the two sentences for then are not notes: from the app they are an
+# alert that waits, and scripts/test-update-check.sh asserts them
+Not every Mac fix is out yet for this build of the game. It may still run. See INSTALL.md, After a game update.
 # the update that was declined, or that nobody was there to answer
 WARNING: game update waiting (build $UPD_FROM -> $UPD_TO) — launching the installed build. CS2_UPDATE=apply takes it.
-# a patch failed on the build an update just brought
-WARNING: some fixes did not apply to the new game build — see INSTALL.md 'After a game update'.
 # the closing line: the only sign that Steam is down on this Mac, for a player with two
 Cities: Skylines II closed.
 KEPT

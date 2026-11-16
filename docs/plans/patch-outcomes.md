@@ -3,8 +3,8 @@
 > **Status:** Triple-checked 2026-11-15 — build-ready-with-fixes (pass 1: six lenses, three blockers and
 > the other corrections folded into the sections they concern and listed in "Review corrections"; pass
 > 1b: a fitted re-check of that fold, two blockers in the tests and the live step, folded too). Drafted
-> 2026-11-15. Nothing here
-> is built. Tracking: issue #22. This is the plan that slice F of `docs/plans/first-run-findings.md`
+> 2026-11-15. PD1 to PD4 and PD6 were taken as recommended on 2026-11-15 (section 8), and P0 was
+> recorded the same day (section 5). Nothing else is built yet. Tracking: issue #22. This is the plan that slice F of `docs/plans/first-run-findings.md`
 > (2.4) and the row SF7 of `docs/plans/shared-installer.md` (section 9) wait for; decision FD1 of the
 > first comes here as PD1. Every `file:line` is as of `main` at `324c92d`; the game's files were read,
 > never written, on the Studio at build 26404411 (1.6.4f1), and every experiment ran on copies. A path
@@ -426,6 +426,12 @@ words beyond the links gate; the installer header's list of codes.
   scratch folder restored from the `.bak`s, the sha256 of each of the five files after `repatch.sh`.
   The steam manifest is cloned for PL1's step 5; it holds an account's id and stays out of the
   repository.
+  *Recorded 2026-11-15 in `~/cs2-patch/patch-outcomes-p0/` (`p0.txt`, with the script that made it), from
+  the scripts at `207a10f`, game build 26404411. Four `.bak` files have their live file's size;
+  `PDX.SDK.dll.bak` is 1,651,712 bytes against 1,676,288. Restored from the `.bak`s, `repatch.sh` gives
+  `10 of 10` twice, and four of the five files then equal the installed ones; `PDX.SDK.dll` becomes
+  `75fc59119adf...` (the older build patched), against the installed `c962431ae0af...`. On clones of
+  the installed files it gives `10 of 10` twice and changes nothing.*
 - **PL1, on the Studio, on James's word. Nothing of Wine or Steam is started, the game is closed, and
   the real game folder is read only.** A scratch copy of `repatch.sh` and of the whole `patches/`
   folder runs on the scratch game folder, restored from the `.bak`s as at P0.
@@ -483,6 +489,9 @@ fewer of them. Nothing published reads these files until the install plan's NL3 
 | PD4 | A file whose sites do not add up | **Nothing written: exit 3 when none of the fix is in the file, exit 1 when part of it is** | "Success!" over half a fix is the untruth this plan removes elsewhere; and a file with part of a fix is not a new build, so "no fix yet" would be untrue of it |
 | PD5 | The words of 2.3 to 2.7 | as drafted here, after the check | They are the player's, so James reads them in PL1's step 5 and in the guide before the merge |
 | PD6 | After the launcher has updated the game and a fix does not work with the new build: a notification, or an alert that waits | **An alert that waits, then a notification at later starts** | This message was a notification on 2026-11-10 and was not read. The alert comes once, at the moment the cause happens, and needs no record of what was shown |
+
+**Taken 2026-11-15**, on James's "Yes, as recommended": PD1 to PD4 and PD6 as recommended. PD5 is taken
+when he reads the words, at PL1's step 5 and in the guide.
 
 ## Review corrections (triple-check 2026-11-15)
 

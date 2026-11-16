@@ -1,0 +1,14 @@
+02
+28 System.IO.FileSystem::UnityDeleteFile
+2d13
+28 System.Runtime.InteropServices.Marshal::GetLastWin32Error
+0a
+06
+18
+3301
+2a
+06
+02
+28 System.IO.Win32Marshal::GetExceptionForWin32Error
+<delfile:1>
+2a

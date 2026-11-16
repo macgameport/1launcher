@@ -7,10 +7,15 @@
 # then recognised as patched, and two forms in one file are refused.
 # Also the patch scripts' outcome (docs/plans/patch-outcomes.md 2.1): 0 = the fix is in place, 3 = not for
 # this build (nothing written, no .bak), anything else = a failure (nothing written). PT1: the five
-# byte-search scripts on the real bytes of build 26404411 in a file of zeros. PT2: the six errno scripts at
-# their fixed offsets. PT3's source gate: in the five PDX.SDK.dll scripts every refusal is `moved` (exit 3)
-# or `die` (exit 1) as 2.2 classes it, and the pasted block is the same in each. The rest of PT3 needs the
-# game: scripts/test-patch-outcomes.sh.
+# byte-search scripts on the real bytes of build 26404411 in a file of zeros. PT3's source gate: in the five
+# PDX.SDK.dll scripts every refusal is `moved` (exit 3) or `die` (exit 1) as 2.2 classes it, and the pasted
+# block is the same in each. The rest of PT3 needs the game: scripts/test-patch-outcomes.sh.
+# And ET1 of docs/plans/errno-by-name.md, the six errno scripts without the game: the shared block is one text
+# in eleven scripts, the errno block one text in the six, each of the six holds its header and one run("<id>")
+# of its own id, every refusal of the errno block is in its class, each committed form text
+# (patches/errno-forms/<key>.txt) has the sha256 the errno block holds for its method, and a file that is not
+# a .NET file (zeros, ff, a program) or is not there is exit 1 with nothing written, no argument exit 2.
+# What they do on the game's file needs the game (ET2: scripts/test-patch-outcomes.sh).
 # No game, no Wine, no network. Nothing is written outside a scratch folder.
 #   bash scripts/test-vendor.sh            exit 0 = every case passed
 #   MUTANT=1 ...   one byte of one vendored file changed (in a scratch copy); must exit 1
@@ -29,15 +34,21 @@
 #   MUTANT=19      patch_colossal_io.py: the floor of the patched form's nn put back to 3
 #   MUTANT=20      patch_cohtml.py: a missing file made exit 3
 #   MUTANT=21      patch_longfile.py: "patching all" again when there are more original sites than expected
-#   PT2, each must exit 1:
-#   MUTANT=22      patch_dirhandle.py makes its .bak before the check again
-#   MUTANT=23      patch_delfile.py: exit 3 made 1
-#   MUTANT=24      patch_dirhandle.py writes the file again when it already holds the fix
+#   MUTANT=22..24  RETIRED, REFUSED (exit 2). They were PT2's: the fixed-offset checks of patch_delrec.py,
+#                  patch_delfile.py and patch_dirhandle.py, which the by-name scripts replace. The behaviours
+#                  are now ET2's (test-patch-outcomes.sh: its refusals, and its mutants 6, 7 and 10).
 #   #24, must exit 1:
 #   MUTANT=30      patch_fshandle.py's already-patched test back to its loose form (three bytes after the head)
 #   PT3's source gate, each must exit 1:
 #   MUTANT=25..29  one `moved` made `die` in patch_mkparent.py, patch_lockbypass.py, patch_longdelete.py,
 #                  patch_createfile.py, patch_lockleak.py (in that order)
+#   ET1, each must exit 1:
+#   MUTANT=31      patch_delrec.py's errno block differs by a character
+#   MUTANT=32      one `moved` of the errno block made `die` (in all six: the block stays one text)
+#   MUTANT=33      patch_dirhandle.py's run id made patch_delfile.py's
+#   MUTANT=34      "no file there" made exit 3 (in all six)
+#   MUTANT=35      one character of one committed form text (errno-forms/df.txt) changed
+#   A number that is none of these is REFUSED (exit 2).
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 TOP="$(cd "$REPO/.." && pwd)"
@@ -58,7 +69,8 @@ case "$M" in
   5) { grep 'patches/_vendor' "$T/gitattributes"; grep -v 'patches/_vendor' "$T/gitattributes"; } > "$T/ga" && mv "$T/ga" "$T/gitattributes"
      [ "$(head -1 "$T/gitattributes" | grep -c '_vendor')" = 1 ] || mutated ;;
   6) sed -i '' 's/0x48, 0x8B, 0xD9,   /0x48, 0x8B, 0xDA,   /' "$C/patches/patch_cohtml.py"; grep -q '0x48, 0x8B, 0xDA,' "$C/patches/patch_cohtml.py" || mutated ;;
-  7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30)
+  22|23|24) echo "REFUSED: mutant $M is retired (it mutated a fixed-offset script's check; see ET2's refusals and its mutants 6, 7 and 10 in test-patch-outcomes.sh)"; exit 2 ;;
+  7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|25|26|27|28|29|30|31|33)
      case "$M" in   # <script> <sed expression> <a fixed string the mutated file must then hold>
        7)  set -- patch_cohtml.py 's/^        sys.exit(3)$/        sys.exit(1)/' '        sys.exit(1)$' ;;
        8)  set -- patch_longfile.py 's/^        sys.exit(3)  # neither/        sys.exit(1)  # neither/' 'sys.exit(1)  # neither' ;;
@@ -75,23 +87,36 @@ case "$M" in
        19) set -- patch_colossal_io.py 's/^PATCHED_MIN, PATCHED_MAX = 16, 42$/PATCHED_MIN, PATCHED_MAX = 3, 42/' '= 3, 42$' ;;
        20) set -- patch_cohtml.py 's/^        sys.exit(1)$/        sys.exit(3)/' '^        sys.exit(3)$' ;;
        21) set -- patch_longfile.py 's/^    if o != EXPECTED_MATCHES:$/    if False:/' '^    if False:$' ;;
-       22) set -- patch_dirhandle.py 's/^    d = bytearray(open(p, "rb").read())$/&; os.path.exists(p + ".bak") or shutil.copy2(p, p + ".bak")/' 'read()); os.path.exists' ;;
-       23) set -- patch_delfile.py 's/at 0x{OFF:x}"); sys.exit(3)/at 0x{OFF:x}"); sys.exit(1)/' 'at 0x{OFF:x}"); sys.exit(1)' ;;
-       24) set -- patch_dirhandle.py 's/^            return  # nothing to write.*/            pass/' '^            pass$' ;;
        25) set -- patch_mkparent.py 's/moved(f"MethodDef#{rid} body at RVA/die(f"MethodDef#{rid} body at RVA/' 'die(f"MethodDef#{rid} body at RVA' ;;
        26) set -- patch_lockbypass.py 's/moved(f"GetError IL differs/die(f"GetError IL differs/' 'die(f"GetError IL differs' ;;
        27) set -- patch_longdelete.py 's/moved(f"{nm} body only/die(f"{nm} body only/' 'die(f"{nm} body only' ;;
        28) set -- patch_createfile.py 's/moved(f"{nm} original IL differs/die(f"{nm} original IL differs/' 'die(f"{nm} original IL differs' ;;
        29) set -- patch_lockleak.py 's/moved(f"Log run at IL/die(f"Log run at IL/' 'die(f"Log run at IL' ;;
+       31) set -- patch_delrec.py 's/^PUT_BACK = /PUT_BACK  = /' '^PUT_BACK  = ' ;;
+       33) set -- patch_dirhandle.py 's/run("dirhandle")/run("delfile")/' 'run("delfile")' ;;
        30) set -- patch_fshandle.py 's/^        done = locate(bytes(data), PATCH)$/        done = [i for i in range(len(data) - 13) if bytes(data[i:i + 4]) == PATCH and data[i + 5] == 0x6f and data[i + 12] == 0x72]/' 'data\[i + 12\] == 0x72\]' ;;
      esac
      cp "$C/patches/$1" "$T/before.py"; sed -i '' "$2" "$C/patches/$1"
      { ! cmp -s "$T/before.py" "$C/patches/$1" && grep -q -- "$3" "$C/patches/$1"; } || mutated ;;
+  32|34)
+     case "$M" in
+       32) set -- 's/moved(f"{name} RVA/die(f"{name} RVA/' 'die(f"{name} RVA' ;;
+       34) set -- 's/^        print(f"mscorlib.dll not found at {p}"); sys.exit(1)$/        print(f"mscorlib.dll not found at {p}"); sys.exit(3)/' 'not found at {p}"); sys.exit(3)$' ;;
+     esac
+     for s in patch_dirdel.py patch_delchild.py patch_dirrec_nx.py patch_delrec.py patch_delfile.py patch_dirhandle.py; do
+       cp "$C/patches/$s" "$T/before.py"; sed -i '' "$1" "$C/patches/$s"
+       { ! cmp -s "$T/before.py" "$C/patches/$s" && grep -q -- "$2" "$C/patches/$s"; } || mutated
+     done ;;
+  35) cp "$C/patches/errno-forms/df.txt" "$T/before.txt"; sed -i '' '1s/^02$/03/' "$C/patches/errno-forms/df.txt"
+      { ! cmp -s "$T/before.txt" "$C/patches/errno-forms/df.txt" && [ "$(head -1 "$C/patches/errno-forms/df.txt")" = 03 ]; } || mutated ;;
+  0) ;;
+  *) echo "REFUSED: no mutant $M in this file"; exit 2 ;;
 esac
 fails=0
 check() {  # <name> <got> <want>
   if [ "$2" = "$3" ]; then echo "PASS  $1"; else echo "FAIL  $1 (got '$2', want '$3')"; fails=$((fails + 1)); fi
 }
+SIX="patch_dirdel.py patch_delchild.py patch_dirrec_nx.py patch_delrec.py patch_delfile.py patch_dirhandle.py"
 PYS="/usr/bin/python3"; P2="$(command -v python3)"; [ "$P2" != /usr/bin/python3 ] && PYS="$PYS $P2"
 
 # --- the folder is what the manifest says
@@ -116,7 +141,8 @@ for py in $PYS; do
   cp -R "$C/patches/." "$L/install/patches/"; cp "$C/scripts/patch-modconflict-badge.py" "$L/install/"
   ln -s "$C/patches/patch_lockleak.py" "$L/link-to-lockleak.py"                    # run through a symlink
   past=0; total=0
-  for s in "$C/patches/patch_mkparent.py" "$C/patches/patch_lockbypass.py" "$C/patches/patch_longdelete.py" \
+  for s in $(for e in $SIX; do echo "$C/patches/$e" "$L/install/patches/$e"; done) \
+           "$C/patches/patch_mkparent.py" "$C/patches/patch_lockbypass.py" "$C/patches/patch_longdelete.py" \
            "$C/patches/patch_createfile.py" "$C/patches/patch_lockleak.py" "$C/patches/dis_pdx.py" \
            "$C/scripts/disasm.py" "$C/scripts/dump-binding-attrs.py" "$C/scripts/patch-modconflict-badge.py" \
            "$L/install/patches/patch_mkparent.py" "$L/install/patch-modconflict-badge.py" "$L/link-to-lockleak.py"; do
@@ -290,41 +316,39 @@ x[0x20] = 0x7a; out = x.hex()')"
 F="$(place "$T/fs-twopatched" $MSC "$FP" "$FP")"; s0="$(snap "$F" "$F.bak")"
 check "patch_fshandle.py, two patched guards: exit 1, nothing written" "$(run patch_fshandle.py "$T/fs-twopatched"):$(snap "$F" "$F.bak")" "1:$s0"
 
-# --- PT2: the six errno scripts, each at its fixed offset in mscorlib.dll: <script> <offset> <original> <patched>
-ERRNO="patch_dirdel.py 0x15461f 7a 00
-patch_delchild.py 0x154609 7a 26
-patch_delfile.py 0x15409e 7a 26
-patch_delrec.py 0x1546ca 7a2a 262a
-patch_dirrec_nx.py 0x1544e2 0228d66600067a 38390100000000
-patch_dirhandle.py 0x16cca0 2c06 2600"
-# ffile <path> [<offset> <hex>]...: 0x16cd00 bytes of ff with the given bytes placed
-ffile() { /usr/bin/python3 -I -c 'import sys
-d = bytearray(b"\xff" * 0x16cd00); a = sys.argv[2:]
-for o, h in zip(a[::2], a[1::2]): b = bytes.fromhex(h); d[int(o, 16):int(o, 16) + len(b)] = b
-open(sys.argv[1], "wb").write(d)' "$@"; }
+# --- ET1 (docs/plans/errno-by-name.md section 4): the six errno scripts without the game. They find their
+#     method by name with dnfile, so a file of placed bytes is no longer something they can patch: what they do
+#     on the game's mscorlib.dll is in scripts/test-patch-outcomes.sh (ET2), which needs the game. Here: no
+#     argument, no file there, and three files dnfile cannot read as a .NET file, the third a real program.
 E="$T/errno"; mkdir -p "$E"
-ffile "$E/expected.dll" $(echo "$ERRNO" | awk '{print $2, $3}')
-ffile "$E/delrec-noret.dll" 0x1546ca 7a
-while read -r s off orig patched; do
-  n="${s%.py}"; F="$E/$n-ff.dll"; ffile "$F"; s0="$(snap "$F" "$F.bak")"
-  check "$s on a file of ff: exit 3, unchanged, no .bak" "$(run "$s" "$F"):$(snap "$F" "$F.bak")" "3:$s0"
-  F="$E/$n-zeros.dll"; head -c 4096 /dev/zero > "$F"; s0="$(snap "$F" "$F.bak")"
-  check "$s on 4,096 zeros, too short for its offset: exit 3, unchanged, no .bak" "$(run "$s" "$F"):$(snap "$F" "$F.bak")" "3:$s0"
-  F="$E/$n-ok.dll"; cp "$E/expected.dll" "$F"
-  check "$s with its expected bytes at $off: exit 0, patched, a .bak made" \
-    "$(run "$s" "$F"):$(xxd -s "$off" -l $(( ${#patched} / 2 )) -p "$F"):$([ -e "$F.bak" ] && echo bak)" "0:$patched:bak"
-  rm -f "$F.bak"; s0="$(snap "$F" "$F.bak")"
-  check "$s, a second run: exit 0, nothing written, no .bak made" "$(run "$s" "$F"):$(snap "$F" "$F.bak")" "0:$s0"
-  check "$s, no file there: exit 1" "$(run "$s" "$E/no-such.dll")" 1
-done <<< "$ERRNO"
-F="$E/delrec-noret.dll"; s0="$(snap "$F" "$F.bak")"
-check "patch_delrec.py, 7a at its offset and a next byte that is not 2a: exit 3, unchanged" "$(run patch_delrec.py "$F"):$(snap "$F" "$F.bak")" "3:$s0"
+for s in $SIX; do
+  n="${s%.py}"; D="$E/$n"; mkdir -p "$D/empty"
+  before="$(cd "$D" && find . | LC_ALL=C sort | tr '\n' ' ')"
+  check "$s, no argument: a usage line, exit 2" "$(cd "$D" && run "$s"):$(grep -c '^usage: ' "$T/out")" "2:1"
+  check "$s, no file there: one line, exit 1" "$(run "$s" "$D/no-such.dll"):$(wc -l < "$T/out" | tr -d ' ')" "1:1"
+  check "$s, a folder with no mscorlib.dll in it: exit 1" "$(run "$s" "$D/empty")" 1
+  check "$s, those three runs made no file" "$(cd "$D" && find . | LC_ALL=C sort | tr '\n' ' ')" "$before"
+  F="$D/zeros/mscorlib.dll"; mkdir -p "$D/zeros"; head -c 4096 /dev/zero > "$F"; s0="$(snap "$F" "$F.bak")"
+  check "$s on 4,096 zeros: exit 1, unchanged, no .bak" "$(run "$s" "$F"):$(snap "$F" "$F.bak")" "1:$s0"
+  F="$D/ff/mscorlib.dll"; mkdir -p "$D/ff"; /usr/bin/python3 -I -c 'import sys; open(sys.argv[1], "wb").write(b"\xff" * 0x16cd00)' "$F"; s0="$(snap "$F" "$F.bak")"
+  check "$s on 0x16cd00 bytes of ff: exit 1, unchanged, no .bak" "$(run "$s" "$F"):$(snap "$F" "$F.bak")" "1:$s0"
+  F="$D/exe/mscorlib.dll"; mkdir -p "$D/exe"; cp "$TOP/surviving-mars-relaunched/tools/frame-fix.exe" "$F"; s0="$(snap "$F" "$F.bak")"
+  check "$s on a program that is not a .NET file (frame-fix.exe) under the name: exit 1, a traceback, unchanged, no .bak" \
+    "$(run "$s" "$F"):$(grep -c '^Traceback' "$T/out"):$(grep -c UNEXPECTED "$T/out"):$(snap "$F" "$F.bak")" "1:1:0:$s0"
+done
 
 # --- PT3's source gate: in the five PDX.SDK.dll scripts every refusal is `moved` (exit 3: not for this build) or
 #     `die` (exit 1) by the class of docs/plans/patch-outcomes.md 2.2, matched on the message, and the pasted block
 #     is one text in the four that share it and in patch_mkparent.py apart from its ensure_text_vsize.
-gate="$(/usr/bin/python3 -I - "$C/patches" <<'PY'
-import re, sys, hashlib
+#     ET1's source gate: the six errno scripts hold that same block, then the errno block (one text in the six),
+#     and outside the two only a header (a docstring that names the method, the site's IL offset and the build,
+#     and no file offset) and the last line, a guarded run("<id>") of the script's own id. In the errno block
+#     every refusal is `moved`, apart from the usage line (exit 2), the file that is not there (exit 1), --form's
+#     own exit 3 and check_body; dnfile's exception is not caught. Each committed form text, less its final
+#     newline, has the sha256 the errno block holds for its method.
+# (the gate is written to a file first: bash 3.2 cannot read a here-document with quotes in it inside $( ))
+cat > "$T/gate.py" <<'PY'
+import re, sys, os, hashlib
 d = sys.argv[1]
 DIE = ("does not decode", "no longer fits", "verification failed")
 MOVED = ("matched", "no MemberRef", ".text", "first section")
@@ -347,11 +371,72 @@ for f, want in WANT.items():
     if f == "patch_mkparent.py":
         a = blk.index("def ensure_text_vsize"); blk = blk[:a] + blk[blk.index("def match(", a):]
     blocks[f] = hashlib.sha256(blk.encode()).hexdigest()[:16]
+SIX = ["patch_dirdel.py", "patch_delchild.py", "patch_dirrec_nx.py", "patch_delrec.py", "patch_delfile.py",
+       "patch_dirhandle.py"]
+EWANT = (6, 0)   # (moved calls, die calls) of the errno block as built
+ROWS = ["dirrec_nx", "delchild", "dirdel", "delrec", "delfile", "dirhandle", "exp-handle0", "exp-errno0"]
+want_ids = sorted(f[6:-3] for f in SIX); eblocks, ids, eb = {}, [], ""
+for f in SIX:
+    src = open(f"{d}/{f}").read()
+    try:
+        a = src.index("# ---- shared by-name"); z = src.index("# ---- end shared block ----\n")
+        e0 = src.index("# ---- errno sites (identical in the six errno patchers) ----\n")
+        e1 = src.index("# ---- end errno block ----\n")
+    except ValueError:
+        bad.append(f"{f}: a block's first or last line is missing"); continue
+    blocks[f] = hashlib.sha256(src[a:z].encode()).hexdigest()[:16]
+    eb = src[e0:e1]; eblocks[f] = hashlib.sha256(eb.encode()).hexdigest()[:16]
+    hdr = src[:a]
+    if not re.fullmatch(r'#!/usr/bin/env python3\n"""(?:[^"]|"(?!""))*"""\n', hdr):
+        bad.append(f"{f}: before the shared block, not the first line and one docstring")
+    if src[z:e0] != "# ---- end shared block ----\n": bad.append(f"{f}: text between the two blocks")
+    m = re.fullmatch(r'# ---- end errno block ----\n\nif __name__ == "__main__": run\("([a-z_]+)"\)\n', src[e1:])
+    if not m: bad.append(f"{f}: after the errno block, not the one line if __name__ == \"__main__\": run(\"<id>\")")
+    else:
+        ids.append(m.group(1))
+        if f != f"patch_{m.group(1)}.py": bad.append(f"{f}: runs the site {m.group(1)}")
+    # the header: the method and the IL offset of the script's own row, the build, and no file offset
+    row = re.search(r'^    \("%s", "([a-z]+)", (0x[0-9a-f]+), ' % re.escape(f[6:-3]), eb, re.M)
+    meth = row and re.search(r'^    "%s": \(r"[^"]*", "(\w+)", ' % row.group(1), eb, re.M)
+    if not (row and meth): bad.append(f"{f}: no row of its own in the table, or no method for it")
+    else:
+        for want in (meth.group(1), f"IL {row.group(2)}", "build 26404411", "--form"):
+            if want not in hdr: bad.append(f"{f}: the header does not hold '{want}'")
+    if re.search(r"\b0x[0-9a-fA-F]{5,7}\b", hdr): bad.append(f"{f}: the header holds a file offset")  # 8 digits: an errno seen
+    calls = [c for ln in eb.splitlines() if not ln.lstrip().startswith("def ")
+             for c in re.findall(r"\b(die|moved)\((.*)", ln)]
+    n = (sum(k == "moved" for k, _ in calls), sum(k == "die" for k, _ in calls))
+    if n != EWANT: bad.append(f"{f}: errno block has {n[0]} moved, {n[1]} die, want {EWANT}")
+    if sorted(re.findall(r"sys\.exit\((.*?)\)", eb)) != ["1", "2", "code"]:
+        bad.append(f"{f}: errno block's own exits are not the usage line's 2, the missing file's 1 and --form's code")
+    if not re.search(r'print\(f"usage: [^\n]*\); sys\.exit\(2\)\n', eb): bad.append(f"{f}: the usage line does not exit 2")
+    if not re.search(r'print\(f"mscorlib\.dll not found[^\n]*\); sys\.exit\(1\)\n', eb): bad.append(f"{f}: the missing file does not exit 1")
+    if re.findall(r"^ *return (.*)$", eb[eb.index("def show_form"):eb.index("def run(")], re.M) != \
+            ["3", "0 if len(il) == METHODS[key][2] and hashlib.sha256(text.encode()).hexdigest() == METHODS[key][3] else 3"]:
+        bad.append(f"{f}: --form's endings are not 3 for no form, and 0 only with the recorded size and sha256")
+    if eb.count("check_body(") != 1: bad.append(f"{f}: errno block does not call check_body once")
+    if "does not decode" in eb: bad.append(f"{f}: errno block words a refusal 'does not decode' (the class of die)")
+    if "except Exception" in eb or "find_dll(" in eb or "backup_and_write(" in eb:
+        bad.append(f"{f}: errno block catches every exception, or uses the shared block's find_dll or its write")
+    rows = re.findall(r'^    \("([a-z_0-9-]+)", "', eb, re.M)
+    if rows != ROWS: bad.append(f"{f}: the table's rows are {rows}")
+if len(set(eblocks.values())) != 1: bad.append(f"the errno block differs: {eblocks}")
+if sorted(ids) != want_ids: bad.append(f"the six run ids are {sorted(ids)}")
+# the committed form texts: one per method, its sha256 less the final newline is the block's constant
+consts = dict(re.findall(r'^    "([a-z]+)": \(r"[^"]*", "\w+", \d+,\s+"([0-9a-f]{64})"\),$', eb, re.M))
+if sorted(consts) != ["cdh", "df", "rdi", "rdr"]: bad.append(f"the errno block's methods are {sorted(consts)}")
+have = sorted(os.listdir(f"{d}/errno-forms")) if os.path.isdir(f"{d}/errno-forms") else []
+if have != sorted(k + ".txt" for k in consts): bad.append(f"patches/errno-forms holds {have}")
+else:
+    for k, want in sorted(consts.items()):
+        t = open(f"{d}/errno-forms/{k}.txt", "rb").read()
+        if not t.endswith(b"\n") or t.endswith(b"\n\n"): bad.append(f"errno-forms/{k}.txt does not end in one newline")
+        elif hashlib.sha256(t[:-1]).hexdigest() != want: bad.append(f"errno-forms/{k}.txt is not the form whose sha256 the errno block holds")
 if len(set(blocks.values())) != 1: bad.append(f"the block differs: {blocks}")
 print("\n".join(bad) if bad else "ok")
 PY
-)"
-check "PT3 source gate: every moved and die call of the five PDX.SDK.dll scripts in its class, one block" "$gate" ok
+gate="$(/usr/bin/python3 -I -B "$T/gate.py" "$C/patches" 2>&1)"
+check "PT3 and ET1 source gate: every moved and die call in its class, one shared block in eleven, one errno block in six, the four form texts" "$gate" ok
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

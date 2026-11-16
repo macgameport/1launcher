@@ -5,7 +5,7 @@
 > M5 `82c74c8`, M6 `6ade090`, M7 `fd1b821`. **Of M8, ML4 passed on 2026-11-13** (1.4): the installer made
 > a wrapper from the three downloads, exit 0, and the game ran in it; so section 6's criterion "a wrapper
 > made by the installer from the three downloads starts the game" is met, with both things its record must
-> hold. **ML4b, ML5 and ML6 are owed**, and the criteria that rest on them are open. ML4 also showed the
+> hold. **ML4b passed on 2026-11-16 (its record is under ML4b below); ML5 and ML6 are owed**, and the criteria that rest on them are open. ML4 also showed the
 > mod of section 5a's MF3 a second time, with a save written while it was off. Tracking: issue #22.
 > **Tests.** MT3 66 cases, MT4 34, MT6 36, MT7 9, MT8 30 and 18 with a source gate of 14, MT9 and MT10
 > green; every shared test and every test of this game passes (the counts are in each commit). **Mutants
@@ -798,6 +798,13 @@ Steam of macOS included; and the game's last exit upload was ok.
   `D3DMetal    :` line, and `d3d12.dll` in the wrapper at 114,688 bytes. Then the game is started once
   from the app to the menu, with the landscaping save. The way back is that clone moved into place, or the same
   line without `CX_GPTK` while CrossOver 26 is still installed.
+  *Done 2026-11-16 on James's word; the record is the game's `runs/ml4b-20261116/`, `notes.md` first.
+  **Passed.** The installer for real: stages 1 to 6 "OK", setup under the lock, exit 0, nothing fetched.
+  The app runs the state folder's launcher since, byte for byte `main`'s; the first start reached the
+  menu and exited cleanly. Then the clone (952M, `d3d12.dll` 122,432 bytes), the pinned archive taken from
+  the probe's copy (sha256 matched, nothing downloaded), `make-engine.sh --install --rebuild`:
+  `D3DMetal : ... (3.0)`, `d3d12.dll` 114,688 bytes. The second start: James loaded the landscaping save,
+  "Landscaping looks right". The Studio runs what is published.*
 - **ML5. The MacBook.** The installer on a Mac whose wrapper was made the old way: every stage reports done
   except setup, and the app runs the copy in the state folder. Then the game.
 - **ML6. A Mac account with nothing in it**, with NL4 of the installer plan: the published app or pasted

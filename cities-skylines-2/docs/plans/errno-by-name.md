@@ -46,8 +46,12 @@
 > `# no form can be made: <the reason>`. (9) `test-patch-outcomes.sh` takes six to seven minutes on the
 > Studio under Apple's `python3` (the plan: three and a half), and so does each of its mutants.
 > (10) `patch_dirdel.py`'s header became a docstring, and the script takes the folder too (2.5).
-> **Not run:** section 5 (the start with all sixteen: #25); setup on either Mac, `repatch.sh` on the
-> real game, `boot-verify.sh`; ET2 on a file that is not P0's was not run by the builder (see the check below); a moved `RemoveDirectoryRecursive`, a renumbered `mscorlib.dll`
+> **Section 5 run 2026-11-16 for #25, after the merge:** step 1 as P0 (`863df6c5fd1863a7`, four bytes
+> from the `.bak`, build 26404411); step 2 `16 of 16`, exit 0, `e9831e12fd829442` as predicted; step 3
+> boot-verify PASS (run `20261116-175336`: menu reached, graceful exit, 0 InvalidProgramException, the
+> same 32 exception lines and 8 `Invalid handle` as the two starts with the ten before it); step 4 back
+> to `863df6c5fd1863a7`, byte for byte the file of step 1. Logs: `~/cs2-patch/issue25-20261116-175315/`.
+> **Not run at the build:** section 5 (since run, above); setup on either Mac; ET2 on a file that is not P0's was not run by the builder (see the check below); a moved `RemoveDirectoryRecursive`, a renumbered `mscorlib.dll`
 > and the IL size check by a mutant (section 4, "Not tested").
 > **Checked after the build, by the session that asked for it** (Opus 5.5, not by the builder): every
 > one of the 38 tracked test files again on `dcde1a6`, each exit 0, `test-patch-outcomes.sh` ending

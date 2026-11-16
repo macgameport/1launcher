@@ -18,7 +18,10 @@ CS2_GAME_DIR="/path/to/Cities Skylines II" bash ../repatch.sh   # a game folder 
 downloads mods (boot-verified on 1.6.2f1, 2026-10-10). `setup.sh` and the launcher apply exactly those ten.
 
 The other six tolerate a file-error defect that Wine 10 had and that some third-party Wine 11 builds bring
-back. They are off by default; `CS2_ERRNO_PATCHES=1 bash ../repatch.sh` applies all sixteen.
+back. They are off by default; `CS2_ERRNO_PATCHES=1 bash ../repatch.sh` applies all sixteen. A start with
+all sixteen reached the main menu and closed cleanly on 1.6.4f1 (build 26404411, boot-verify PASS,
+2026-11-16, [#25](https://github.com/macgameport/1launcher/issues/25)) on the default engine, which does not
+have the defect: that shows the six do not stop the game starting, not that they mend a download.
 
 **Licence checks are out of scope.** Wine 10 also failed a valid signature in `BCryptVerifySignature` (root
 cause **R3**), so on that engine the game's UI middleware rejected its own valid licence. Wine 11 fixed that,

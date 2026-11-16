@@ -1,12 +1,14 @@
 # The six errno patch scripts: the method found by name, its whole IL matched
 
 > **🔧 As-built (2026-11-16):** BUILT through E2, on the branch `errno-by-name`, cut from `main` at
-> `9d2d3fc`; not merged, and nothing of it is installed on either Mac. E0 is recorded in
+> `9d2d3fc`, and merged into `main` with `--no-ff` the same day (`7f75b61`), on James's word, after the
+> check below; the merged tree is the tested branch's, byte for byte. Nothing of it is installed on either
+> Mac, and `release` is not moved. E0 is recorded in
 > `~/cs2-patch/errno-by-name-p0/`. Its commits: E1 `b910864` (the six scripts, the four form texts, ET1 and
 > ET2) and E2, the commit that carries this header (the documents). E3 is done: the issue of ED4 is
 > [#25](https://github.com/macgameport/1launcher/issues/25). Tracking: issue #24 (item 1); the
-> repository's tracking issue is #22. Still to come, each on James's word: the merge with `--no-ff`, the
-> comment on #24 that names it, and closing #24 by hand. `release` is not moved by this plan.
+> repository's tracking issue is #22. #24 holds a comment naming the merge and is closed by hand. `release`
+> is not moved by this plan: these scripts reach a player's installer at its next move.
 > **What the built scripts give.** On a copy of the game's `mscorlib.dll.bak` (`952703a7a04ee371`, build
 > 26404411): section 2.2's four sha256, character for character, so the four committed form texts are the
 > ones `--form` prints (and are byte for byte the reference build's); and section 4's seven reference

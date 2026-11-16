@@ -491,6 +491,15 @@ words beyond the links gate; the installer header's list of codes.
   6. `PT3`, not skipped.
   Pass: all six. The real install is then brought to the new scripts by setup, with the game closed,
   and `boot-verify.sh` is run once, detached, with its log.
+  *Steps 1 to 6 run 2026-11-15 on the Studio, on James's word, with the branch at `90e1057`; the record
+  is `~/cs2-patch/patch-outcomes-pl1/` (`pl1.txt` first, with the script that made it). All six passed.
+  Step 1: exit 3, `9 of 10`, the `NO FIX YET` line and its `without` line, the plugin unchanged, the other
+  four patched. Steps 2 and 3: `10 of 10`, exit 0, all five at P0's hashes, nothing changed by step 3;
+  the same on a second folder restored afresh. Step 4: `10 of 10`, exit 0, nothing changed, no `.bak`
+  made or changed (the one new file is the JetBrains stub, which every run writes). Step 5: the `>>`
+  block with build 26404411 and the plain route's line, the app built, the closing line last, exit 5;
+  `xcrun` was a stub so nothing was compiled while a game ran, so the progress panel and 14unch3r were
+  skipped. Step 6: 37 passed, not skipped, on the older build's `.bak` as the unpatched file.*
 
 ## 6. Exit criteria
 

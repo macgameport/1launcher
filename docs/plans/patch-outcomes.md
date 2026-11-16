@@ -4,8 +4,11 @@
 > at `656d0dc`, pushed and not merged: P1 `8eee371` (the sixteen scripts, PT1 to PT3), P2 `0ea1257`
 > (`repatch.sh`), P3 `7135e57` (setup), P4 `effd68d` (the core and the installer), P5 `3d384ef` (the
 > launcher), P6 `b5494ef` and the commit that carries this header. P0 is recorded in
-> `~/cs2-patch/patch-outcomes-p0/`. **PL1, the live step, is owed**, on James's word, and the merge waits
-> for it (section 7). Tracking: issue #22.
+> `~/cs2-patch/patch-outcomes-p0/`. **PL1 passed on 2026-11-15** (section 5): its six steps on clones,
+> then setup from the branch on the real install and `boot-verify.sh` `VERDICT: PASS`. The real install
+> runs the branch's scripts since then. What is left before the merge: James reads the words (PD5), the
+> `--no-ff` merge on his word, and at the merge the issue of 2.8 and the label `game-update`. Tracking:
+> issue #22.
 > **Tests.** Every one of the 38 tracked test files passes on the merged branch, with real exit codes:
 > among them `test-vendor.sh` 86 cases, the new `test-patch-outcomes.sh` 37 (run on clones of the installed
 > game; `SKIPPED` with no game), `test-repatch.sh` 41, `test-setup.sh` 107, `test-install.sh` 139 with its
@@ -28,10 +31,10 @@
 > (4) In `patch_longdelete.py` and `patch_createfile.py`, a refusal of the first method while the second
 > is already patched is still exit 3; the catch covers the order the plan names. Today's scripts write
 > both methods at once, so that file does not arise from them.
-> **Not done.** PL1. The issue of 2.8 and the label `game-update` (PD2) are made when the branch is
+> **Not done.** The issue of 2.8 and the label `game-update` (PD2) are made when the branch is
 > merged, since both are public and the guide's link goes live with the merge.
-> **Not run for real:** the new `repatch.sh` with the new scripts on a game folder (PL1's steps 1 to 3);
-> setup's `>>` block over a real game folder (PL1's step 5); the alert.
+> **Not run for real:** the alert (it shows only after the launcher has updated the game and a fix does
+> not apply); setup's `>>` block from the installer's two routes (PL1's step 5 ran the plain one).
 > **Verify against:** `cities-skylines-2/patches/` (`moved` in the block; `known_sites`, `patched_sites`
 > in `patch_colossal_io.py`), `cities-skylines-2/repatch.sh` (`run`, `without`), `scripts/setup.sh`
 > (`nofix_block`), `common/install-core.sh` (`on_exit`), `launchers/launch-cs2-dxmt11.sh`
@@ -500,6 +503,12 @@ words beyond the links gate; the installer header's list of codes.
   block with build 26404411 and the plain route's line, the app built, the closing line last, exit 5;
   `xcrun` was a stub so nothing was compiled while a game ran, so the progress panel and 14unch3r were
   skipped. Step 6: 37 passed, not skipped, on the older build's `.bak` as the unpatched file.*
+  *Then, with every game closed: setup from the branch on the real install (`real-setup.out`, with a
+  snapshot before and after and a copy of the scripts it replaced in `real-before-cs2-patch/`): `10 of
+  10`, `=== setup complete ===`, exit 0; the game's five files and their `.bak`s unchanged in hash and
+  time; the deployed launcher, `repatch.sh` and the sixteen scripts replaced; 14unch3r rebuilt, the
+  game's app unchanged. `boot-verify.sh`, detached (run `20261115-231947`): the launcher's "Patches
+  ensured (10, dxmt11 target)", `MainMenu reached`, `GRACEFUL: yes`, `VERDICT: PASS`. **PL1 passed.***
 
 ## 6. Exit criteria
 

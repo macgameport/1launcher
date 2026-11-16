@@ -12,7 +12,7 @@
 #   bash scripts/test-patch-outcomes.sh       exit 0 = every case passed (or SKIPPED)
 #   MUTANT=1 ...   `moved` exits 1 instead of 3, in all five; must exit 1
 #   MUTANT=2 ...   patch_lockleak.py --revert no longer makes an exit 3 from reading the .bak into 1; must exit 1
-#   MUTANT=3 ...   patch_longdelete.py: a refusal after a method found patched stays 3; must exit 1
+#   MUTANT=3 ...   patch_longdelete.py: a refusal beside a method found patched stays 3; must exit 1
 #   MUTANT=4 ...   patch_createfile.py: the same; must exit 1
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -37,8 +37,8 @@ case "$M" in
        [ "$(grep -c '^    sys.exit(3)$' "$C/patches/$s")" = 0 ] || mutated
      done ;;
   2) mut patch_lockleak.py 's/ob = own_ending(locate, PDX(orig), orig)/ob = locate(PDX(orig), orig)/' 'ob = locate(PDX(orig), orig)' ;;
-  3) mut patch_longdelete.py 's/if e.code == 3 and seen: sys.exit(1)/if False: sys.exit(1)/' 'if False: sys.exit(1)' ;;
-  4) mut patch_createfile.py 's/if e.code == 3 and seen: sys.exit(1)/if False: sys.exit(1)/' 'if False: sys.exit(1)' ;;
+  3) mut patch_longdelete.py 's/if refused: sys.exit(1 if seen else 3)/if refused: sys.exit(3)/' 'if refused: sys.exit(3)' ;;
+  4) mut patch_createfile.py 's/if refused: sys.exit(1 if seen else 3)/if refused: sys.exit(3)/' 'if refused: sys.exit(3)' ;;
 esac
 fails=0
 check() {  # <name> <got> <want>
@@ -107,7 +107,8 @@ done
 # --- the two scripts that change two methods and write once
 for s in patch_longdelete.py patch_createfile.py; do
   n="${s%.py}"
-  if [ "$n" = patch_longdelete ]; then second="DeleteLongPathDirectory tail"; else second=LongPathDirectoryExists; fi
+  if [ "$n" = patch_longdelete ]; then first="DeleteLongPathFile tail"; second="DeleteLongPathDirectory tail"
+  else first=LongPathFileExists; second=LongPathDirectoryExists; fi
   F="$(case_file "$n-second" unpatched.dll)"
   read -r off byte <<< "$(ilbyte "$s" "$F" $second)"
   nop "$F" "$off"; s0="$(snap "$F" "$F.bak")"
@@ -116,6 +117,10 @@ for s in patch_longdelete.py patch_createfile.py; do
   read -r off byte <<< "$(ilbyte "$s" "$F" $second)"
   nop "$F" "$off"; s0="$(snap "$F" "$F.bak")"
   check "$s, the first method already patched and the second refused: exit 1, nothing written" "$(run "$s" "$F"):$(snap "$F" "$F.bak")" "1:$s0"
+  F="$(case_file "$n-second-patched" installed.dll)"
+  read -r off byte <<< "$(ilbyte "$s" "$F" $first)"
+  nop "$F" "$off"; s0="$(snap "$F" "$F.bak")"
+  check "$s, the first method refused and the second already patched: exit 1, nothing written (#24)" "$(run "$s" "$F"):$(snap "$F" "$F.bak")" "1:$s0"
 done
 
 # --- patch_lockleak.py --revert keeps its own endings: an exit 3 from reading the .bak is made 1

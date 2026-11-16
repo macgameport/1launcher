@@ -30,7 +30,9 @@
 > zeros, `01` beside the two real sites is exit 0): the cases listed could not turn that mutant red.
 > (4) In `patch_longdelete.py` and `patch_createfile.py`, a refusal of the first method while the second
 > is already patched is still exit 3; the catch covers the order the plan names. Today's scripts write
-> both methods at once, so that file does not arise from them. It is item 3 of #24.
+> both methods at once, so that file does not arise from them. It is item 3 of #24, fixed on 2026-11-16:
+> every method is now looked at before a refusal ends the run, so either order is exit 1. Item 2 of #24,
+> the same day: `patch_fshandle.py`'s "already patched" test is the search's own fingerprint.
 > **Not run for real:** the alert (it shows only after the launcher has updated the game and a fix does
 > not apply); setup's `>>` block from the installer's two routes (PL1's step 5 ran the plain one).
 > **Verify against:** `cities-skylines-2/patches/` (`moved` in the block; `known_sites`, `patched_sites`

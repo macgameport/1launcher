@@ -327,7 +327,8 @@ def tail(native, op):
 def main():
     p = find_dll(sys.argv[1])
     d = bytearray(open(p, "rb").read()); px = PDX(d); todo = []
-    seen = False  # a method already patched: part of this patch is in the file, so a refusal after it is exit 1
+    seen = False  # a method already patched: part of this patch is in the file, so a refusal is exit 1
+    refused = False  # every method is looked at before a refusal ends the run, so the order does not matter (#24)
     for nm, native in (("DeleteLongPathFile", "DeleteFileW"), ("DeleteLongPathDirectory", "RemoveDirectory")):
         try:
             rid = px.method(TYPE, nm); off = px.rva2off(px.rva_of(rid))
@@ -345,11 +346,12 @@ def main():
             got, end = match(px, il, t0, tail(native, 0x7a))
             if got is None or end != b["size"]: moved(f"0x{d[O]:02x} at {O:#x} ({nm}): {end}")
         except SystemExit as e:
-            if e.code == 3 and seen: sys.exit(1)
-            raise
+            if e.code != 3: raise
+            refused = True; continue
         new = il[:-2] + b"\x26\x2a"
         check_body(new, b["eh"])
         todo.append((O, nm))
+    if refused: sys.exit(1 if seen else 3)
     if not todo: print("nothing to do"); return
     for O, nm in todo:
         d[O] = 0x26; print(f"  patched {O:#x}: 7a->26 ({nm} graceful)")

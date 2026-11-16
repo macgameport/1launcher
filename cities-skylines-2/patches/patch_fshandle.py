@@ -60,12 +60,13 @@ def find_dll(arg):
     sys.exit(f"ERROR: could not find mscorlib.dll under {arg}")
 
 
-def locate(data):
-    """Find FileStream.Init's guard by its byte fingerprint. Returns file offset or None."""
+def locate(data, head=ORIG):
+    """Find FileStream.Init's guard by its byte fingerprint, beginning with head (ORIG, or PATCH for a guard
+    this script has already patched). Returns the file offsets."""
     hits = []
     start = 0
     while True:
-        i = data.find(ORIG, start)
+        i = data.find(head, start)
         if i < 0:
             break
         start = i + 1
@@ -100,11 +101,15 @@ def main():
 
     hits = locate(bytes(data))
     if not hits:
-        # already patched?
-        for i in range(len(data) - 4):
-            if bytes(data[i:i + 4]) == PATCH and data[i + 5] == 0x6f and data[i + 12] == 0x72:
-                print(f"already patched at {i:#x}: {dll}")
-                return
+        # already patched? The same fingerprint as the search, with the patched bytes at its head (#24)
+        done = locate(bytes(data), PATCH)
+        if len(done) == 1:
+            print(f"already patched at {done[0]:#x}: {dll}")
+            return
+        if done:
+            print(f"ERROR: {len(done)} patched sites {[hex(h) for h in done]} — refusing (expected exactly 1).",
+                  file=sys.stderr)
+            sys.exit(1)  # part of this fix is in the file and it does not add up
         print("ERROR: FileStream.Init guard not found — IL has moved. Re-derive with:\n"
               "  dis_pdx.py <mscorlib.dll> FileStream Init", file=sys.stderr)
         sys.exit(1 if dry else 3)  # not for this build (exit 3); a dry run keeps its own ending

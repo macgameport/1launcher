@@ -365,7 +365,8 @@ def main():
     d = bytearray(open(p, "rb").read()); px = PDX(d)
     glp, cf, inv = tokens(px)
     plan = []
-    seen = False  # a method already patched: part of this patch is in the file, so a refusal after it is exit 1
+    seen = False  # a method already patched: part of this patch is in the file, so a refusal is exit 1
+    refused = False  # every method is looked at before a refusal ends the run, so the order does not matter (#24)
     for nm, bit, flags_push in (("LongPathFileExists", 0x20, b"\x16"),
                                 ("LongPathDirectoryExists", 0x10, b"\x20\x00\x00\x00\x02")):
         il_new = new_il(glp, cf, inv, flags_push)
@@ -385,9 +386,10 @@ def main():
             others = [r.Rva for r in px.md.MethodDef.rows if r.Rva and rva < r.Rva < rva + SLOT]
             if others: moved(f"{nm}: another method body starts inside its 40-byte slot ({others})")
         except SystemExit as e:
-            if e.code == 3 and seen: sys.exit(1)
-            raise
+            if e.code != 3: raise
+            refused = True; continue
         plan.append((nm, rid, rva, off, body))
+    if refused: sys.exit(1 if seen else 3)
     if not plan: print("nothing to do"); return
     for nm, rid, rva, off, body in plan:
         d[off:off + SLOT] = body + bytes(SLOT - len(body))

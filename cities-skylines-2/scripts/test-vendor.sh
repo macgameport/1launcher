@@ -33,6 +33,8 @@
 #   MUTANT=22      patch_dirhandle.py makes its .bak before the check again
 #   MUTANT=23      patch_delfile.py: exit 3 made 1
 #   MUTANT=24      patch_dirhandle.py writes the file again when it already holds the fix
+#   #24, must exit 1:
+#   MUTANT=30      patch_fshandle.py's already-patched test back to its loose form (three bytes after the head)
 #   PT3's source gate, each must exit 1:
 #   MUTANT=25..29  one `moved` made `die` in patch_mkparent.py, patch_lockbypass.py, patch_longdelete.py,
 #                  patch_createfile.py, patch_lockleak.py (in that order)
@@ -56,7 +58,7 @@ case "$M" in
   5) { grep 'patches/_vendor' "$T/gitattributes"; grep -v 'patches/_vendor' "$T/gitattributes"; } > "$T/ga" && mv "$T/ga" "$T/gitattributes"
      [ "$(head -1 "$T/gitattributes" | grep -c '_vendor')" = 1 ] || mutated ;;
   6) sed -i '' 's/0x48, 0x8B, 0xD9,   /0x48, 0x8B, 0xDA,   /' "$C/patches/patch_cohtml.py"; grep -q '0x48, 0x8B, 0xDA,' "$C/patches/patch_cohtml.py" || mutated ;;
-  7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29)
+  7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30)
      case "$M" in   # <script> <sed expression> <a fixed string the mutated file must then hold>
        7)  set -- patch_cohtml.py 's/^        sys.exit(3)$/        sys.exit(1)/' '        sys.exit(1)$' ;;
        8)  set -- patch_longfile.py 's/^        sys.exit(3)  # neither/        sys.exit(1)  # neither/' 'sys.exit(1)  # neither' ;;
@@ -81,6 +83,7 @@ case "$M" in
        27) set -- patch_longdelete.py 's/moved(f"{nm} body only/die(f"{nm} body only/' 'die(f"{nm} body only' ;;
        28) set -- patch_createfile.py 's/moved(f"{nm} original IL differs/die(f"{nm} original IL differs/' 'die(f"{nm} original IL differs' ;;
        29) set -- patch_lockleak.py 's/moved(f"Log run at IL/die(f"Log run at IL/' 'die(f"Log run at IL' ;;
+       30) set -- patch_fshandle.py 's/^        done = locate(bytes(data), PATCH)$/        done = [i for i in range(len(data) - 13) if bytes(data[i:i + 4]) == PATCH and data[i + 5] == 0x6f and data[i + 12] == 0x72]/' 'data\[i + 12\] == 0x72\]' ;;
      esac
      cp "$C/patches/$1" "$T/before.py"; sed -i '' "$2" "$C/patches/$1"
      { ! cmp -s "$T/before.py" "$C/patches/$1" && grep -q -- "$3" "$C/patches/$1"; } || mutated ;;
@@ -277,6 +280,15 @@ s0="$(snap "$F" "$F.bak")"
 check "patch_fshandle.py, a second run: exit 0, nothing written" "$(run patch_fshandle.py "$T/fs-orig"):$(snap "$F" "$F.bak")" "0:$s0"
 F="$(place "$T/fs-two" $MSC "$FO" "$FO")"; s0="$(snap "$F" "$F.bak")"
 check "patch_fshandle.py, two guards and none patched: exit 3, nothing written" "$(run patch_fshandle.py "$T/fs-two"):$(snap "$F" "$F.bak")" "3:$s0"
+# #24: the already-patched test is the search's own fingerprint with the patched head, not three loose bytes
+FL="$(const patch_fshandle.py 'x = bytearray(0x25); x[:4] = PATCH; x[5] = 0x6f; x[12] = 0x72; out = x.hex()')"
+F="$(place "$T/fs-loose" $MSC "$FL")"; s0="$(snap "$F" "$F.bak")"
+check "patch_fshandle.py, the patched head with only the old test's three bytes: not taken as patched, exit 3, nothing written" "$(run patch_fshandle.py "$T/fs-loose"):$(snap "$F" "$F.bak")" "3:$s0"
+FP="$(const patch_fshandle.py 'x = bytearray(0x25); x[:4] = PATCH
+for k, v in FINGERPRINT.items(): x[k] = v
+x[0x20] = 0x7a; out = x.hex()')"
+F="$(place "$T/fs-twopatched" $MSC "$FP" "$FP")"; s0="$(snap "$F" "$F.bak")"
+check "patch_fshandle.py, two patched guards: exit 1, nothing written" "$(run patch_fshandle.py "$T/fs-twopatched"):$(snap "$F" "$F.bak")" "1:$s0"
 
 # --- PT2: the six errno scripts, each at its fixed offset in mscorlib.dll: <script> <offset> <original> <patched>
 ERRNO="patch_dirdel.py 0x15461f 7a 00

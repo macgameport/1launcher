@@ -3,8 +3,8 @@
 > **Status:** Triple-checked 2026-11-16 — build-ready-with-fixes (pass 1: five lenses, three blockers
 > and the other corrections folded into the sections they concern and listed in "Review corrections";
 > pass 1b: a fitted re-check of that fold, one blocker in a test case, folded too).
-> Drafted 2026-11-16 on Fable 5.2. Nothing here is built. Decisions ED1 to ED5 are open
-> (section 8). This is item 1 of [#24](https://github.com/macgameport/1launcher/issues/24), the
+> Drafted 2026-11-16 on Fable 5.2. Nothing here is built. Decisions ED1 to ED5 are taken as
+> recommended (section 8). This is item 1 of [#24](https://github.com/macgameport/1launcher/issues/24), the
 > follow-up that the root's `docs/plans/patch-outcomes.md` (2.8) left for a plan of its own; items 2 and
 > 3 of that issue are fixed. Tracking: issue #24; the repository's tracking issue is #22. Every
 > `file:line` is as of `main` at `86bc3f5`; the game's files were read, never written, on the Studio at
@@ -453,6 +453,10 @@ holds this work, the revert is merged into `main` and `release` moved forward to
 | ED3 | The experiment's two edits in `patch_dirhandle.py` | **Kept, as two known sites** | They cost two rows. Dropping them would make a file that holds them "not for this build", a change of behaviour nothing asks for. They were only ever on one Mac, in August 2026, which is the case for dropping them |
 | ED4 | A start of the game with all sixteen on the real install (section 5) | **Not in this plan: an issue of its own, with section 5 as its procedure and `patch_dirdel.py`'s `00` (2.6) in it** | It writes the real install, and since the six write today's bytes it would give the same answer with today's scripts: it tests `patches/README.md`'s advice to run all sixteen, whose boot-verified claim is for the ten, and not this plan. The case for doing it here: it is about ten minutes, and nothing else has measured the sixteen on this build |
 | ED5 | Sharper names in the form: a method's parameter count and a field's type, added inside the errno block | **No** | It would close 9 of the 12 names that are not unique (2.2) and change the four sha256. No body that differs only that way is type-correct, the five match with the same names, and the guard is already far above one to seven bytes at an offset |
+
+**Taken 2026-11-16**, on James's "Yes, as recommended": ED1 to ED5 as recommended. So the four form
+texts are committed, the code is pasted, the experiment's two sites are kept, the start with all
+sixteen goes to an issue of its own (E3), and the names stay as `tokname` gives them.
 
 ## Review corrections (triple-check 2026-11-16)
 

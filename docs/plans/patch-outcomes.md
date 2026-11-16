@@ -1,14 +1,14 @@
 # A game update with no fix yet: what the patch scripts report, and what the player is told
 
-> **🔧 As-built (2026-11-15):** PARTIAL. P0 to P6 are built on the branch `patch-outcomes`, cut from `main`
-> at `656d0dc`, pushed and not merged: P1 `8eee371` (the sixteen scripts, PT1 to PT3), P2 `0ea1257`
+> **🔧 As-built (2026-11-15):** BUILT. P0 to P7 are done. The branch `patch-outcomes`, cut from `main` at
+> `656d0dc`, was merged into `main` with `--no-ff` on 2026-11-16 (`b47d1fc`), on James's word, after PL1
+> and after he read the words (PD5, as drafted). Its commits: P1 `8eee371` (the sixteen scripts, PT1 to PT3), P2 `0ea1257`
 > (`repatch.sh`), P3 `7135e57` (setup), P4 `effd68d` (the core and the installer), P5 `3d384ef` (the
 > launcher), P6 `b5494ef` and the commit that carries this header. P0 is recorded in
 > `~/cs2-patch/patch-outcomes-p0/`. **PL1 passed on 2026-11-15** (section 5): its six steps on clones,
 > then setup from the branch on the real install and `boot-verify.sh` `VERDICT: PASS`. The real install
-> runs the branch's scripts since then. What is left before the merge: James reads the words (PD5), the
-> `--no-ff` merge on his word, and at the merge the issue of 2.8 and the label `game-update`. Tracking:
-> issue #22.
+> runs these scripts since then. At the merge the label `game-update` was made and the issue of 2.8
+> opened ([#24](https://github.com/macgameport/1launcher/issues/24)). Tracking: issue #22.
 > **Tests.** Every one of the 38 tracked test files passes on the merged branch, with real exit codes:
 > among them `test-vendor.sh` 86 cases, the new `test-patch-outcomes.sh` 37 (run on clones of the installed
 > game; `SKIPPED` with no game), `test-repatch.sh` 41, `test-setup.sh` 107, `test-install.sh` 139 with its
@@ -30,9 +30,7 @@
 > zeros, `01` beside the two real sites is exit 0): the cases listed could not turn that mutant red.
 > (4) In `patch_longdelete.py` and `patch_createfile.py`, a refusal of the first method while the second
 > is already patched is still exit 3; the catch covers the order the plan names. Today's scripts write
-> both methods at once, so that file does not arise from them.
-> **Not done.** The issue of 2.8 and the label `game-update` (PD2) are made when the branch is
-> merged, since both are public and the guide's link goes live with the merge.
+> both methods at once, so that file does not arise from them. It is item 3 of #24.
 > **Not run for real:** the alert (it shows only after the launcher has updated the game and a fix does
 > not apply); setup's `>>` block from the installer's two routes (PL1's step 5 ran the plain one).
 > **Verify against:** `cities-skylines-2/patches/` (`moved` in the block; `known_sites`, `patched_sites`
@@ -43,8 +41,7 @@
 > **Status:** Triple-checked 2026-11-15 — build-ready-with-fixes (pass 1: six lenses, three blockers and
 > the other corrections folded into the sections they concern and listed in "Review corrections"; pass
 > 1b: a fitted re-check of that fold, two blockers in the tests and the live step, folded too). Drafted
-> 2026-11-15. PD1 to PD4 and PD6 were taken as recommended on 2026-11-15 (section 8), and P0 was
-> recorded the same day (section 5). Nothing else is built yet. Tracking: issue #22. This is the plan that slice F of `docs/plans/first-run-findings.md`
+> 2026-11-15. PD1 to PD6 are taken (section 8). Built and merged: the as-built header above. Tracking: issue #22. This is the plan that slice F of `docs/plans/first-run-findings.md`
 > (2.4) and the row SF7 of `docs/plans/shared-installer.md` (section 9) wait for; decision FD1 of the
 > first comes here as PD1. Every `file:line` is as of `main` at `324c92d`; the game's files were read,
 > never written, on the Studio at build 26404411 (1.6.4f1), and every experiment ran on copies. A path
@@ -545,8 +542,8 @@ fewer of them. Nothing published reads these files until the install plan's NL3 
 | PD5 | The words of 2.3 to 2.7 | as drafted here, after the check | They are the player's, so James reads them in PL1's step 5 and in the guide before the merge |
 | PD6 | After the launcher has updated the game and a fix does not work with the new build: a notification, or an alert that waits | **An alert that waits, then a notification at later starts** | This message was a notification on 2026-11-10 and was not read. The alert comes once, at the moment the cause happens, and needs no record of what was shown |
 
-**Taken 2026-11-15**, on James's "Yes, as recommended": PD1 to PD4 and PD6 as recommended. PD5 is taken
-when he reads the words, at PL1's step 5 and in the guide.
+**Taken 2026-11-15**, on James's "Yes, as recommended": PD1 to PD4 and PD6 as recommended. PD5 was taken
+as drafted on 2026-11-16: James read setup's words from PL1's step 5 and said "Yes, merge it".
 
 ## Review corrections (triple-check 2026-11-15)
 

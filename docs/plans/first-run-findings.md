@@ -798,7 +798,7 @@ Each is a matter of words or of one copy, and a revert puts the old state back (
 | FD3 | Whether the launcher keeps a copy of the saves folder before the first start in a new prefix | **Decided 2026-11-15: yes** (2.6 item 5). Yes: it is small (about 250 MB for James's eight saves), it is the way back the guide can point at, and it is made once per install. Never restored by a script |
 | FD4 | Slice A's four new word forms (2.1, step 4): cut with no tunnel, no network, "although this Mac reaches Valve's server", and the plain form; and the log's line | **Decided 2026-11-15: as written.** The first form is the one already agreed |
 | FD5 | How long the note before the first start keeps coming, and whether its alert gives up by itself (2.6, item 1) | **Decided 2026-11-15: as recommended.** Once, at the first start in a prefix, and it waits until it is answered: it is the one message that must be read, and nothing of Steam runs while it waits. The other way for the second half is an alert that goes away after a time, as the update question's does. It misses a first start that is quit before the Paradox login, as P5's was; the game's own warning and the words after exit cover that. The other way, every start until a save has been loaded in this install, shows it again and again to a player with no mods |
-| ND1 | The app is published, or only the pasted line (the installer plan's; slice E waits for it) | open |
+| ND1 | The app is published, or only the pasted line (the installer plan's; slice E waits for it) | decided 2026-11-16 (James): the pasted line only, for the first release; slice E waits for the app's release |
 
 ## Review corrections (triple-check 2026-11-14)
 

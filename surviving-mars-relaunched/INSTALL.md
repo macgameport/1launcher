@@ -10,12 +10,6 @@ game of this project needed first.
 
 ## The quick way
 
-> **Not published yet (2026-11-15).** The line in step 1 reads the installer from this repository's
-> `release` branch. That branch is made at the first release and does not exist yet, so today the line
-> ends in a 404 error. Until then, run the same installer from a clone: `git clone
-> https://github.com/macgameport/1launcher.git`, then `bash 1launcher/surviving-mars-relaunched/scripts/install.sh`.
-> This note goes when the release is out.
-
 One line in Terminal does the whole install. It makes the Wine wrapper, puts Apple's D3DMetal 3.0 into
 its Wine, puts Steam for Windows in it, waits while you sign in and the game downloads, then builds the
 game's app.

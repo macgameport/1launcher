@@ -813,6 +813,11 @@ Steam, a sign-in, the game, a closed Terminal window, and Gatekeeper.
   cut from this one, and `main` was pushed alone. What is left of NL3 is the note, then one push that
   makes `release` at a commit of `main` in which the four "Not published yet" notes are taken out
   (`README.md`, `cities-skylines-2/README.md` and the two `INSTALL.md`), then the rest as written.*
+  *Done 2026-11-16, on James's "do all of it, i can't wait to post it". The note to Porting Kit's
+  developers: dropped (James). ND1: the pasted line only, so there is no `installer-1` release and no N6b
+  for now; the app stays built and tested (`common/make-installer-app.sh`) for a later release. One
+  atomic push made `release` at the commit of `main` that takes the four notes out. The pasted line was
+  then run once with `--check` for each game.*
 - **NL4. A Mac account with nothing in it.** A new macOS user account (James makes it) or any Mac without
   the wrapper. From the public page: the ZIP downloaded, the app opened and approved, the installer run to
   Steam's sign-in window; and the pasted line, copied from Safari into Terminal, with what macOS says of
@@ -859,7 +864,7 @@ Steam, a sign-in, the game, a closed Terminal window, and Gatekeeper.
 
 | # | Decision | By |
 |---|---|---|
-| ND1 | The first run is free: an unsigned app approved once with Open Anyway, and a pasted Terminal line as the other way. If NL2 shows the app cannot be approved, only the pasted line is published | James (K3); the fallback is this plan's |
+| ND1 | The first run is free: an unsigned app approved once with Open Anyway, and a pasted Terminal line as the other way. If NL2 shows the app cannot be approved, only the pasted line is published | James (K3); the fallback is this plan's. **Decided 2026-11-16 (James): the pasted line only, for the first release** |
 | ND2 | The installer fetches the engine, the template and Steam's installer from their makers' own pages, and a courtesy note is drafted | James (K4) |
 | ND3 | The mechanism was probed before the plan was written, and the template archive downloaded to test its unpacking | James (K5, K8) |
 | ND4 | The engine pinned is `WS12Wine11.0_DXMT-v0.80` of June 2026: the one the Studio's Wine 11.0 measurements and the probe ran on. Its successor `11.0_1` is what Porting Kit 6.7.0 fetches today and one user has run it (issue #15); moving the pin is a later change with its own run | this plan |

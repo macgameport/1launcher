@@ -5,12 +5,6 @@ Mods included.
 
 ## The quick way
 
-> **Not published yet (2026-11-15).** The line in step 1 reads the installer from this repository's
-> `release` branch. That branch is made at the first release and does not exist yet, so today the line
-> ends in a 404 error. Until then, run the same installer from a clone: `git clone
-> https://github.com/macgameport/1launcher.git`, then `bash 1launcher/cities-skylines-2/scripts/install.sh`, or follow "By hand" below.
-> This note goes when the release is out.
-
 One line in Terminal does the whole install. It makes the Wine wrapper, puts Steam for Windows in it,
 waits while you sign in and the game downloads, then applies the fixes and builds the game's app.
 

@@ -37,7 +37,8 @@ esac
 #   is this build's (a game update leaves the previous build's .bak in place; Steam's verify is the other way):
 #     cp "<game>/Cities2_Data/Managed/mscorlib.dll.bak" "<game>/Cities2_Data/Managed/mscorlib.dll"
 #     bash repatch.sh dxmt11
-# ⚠ The patch scripts take no --check/--dry flag: running one ALWAYS applies it. To inspect state
+# ⚠ The patch scripts take no --check/--dry flag (but --form in the six errno scripts, which prints the
+#   method one would change and writes nothing): running one ALWAYS applies it. To inspect state
 #   without mutating, diff the DLL against its .bak.
 if [ -n "${CS2_ERRNO_PATCHES:-}" ]; then
   ERRNO_PATCHES="$CS2_ERRNO_PATCHES"

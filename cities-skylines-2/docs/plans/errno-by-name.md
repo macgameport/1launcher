@@ -456,7 +456,9 @@ holds this work, the revert is merged into `main` and `release` moved forward to
 
 **Taken 2026-11-16**, on James's "Yes, as recommended": ED1 to ED5 as recommended. So the four form
 texts are committed, the code is pasted, the experiment's two sites are kept, the start with all
-sixteen goes to an issue of its own (E3), and the names stay as `tokname` gives them.
+sixteen goes to an issue of its own (E3, opened the same day as
+[#25](https://github.com/macgameport/1launcher/issues/25)), and the names stay as `tokname` gives them. The
+verdict is posted on #24.
 
 ## Review corrections (triple-check 2026-11-16)
 

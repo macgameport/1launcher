@@ -364,7 +364,7 @@ SF2 by its slice A (one transfer of the installer's own tells a cut path from a 
 the words follow from it); SF3 by slice B (the updater's window cannot be hidden, so it is named); SF4 by
 slice C; SF5 by slice D; SF8 by slice G; SF9 by slice H. SF6 is not built: it waits for James's decision
 ND1. SF7 is not built: it waits for a plan of its own, since no patch script can report "no pattern for
-this build" apart from a failure. That plan was drafted on 2026-11-15 and is not checked:
+this build" apart from a failure. That plan was checked on 2026-11-15 and is not started:
 `docs/plans/patch-outcomes.md`.
 
 **SF1 and SF2, the words (put to James on 2026-11-11, who answered "ok"; not checked, not built).** With the

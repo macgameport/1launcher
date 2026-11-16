@@ -29,7 +29,8 @@ published installer would fetch from it); the branch `release` only ever moves f
 `git push origin <commit>:release` after the test suites pass on that commit and on James's word, never by
 force and never by the automatic push to `main`; and installer apps are released as `installer-<n>`, created
 with `--latest=false`, a tag that is never moved. **Published since 2026-11-16:** `release` first made at `e4aa901`, with the pasted line only (ND1);
-no installer app has been released. Since then a push to `main` reaches no player until `release` is moved.
+no installer app has been released. Moved forward to `7abda38` the same day (#24's two fixes), on James's
+word, after the test suites. Since then a push to `main` reaches no player until `release` is moved.
 
 **A new game is a new folder in this repo:** never a new repo, never a new folder in the home directory.
 The only places outside the repo are `~/cs2-patch` (deployed copies and evidence), the wrappers in

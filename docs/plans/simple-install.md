@@ -819,7 +819,8 @@ Steam, a sign-in, the game, a closed Terminal window, and Gatekeeper.
   atomic push made `release` at the commit of `main` that takes the four notes out (`e4aa901`; all 38
   test files passed on it first). The pasted line, fetched from `release` as a player would, was then
   run once with `--check` for each game: it reached `e4aa901`, every step reported done on the Studio,
-  exit 0 for both. NL4 and NL5 are next.*
+  exit 0 for both. NL4 and NL5 are next. `release` was moved forward to `7abda38` the same day, a
+  fast-forward after the test suites, and the line checked again.*
 - **NL4. A Mac account with nothing in it.** A new macOS user account (James makes it) or any Mac without
   the wrapper. From the public page: the ZIP downloaded, the app opened and approved, the installer run to
   Steam's sign-in window; and the pasted line, copied from Safari into Terminal, with what macOS says of

@@ -64,23 +64,28 @@ def main():
     if not os.path.isfile(p):
         print(f"mscorlib.dll not found at {p}"); sys.exit(1)
     d = bytearray(open(p, "rb").read())
-    if not os.path.exists(p + ".bak"):
-        shutil.copy2(p, p + ".bak")
 
     # self-heal earlier experiments (no-op if never applied)
+    reverted = False
     for off, frm, to, desc in REVERTS:
         if bytes(d[off:off+len(frm)]) == frm:
             d[off:off+len(to)] = to
+            reverted = True
             print(f"  reverted 0x{off:x}: {desc}")
 
     off, orig, patched, desc = FIX
     cur = bytes(d[off:off+len(orig)])
     if cur == patched:
         print(f"  already patched: {desc}")
+        if not reverted:
+            return  # nothing to write: no write, and no .bak made from a file that already holds the fix
     elif cur != orig:
         print(f"  UNEXPECTED bytes {cur.hex()} at 0x{off:x} (expected {orig.hex()}) — "
-              f"IL moved / different build? aborting [{desc}]"); sys.exit(1)
+              f"IL moved / different build? aborting [{desc}]"); sys.exit(3)
     else:
+        # the .bak is made only here, just before the write to a file whose fix is not yet in
+        if not os.path.exists(p + ".bak"):
+            shutil.copy2(p, p + ".bak")
         d[off:off+len(patched)] = patched
         print(f"  patched 0x{off:x}: {orig.hex()} -> {patched.hex()}  ({desc})")
 

@@ -42,6 +42,13 @@ def die(msg):
     sys.exit(1)
 
 
+def moved(msg):
+    """The same line, exit 3: nothing of this patch is in the file, and what the file holds (a name, a body,
+    the room for one) is not what this script can patch. Not for this build; nothing is written."""
+    print(f"UNEXPECTED: {msg} — refusing to patch (game updated? re-derive)")
+    sys.exit(3)
+
+
 def find_dll(arg):
     if os.path.isdir(arg):
         for c in (os.path.join(arg, "Cities2_Data", "Managed", "PDX.SDK.dll"), os.path.join(arg, "PDX.SDK.dll")):
@@ -193,15 +200,15 @@ class PDX:
 
     def method(self, type_pattern, name):
         tis = self.types(type_pattern)
-        if len(tis) != 1: die(f"type /{type_pattern}/ matched {len(tis)} types")
+        if len(tis) != 1: moved(f"type /{type_pattern}/ matched {len(tis)} types")
         rids = [m.row_index for m in self.md.TypeDef.rows[tis[0] - 1].MethodList if str(m.row.Name) == name]
-        if len(rids) != 1: die(f"{self.tdname(tis[0])}::{name} matched {len(rids)} methods")
+        if len(rids) != 1: moved(f"{self.tdname(tis[0])}::{name} matched {len(rids)} methods")
         return rids[0]
 
     def memberref(self, cls, name, sig):
         hits = [i + 1 for i, r in enumerate(self.md.MemberRef.rows)
                 if str(r.Name) == name and self.trname(r.Class.row) == cls and self.sig(r) == sig]
-        if not hits: die(f"no MemberRef {cls}::{name} with sig {sig.hex()}")
+        if not hits: moved(f"no MemberRef {cls}::{name} with sig {sig.hex()}")
         return 0x0A000000 | hits[0]
 
     # -- PE / bodies (Mono maps an RVA against each section's RAW size) --
@@ -262,11 +269,11 @@ def text_slack(px, nbytes, data):
     """First 4-aligned run of `nbytes` zero bytes past .text's VirtualSize (linker file-alignment padding),
     verified unreferenced: no MethodDef/FieldRVA/PE-or-CLI data directory/debug data points into it."""
     s = px.pe.sections[0]
-    if not bytes(s.Name).startswith(b".text"): die("first section is not .text")
+    if not bytes(s.Name).startswith(b".text"): moved("first section is not .text")
     start = (s.PointerToRawData + s.Misc_VirtualSize + 3) & ~3
     end = s.PointerToRawData + s.SizeOfRawData
-    if start + nbytes > end: die(f".text tail slack is {end - start} B, need {nbytes}")
-    if any(data[start:start + nbytes]): die(f".text tail slack at {start:#x} is not zero")
+    if start + nbytes > end: moved(f".text tail slack is {end - start} B, need {nbytes}")
+    if any(data[start:start + nbytes]): moved(f".text tail slack at {start:#x} is not zero")
     lo, hi = px.off2rva(start), px.off2rva(start) + nbytes
     refs = [r.Rva for r in px.md.MethodDef.rows if r.Rva]
     if px.md.FieldRva: refs += [r.Rva for r in px.md.FieldRva.rows]
@@ -280,7 +287,7 @@ def text_slack(px, nbytes, data):
         if d.struct.AddressOfRawData: refs += [d.struct.AddressOfRawData, d.struct.AddressOfRawData + d.struct.SizeOfData - 1]
     text_end = s.VirtualAddress + s.SizeOfRawData
     bad = [hex(r) for r in refs if lo <= r < text_end]
-    if bad: die(f".text slack RVA {lo:#x}.. is referenced or followed by referenced data ({bad})")
+    if bad: moved(f".text slack RVA {lo:#x}.. is referenced or followed by referenced data ({bad})")
     return start, lo
 def ensure_text_vsize(px, data):
     """Map the relocated body by the PE spec too: raise .text VirtualSize to SizeOfRawData.
@@ -294,9 +301,9 @@ def ensure_text_vsize(px, data):
     up = lambda v: (v + align - 1) & ~(align - 1)
     nxt = px.pe.sections[1].VirtualAddress if len(px.pe.sections) > 1 else None
     if up(s.VirtualAddress + s.SizeOfRawData) != up(s.VirtualAddress + s.Misc_VirtualSize):
-        die(".text VirtualSize raise would change the section's aligned end")
+        moved(".text VirtualSize raise would change the section's aligned end")
     if nxt is not None and s.VirtualAddress + s.SizeOfRawData > nxt:
-        die(".text VirtualSize raise would overlap the next section")
+        moved(".text VirtualSize raise would overlap the next section")
     struct.pack_into("<I", data, s.get_file_offset() + 8, s.SizeOfRawData)
     return True
 
@@ -356,7 +363,7 @@ def prelude(px):
         if str(r.Name) == "CreateDirectory" and px.trname(r.Class.row) == "System.IO.Directory":
             if sig_types(px, px.sig(r)) == (0x00, ["class System.IO.DirectoryInfo", "string"]):
                 hits.append(0x0A000001 + i)
-    if not hits: die("no MemberRef System.IO.Directory::CreateDirectory(string) -> DirectoryInfo")
+    if not hits: moved("no MemberRef System.IO.Directory::CreateDirectory(string) -> DirectoryInfo")
     # returns DirectoryInfo (non-void) -> the trailing `pop` keeps the stack empty
     return b"\x03\x28" + tok(gdn) + b"\x28" + tok(hits[0]) + b"\x26"
 
@@ -369,23 +376,29 @@ def main():
     px = PDX(data)
     rid = px.method(TYPE, "CreateFileStream")
     rva = px.rva_of(rid); off = px.rva2off(rva)
-    if off is None: die(f"MethodDef#{rid} RVA {rva:#x} maps to no section")
+    if off is None: moved(f"MethodDef#{rid} RVA {rva:#x} maps to no section")
     b = body_at(data, off); il = il_of(data, b)
     pre = prelude(px)
 
     if not b["fat"] and b["size"] == len(pre) + ORIG_LEN and il[:len(pre)] == pre:
         got, end = match(px, il, len(pre), ORIG)
         if got is not None and end == len(il):
-            if ensure_text_vsize(px, data):
-                backup_and_write(p, data)
+            try:
+                raise_vsize = ensure_text_vsize(px, data)
+            except SystemExit as e:
+                if e.code == 3: sys.exit(1)  # the body is already relocated: part of this patch is in the file
+                raise
+            if raise_vsize:
+                with open(p, "wb") as f:  # no .bak: the file already holds the relocated body
+                    f.write(bytes(data))
                 print(f"already relocated (MethodDef#{rid} -> {rva:#x}); raised .text VirtualSize to SizeOfRawData.")
             else:
                 print(f"already patched (RVA repointed: MethodDef#{rid} -> {rva:#x})."); return
             return
     if b["fat"] or b["size"] != ORIG_LEN:
-        die(f"MethodDef#{rid} body at RVA {rva:#x} is {'fat' if b['fat'] else 'tiny'} size {b['size']} (want tiny 38)")
+        moved(f"MethodDef#{rid} body at RVA {rva:#x} is {'fat' if b['fat'] else 'tiny'} size {b['size']} (want tiny 38)")
     got, why = match(px, il, 0, ORIG)
-    if got is None or why != ORIG_LEN: die(f"original CreateFileStream IL differs: {why}")
+    if got is None or why != ORIG_LEN: moved(f"original CreateFileStream IL differs: {why}")
     check_body(il, [])
 
     new_il = pre + il
@@ -398,7 +411,11 @@ def main():
     ensure_text_vsize(px, data)
 
     # re-resolve from the modified image before writing anything to disk
-    v = PDX(data); r2 = v.method(TYPE, "CreateFileStream")
+    try:
+        v = PDX(data); r2 = v.method(TYPE, "CreateFileStream")
+    except SystemExit as e:
+        if e.code == 3: sys.exit(1)  # this is our own edited image: a failed re-resolve is a failed check
+        raise
     b2 = body_at(data, v.rva2off(v.rva_of(r2)))
     if r2 != rid or b2["fat"] or il_of(data, b2) != new_il or bytes(data[off:off + 1 + ORIG_LEN]) != bytes([b["flags"] | (ORIG_LEN << 2)]) + il:
         die("post-write verification failed")

@@ -12,7 +12,7 @@ def main():
     d=bytearray(open(p,'rb').read()); O=0x1544e2
     orig=bytes.fromhex("0228d66600067a"); new=bytes.fromhex("38390100000000")
     if bytes(d[O:O+7])==new: print("already patched"); return
-    if bytes(d[O:O+7])!=orig: print(f"UNEXPECTED {bytes(d[O:O+7]).hex()} at 0x{O:x}"); sys.exit(1)
+    if bytes(d[O:O+7])!=orig: print(f"UNEXPECTED {bytes(d[O:O+7]).hex()} at 0x{O:x}"); sys.exit(3)
     if not os.path.exists(p+".bak"): shutil.copy2(p,p+".bak")
     d[O:O+7]=new; open(p,'wb').write(d)
     print(f"patched 0x{O:x}: FindFirstFile-invalid throw -> br to graceful leave (nonexistent recursive delete = no-op)")

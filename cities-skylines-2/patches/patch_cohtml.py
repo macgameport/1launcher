@@ -165,7 +165,7 @@ def main():
     with open(dll_path, 'rb') as f:
         check_data = f.read()
 
-    state = classify(check_data)[0]
+    state, detail = classify(check_data)
     needs_patch = state == "unpatched"
 
     if needs_patch:
@@ -181,8 +181,10 @@ def main():
         print("\nSuccess! cohtml_Unity3DPlugin.dll has been patched.")
     elif state == "patched":
         print("\nNo changes needed.")
-    else:  # notfound or ambiguous: neither the original bytes nor the patched ones, so the patch is NOT in place
-        sys.exit(1)
+    elif state == "ambiguous" and detail["patched"]:
+        sys.exit(1)  # a patched site beside another site: part of this fix is in the file and it does not add up
+    else:  # notfound, or ambiguous with no patched site: nothing of this fix is in the file, not for this build
+        sys.exit(3)
 
 
 if __name__ == '__main__':

@@ -525,6 +525,12 @@ sixteen goes to an issue of its own (E3, opened the same day as
 [#25](https://github.com/macgameport/1launcher/issues/25)), and the names stay as `tokname` gives them. The
 verdict is posted on #24.
 
+**#25 closed 2026-11-16**, on James's "Keep nop, close #25": section 5 was run (the header), and
+`patch_dirdel.py` keeps writing `00` at IL `0x163`. The stack depths at `0x164` are unequal, as R16
+says, but `00` is the byte the mod downloads ran with on Wine 10, while `26` has never run at that
+site. The six are off by default and needed only on an engine with the defect. Changing it would also
+mean the script accepting both bytes as patched (2.6).
+
 ## Review corrections (triple-check 2026-11-16)
 
 Pass 1, five lenses on Fable 5.2, none editing the repository: correctness, safety with IL and

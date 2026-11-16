@@ -1,6 +1,6 @@
 # Vendored Python libraries
 
-Five of the patch scripts, `dis_pdx.py` and three tools in `../../scripts/` read .NET metadata with
+Eleven of the patch scripts, `dis_pdx.py` and three tools in `../../scripts/` read .NET metadata with
 `dnfile`, which needs `pefile`. Both are small, pure Python and MIT-licensed, so they ship here: setup
 needs no network, no `pip` and no virtual environment, and any `python3` from 3.8 up can run the patches.
 

@@ -388,7 +388,8 @@ every script. Its two callers become `ensure_patches || patches_note $? start` (
 - **The six fixed-offset scripts get no better test of what they change.** Each reads one to seven
   bytes at a fixed offset, so on an `mscorlib.dll` whose code moved a script can say "already patched"
   or write into unrelated code. A sturdier test (the method found by name) is work of its own. An issue
-  is opened for it at P1.
+  is opened for it at P1. (That work is `cities-skylines-2/docs/plans/errno-by-name.md`, item 1 of #24:
+  its as-built header says where it stands.)
 - **`patch_fshandle.py`'s "already patched" test is looser than its search** (`:104-107`). It is clean
   on this build (no hit in the pristine file, one in the patched). It goes in the same issue.
 - **No write becomes atomic.** Every script opens the live file with `'wb'`.

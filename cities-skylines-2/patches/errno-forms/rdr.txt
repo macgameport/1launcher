@@ -1,0 +1,144 @@
+14
+0b
+02
+28 System.String::op_Implicit
+72 "*"
+28 System.String::op_Implicit
+28 System.IO.Path::Join
+03
+28 System.IO.FileSystem::UnityFindFirstFile
+0c
+08
+6f System.Runtime.InteropServices.SafeHandle::get_IsInvalid
+2c07
+<dirrec_nx:7>
+03
+7b field dwFileAttributes
+1f10
+5f
+2d3d
+03
+28 Interop/Kernel32/WIN32_FIND_DATA::get_cFileName
+28 System.FixedBufferExtensions::GetStringFromFixedBuffer
+0d
+02
+09
+28 System.IO.Path::Combine
+28 System.IO.FileSystem::UnityDeleteFile
+3ae8000000
+07
+3ae2000000
+28 System.Runtime.InteropServices.Marshal::GetLastWin32Error
+0a
+06
+18
+3bd5000000
+06
+09
+28 System.IO.Win32Marshal::GetExceptionForWin32Error
+0b
+38c8000000
+03
+28 Interop/Kernel32/WIN32_FIND_DATA::get_cFileName
+72 "."
+28 System.FixedBufferExtensions::FixedBufferEqualsString
+3ab3000000
+03
+28 Interop/Kernel32/WIN32_FIND_DATA::get_cFileName
+72 ".."
+28 System.FixedBufferExtensions::FixedBufferEqualsString
+3a9e000000
+03
+28 Interop/Kernel32/WIN32_FIND_DATA::get_cFileName
+28 System.FixedBufferExtensions::GetStringFromFixedBuffer
+1304
+03
+28 System.IO.FileSystem::IsNameSurrogateReparsePoint
+2d1b
+02
+1104
+28 System.IO.Path::Combine
+03
+16
+28 System.IO.FileSystem::RemoveDirectoryRecursive
+de78
+1305
+07
+2d03
+1105
+0b
+de6e
+03
+7b field dwReserved0
+20030000a0
+333c
+02
+28 System.String::op_Implicit
+1104
+28 System.String::op_Implicit
+72 "\"
+28 System.String::op_Implicit
+28 System.IO.Path::Join
+28 Interop/Kernel32::DeleteVolumeMountPoint
+2d19
+07
+2d16
+28 System.Runtime.InteropServices.Marshal::GetLastWin32Error
+0a
+06
+2c0d
+06
+19
+2e09
+06
+1104
+28 System.IO.Win32Marshal::GetExceptionForWin32Error
+0b
+02
+1104
+28 System.IO.Path::Combine
+28 System.IO.FileSystem::UnityRemoveDirectory
+2d16
+07
+2d13
+28 System.Runtime.InteropServices.Marshal::GetLastWin32Error
+0a
+06
+19
+2e09
+06
+1104
+28 System.IO.Win32Marshal::GetExceptionForWin32Error
+0b
+08
+03
+28 System.IO.FileSystem::UnityFindNextFile
+3ae4feffff
+07
+2c02
+07
+<delchild:1>
+28 System.Runtime.InteropServices.Marshal::GetLastWin32Error
+0a
+06
+2c0d
+06
+1f12
+2e08
+06
+02
+28 System.IO.Win32Marshal::GetExceptionForWin32Error
+<dirdel:1>
+de0a
+08
+2c06
+08
+6f System.IDisposable::Dispose
+dc
+02
+04
+17
+28 System.IO.FileSystem::RemoveDirectoryInternal
+2a
+eh 0 180 17 197 10 System.Exception
+eh 2 30 328 358 10 0

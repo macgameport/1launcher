@@ -3176,3 +3176,33 @@ that spells out `40 56 ... 48 8B F1` misses by two bytes.
 - **Do not run a patch script with `PYTHONPATH=patches/_vendor` from the checkout** to look at a DLL: it
   leaves `__pycache__` in `_vendor`, and `test-vendor.sh` then fails three cases that have nothing to do with
   the change in hand. Use `python3 -I`, or delete the folders afterwards.
+
+## A byte at a fixed offset says "already patched" on files that are not its own, and "patched" into dead bytes (2026-11-16)
+
+The six errno patch scripts each read one to seven bytes at a fixed file offset of `mscorlib.dll` and nothing
+else. Measured on copies, at build 26404411 (`docs/plans/errno-by-name.md`, section 1; the runs are in
+`~/cs2-patch/errno-by-name-p0/`):
+
+- **On a file that is not theirs, 4 of 48 runs said "already patched" and exited 0.** Each of the game's 8
+  other .NET files long enough for the offsets was cloned under the name `mscorlib.dll` and each script run
+  on its own clone. 44 refused with exit 3. `patch_dirdel.py` found its `00` in `System.Data.dll`,
+  `Unity.RenderPipelines.HighDefinition.Runtime.dll` and `UnityEngine.UIElementsModule.dll`, and
+  `patch_delfile.py` its `26` in `System.Xml.dll`. `patch_dirdel.py` said the same on 5 MB of zeros: the
+  byte it writes is `00`. None wrote, but `repatch.sh` counted each as a fix in place.
+- **On a file whose code moved, the script wrote and said "patched", and patched nothing.** `DeleteFile`'s
+  body was copied into the unused tail of `.text` and the method's address pointed at the copy, the old
+  bytes left where they were. `patch_delfile.py` printed `patched 0x15409e`, exit 0: the byte it changed is
+  in the old copy, which nothing runs. The same held for `patch_delrec.py` and `patch_dirhandle.py`.
+- **Why both pass every test that places bytes:** a test that puts the expected byte at the offset in a file
+  of zeros proves the script reads that offset, not that the offset is the method. The scripts' 31 cases in
+  `test-vendor.sh` were all of that kind, and none ran on the game's file.
+- **Since 2026-11-16** the six find the method by name with `dnfile`, require its whole IL to be the one
+  they were written for (a sha256 of its by-name form), and only then look at their site; the write goes to
+  the method's body wherever it is. The 48 runs are 48 exits 3 with them, and a moved body is patched in the
+  copy (`scripts/test-patch-outcomes.sh`, ET2: the four files by name, and the three moved bodies).
+- **The rule:** an offset is a measurement of one file. A script that keeps one must also keep what tells it
+  the file is that one: the method's name and its whole body, not the byte it is about to change. A patched
+  byte in a body that is not the known one is no evidence of the fix, so that case is exit 3, not
+  "already patched".
+- **`patch_fshandle.py` is still a byte search** (a 13-byte fingerprint, the same for its search and its
+  "already patched" test since #24), and the other four byte-search scripts count their sites.

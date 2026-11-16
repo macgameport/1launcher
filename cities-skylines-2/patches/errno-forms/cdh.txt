@@ -1,0 +1,32 @@
+03
+17
+1d
+19
+2000000002
+28 Interop/Kernel32::CreateFile_IntPtr
+0a
+06
+7e field Zero
+28 System.IntPtr::op_Equality
+<exp-handle0:2>
+06
+15
+28 System.IntPtr::op_Explicit
+28 System.IntPtr::op_Equality
+2c24
+28 System.Runtime.InteropServices.Marshal::GetLastWin32Error
+0b
+02
+07
+04
+28 ?::ContinueOnDirectoryError
+<dirhandle:2>
+7e field Zero
+2a
+<exp-errno0:6>
+07
+03
+28 System.IO.Win32Marshal::GetExceptionForWin32Error
+7a
+06
+2a

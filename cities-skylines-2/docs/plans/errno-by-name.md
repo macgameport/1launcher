@@ -1,10 +1,69 @@
 # The six errno patch scripts: the method found by name, its whole IL matched
 
+> **🔧 As-built (2026-11-16):** BUILT through E2, on the branch `errno-by-name`, cut from `main` at
+> `9d2d3fc`; not merged, and nothing of it is installed on either Mac. E0 is recorded in
+> `~/cs2-patch/errno-by-name-p0/`. Its commits: E1 `b910864` (the six scripts, the four form texts, ET1 and
+> ET2) and E2, the commit that carries this header (the documents). E3 is done: the issue of ED4 is
+> [#25](https://github.com/macgameport/1launcher/issues/25). Tracking: issue #24 (item 1); the
+> repository's tracking issue is #22. Still to come, each on James's word: the merge with `--no-ff`, the
+> comment on #24 that names it, and closing #24 by hand. `release` is not moved by this plan.
+> **What the built scripts give.** On a copy of the game's `mscorlib.dll.bak` (`952703a7a04ee371`, build
+> 26404411): section 2.2's four sha256, character for character, so the four committed form texts are the
+> ones `--form` prints (and are byte for byte the reference build's); and section 4's seven reference
+> results, each of the six alone and all six in `repatch.sh`'s order and in reverse. The diff of the
+> branch against `main` touches none of the ten default scripts.
+> **Tests.** Every one of the 38 tracked test files passes on the branch, with real exit codes: among them
+> `test-vendor.sh` 99 cases (ET1; 88 before), `test-patch-outcomes.sh` 174 (37 of the five, 137 of ET2),
+> run on clones of the Studio's game, on P0's file, ending `0 case(s) not run` (its output and every mutant's are kept in
+> `~/cs2-patch/errno-by-name-p0/build/builder/`), `test-repatch.sh` 41, `test-setup.sh` 107. ET3's gates: links,
+> identifiers at 9, the experiments ledger, `bash -n`, the six compiled under both pythons, no
+> `__pycache__`. **New mutants applied and seen red: 18** (`test-vendor.sh` 31 to 35,
+> `test-patch-outcomes.sh` 5 to 17). Every older mutant is still exit 1 (`test-vendor.sh` 1 to 21 and 25
+> to 30, `test-patch-outcomes.sh` 1 to 4); `test-vendor.sh` 22 to 24 are REFUSED (exit 2), and so is a
+> number neither file knows.
+> **How it was built.** By one agent on Fable 5.2 in a worktree, from this plan. It started from the
+> reference build of section 1's item 7 and then went through 2.2 to 2.4 and section 4 line by line: the
+> errno block, the six headers and both test sections were written again.
+> **Departures.** (1) Mutants 32 and 34 of ET1 are applied to all six scripts, not to one: the errno
+> block then stays one text, and it is the class check and the run that go red, not the block's
+> comparison. (2) ET1's gate is written to a file and run from there: bash 3.2 cannot read a
+> here-document that holds quotes inside `$( )`. Its "no file offset in the header" is `0x` with five to
+> seven hex digits; `patch_dirhandle.py`'s header keeps two eight-digit values, which are error codes
+> seen. (3) ET2 holds its own table of the sites (IL offset, patched bytes, how many differ, P0's file
+> offset) and finds a method's body with the shared block, not with the errno block's `locate`, so a
+> mutant of the scripts' table or of `locate` cannot move the test with it. (4) Cases the plan does not
+> list, added because a listed mutant or sentence needed them or they cost one run: that `repatch.sh`
+> runs these six and no others under `CS2_ERRNO_PATCHES=1` (the order is read from it); a folder with no
+> `mscorlib.dll` in it, exit 1; that a patched own site beside a broken one does not say "already
+> patched"; that the experiment's two edits differ from the unpatched file in 7 bytes; the name
+> duplicate is checked to be in the file (two `DeleteFile`, no `RemoveDirectoryInternal`) before the
+> script runs. (5) The token case of `dirrec_nx` runs for all three `RemoveDirectoryRecursive` scripts.
+> (6) With no `mscorlib.dll` in the game at all, ET2's section is one case not run. (7) Mutant 9 is an
+> added refusal when a site that is not the script's own is patched, and mutant 16 replaces the token of
+> the template by the bytes found: each a change of one line. (8) `--form`'s `#` line reads
+> `# no form can be made: <the reason>`. (9) `test-patch-outcomes.sh` takes six to seven minutes on the
+> Studio under Apple's `python3` (the plan: three and a half), and so does each of its mutants.
+> (10) `patch_dirdel.py`'s header became a docstring, and the script takes the folder too (2.5).
+> **Not run:** section 5 (the start with all sixteen: #25); setup on either Mac, `repatch.sh` on the
+> real game, `boot-verify.sh`; ET2 on a file that is not P0's was not run by the builder (see the check below); a moved `RemoveDirectoryRecursive`, a renumbered `mscorlib.dll`
+> and the IL size check by a mutant (section 4, "Not tested").
+> **Checked after the build, by the session that asked for it** (Opus 5.5, not by the builder): every
+> one of the 38 tracked test files again on `dcde1a6`, each exit 0, `test-patch-outcomes.sh` ending
+> `0 case(s) not run`; 14 mutants applied again (`test-vendor.sh` 31 to 35, `test-patch-outcomes.sh` 1,
+> 5, 9, 12, 13, 16 and 17: each exit 1; 22 and an unknown 99: exit 2); and ET2 run once on a scratch game
+> of APFS clones whose `mscorlib.dll.bak` is another file: it printed `STALE .bak`, took the installed
+> file as unpatched, ran 160 cases, and ended exit 0 with `14 case(s) not run`. Kept in
+> `~/cs2-patch/errno-by-name-p0/build/verify/`.
+> **Verify against:** `patches/patch_dirdel.py` and its five siblings (the errno block: `SITES`,
+> `METHODS`, `form`, `locate`, `show_form`, `run`), `patches/errno-forms/`, `scripts/test-vendor.sh` (the
+> gate, `EWANT`, `ROWS`), `scripts/test-patch-outcomes.sh` (from `=== ET2`: `site`, `others`, `formsha`,
+> `ref`, `em`), `patches/README.md` ("If a game update breaks them").
+
 > **Status:** Triple-checked 2026-11-16 — build-ready-with-fixes (pass 1: five lenses, three blockers
 > and the other corrections folded into the sections they concern and listed in "Review corrections";
 > pass 1b: a fitted re-check of that fold, one blocker in a test case, folded too).
-> Drafted 2026-11-16 on Fable 5.2. Nothing here is built. Decisions ED1 to ED5 are taken as
-> recommended (section 8). This is item 1 of [#24](https://github.com/macgameport/1launcher/issues/24), the
+> Drafted 2026-11-16 on Fable 5.2. Built through E2 the same day: the as-built header above. Decisions
+> ED1 to ED5 are taken as recommended (section 8). This is item 1 of [#24](https://github.com/macgameport/1launcher/issues/24), the
 > follow-up that the root's `docs/plans/patch-outcomes.md` (2.8) left for a plan of its own; items 2 and
 > 3 of that issue are fixed. Tracking: issue #24; the repository's tracking issue is #22. Every
 > `file:line` is as of `main` at `86bc3f5`; the game's files were read, never written, on the Studio at

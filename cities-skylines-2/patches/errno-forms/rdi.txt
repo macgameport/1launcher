@@ -1,0 +1,31 @@
+02
+28 System.IO.FileSystem::UnityRemoveDirectory
+2d4b
+28 System.Runtime.InteropServices.Marshal::GetLastWin32Error
+0a
+06
+18
+59
+45040000000a0000000c0000002500000014000000
+06
+2091000000
+2e08
+2b1b
+19
+0a
+03
+2d16
+2a
+04
+2c12
+2a
+72 "Access to the path '{0}' is denied."
+02
+28 SR::Format
+73 System.IO.IOException::.ctor
+7a
+06
+02
+28 System.IO.Win32Marshal::GetExceptionForWin32Error
+<delrec:1>
+2a

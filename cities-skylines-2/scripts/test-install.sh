@@ -37,7 +37,7 @@
 #   MUTANT=24 ...  a broken python3 sent to xcode-select --install; must exit 1
 #   MUTANT=25 ...  a signal ends in the EXIT trap alone (which then says Done.); must exit 1
 #   MUTANT=26 ...  one word of one line changed ("is open." made "is opened."); must exit 1, by the transcript
-#   MUTANT=27 ...  one exit code changed (Apple's tools not there yet: 5, not 4); must exit 1
+#   MUTANT=27 ...  one exit code changed (Apple's tools not there yet: 6, not 4); must exit 1
 #   MUTANT=28 ...  a stage's skip test turned round (Apple's tools); must exit 1
 #   MUTANT=29 ...  a game's name put into a line of the shared part; must exit 1
 #   MUTANT=30 ...  the shared part not checking that the game set its settings; must exit 1
@@ -61,6 +61,8 @@
 #   56 curl's words printed when the second address works    57 nothing printed when both fail
 # The lines before Steam's start (2.10, FT3c); each must exit 1:
 #   58 the old two lines (by its own case, and by the transcript)   59 a size in the lines
+# Setup's exit 5, a fix not out yet for this build (docs/plans/patch-outcomes.md, 2.5, PT6); each must exit 1:
+#   61 the case for 5 dropped    62 5 mapped to "Done."    63 the test of WORDS_NOFIX dropped
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -114,7 +116,7 @@ case "${MUTANT:-0}" in
   23) first 'if prefix_known && game_running' 'if game_running' '^if game_running' ;;
   25) mutate "s#^trap 'on_signal 143' TERM\$#: no trap#" '^: no trap$' ;;
   26) mutate 's#Steam for Windows is open\.#Steam for Windows is opened.#' 'Steam for Windows is opened\.' ;;
-  27) mutate 's#are not installed yet\."; exit 4; }#are not installed yet."; exit 5; }#' 'installed yet\."; exit 5; }' ;;
+  27) mutate 's#are not installed yet\."; exit 4; }#are not installed yet."; exit 6; }#' 'installed yet\."; exit 6; }' ;;
   28) mutate 's#^if xcode-select -p > /dev/null 2>&1; then #if ! xcode-select -p > /dev/null 2>\&1; then #' '^if ! xcode-select -p' ;;
   29) mutate 's#^stage "\$1" "The game"$#stage "$1" "Cities: Skylines II"#' '^stage "\$1" "Cities: Skylines II"$' ;;
   30) mutate 's#^  \[ -n "\${!_v:-}" \] || {#  true || {#' '^  true || { echo "install-core.sh: the game' ;;
@@ -151,6 +153,9 @@ case "${MUTANT:-0}" in
   59) mutate 's#^      say "Steam downloading its own update: leave it,#      say "Steam downloading its own update (about 330 MB): leave it,#' 'its own update (about 330 MB): leave it,' ;;
   60) mutate 's#^  probe_trace "exit=\$rc bytes=\$size"$#  :#' '^  :$' ;;
   55) first '\n        end_steam\n        \[ "\$PROBED" = 0 \]' '\n        :\n        [ "\$PROBED" = 0 ]' '^        :$' ;;
+  61) sed -i '' '/^         5:set) echo "\$WORDS_NOFIX" ;;$/d' "$C"; grep -q '^         5:set) ' "$C" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  62) mutate 's#^         0:\*) echo "Done\. #         0:*|5:*) echo "Done. #' '^         0:\*|5:\*) echo "Done\. ' ;;
+  63) mutate 's#^         5:set) echo #         5:*) echo #' '^         5:\*) echo "\$WORDS_NOFIX" ;;$' ;;
 esac
 
 fails=0
@@ -400,6 +405,14 @@ check "  ...the lock released" "$([ -L "$PFX/.launcher.lock" ] && echo held || e
 check "  ...the home folder nowhere in the output" "$(grep -c "$H" "$H.out")" 0
 newh; done_all; rc="$(STUB_SETUP_EXIT=1 run)"
 check "setup fails: its exit code, and the stopped line" "$rc:$(said '^The install stopped.')" "1:1"
+NOFIX_LINE="The install is finished, but not every Mac fix is out yet for this build of the game: the lines marked >> above say more. You can try the game from Applications: Cities Skylines II, or 14unch3r."
+newh; done_all; rc="$(STUB_SETUP_EXIT=5 run)"
+check "setup exits 5 (a fix not out yet): exit 5, WORDS_NOFIX's sentence last, neither Done. nor The install stopped" \
+  "$rc:$(tail -n 1 "$H.out"):$(said '^Done\.'):$(said '^The install stopped')" "5:$NOFIX_LINE:0:0"
+S2="$R/cities-skylines-2/scripts/install-nowords.sh"; sed '/^WORDS_NOFIX=/d' "$S" > "$S2"
+newh; done_all; rc="$(S="$S2" STUB_SETUP_EXIT=5 run)"
+check "  ...a game that sets no WORDS_NOFIX: 5 is any other code, the stopped line" \
+  "$rc:$(grep -c '^WORDS_NOFIX=' "$S2"):$(said '^The install stopped\. The lines above say why\. Open the installer again to carry on from that step\.$'):$(said 'not every Mac fix')" "5:0:1:0"
 newh; done_all; run --yes --desktop > /dev/null
 check "--yes and --desktop reach setup" "$(grep -c '^SETUP --yes --desktop via=1' "$CALLS")" 1
 newh; done_all

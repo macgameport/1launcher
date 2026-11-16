@@ -6,7 +6,8 @@
 # or a step: each comes from a setting.
 # Settings the game sets first: GAME_TITLE GAME_APPID GAME_DIR GAME_EXE WRAPPER_VAR STEPS NEED_GB
 # ENGINE_URL ENGINE_BYTES ENGINE_SHA WORDS_NEED WORDS_SPACE WORDS_WINE WORDS_DOWNLOAD WORDS_DONE TOOLS_PART
-# STEAM_ARGS SETUP, and TAKES_DESKTOP=1 if its setup takes --desktop. And these functions:
+# STEAM_ARGS SETUP, and TAKES_DESKTOP=1 if its setup takes --desktop, and WORDS_NOFIX if its setup can exit 5
+# (finished, but a fix is not out yet for this build of the game): the closing line for 5. And these functions:
 #   game_wrapper   sets W, the wrapper to use or to make
 #   game_env       exports its launcher's Wine environment for the wrapper at $APP (SS is its SharedSupport)
 #   game_running   0 while the game runs in this prefix (its launcher's own test)
@@ -71,9 +72,10 @@ on_exit() {
     quiet) ;;
     signal) echo; echo "Stopped. Open the installer again: it carries on from here." ;;
     *) echo
-       case "$rc" in
-         0) echo "Done. Start the game from Applications: $WORDS_DONE." ;;
-         4) echo "Open the installer again: it carries on from here." ;;
+       case "$rc:${WORDS_NOFIX:+set}" in
+         0:*) echo "Done. Start the game from Applications: $WORDS_DONE." ;;
+         4:*) echo "Open the installer again: it carries on from here." ;;
+         5:set) echo "$WORDS_NOFIX" ;;
          *) echo "The install stopped. The lines above say why. Open the installer again to carry on from that step." ;;
        esac ;;
   esac

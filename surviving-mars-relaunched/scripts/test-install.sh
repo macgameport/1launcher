@@ -312,8 +312,8 @@ check "a Mac check that exits 3 stops the install, setup's words above the core'
 # the core's closing line sends the player to the installer again, which cannot help on such a Mac
 # (docs/plans/first-run-findings.md, 2.8, FT5): after setup's exit 3, and that code only, it is not said
 check "  ...and the core's closing line is not said: no \"Open the installer again\", and its own line is the last" "$(o 'Open the installer again'):$(o '^The install stopped'):$(tail -n 1 "$T/out")" "0:0:  !! the check of this Mac failed (exit 3)"
-rc=$(run STUB_MAC_RC=5 STUB_MAC_WORDS="!! something else." --)
-check "a Mac check that fails with another code keeps the closing line" "$rc:$(o 'the check of this Mac failed (exit 5)'):$(o '^The install stopped\. The lines above say why\. Open the installer again to carry on from that step\.$')" "1:1:1"
+rc=$(run STUB_MAC_RC=6 STUB_MAC_WORDS="!! something else." --)
+check "a Mac check that fails with another code keeps the closing line" "$rc:$(o 'the check of this Mac failed (exit 6)'):$(o '^The install stopped\. The lines above say why\. Open the installer again to carry on from that step\.$')" "1:1:1"
 rc=$(run STUB_MAC_RC=1 --)
 check "the refusal of Rosetta keeps the closing line: there, opening the installer again does help" "$rc:$(o 'softwareupdate --install-rosetta --agree-to-license$'):$(c '^SOFTWAREUPDATE'):$(o '^The install stopped\. The lines above say why\. Open the installer again to carry on from that step\.$')" "3:1:0:1"
 

@@ -816,8 +816,10 @@ Steam, a sign-in, the game, a closed Terminal window, and Gatekeeper.
   *Done 2026-11-16, on James's "do all of it, i can't wait to post it". The note to Porting Kit's
   developers: dropped (James). ND1: the pasted line only, so there is no `installer-1` release and no N6b
   for now; the app stays built and tested (`common/make-installer-app.sh`) for a later release. One
-  atomic push made `release` at the commit of `main` that takes the four notes out. The pasted line was
-  then run once with `--check` for each game.*
+  atomic push made `release` at the commit of `main` that takes the four notes out (`e4aa901`; all 38
+  test files passed on it first). The pasted line, fetched from `release` as a player would, was then
+  run once with `--check` for each game: it reached `e4aa901`, every step reported done on the Studio,
+  exit 0 for both. NL4 and NL5 are next.*
 - **NL4. A Mac account with nothing in it.** A new macOS user account (James makes it) or any Mac without
   the wrapper. From the public page: the ZIP downloaded, the app opened and approved, the installer run to
   Steam's sign-in window; and the pasted line, copied from Safari into Terminal, with what macOS says of

@@ -1,6 +1,6 @@
 # Local files — out of the home folder, into the places macOS sets aside
 
-> **🔧 As-built (2026-11-16): L1 partial — steps 0.9 to 1.7 built; 1.8 (live, on the Studio) and L2, L3 not yet.**
+> **🔧 As-built (2026-11-16): L1 built, steps 0.9 to 1.8, its exit criteria met; L2 and L3 not yet.**
 > On `main`: step 0.9, the release gate (`e240d84`); step 1.0, `CHANGELOG.md` and `v0.1.0` at `ce2fcd0`, with its
 > page, and `release` moved there under ON2 (recorded in `42233be`). On the branch `local-files-layout`, not merged:
 > steps 1.1 to 1.6 (`c61d743`) and 1.7 (`ddce307`), then `main` merged in (`422c1b5`). All 41 test files exit 0 on
@@ -18,6 +18,17 @@
 > - LT16's `mv -f` mutant also removes the guard, since a plain `mv` overwrites when not at a terminal.
 > - LT4 on the Studio before any setup run read 12 of 21 identical, not 14.
 >
+> Step 1.8 ran on the Studio the same night, from the branch (`fc519aa`), with one idle process holding a working
+> directory inside `~/cs2-patch`:
+> - The dry run skipped for that process, naming it, and exited 1.
+> - `setup.sh` printed `move: ~/cs2-patch cannot be moved now`, went on there, ran 10 of 10 patch scripts, rebuilt
+>   both apps, and exited 0.
+> - LT4: 21 found, 21 identical. LT9: the shim names `~/cs2-patch/launch-cs2-dxmt11.sh`.
+> - LT10: boot-verify PASS (run `20261116-234032`), graceful exit. The launcher log has the patches, badge and display
+>   lines, and no `NOTE: no`, warning or error line.
+> - LT7: the folder's names and the four repos' fingerprints are equal before and after.
+>
+> The record is kept in `<workspace>/local-files-layout-18-<stamp>/`.
 > Verify against: `common/paths.sh`, `cities-skylines-2/scripts/move-install.sh`, `cities-skylines-2/scripts/setup.sh`
 > (`find_wrapper`, `move_line`, `mv_state`, `mv_relay`, `move_blocks`), `common/mac-inventory.sh`,
 > `common/check-release-move.sh`, and `cities-skylines-2/INSTALL.md`, "If your install was made before the folders moved".

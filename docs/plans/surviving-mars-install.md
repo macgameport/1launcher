@@ -5,7 +5,7 @@
 > M5 `82c74c8`, M6 `6ade090`, M7 `fd1b821`. **Of M8, ML4 passed on 2026-11-13** (1.4): the installer made
 > a wrapper from the three downloads, exit 0, and the game ran in it; so section 6's criterion "a wrapper
 > made by the installer from the three downloads starts the game" is met, with both things its record must
-> hold. **ML4b passed on 2026-11-16 (its record is under ML4b below); ML5 and ML6 are owed**, and the criteria that rest on them are open. ML4 also showed the
+> hold. **ML4b passed on 2026-11-16 and ML5 on 2026-11-17 (their records are under each below); ML6 is owed**, and the criteria that rest on them are open. ML4 also showed the
 > mod of section 5a's MF3 a second time, with a save written while it was off. Tracking: issue #22.
 > **Tests.** MT3 66 cases, MT4 34, MT6 36, MT7 9, MT8 30 and 18 with a source gate of 14, MT9 and MT10
 > green; every shared test and every test of this game passes (the counts are in each commit). **Mutants
@@ -807,6 +807,13 @@ Steam of macOS included; and the game's last exit upload was ok.
   "Landscaping looks right". The Studio runs what is published.*
 - **ML5. The MacBook.** The installer on a Mac whose wrapper was made the old way: every stage reports done
   except setup, and the app runs the copy in the state folder. Then the game.
+  *Done 2026-11-17 on the MacBook, on James's word. **Passed.** The pasted line from a home folder, no
+  `SM_WRAPPER`: it fetched `release` at `ce2fcd0`; stages 1 to 6 "OK" (the wrapper
+  `~/Applications/SurvivingMars.app`, D3DMetal 3.0, Steam, the game), nothing downloaded; stage 7 ran setup,
+  built the app and 14unch3r, and ended `Done.` in 8 seconds. The app's `SCRIPT=` names the state folder's
+  `launch-relaunched.sh`, byte for byte `release`'s and `main`'s (before, it named the checkout's). James
+  started the game from 14unch3r ("Game ran fine"): the launcher log has the five steps in order, build
+  25579348 current, the game exiting rc=0, and Steam Cloud uploading the saves.*
 - **ML6. A Mac account with nothing in it**, with NL4 of the installer plan: the published app or pasted
   line for this game, to Steam's sign-in window; whether the game is downloaded there is James's call. At
   its end the guide's uninstall is followed, and what is left is listed.

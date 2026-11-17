@@ -34,6 +34,23 @@
 #   MUTANT=26 ...  the Desktop step skipped when setup will exit 5; must exit 1
 #   MUTANT=27 ...  the >> block's middle form of its fifth line dropped (the installer in a clone); must exit 1
 # (22 to 27: docs/plans/patch-outcomes.md, 2.4 and PT5. A stub patcher exits 3 when STUB_NOFIX names it.)
+#   MUTANT=28 ...  no folder ever counts as named; must exit 1
+#   MUTANT=29 ...  the folder is not resolved again after the move; must exit 1
+#   MUTANT=30 ...  setup goes on after the move script's exit 3; must exit 1
+#   MUTANT=31 ...  --held-by is never passed; must exit 1
+#   MUTANT=32 ...  --held-by is passed whatever CS2_VIA_INSTALLER says; must exit 1
+#   MUTANT=33 ...  setup's default folder is ~/cs2-patch again; must exit 1
+#   MUTANT=34 ...  the move lifts patches/*.py file by file and not the folder; must exit 1
+#   MUTANT=35 ...  the runtime folder's owner and mode are not looked at; must exit 1
+#   MUTANT=36 ...  the wrapper is the first on the list whether or not it is there; must exit 1
+#   MUTANT=37 ...  setup checks for common/paths.sh only, not for the move script; must exit 1
+#   MUTANT=38 ...  the check for setup's own files is made for a --mac-only run too; must exit 1
+#   MUTANT=39 ...  a CS2_WRAPPER with no prefix falls through to the list; must exit 1
+#   MUTANT=40 ...  the "already moved" stop is not made under --check; must exit 1
+#   MUTANT=41 ...  the closing blocks about the move are not printed before the problems exit; must exit 1
+#   MUTANT=42 ...  the move script does not test the folders' owner and mode on a finishing run; must exit 1
+#   MUTANT=43 ...  the move script's closing chmod reaches the runtime folder and patches/ only; must exit 1
+# (28 to 43: docs/plans/local-files-layout.md, LT17, LT18, LT22 to LT24, LT26, LT27.)
 # The window builder is a recording stub beside the scratch repo, at $T/common, where setup.sh looks for it.
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -75,6 +92,28 @@ case "${MUTANT:-0}" in
   25) mutate 's#^if ! bash "\$REPO/scripts/make-shortcut.sh" #if [ "$NOFIX" = 1 ] || ! bash "$REPO/scripts/make-shortcut.sh" #' '^if \[ "\$NOFIX" = 1 \] || ! bash' ;;
   26) mutate 's#^desktop_step$#[ "$NOFIX" = 1 ] || desktop_step#' '^\[ "\$NOFIX" = 1 \] || desktop_step$' ;;
   27) mutate 's#^  elif \[ "\${CS2_VIA_INSTALLER:-0}" = 1 \]; then$#  elif false; then#' '^  elif false; then$' ;;
+  28) mutate 's#^  \[ -n "\${CS2_PATCH_DIR:-}" \] \&\& \[ "\$CS2_PATCH_DIR" != "\$RUNTIME" \] \&\& NAMED=1$#  : never named#' '^  : never named$' ;;
+  29) perl -0pi -e 's/       \. "\$PATHS"; DEST="\$CS2_DATA"\n       \[ "\$MOVED" = 1 \]/       : not resolved again\n       [ "\$MOVED" = 1 ]/' "$S"
+      grep -q '^       : not resolved again$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  30) mutate 's#^       exit 3 ;;$#       ;;#' '^       ;;$' ;;
+  31) mutate 's#^  \[ "\${CS2_VIA_INSTALLER:-0}" = 1 \] \&\& a+=(--held-by "\$PPID")$#  : no held-by#' '^  : no held-by$' ;;
+  32) mutate 's#^  \[ "\${CS2_VIA_INSTALLER:-0}" = 1 \] \&\& a+=(--held-by "\$PPID")$#  a+=(--held-by "$PPID")#' '^  a+=(--held-by "\$PPID")$' ;;
+  33) mutate 's#^  \[ -n "\$DEST" \] || DEST="\$CS2_DATA"$#  [ -n "$DEST" ] || DEST="$HOME/cs2-patch"#' '|| DEST="\$HOME/cs2-patch"$' ;;
+  34) perl -0pi -e 's/    elif mv_q "\$1\/\$n" "\$2\/\$n"; then/    elif if [ "\$n" = patches ]; then mkdir "\$2\/patches" && mv "\$1\/patches"\/*.py "\$2\/patches\/"; else mv "\$1\/\$n" "\$2\/\$n"; fi; then/' "$R/scripts/move-install.sh"
+      grep -q 'if \[ "\$n" = patches \]; then mkdir' "$R/scripts/move-install.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  35) mutate 's#^      own_folder "\$d" || { echo .*#      true#' '^      true$' ;;
+  36) mutate 's#^    for w in \$WRAPPERS; do$#    for w in ${WRAPPERS%% *}; do printf "%s" "$HOME/Applications/$w"; return 0; done; for w in; do#' 'for w in \${WRAPPERS%% \*}; do printf' ;;
+  37) mutate 's#^  for f in "\$PATHS" "\$MOVER"; do$#  for f in "$PATHS"; do#' '^  for f in "\$PATHS"; do$' ;;
+  38) perl -0pi -e 's/\nif \[ "\$MAC_ONLY" = 0 \]; then\n  for f in "\$PATHS" "\$MOVER"; do\n/\nif true; then\n  for f in "\$PATHS" "\$MOVER"; do\n/' "$S"
+      grep -q '^if true; then$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  39) perl -0pi -e 's/  if \[ -n "\$\{CS2_WRAPPER:-\}" \]; then\n    \[ -d "\$CS2_WRAPPER\/Contents\/SharedSupport\/prefix" \] && printf/  if [ -n "\${CS2_WRAPPER:-}" ] && [ -d "\$CS2_WRAPPER\/Contents\/SharedSupport\/prefix" ]; then\n    printf/' "$S"
+      grep -q '^  if \[ -n "\${CS2_WRAPPER:-}" \] && \[ -d "\$CS2_WRAPPER/Contents/SharedSupport/prefix" \]; then$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  40) mutate 's#^    if \[ "\${CS2_PATCH_DIR:-}" = "\$OLD_INSTALL" \] \&\& #    if [ "$CHECK_ONLY" = 0 ] \&\& [ "${CS2_PATCH_DIR:-}" = "$OLD_INSTALL" ] \&\& #' '^    if \[ "\$CHECK_ONLY" = 0 \] && \[ "\${CS2_PATCH_DIR:-}" = ' ;;
+  41) mutate 's#^  move_blocks$#  : no blocks here#' '^  : no blocks here$' ;;
+  42) perl -0pi -e 's/    if \[ -e "\$d" \] \|\| \[ -L "\$d" \]; then own_folder "\$d" \|\| reason skip [^\n]*\n/    :\n/' "$R/scripts/move-install.sh"
+      grep -q '^    :$' "$R/scripts/move-install.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  43) perl -0pi -e 's/\nclose_modes\(\) \{[^\n]*\n/\nclose_modes() { chmod go-w "\$DATA" 2>\/dev\/null; [ -d "\$DATA\/patches" ] \&\& chmod go-w "\$DATA\/patches"; return 0; }\n/' "$R/scripts/move-install.sh"
+      grep -q '^close_modes() { chmod go-w "\$DATA" 2' "$R/scripts/move-install.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
 esac
 for f in "$REPO"/patches/patch_*.py; do
   echo 'import os, sys; n = os.path.basename(sys.argv[0]); sys.exit(1 if os.environ.get("STUB_FAIL") == n else 3 if os.environ.get("STUB_NOFIX") == n else 0)' > "$R/patches/$(basename "$f")"
@@ -90,7 +129,11 @@ chmod +x "$T/bin"/*
 mkdir -p "$T/badpy"; printf '#!/bin/bash\nexit 1\n' > "$T/badpy/python3"; chmod +x "$T/badpy/python3"
 # the window builder: a stub that records each call, and whether the game's app was there when it ran
 export WINDOW_CALLS="$T/window.calls"; : > "$WINDOW_CALLS"
-mkdir -p "$T/common"
+mkdir -p "$T/common"; cp "$REPO/../common/paths.sh" "$T/common/"
+# the move script's probes: a stub that answers $STUB_OPEN and $STUB_CWD, one volume for every folder, and records each call
+export PROBE_CALLS="$T/probe.calls"; : > "$PROBE_CALLS"
+printf '#!/bin/bash\necho "$1" >> "$PROBE_CALLS"\ncase "$1" in open) [ -n "${STUB_OPEN:-}" ] && echo "$STUB_OPEN" ;; cwd) [ -n "${STUB_CWD:-}" ] && echo "$STUB_CWD" ;; dev) echo 1 ;; esac\nexit 0\n' > "$T/bin/probe"; chmod +x "$T/bin/probe"
+export L1_MOVE_PROBE="$T/bin/probe"
 cat > "$T/common/make-launcher-app.sh" << 'STUB'
 #!/bin/bash
 printf 'CALL args=%s app=%s\n' "$#" "$([ -f "$HOME/Applications/Cities Skylines II.app/Contents/MacOS/launch" ] && echo there || echo missing)" >> "$WINDOW_CALLS"
@@ -108,8 +151,12 @@ exit "${STUB_WINDOW_RC:-0}"
 STUB
 export ALIAS_CALLS="$T/alias.calls"; : > "$ALIAS_CALLS"
 cp -R "$R" "$T/repo2"; printf '#!/bin/bash\necho "stub: no app"; exit 1\n' > "$T/repo2/scripts/make-shortcut.sh"
-BADGE="cs2-patch/patch-modconflict-badge.py"
-MARK="cs2-patch/patches/.mod-badges-on"
+# the folders, relative to a home, as common/paths.sh gives them for a home with no install
+CLEAN="env -u CS2_PATCH_DIR -u CS2_WORK_DIR -u L1_DATA_ROOT -u L1_WORK_ROOT -u CS2_WRAPPER -u CS2_GAME_DIR -u CS2_ERRNO_PATCHES"
+INST="$($CLEAN HOME=/H bash "$T/common/paths.sh" | sed -n 's#^CS2_DATA=/H/##p')"
+WORKSP="$($CLEAN HOME=/H bash "$T/common/paths.sh" | sed -n 's#^CS2_WORK=/H/##p')"
+BADGE="$INST/patch-modconflict-badge.py"
+MARK="$INST/patches/.mod-badges-on"
 GAME="Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II"
 
 home() {   # <dir> [wrapper name]: a HOME holding a fake wrapper with Steam and the game in it
@@ -122,7 +169,7 @@ home() {   # <dir> [wrapper name]: a HOME holding a fake wrapper with Steam and 
 ran_here() { : > "$1/Applications/CS2dxmt11.app/$GAME/Cities2_Data/Managed/Game.dll.bak-modconflict-20260827-164900"; }
 run() {    # <home> [setup.sh arguments]: output in <home>.out; echoes the exit code, or "timeout" after 20 s
   local h="$1" p i=0; shift
-  env -u CS2_PATCH_DIR -u CS2_WRAPPER -u CS2_GAME_DIR -u CS2_ERRNO_PATCHES HOME="$h" PATH="${EXTRA_PATH:+$EXTRA_PATH:}$T/bin:$PATH" \
+  $CLEAN ${RUN_ENV:-} HOME="$h" PATH="${EXTRA_PATH:+$EXTRA_PATH:}$T/bin:$PATH" \
     bash "${SETUP_REPO:-$R}/scripts/setup.sh" "$@" > "$h.out" 2>&1 < /dev/null & p=$!
   while kill -0 $p 2>/dev/null; do
     i=$((i + 1)); [ $i -gt 200 ] && { kill -9 $p 2>/dev/null; wait $p 2>/dev/null; echo timeout; return; }
@@ -144,9 +191,9 @@ H="$T/h1"; home "$H"
 check "clean run exits 0" "$(run "$H")" 0
 check "  ...says setup complete, and that all ten patch scripts finished" "$(said "$H" '^=== setup complete ===$'):$(said "$H" '^10 of 10 patch scripts finished without error$')" "1:1"
 check "  ...on a tested Mac: no caution, and the three lines about the Mac" "$(said "$H" 'CAUTION\|caution'):$(said "$H" 'Apple Silicon  *OK$'):$(said "$H" 'Rosetta 2  *OK$'):$(said "$H" 'macOS 27.2  *OK (tested)$')" "0:1:1:1"
-check "  ...the libraries the patch scripts use are installed with them" "$(cat "$H/cs2-patch/patches/_vendor/lib/file.py" 2>/dev/null)" vendored
-check "  ...launcher, repatch.sh and every patch script are in the install folder" "$(has "$H/cs2-patch/launch-cs2-dxmt11.sh"):$(has "$H/cs2-patch/repatch.sh"):$(ls "$H/cs2-patch/patches"/*.py | wc -l | tr -d ' ')" "yes:yes:$NPATCH"
-check "  ...the app is in Applications and starts the installed launcher" "$(grep -c "^SCRIPT=\"$H/cs2-patch/launch-cs2-dxmt11.sh\"$" "$H/Applications/Cities Skylines II.app/Contents/MacOS/launch" 2>/dev/null)" 1
+check "  ...the libraries the patch scripts use are installed with them" "$(cat "$H/$INST/patches/_vendor/lib/file.py" 2>/dev/null)" vendored
+check "  ...launcher, repatch.sh and every patch script are in the install folder" "$(has "$H/$INST/launch-cs2-dxmt11.sh"):$(has "$H/$INST/repatch.sh"):$(ls "$H/$INST/patches"/*.py | wc -l | tr -d ' ')" "yes:yes:$NPATCH"
+check "  ...the app is in Applications and starts the installed launcher" "$(grep -c "^SCRIPT=\"$H/$INST/launch-cs2-dxmt11.sh\"$" "$H/Applications/Cities Skylines II.app/Contents/MacOS/launch" 2>/dev/null)" 1
 check "  ...no badge file, no marker, and nothing said about the badge patch" "$(has "$H/$BADGE"):$(has "$H/$MARK"):$(said "$H" 'mod badge patch')" "no:no:0"
 
 # --- the badge patch is opt-in
@@ -163,10 +210,10 @@ check "  ...and it stays off" "$(has "$H/$BADGE"):$(has "$H/$MARK")" "no:no"
 check "both badge flags at once: exit 2" "$(run "$H" --hide-mod-badges --show-mod-badges):$(said "$H" 'cannot both be given')" "2:1"
 
 # --- installs made before the patch became opt-in: every one of them holds a copy
-H="$T/h2"; home "$H"; mkdir -p "$H/cs2-patch"; echo old > "$H/$BADGE"
+H="$T/h2"; home "$H"; mkdir -p "$H/$INST"; echo old > "$H/$BADGE"
 check "an old copy that never ran: exit 0" "$(run "$H")" 0
 check "  ...it is removed, and setup says so" "$(has "$H/$BADGE"):$(has "$H/$MARK"):$(said "$H" 'mod badge patch: off (it has never run here); --hide-mod-badges turns it on')" "no:no:1"
-H="$T/h3"; home "$H"; mkdir -p "$H/cs2-patch"; echo old > "$H/$BADGE"; ran_here "$H"
+H="$T/h3"; home "$H"; mkdir -p "$H/$INST"; echo old > "$H/$BADGE"; ran_here "$H"
 check "an old copy where the patch has run: exit 0" "$(run "$H")" 0
 check "  ...it is kept, refreshed, and the choice recorded" "$(cmp -s "$R/scripts/patch-modconflict-badge.py" "$H/$BADGE" && echo same || echo differs):$(has "$H/$MARK"):$(said "$H" 'mod badge patch: on, as before')" "same:yes:1"
 rm "$H/Applications/CS2dxmt11.app/$GAME/Cities2_Data/Managed"/Game.dll.bak-modconflict-*
@@ -182,8 +229,8 @@ check "--check --hide-mod-badges exits 0" "$(run "$H" --check --hide-mod-badges)
 check "  ...and wrote nothing" "x$(snap "$H")" "x$before"
 
 # --- a stale file in the installed library folder does not survive a run
-H="$T/h6"; home "$H"; mkdir -p "$H/cs2-patch/patches/_vendor"; echo old > "$H/cs2-patch/patches/_vendor/stale.py"
-check "a run replaces the installed library folder" "$(run "$H"):$(has "$H/cs2-patch/patches/_vendor/stale.py"):$(has "$H/cs2-patch/patches/_vendor/lib/file.py")" "0:no:yes"
+H="$T/h6"; home "$H"; mkdir -p "$H/$INST/patches/_vendor"; echo old > "$H/$INST/patches/_vendor/stale.py"
+check "a run replaces the installed library folder" "$(run "$H"):$(has "$H/$INST/patches/_vendor/stale.py"):$(has "$H/$INST/patches/_vendor/lib/file.py")" "0:no:yes"
 
 # --- a Mac outside what has been tested: a caution, and setup goes on
 H="$T/h7"; home "$H"
@@ -246,9 +293,19 @@ for rc in 1 3; do
   check "the window builder exits $rc: setup exits 0, says so once, counts no problem, marks nothing !!" \
     "$(STUB_WINDOW_RC=$rc run "$H"):$(said "$H" '^  window: not built (see the line above)$'):$(said "$H" '^=== setup complete ===$'):$(said "$H" 'setup finished with'):$(said "$H" '!!.*window'):$(said "$H" 'or open 14unch3r')" "0:1:1:0:0:0"
 done
-mkdir -p "$T/nocommon"; cp -R "$R" "$T/nocommon/repo"; : > "$WINDOW_CALLS"
-check "no common/ beside the checkout: setup exits 0 and says the builder is not in this checkout" \
+mkdir -p "$T/nocommon/common"; cp -R "$R" "$T/nocommon/repo"; cp "$T/common/paths.sh" "$T/nocommon/common/"; : > "$WINDOW_CALLS"
+check "a common/ with paths.sh and no window builder: setup exits 0 and says the builder is not in this checkout" \
   "$(SETUP_REPO="$T/nocommon/repo" run "$H"):$(said "$H" '^  window: not built (common/make-launcher-app.sh is not in this checkout)$'):$(said "$H" '^=== setup complete ===$'):$(lines "$WINDOW_CALLS")" "0:1:1:0"
+mkdir -p "$T/bare"; cp -R "$R" "$T/bare/repo"; HB="$T/hbare"; home "$HB"; before=$(snap "$HB")
+check "no common/ at all: setup stops at once, exit 1, with the words for its own files, and writes nothing" \
+  "$(SETUP_REPO="$T/bare/repo" run "$HB"):$(said "$HB" "^  !! setup's own files are missing (.*common/paths.sh). Open the installer again, or run setup from a whole checkout.\$"):$(said "$HB" 'Preflight\|^==='):x$(snap "$HB")" "1:1:0:x$before"
+check "  ...with --mac-only that run is outside the check: exit 0, and the Mac is looked at" \
+  "$(SETUP_REPO="$T/bare/repo" run "$HB" --mac-only):$(said "$HB" "setup's own files"):$(said "$HB" 'Rosetta 2  *OK$'):x$(snap "$HB")" "0:0:1:x$before"
+mkdir -p "$T/nomover/common"; cp -R "$R" "$T/nomover/repo"; cp "$T/common/paths.sh" "$T/common/make-launcher-app.sh" "$T/nomover/common/"; rm "$T/nomover/repo/scripts/move-install.sh"
+check "no scripts/move-install.sh: the same stop, before the header and the preflight, and nothing written" \
+  "$(SETUP_REPO="$T/nomover/repo" run "$HB"):$(said "$HB" "^  !! setup's own files are missing (.*scripts/move-install.sh). Open the installer again, or run setup from a whole checkout.\$"):$(said "$HB" 'Preflight\|^==='):x$(snap "$HB")" "1:1:0:x$before"
+check "  ...and with --mac-only: exit 0" \
+  "$(SETUP_REPO="$T/nomover/repo" run "$HB" --mac-only):$(said "$HB" "setup's own files"):$(said "$HB" 'Rosetta 2  *OK$'):x$(snap "$HB")" "0:0:1:x$before"
 : > "$WINDOW_CALLS"
 check "the game's app was not built: the window builder is not run" "$(SETUP_REPO="$T/repo2" run "$H"):$(lines "$WINDOW_CALLS")" "1:0"
 
@@ -323,7 +380,7 @@ check "  ...a missing prerequisite points at the guide's address" \
   "$(L1_FETCHED_REF=release STUB_ROSETTA=1 run "$H"):$(said "$H" '^Full walkthrough: https://github.com/macgameport/1launcher/blob/main/cities-skylines-2/INSTALL.md$')" "1:1"
 H="$T/hp"; home "$H"; home "$H" CS2.app; rm -rf "$H/Applications/CS2dxmt11.app"
 check "the lines setup itself prints give the home folder as ~" \
-  "$(run "$H" --hide-mod-badges):$(said "$H" '^Installing launcher + patches into ~/cs2-patch$'):$(said "$H" 'Your wrapper is ~/Applications/CS2.app,')" "0:1:1"
+  "$(run "$H" --hide-mod-badges):$(said "$H" "^Installing launcher + patches into ~/$INST\$"):$(said "$H" 'Your wrapper is ~/Applications/CS2.app,')" "0:1:1"
 check "  ...and none of them holds the home folder whole" \
   "$(grep -E '^(repo:|Installing launcher|  !! the badge patch|Full walkthrough)' "$H.out" | grep -c "$H")" 0
 
@@ -373,6 +430,121 @@ check "repatch.sh exits 1 with a NO FIX YET line: exit 1, the !! block with its 
 check "  ...and the !! ending last" "$(tail -n 1 "$H.out")" '=== setup finished with 1 problem(s): see the lines marked !! above ==='
 check "repatch.sh exits 3 and the app's builder fails: exit 1, both blocks, the !! ending" \
   "$(SETUP_REPO="$T/repo2" STUB_NOFIX=patch_cohtml.py run "$H"):$(said "$H" '^  >> Not every Mac fix'):$(said "$H" '^  !! the app was not built'):$(tail -n 1 "$H.out")" "1:1:1:=== setup finished with 1 problem(s): see the lines marked !! above ==="
+
+# --- an install made before the folders moved (docs/plans/local-files-layout.md, 3.3 and 3.4; LT17, LT18, LT22 to
+# LT24, LT26, LT27). The move script's two lsof probes are the stub above.
+old() {    # <home> [full]: a fake old install in ~/cs2-patch; with "full", a workspace's things beside it
+  mkdir -p "$1/cs2-patch/patches/_vendor"
+  echo "old launcher" > "$1/cs2-patch/launch-cs2-dxmt11.sh"; echo old > "$1/cs2-patch/repatch.sh"; echo old > "$1/cs2-patch/patches/patch_old.py"
+  if [ "${2:-}" = full ]; then mkdir -p "$1/cs2-patch/evidence/cell" "$1/cs2-patch/revenv"; echo l > "$1/cs2-patch/change-ledger.txt"; echo r > "$1/cs2-patch/launch-cs2.sh"; fi
+}
+LOCKP="Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/.launcher.lock"
+shim() { sed -n 's/^SCRIPT="\(.*\)"$/\1/p' "$1/Applications/Cities Skylines II.app/Contents/MacOS/launch" 2>/dev/null; }
+moveline() { sed -n 's/^move: //p' "$1.out"; }
+installed() {  # <home> <folder under it>: launcher identical to the repo's : repatch.sh : patch scripts
+  echo "$(cmp -s "$R/launchers/launch-cs2-dxmt11.sh" "$1/$2/launch-cs2-dxmt11.sh" && echo same || echo differs):$(has "$1/$2/repatch.sh"):$(ls "$1/$2/patches"/patch_*.py 2>/dev/null | grep -vc patch_old)"
+}
+DV='CS2_PATCH_DIR=~/cs2-patch'
+
+# LT17: --check says what a run would do, and moves and makes nothing
+H="$T/m1"; home "$H"; before=$(snap "$H")
+check "LT17 no install: a new install, the data and work lines" "$(run "$H" --check):$(moveline "$H"):$(said "$H" "^data: ~/$INST\$"):$(said "$H" "^work: ~/$WORKSP\$"):x$(snap "$H")" "0:a new install:1:1:x$before"
+H="$T/m2"; home "$H"; old "$H" full; before=$(snap "$H")
+check "LT17 an old install: will be moved, with the moves" "$(run "$H" --check):$(moveline "$H"):$(said "$H" "^  would move: ~/cs2-patch -> ~/$WORKSP\$"):$(said "$H" "^  would move: ~/cs2-patch/repatch.sh -> ~/$INST/repatch.sh\$"):$(said "$H" '^data: ~/cs2-patch$'):x$(snap "$H")" "0:~/cs2-patch will be moved:1:1:1:x$before"
+check "LT17 ...with a skip reason: cannot be moved now, with the reason" "$(STUB_CWD=4242 run "$H" --check):$(moveline "$H"):$(said "$H" '^  skip: a process has its working directory inside ~/cs2-patch'):x$(snap "$H")" "0:~/cs2-patch cannot be moved now:1:x$before"
+check "LT17 ...with a stop reason: the same" "$(STUB_OPEN=777 run "$H" --check):$(moveline "$H"):$(said "$H" '^  stop: a script is running from ~/cs2-patch (process 777)'):x$(snap "$H")" "0:~/cs2-patch cannot be moved now:1:x$before"
+check "LT17 CS2_PATCH_DIR naming the old folder: stays, named" "$(RUN_ENV="CS2_PATCH_DIR=$H/cs2-patch" run "$H" --check):$(moveline "$H"):x$(snap "$H")" "0:~/cs2-patch stays where it is: a folder was named:x$before"
+check "LT17 CS2_PATCH_DIR empty: will be moved" "$(RUN_ENV="CS2_PATCH_DIR=" run "$H" --check):$(moveline "$H")" "0:~/cs2-patch will be moved"
+check "LT17 --dest naming another folder: stays, named" "$(run "$H" --check --dest "$H/other"):$(moveline "$H"):$(said "$H" '^data: ~/other$'):x$(snap "$H")" "0:~/cs2-patch stays where it is: a folder was named:1:x$before"
+check "LT17 and LT14, a root set elsewhere: stays, and the lines print the scratch roots" "$(RUN_ENV="L1_DATA_ROOT=$T/D L1_WORK_ROOT=$T/W" run "$H" --check):$(moveline "$H"):$(said "$H" "^data: $T/D/cities-skylines-2\$"):$(said "$H" "^work: $T/W/cities-skylines-2\$"):x$(snap "$H")" "0:~/cs2-patch stays where it is: a folder was named:1:1:x$before"
+H="$T/m3"; home "$H"; mkdir -p "$H/$INST"; before=$(snap "$H")
+check "LT17 an install already moved: no move line" "$(run "$H" --check):$(said "$H" '^move:'):$(said "$H" "^data: ~/$INST\$"):x$(snap "$H")" "0:0:1:x$before"
+old "$H"; before=$(snap "$H")
+check "LT17 both folders: the warning" "$(run "$H" --check):$(said "$H" "^move: WARNING: ~/cs2-patch and ~/$INST both exist. The app starts: nothing yet\$"):x$(snap "$H")" "0:1:x$before"
+H="$T/m4"; home "$H" CS2.app; old "$H" full; sleep 60 & lk=$!; ln -s "$lk" "$H/Applications/CS2.app/Contents/SharedSupport/prefix/.launcher.lock"; before=$(snap "$H")
+check "LT17 only CS2.app present and a live lock in it: cannot be moved now, naming the lock" "$(run "$H" --check):$(moveline "$H"):$(said "$H" "^  stop: a launch or an install is using the game's wrapper (process $lk)"):x$(snap "$H")" "0:~/cs2-patch cannot be moved now:1:x$before"
+kill "$lk" 2>/dev/null; wait "$lk" 2>/dev/null
+H="$T/m5"; home "$H"; old "$H" full; mv "$H/cs2-patch" "$H/real"; ln -s "$H/real" "$H/cs2-patch"; before=$(snap "$H")
+check "LT17 ~/cs2-patch a symlink: cannot be moved now, the symlink, and that setup installs beside it" "$(run "$H" --check):$(moveline "$H"):$(said "$H" '^  skip: ~/cs2-patch is a symlink$'):$(said "$H" "^  Setup will install into ~/$INST, and leave the link and what it names alone\.\$"):$(said "$H" "^data: ~/$INST\$"):x$(snap "$H")" "0:~/cs2-patch cannot be moved now:1:1:1:x$before"
+H="$T/m6"; home "$H"; old "$H" full; mkdir -p "$T/noprefix.app"; before=$(snap "$H")
+check "LT17 CS2_WRAPPER at a folder with no prefix, beside a wrapper of the list that has one: no wrapper is named, exit 1, nothing moved or made" "$(RUN_ENV="CS2_WRAPPER=$T/noprefix.app" run "$H" --check):$(said "$H" 'Wine wrapper  *MISSING$'):$(said "$H" 'Wine wrapper (CS2dxmt11.app)'):x$(snap "$H")" "1:1:0:x$before"
+H="$T/m7"; home "$H"; mkdir -p "$H/$INST"; before=$(snap "$H")
+check "LT17 CS2_PATCH_DIR naming ~/cs2-patch on an install already moved: exit 1 under --check too, nothing made" "$(RUN_ENV="CS2_PATCH_DIR=$H/cs2-patch" run "$H" --check):$(said "$H" "^  !! This install has already moved to ~/$INST\. Leave $DV out\.\$"):$(said "$H" 'Preflight'):x$(snap "$H")" "1:1:0:x$before"
+H="$T/m3"
+check "LT17 --mac-only: no data, work or move line" "$(run "$H" --mac-only):$(said "$H" '^data:\|^work:\|^move:')" "0:0"
+
+# LT18: setup whole on a fake old install, in each voice
+lt18() {   # <name> <closing line wanted> [environment]: nothing in the way
+  local name="$1" want="$2"; shift 2; k=$((${k:-0} + 1)); H="$T/v$k"; home "$H"; old "$H" full
+  check "LT18 $name: exit 0, no old folder, the files in the runtime folder, the shim there, the workspace made" \
+    "$(RUN_ENV="$*" run "$H"):$(has "$H/cs2-patch"):$(installed "$H" "$INST"):$(shim "$H"):$(has "$H/$WORKSP/evidence/cell"):$(has "$H/$WORKSP/repatch.sh")" "0:no:same:yes:$NPATCH:$H/$INST/launch-cs2-dxmt11.sh:yes:no"
+  check "LT18 $name: the closing block has this voice's line that declines, and names what came along" \
+    "$(grep -cF -- "$want" "$H.out"):$(said "$H" "^Moved:     what the game runs is now in ~/$INST\$"):$(said "$H" "No longer used, and safe to delete: ~/$INST/launch-cs2.sh\$"):$(said "$H" "safe to delete: ~/$INST/revenv\$")" "1:1:1:1"
+}
+lt18 "a checkout" "To keep an install in ~/cs2-patch instead: $DV bash scripts/setup.sh"
+lt18 "the installer from a clone" "To keep an install in ~/cs2-patch instead: $DV bash scripts/install.sh" CS2_VIA_INSTALLER=1
+lt18 "a fetched copy" "To keep an install in ~/cs2-patch instead: put $DV and a space in front of the line you pasted (the whole line: https://github.com/macgameport/1launcher/blob/main/cities-skylines-2/INSTALL.md)" CS2_VIA_INSTALLER=1 L1_FETCHED_REF=release
+check "LT20a's literal is in setup once, as one string" "$(grep -c "^DECLINE_VAR='CS2_PATCH_DIR=~/cs2-patch'\$" "$S")" 1
+check "LT18 run twice: the second run moves nothing, and has no move line" "$(run "$H"):$(said "$H" 'Moving the install folder'):$(said "$H" '^move:'):$(has "$H/cs2-patch")" "0:0:0:no"
+H="$T/k1"; home "$H"; old "$H" full
+check "LT18 a skip: exit 0, said, the old folder used and no runtime folder made" "$(STUB_CWD=4242 run "$H"):$(said "$H" '^The install folder was not moved:$'):$(said "$H" '^Setup goes on in ~/cs2-patch\.$'):$(installed "$H" cs2-patch):$(has "$H/$INST"):$(shim "$H"):$(said "$H" '^Not moved: the install folder was left where it is'):$(said "$H" 'in ~/cs2-patch. The next run tries again: run setup again\.$')" "0:1:1:same:yes:$NPATCH:no:$H/cs2-patch/launch-cs2-dxmt11.sh:1:1"
+H="$T/k2"; home "$H"; old "$H" full; before=$(snap "$H")
+check "LT18 a stop: exit 3, nothing copied, the old launcher's bytes unchanged" "$(STUB_OPEN=777 run "$H"):$(cat "$H/cs2-patch/launch-cs2-dxmt11.sh"):$(said "$H" 'Installing launcher'):x$(snap "$H")" "3:old launcher:0:x$before"
+H="$T/k3"; home "$H"; old "$H" full
+check "LT18 stopped part-way: exit 1, nothing copied" "$(L1_MOVE_STOP_AFTER=rename run "$H"):$(said "$H" 'To finish the move'):$(said "$H" 'Installing launcher'):$(has "$H/$INST"):$(has "$H/cs2-patch")" "1:1:0:no:no"
+check "LT18 ...--check then says this run finishes it" "$(run "$H" --check):$(moveline "$H")" "0:an earlier move stopped part-way; this run finishes it"
+check "LT18 ...and the next run ends as a clean move does" "$(run "$H"):$(has "$H/cs2-patch"):$(installed "$H" "$INST"):$(shim "$H"):$(has "$H/$WORKSP/repatch.sh")" "0:no:same:yes:$NPATCH:$H/$INST/launch-cs2-dxmt11.sh:no"
+old "$H"
+check "LT18 both folders present: it goes on in the runtime folder and warns" "$(run "$H"):$(said "$H" '^move: WARNING: ~/cs2-patch and'):$(said "$H" "^Setup goes on in ~/$INST\.\$"):$(cat "$H/cs2-patch/launch-cs2-dxmt11.sh"):$(shim "$H"):$(said "$H" "^Not moved: ~/cs2-patch and ~/$INST both exist, and setup used the second"):$(said "$H" 'The next run tries again')" "0:1:1:old launcher:$H/$INST/launch-cs2-dxmt11.sh:1:0"
+H="$T/k4"; home "$H"; mkdir -p "$H/$INST"; before=$(snap "$H")
+check "LT18 the decline line typed on a moved Mac: exit 1, already moved, nothing written" "$(RUN_ENV="CS2_PATCH_DIR=$H/cs2-patch" run "$H"):$(said "$H" "^  !! This install has already moved to ~/$INST\. Leave $DV out\.\$"):x$(snap "$H")" "1:1:x$before"
+H="$T/k5"; home "$H"; old "$H" full; mv "$H/cs2-patch" "$H/real"; ln -s "$H/real" "$H/cs2-patch"; before=$(snap "$H/real")
+check "LT18 ~/cs2-patch a symlink: a new install in the runtime folder, the link and what it names untouched, and the closing text says so" \
+  "$(run "$H"):$(installed "$H" "$INST"):$(shim "$H"):$([ -L "$H/cs2-patch" ] && echo link):x$(snap "$H/real"):$(said "$H" '^Not moved: ~/cs2-patch is a symlink'):$(said "$H" "beside it, in ~/$INST, and the app starts that one")" "0:same:yes:$NPATCH:$H/$INST/launch-cs2-dxmt11.sh:link:x$before:1:1"
+H="$T/k6"; home "$H"; old "$H" full
+check "LT18 a move followed by a patch pass that fails: exit 1, and the closing block that says where the folder went" \
+  "$(STUB_FAIL=patch_mkparent.py run "$H"):$(said "$H" "^Moved:     what the game runs is now in ~/$INST\$"):$(grep -cF -- "To keep an install in ~/cs2-patch instead: $DV bash scripts/setup.sh" "$H.out"):$(has "$H/cs2-patch"):$(tail -n 1 "$H.out")" "1:1:1:no:=== setup finished with 1 problem(s): see the lines marked !! above ==="
+H="$T/k7"; home "$H"; old "$H" full
+check "LT18 part-way, and the data root then writable by group: the first run stops" "$(L1_MOVE_STOP_AFTER=rename run "$H")" 1
+chmod g+w "$(dirname "$H/$INST")"; before=$(snap "$H")
+check "LT18 ...--check says it cannot be finished now, with the reason" "$(run "$H" --check):$(moveline "$H"):$(said "$H" '^  skip: .* is not a folder of your own that only you can write to$')" "0:an earlier move stopped part-way and cannot be finished now:1"
+check "LT18 ...and the run exits 1: nothing copied, no name lifted" "$(run "$H"):$(said "$H" 'Installing launcher'):$(has "$H/$INST"):x$(snap "$H")" "1:0:no:x$before"
+
+# LT22: the installer holds the wrapper's launch lock while it runs setup. The lock is a symlink to the holder's
+# PID, as common/install-core.sh makes it; a holder that has ended leaves a dead lock, which is let through.
+held() {   # <home> [environment]: a process takes the lock and runs setup as its own child
+  local h="$1"; shift
+  $CLEAN "$@" HOME="$h" PATH="$T/bin:$PATH" bash -c 'ln -s $$ "$1" || exit 99; bash "$2" > "$3.out" 2>&1 < /dev/null; exit $?' _ "$h/$LOCKP" "$R/scripts/setup.sh" "$h"; echo $?
+}
+H="$T/i1"; home "$H"; old "$H"
+check "LT22 the lock's holder runs setup with CS2_VIA_INSTALLER=1: moved, exit 0, the installer's words" "$(held "$H" CS2_VIA_INSTALLER=1):$(has "$H/cs2-patch"):$(installed "$H" "$INST"):$(grep -cF "instead: $DV bash scripts/install.sh" "$H.out")" "0:no:same:yes:$NPATCH:1"
+H="$T/i2"; home "$H"; old "$H"; before=$(snap "$H")
+check "LT22 the same without the variable: exit 3, nothing moved or copied" "$(held "$H"):$(said "$H" "^  !! Setup stops here, before it copies anything:\$"):$(cat "$H/cs2-patch/launch-cs2-dxmt11.sh"):$(has "$H/$INST")" "3:1:old launcher:no"
+H="$T/i3"; home "$H"; old "$H"; sleep 60 & third=$!; ln -s "$third" "$H/$LOCKP"; before=$(snap "$H")
+check "LT22 with the variable while a third live process holds the lock: exit 3" "$(CS2_VIA_INSTALLER=1 run "$H"):x$(snap "$H")" "3:x$before"
+kill "$third" 2>/dev/null; wait "$third" 2>/dev/null
+
+# LT23: the decline reaches setup, and setup stays
+H="$T/j1"; home "$H"; old "$H"
+check "LT23 CS2_PATCH_DIR naming the old folder, in the fetched voice: stays, moves nothing, named" "$(RUN_ENV="CS2_PATCH_DIR=$H/cs2-patch" L1_FETCHED_REF=release CS2_VIA_INSTALLER=1 run "$H"):$(moveline "$H"):$(installed "$H" cs2-patch):$(has "$H/$INST"):$(said "$H" 'Moving the install folder')" "0:~/cs2-patch stays where it is: a folder was named:same:yes:$NPATCH:no:0"
+
+# LT24: a Mac already moved
+H="$T/a1"; home "$H"; mkdir -p "$H/$INST"; : > "$PROBE_CALLS"
+check "LT24 only the runtime folder, the fetched voice: exit 0, no move line, no old folder made, no probe called" "$(L1_FETCHED_REF=release CS2_VIA_INSTALLER=1 run "$H"):$(said "$H" '^move:'):$(has "$H/cs2-patch"):$(shim "$H"):$(lines "$PROBE_CALLS")" "0:0:no:$H/$INST/launch-cs2-dxmt11.sh:0"
+check "LT24 ...and the installer's voice" "$(CS2_VIA_INSTALLER=1 run "$H"):$(said "$H" '^move:'):$(has "$H/cs2-patch"):$(shim "$H"):$(lines "$PROBE_CALLS")" "0:0:no:$H/$INST/launch-cs2-dxmt11.sh:0"
+
+# LT26: the runtime folder is the user's own
+H="$T/o1"; home "$H"; mkdir -p "$H/$INST"; chmod o+w "$H/$INST"
+check "LT26 a runtime folder others can write to: exit 1 before copying" "$(run "$H"):$(said "$H" "^  !! ~/$INST is not a folder of your own that only you can write to"):$(has "$H/$INST/launch-cs2-dxmt11.sh")" "1:1:no"
+H="$T/o2"; home "$H"
+check "LT26 a new install under umask 000: the folders setup makes are not writable by group or others" "$( (umask 000; run "$H") ):$(stat -f %Lp "$H/$INST"):$(stat -f %Lp "$H/$INST/patches"):$(stat -f %Lp "$(dirname "$H/$INST")")" "0:755:755:755"
+H="$T/o3"; home "$H"; old "$H"; chmod 777 "$H/cs2-patch" "$H/cs2-patch/patches"; chmod 666 "$H/cs2-patch/launch-cs2-dxmt11.sh" "$H/cs2-patch/repatch.sh"
+check "LT26 an old folder of mode 777 whose launcher is mode 666, moved, and then setup: nothing in the runtime folder is writable by group or others" \
+  "$(run "$H"):$(has "$H/cs2-patch"):$(find "$H/$INST" -perm +022 | wc -l | tr -d ' '):$(stat -f %Lp "$H/$INST/launch-cs2-dxmt11.sh")" "0:no:0:755"
+
+# LT27: the markers survive, and an opted-in badge stays on
+H="$T/b1"; home "$H"; old "$H" full; echo badge > "$H/cs2-patch/patch-modconflict-badge.py"; : > "$H/cs2-patch/patches/.mod-badges-on"; : > "$H/cs2-patch/patches/.compat-noted-28"
+check "LT27 both markers and the badge script are in the runtime folder, and the badge patch is on" "$(run "$H"):$(has "$H/$INST/patches/.mod-badges-on"):$(has "$H/$INST/patches/.compat-noted-28"):$(cmp -s "$R/scripts/patch-modconflict-badge.py" "$H/$INST/patch-modconflict-badge.py" && echo same || echo differs):$(said "$H" 'mod badge patch: on (--show-mod-badges turns it off)')" "0:yes:yes:same:1"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

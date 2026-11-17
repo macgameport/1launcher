@@ -58,7 +58,7 @@
 # showed the update is the evidence; one whose record already showed it proves only that the check ran.
 # Each verdict line ends `record before: current`, `waiting` or `unreadable` when the file is there.
 #
-# RUN DIRS: ~/cs2-patch/boot-verify/licence-<seconds>/<stamp>-<attempt>/, outside this public checkout:
+# RUN DIRS: <workspace>/boot-verify/licence-<seconds>/<stamp>-<attempt>/, outside this public checkout:
 # what boot-verify leaves (launcher.log, SceneFlow.log, Player.log), its output as boot-verify.out,
 # manifest-before.txt, and this run's lines of Steam's two logs, which carry the account id. One summary line per run, with the
 # Steam client's version. Exit 0 = every run passed.
@@ -136,7 +136,8 @@ case "$RUNS" in ''|0*|*[!0-9]*) echo "runs: a count from 1 (got '$RUNS')" >&2; u
 
 # the same places boot-verify.sh uses, and its own tests for what runs in this wrapper
 APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
-LAUNCHER="${CS2_LAUNCHER:-$HOME/cs2-patch/launch-cs2-dxmt11.sh}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+LAUNCHER="${CS2_LAUNCHER:-$CS2_DATA/launch-cs2-dxmt11.sh}"
 WINEPREFIX="$APP/Contents/SharedSupport/prefix"
 SLOGS="$WINEPREFIX/drive_c/Program Files (x86)/Steam/logs"
 [ -f "$BV" ] || { echo "REFUSED: no boot-verify.sh beside this script"; exit 2; }
@@ -162,7 +163,7 @@ record_before() {   # <run dir>: what the launcher's update check would read now
 game_up && { echo "REFUSED: the game is running"; exit 2; }
 steam_up && { echo "REFUSED: this wrapper's Steam is running"; exit 2; }
 
-OUT="$HOME/cs2-patch/boot-verify/licence-$SECS"; mkdir -p "$OUT"
+OUT="$CS2_WORK/boot-verify/licence-$SECS"; mkdir -p "$OUT"
 since() {   # <Steam log> <epoch> <copy>: the log's lines stamped at or after that moment
   awk -v t="$(stamp "$2")" 'substr($0, 1, 1) == "[" && substr($0, 2, 19) >= t' "$1" > "$3" 2>/dev/null
 }

@@ -112,7 +112,7 @@ stage 6 "The Mac fixes and the game's app"
 if [ "$CHECK" = 1 ]; then say "would run setup.sh"; exit 0; fi
 if [ "$NO_SETUP" = 1 ]; then END=quiet; say "Stopped before step 6, as asked."; exit 0; fi
 if prefix_known && game_running; then say "!! The game is running. Quit it, then open the installer again."; exit 3; fi
-for f in "$SETUP" "$GAME_ROOT/repatch.sh" "$GAME_ROOT/patches" "$GAME_ROOT/../common/make-launcher-app.sh"; do
+for f in "$SETUP" "$GAME_ROOT/scripts/move-install.sh" "$GAME_ROOT/repatch.sh" "$GAME_ROOT/patches" "$GAME_ROOT/../common/make-launcher-app.sh" "$GAME_ROOT/../common/paths.sh"; do
   [ -e "$f" ] || { say "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
 done
 set --

@@ -25,4 +25,5 @@ export DXMT_LOG_LEVEL=info
 unset CS2_QUIET
 echo "=== diagnostic run — wine/macdrv trace → $LOG ==="
 date "+launch wall clock: %F %T"
-bash "$HOME/cs2-patch/launch-cs2-dxmt11.sh" 2>&1 | tee "$LOG"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+bash "$CS2_DATA/launch-cs2-dxmt11.sh" 2>&1 | tee "$LOG"

@@ -38,14 +38,15 @@
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 N="${N:-3}"
-OUT="${I12_OUT:-$HOME/cs2-patch/issue12/$(date +%Y%m%d-%H%M%S)}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+OUT="${I12_OUT:-$CS2_WORK/issue12/$(date +%Y%m%d-%H%M%S)}"
 mkdir -p "$OUT"
 # C50's calibrated coarse cadence, unchanged — this battery may only vary the capture method.
 export SYNTH_PX=25 SYNTH_MS=120 SYNTH_REPEAT=3 SYNTH_PAUSE=3 PRESIZE=1000x650 SYNTH_DX=650 SYNTH_DY=350
 export FRAMES="${FRAMES:-60}"
 
 echo "########## issue #12 capture control  $(date '+%F %T')  run dir $OUT"
-echo "  module s2b $(shasum -a 256 "$HOME/cs2-patch/winemac.so.s2b" | cut -c1-16) · ${N} pair(s) · 25 px / 120 ms · FRAMES=$FRAMES"
+echo "  module s2b $(shasum -a 256 "$CS2_WORK/winemac.so.s2b" | cut -c1-16) · ${N} pair(s) · 25 px / 120 ms · FRAMES=$FRAMES"
 
 # ⚠ Each `local` on its own line. Under `set -u`, bash declares every name in a single `local`
 # BEFORE evaluating any of its assignments, so `local d="$1" b="$d/x"` dies on "d: unbound

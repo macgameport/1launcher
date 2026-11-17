@@ -6,12 +6,12 @@
 # fully (re-tested 2026-08-24) but its cpatch/socket IPC times out under stock Wine — see
 # GOTCHAS § Steam Play button. Launching the exe directly is still the whole trick.
 #
-# Install it with `bash scripts/setup.sh` (copies this, repatch.sh and patches/ into ~/cs2-patch/,
+# Install it with `bash scripts/setup.sh` (copies this, repatch.sh and patches/ into the runtime folder,
 # because macOS TCC blocks .app bundles from executing scripts inside ~/Documents).
 #
 # Overrides, all optional:
 #   CS2_WRAPPER=/path/to/Wrapper.app   the Wineskin/Porting Kit bundle (auto-detected otherwise)
-#   CS2_PATCH_DIR=~/cs2-patch          where repatch.sh + patches/ live
+#   CS2_PATCH_DIR=<folder>             where repatch.sh + patches/ live (default: beside this file)
 #   CS2_QUIET=1                        no terminal expected: start-up steps go to the app's
 #                                      progress window (or become notifications where the app
 #                                      has none), failures become alert dialogs
@@ -99,7 +99,7 @@ export DYLD_FALLBACK_LIBRARY_PATH="$APP/Contents/Frameworks:$SS/wine/lib:/usr/li
 # (WINEESYNC/WINEMSYNC removed 2026-08-23: stock winehq wine has never shipped esync/msync —
 #  whole-source-tree grep, zero hits. They were Porting-Kit habit and did nothing here.)
 export WINEDEBUG="${WINEDEBUG:--all}"
-PATCH_DIR="${CS2_PATCH_DIR:-$HOME/cs2-patch}"
+PATCH_DIR="${CS2_PATCH_DIR:-$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}"
 
 # >>> rosetta-preflight
 # Rosetta preflight (2026-10-11, docs/plans/arm64-migration.md P0). This engine is x86_64, and a

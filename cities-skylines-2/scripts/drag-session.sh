@@ -49,10 +49,11 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
 W="$SS/wine/bin/wine64"; S="$SS/prefix/drive_c/Program Files (x86)/Steam"
 INST="$SS/wine/lib/wine/x86_64-unix/winemac.so"
-DAILY="$HOME/cs2-patch/winemac.so.stage1"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+DAILY="$CS2_WORK/winemac.so.stage1"
 # The first two runs never pre-sized: this variable was read but never set, and under `set -u` the
 # command substitution that used it died silently, leaving DH empty and the step skipped.
-DRV="${CS2_DRIVER:-$HOME/cs2-patch/win-resize-driver.exe}"
+DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
 # +cursor shows macdrv_SetCapture at both ends of the size loop; +timestamp makes T6's "3 s after
 # the last size change" a measurement (t6-scale-at-rest.py reads the stamps when they are there).
 TRACE="${TRACE:-+err,+macdrv,+cursor,+timestamp}"
@@ -74,9 +75,9 @@ SYNTH_REPEAT="${SYNTH_REPEAT:-1}"
 SYNTH_PAUSE="${SYNTH_PAUSE:-1}"
 
 case "$ROLE" in
-  t0)  MOD="$HOME/cs2-patch/winemac.so.s1-diag"; WHAT="diag-pre — stage 1 + colours" ;;
-  t2b) MOD="$HOME/cs2-patch/winemac.so.s2b-diag"; WHAT="diag-fix — stage 2 (win32u signal) + colours" ;;
-  t3)  MOD="$HOME/cs2-patch/winemac.so.s2b";      WHAT="prod — stage 2 (win32u signal), no colours" ;;
+  t0)  MOD="$CS2_WORK/winemac.so.s1-diag"; WHAT="diag-pre — stage 1 + colours" ;;
+  t2b) MOD="$CS2_WORK/winemac.so.s2b-diag"; WHAT="diag-fix — stage 2 (win32u signal) + colours" ;;
+  t3)  MOD="$CS2_WORK/winemac.so.s2b";      WHAT="prod — stage 2 (win32u signal), no colours" ;;
   s1)  MOD="$DAILY";                             WHAT="stage 1 daily driver, no colours" ;;
   *)   echo "unknown role '$ROLE' (t0|t2b|t3|s1)"; exit 2 ;;
 esac
@@ -85,7 +86,7 @@ esac
 [ -n "${MODULE:-}" ] && { MOD="$MODULE"; WHAT="$WHAT — module override $(basename "$MODULE")"; }
 [ -f "$MOD" ] || { echo "missing module $MOD — build it first"; exit 2; }
 
-OUT="${DRAG_OUT:-$HOME/cs2-patch/drag/$ROLE-$(date +%Y%m%d-%H%M%S)}"
+OUT="${DRAG_OUT:-$CS2_WORK/drag/$ROLE-$(date +%Y%m%d-%H%M%S)}"
 mkdir -p "$OUT"
 export WINEPREFIX="$SS/prefix"
 export DYLD_FALLBACK_LIBRARY_PATH="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"

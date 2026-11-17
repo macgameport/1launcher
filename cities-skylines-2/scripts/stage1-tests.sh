@@ -4,7 +4,7 @@
 #   bash scripts/stage1-tests.sh                 # T2a (churn x3) + T4 seam + T6 trace
 #   CHURNS=1 bash scripts/stage1-tests.sh        # one churn, for a quick read
 #   T7=1 bash scripts/stage1-tests.sh            # T7 instead: width churn then height churn, x1 each
-#   DIAG=1 MODULE=~/cs2-patch/winemac.so.diagfix bash scripts/stage1-tests.sh
+#   DIAG=1 MODULE=<workspace>/winemac.so.diagfix bash scripts/stage1-tests.sh
 #                                              # T2a proper: a colour build, scored per SOURCE
 #
 # Steam is brought up ONCE through the cell harness (so every run is fingerprinted and a run with no
@@ -20,14 +20,15 @@ set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
 W="$SS/wine/bin/wine64"; S="$SS/prefix/drive_c/Program Files (x86)/Steam"
-DRV="${CS2_DRIVER:-$HOME/cs2-patch/win-resize-driver.exe}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
 INST="$SS/wine/lib/wine/x86_64-unix/winemac.so"
 # ⚠ NOT named OUT_DIR. shimmer-probe.sh reads OUT_DIR and `rm -rf`s it (its line 29), so a runner
 # that exports OUT_DIR has its own run directory deleted at the start of every churn -- the probe
 # log vanishes, the frame copy finds nothing, and the scorer silently reads whatever was left in
 # /tmp/shimmer-churn from an EARLIER run. Measured 2026-09-03: four churns across two modules all
 # returned byte-identical band counts, which is what an unchanged stale directory looks like.
-OUT="${STAGE1_OUT:-$HOME/cs2-patch/stage1-tests/$(date +%Y%m%d-%H%M%S)}"
+OUT="${STAGE1_OUT:-$CS2_WORK/stage1-tests/$(date +%Y%m%d-%H%M%S)}"
 CHURNS="${CHURNS:-3}"
 MODULE="${MODULE:-}"        # optional: install this .so first (A/B against a saved build)
 mkdir -p "$OUT"

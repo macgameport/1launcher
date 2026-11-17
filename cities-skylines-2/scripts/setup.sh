@@ -17,8 +17,10 @@
 #
 # What it does:
 #   1. verifies the wrapper, Steam and the game are where they should be
-#   2. copies the launcher + repatch.sh + patches/ into ~/cs2-patch/   (macOS TCC blocks .app
-#      bundles from executing scripts inside ~/Documents, so they cannot live in the repo)
+#   2. moves an install made before the folders moved out of the home folder (scripts/move-install.sh), then
+#      copies the launcher + repatch.sh + patches/ into the runtime folder, which `bash common/paths.sh`
+#      prints (macOS TCC blocks .app bundles from executing scripts inside ~/Documents, so they cannot live
+#      in the repo). Exit 3: a launcher or an install is running, and nothing was moved or copied
 #   3. applies the binary patches (idempotent; each refuses to write if the pattern moved). When the only
 #      shortfall is a fix not out yet for this build of the game, setup finishes, says so, and exits 5
 #   4. builds "Cities Skylines II.app" in ~/Applications with the game's own icon, then 14unch3r.app,
@@ -32,8 +34,10 @@ ASSUME_YES=0
 DESKTOP=0
 MAC_ONLY=0
 BADGES=""
-DEST="${CS2_PATCH_DIR:-$HOME/cs2-patch}"
+DEST=""   # --dest; otherwise common/paths.sh says where, below
 
+# a path as printed: the home folder as ~, so that output pasted into an issue does not carry the user's name
+tilde() { case "$1" in "$HOME") printf '~' ;; "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;; *) printf '%s' "$1" ;; esac; }
 need_value() {   # <option> [<value> ...]: an option that takes a value must be given a non-empty one
   if [ $# -lt 2 ] || [ -z "$2" ]; then echo "$1 needs a value"; exit 2; fi
 }
@@ -59,6 +63,16 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# --- setup's own files (docs/plans/local-files-layout.md, 3.1): the rule for where the files go, and the script
+#     that moves an older install. A --mac-only run needs neither and is outside the check: scripts/install.sh
+#     reads that run's exit 1 as "Rosetta is missing".
+PATHS="$REPO/../common/paths.sh"; MOVER="$REPO/scripts/move-install.sh"
+if [ "$MAC_ONLY" = 0 ]; then
+  for f in "$PATHS" "$MOVER"; do
+    [ -f "$f" ] || { echo "  !! setup's own files are missing ($(tilde "$f")). Open the installer again, or run setup from a whole checkout."; exit 1; }
+  done
+fi
+
 LAUNCHER_SRC="$REPO/launchers/launch-cs2-dxmt11.sh"
 WRAPPERS="CS2dxmt11.app CS2.app"
 
@@ -68,8 +82,6 @@ good() { say "$1" "OK";   ok=$((ok+1)); }
 fail() { say "$1" "MISSING"; echo "      -> $2"; bad=$((bad+1)); }
 # a CAUTION is not a failure: this Mac is outside what has been tested, and the player may go on
 caution() { say "$1" "CAUTION"; echo "      -> $2"; cautions=$((cautions+1)); }
-# a path as printed: the home folder as ~, so that output pasted into an issue does not carry the user's name
-tilde() { case "$1" in "$HOME") printf '~' ;; "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;; *) printf '%s' "$1" ;; esac; }
 caution_note() {
   echo
   echo "$cautions caution(s): this Mac is outside what this project has been tested on (README.md, \"Compatibility\")."
@@ -85,9 +97,94 @@ caution_ask() {   # asked once per install: scripts/install.sh asks it through -
 GUIDE="$(tilde "$REPO/INSTALL.md")"
 [ -n "${L1_FETCHED_REF:-}" ] && GUIDE="https://github.com/macgameport/1launcher/blob/main/cities-skylines-2/INSTALL.md"
 
+
+# --- the wrapper, found once: the move's lock is in it (below), and the preflight reads the same answer.
+#     $CS2_WRAPPER when it is set, and then only if it has a prefix; else the first name of WRAPPERS that has one.
+find_wrapper() {
+  local w
+  if [ -n "${CS2_WRAPPER:-}" ]; then
+    [ -d "$CS2_WRAPPER/Contents/SharedSupport/prefix" ] && printf '%s' "$CS2_WRAPPER"
+  else
+    for w in $WRAPPERS; do
+      [ -d "$HOME/Applications/$w/Contents/SharedSupport/prefix" ] && { printf '%s' "$HOME/Applications/$w"; break; }
+    done
+  fi
+  return 0
+}
+WRAPPER="$(find_wrapper)"
+
+# --- where the files go (docs/plans/local-files-layout.md, 3.3). The rule is common/paths.sh's.
+OLD_INSTALL="$HOME/cs2-patch"
+DECLINE_VAR='CS2_PATCH_DIR=~/cs2-patch'
+NAMED=0
+if [ "$MAC_ONLY" = 0 ]; then
+  . "$PATHS"
+  RUNTIME="$L1_DATA_ROOT/cities-skylines-2"
+  # a folder is "named" when --dest is given, CS2_PATCH_DIR names another folder than the default runtime
+  # folder, or a root is set away from its default. A named folder is installed into as it is, and nothing
+  # is moved.
+  [ -n "$DEST" ] && NAMED=1
+  [ -n "${CS2_PATCH_DIR:-}" ] && [ "$CS2_PATCH_DIR" != "$RUNTIME" ] && NAMED=1
+  [ "$L1_ROOTS_SET" = 1 ] && NAMED=1
+  [ -n "$DEST" ] || DEST="$CS2_DATA"
+fi
+# three voices, as the other route-dependent lines below
+if [ -n "${L1_FETCHED_REF:-}" ]; then
+  AGAIN="open the installer again"
+  DECLINE="put $DECLINE_VAR and a space in front of the line you pasted (the whole line: $GUIDE)"
+elif [ "${CS2_VIA_INSTALLER:-0}" = 1 ]; then
+  AGAIN="open the installer again"; DECLINE="$DECLINE_VAR bash scripts/install.sh"
+else
+  AGAIN="run setup again"; DECLINE="$DECLINE_VAR bash scripts/setup.sh"
+fi
+mover() {   # [--dry-run]: the move script, with this wrapper's launch lock; the installer's own hold is let through
+  local a
+  a=("$@")
+  [ -n "$WRAPPER" ] && a+=(--lock "$WRAPPER/Contents/SharedSupport/prefix/.launcher.lock")
+  [ "${CS2_VIA_INSTALLER:-0}" = 1 ] && a+=(--held-by "$PPID")
+  bash "$MOVER" ${a[@]+"${a[@]}"}
+}
+# what setup reads of the move script's output: its first line, and the rest without the line that says to run setup
+mv_state() { printf '%s\n' "$1" | sed -n '1s/^state: //p'; }
+mv_relay() { printf '%s\n' "$1" | sed '1d' | grep -v '^Now run: '; return 0; }
+paths_lines() { echo "data: $(tilde "$DEST")"; echo "work: $(tilde "$CS2_WORK")"; }
+move_line() {
+  local out rc=0 shim
+  if [ "$NAMED" = 1 ]; then
+    if [ "${CS2_PATCH_DIR:-}" = "$OLD_INSTALL" ] && [ ! -e "$OLD_INSTALL" ] && [ ! -L "$OLD_INSTALL" ] && [ -d "$RUNTIME" ]; then
+      echo "  !! This install has already moved to $(tilde "$RUNTIME"). Leave $DECLINE_VAR out."
+      exit 1
+    fi
+    if [ -e "$OLD_INSTALL" ] || [ -L "$OLD_INSTALL" ]; then echo "move: $(tilde "$OLD_INSTALL") stays where it is: a folder was named"; fi
+    return 0
+  fi
+  if { [ -e "$OLD_INSTALL" ] || [ -L "$OLD_INSTALL" ]; } && [ -e "$RUNTIME" ]; then
+    shim="$(sed -n 's/^SCRIPT="\(.*\)"$/\1/p' "$HOME/Applications/Cities Skylines II.app/Contents/MacOS/launch" 2>/dev/null | head -1)"
+    echo "move: WARNING: $(tilde "$OLD_INSTALL") and $(tilde "$RUNTIME") both exist. The app starts: $(tilde "${shim:-nothing yet}")"
+    echo "      Setup uses $(tilde "$RUNTIME"). Remove $(tilde "$OLD_INSTALL") only when it holds nothing but deployed copies."
+    return 0
+  fi
+  out="$(mover --dry-run 2>&1)" || rc=$?
+  case "$(mv_state "$out")" in
+    none) [ -e "$RUNTIME" ] || echo "move: a new install" ;;
+    old)
+      if [ "$rc" = 0 ]; then echo "move: $(tilde "$OLD_INSTALL") will be moved"; else echo "move: $(tilde "$OLD_INSTALL") cannot be moved now"; fi
+      mv_relay "$out"
+      [ -L "$OLD_INSTALL" ] && echo "  Setup will install into $(tilde "$RUNTIME"), and leave the link and what it names alone."
+      ;;
+    part-way)
+      if [ "$rc" = 0 ]; then echo "move: an earlier move stopped part-way; this run finishes it"
+      else echo "move: an earlier move stopped part-way and cannot be finished now"; fi
+      mv_relay "$out" ;;
+    *) echo "move: the move script gave no answer:"; printf '%s\n' "$out" ;;
+  esac
+  return 0
+}
+
 echo "=== Cities: Skylines II on macOS — setup ==="
 if [ -n "${L1_FETCHED_REF:-}" ]; then echo "repo: a temporary copy of macgameport/1launcher at $L1_FETCHED_REF"
 else echo "repo: $(tilde "$REPO")"; fi
+if [ "$MAC_ONLY" = 0 ]; then paths_lines; move_line; fi
 echo
 echo "Preflight:"
 
@@ -124,15 +221,7 @@ if [ "$MAC_ONLY" = 1 ]; then   # scripts/install.sh, stage 1: this Mac alone
   exit 0
 fi
 
-# --- the wrapper
-WRAPPER=""
-if [ -n "${CS2_WRAPPER:-}" ]; then
-  [ -d "$CS2_WRAPPER/Contents/SharedSupport/prefix" ] && WRAPPER="$CS2_WRAPPER"
-else
-  for w in $WRAPPERS; do
-    [ -d "$HOME/Applications/$w/Contents/SharedSupport/prefix" ] && { WRAPPER="$HOME/Applications/$w"; break; }
-  done
-fi
+# --- the wrapper (found above the header, by find_wrapper)
 if [ -n "$WRAPPER" ]; then good "Wine wrapper ($(basename "$WRAPPER"))"
 else fail "Wine wrapper" "INSTALL.md step 1 — install the Porting Kit Wine 11 + DXMT wrapper, or set CS2_WRAPPER=/path/to/Wrapper.app, or run bash scripts/install.sh, which does this for you"; fi
 
@@ -165,6 +254,49 @@ echo "All $ok checks passed."
 [ "$cautions" -gt 0 ] && caution_note
 [ "$CHECK_ONLY" = 1 ] && { echo "(--check: stopping before making changes)"; exit 0; }
 caution_ask
+
+# ---------------------------------------------------------------- an install made before the folders moved
+MOVED=0; SKIPPED=0; BESIDE_LINK=0; BOTH=0
+if [ "$NAMED" = 0 ]; then
+  MV_RC=0; MV_OUT="$(mover 2>&1)" || MV_RC=$?
+  case "$MV_RC" in
+    0) if printf '%s\n' "$MV_OUT" | grep -q '^  moved: '; then
+         MOVED=1; echo; echo "Moving the install folder out of the home folder:"; mv_relay "$MV_OUT"
+       fi
+       . "$PATHS"; DEST="$CS2_DATA"
+       [ "$MOVED" = 1 ] && paths_lines ;;
+    1) SKIPPED=1; echo
+       if [ "$(mv_state "$MV_OUT")" = part-way ]; then echo "The earlier move was not finished:"; else echo "The install folder was not moved:"; fi
+       mv_relay "$MV_OUT"
+       if [ -e "$RUNTIME" ] || [ -L "$RUNTIME" ]; then BOTH=1; elif [ -L "$OLD_INSTALL" ]; then BESIDE_LINK=1; fi
+       . "$PATHS"; DEST="$CS2_DATA"
+       echo "Setup goes on in $(tilde "$DEST")." ;;
+    3) echo; echo "  !! Setup stops here, before it copies anything:"; mv_relay "$MV_OUT"
+       echo "     Going on could copy over a script that is running. When it has finished, $AGAIN."
+       exit 3 ;;
+    *) echo; echo "  !! Setup stops here, before it copies anything:"; mv_relay "$MV_OUT"
+       echo "     Or $AGAIN: that finishes the move too."
+       exit 1 ;;
+  esac
+fi
+# the runtime folder is the user's own (as surviving-mars-relaunched/scripts/setup.sh has it). A named folder,
+# and an old folder that a skip leaves in use, are treated as before.
+own_folder() {   # <folder>: 0 when it is a real folder of this user's that group and others cannot write to
+  [ -d "$1" ] && [ ! -L "$1" ] || return 1
+  [ "$(stat -f %u "$1")" = "$(id -u)" ] || return 1
+  case "$(stat -f %Lp "$1")" in *[2367]?|*[2367]) return 1 ;; esac
+  return 0
+}
+case "$DEST/" in "$L1_DATA_ROOT"/*)
+  for d in "$L1_DATA_ROOT" "$DEST" "$DEST/patches"; do
+    if [ -e "$d" ] || [ -L "$d" ]; then
+      own_folder "$d" || { echo "  !! $(tilde "$d") is not a folder of your own that only you can write to; setup will not put the launcher there."; exit 1; }
+    fi
+  done
+  for d in "$L1_DATA_ROOT" "$DEST" "$DEST/patches"; do
+    [ -d "$d" ] || { mkdir -p "$d" && chmod go-w "$d"; } || { echo "  !! $(tilde "$d") could not be made."; exit 1; }
+  done ;;
+esac
 
 # ---------------------------------------------------------------- install
 echo
@@ -319,6 +451,37 @@ desktop_step() {
   return 0
 }
 
+# what a move, or a move that was skipped, leaves the owner to know. Printed at every end a run reaches after its
+# first copy: a run that moved the folder and then met a failed patch pass must still say where the folder went.
+move_blocks() {
+  if [ "$MOVED" = 1 ]; then
+    echo
+    echo "Moved:     what the game runs is now in $(tilde "$DEST")"
+    [ -d "$CS2_WORK" ] && echo "           everything else that was in ~/cs2-patch is in $(tilde "$CS2_WORK")"
+    echo "           Anything of yours that names ~/cs2-patch (a copied .command, an alias, a second app made with"
+    echo "           make-shortcut.sh --name) must be pointed at the first of those folders."
+    for _n in launch-cs2.sh revenv; do
+      [ -e "$DEST/$_n" ] && echo "           No longer used, and safe to delete: $(tilde "$DEST/$_n")"
+    done
+    echo "           To keep an install in ~/cs2-patch instead: $DECLINE"
+    echo "           Putting a folder back: \"If your install was made before the folders moved\" in the guide: $GUIDE"
+  fi
+  if [ "$SKIPPED" = 1 ]; then
+    echo
+    if [ "$BOTH" = 1 ]; then
+      echo "Not moved: ~/cs2-patch and $(tilde "$DEST") both exist, and setup used the second: the app starts the"
+      echo "           launcher there. Remove ~/cs2-patch only when it holds nothing but deployed copies."
+    elif [ "$BESIDE_LINK" = 1 ]; then
+      echo "Not moved: ~/cs2-patch is a symlink, so it was left alone, and so was what it names. A new install was made"
+      echo "           beside it, in $(tilde "$DEST"), and the app starts that one."
+    else
+      echo "Not moved: the install folder was left where it is, for the reason given above. The install keeps working"
+      echo "           in $(tilde "$DEST"). The next run tries again: $AGAIN."
+    fi
+  fi
+  return 0
+}
+
 ADD_ONE="To add one:  bash scripts/setup.sh --desktop"
 AFTER_UPDATE="re-run  bash scripts/setup.sh  (updates reset the patched DLLs)."
 if [ "${CS2_VIA_INSTALLER:-0}" = 1 ]; then
@@ -326,6 +489,7 @@ if [ "${CS2_VIA_INSTALLER:-0}" = 1 ]; then
   AFTER_UPDATE="open the installer again (updates reset the patched DLLs)."
 fi
 if [ "$problems" -gt 0 ]; then
+  move_blocks
   echo
   echo "=== setup finished with $problems problem(s): see the lines marked !! above ==="
   exit 1
@@ -348,6 +512,7 @@ In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
 After a game update: $AFTER_UPDATE
 Troubleshooting: INSTALL.md, then GOTCHAS.md.
 DONE
+move_blocks
 if [ "$NOFIX" = 1 ]; then
   echo
   echo "=== setup finished, but not every Mac fix is out yet for this build of the game: see the lines marked >> above ==="

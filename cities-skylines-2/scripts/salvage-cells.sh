@@ -18,7 +18,8 @@
 #
 # Usage:  bash scripts/salvage-cells.sh [--dest DIR] [--dry-run]
 set -u
-DEST="$HOME/cs2-patch/evidence"; DRY=0
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+DEST="$CS2_WORK/evidence"; DRY=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --dest) shift; DEST="$1" ;;

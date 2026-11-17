@@ -15,7 +15,9 @@ set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/licence-wait-probe-test.XXXX)"
 trap 'rm -rf "$T"' EXIT
-S="$T/scripts"; H="$T/home"; mkdir -p "$S" "$T/bin" "$T/runs" "$H/cs2-patch" "$H/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix"
+S="$T/g/scripts"; H="$T/home"; mkdir -p "$T/common"; cp "$REPO/../common/paths.sh" "$T/common/"; LD="$(env -u CS2_PATCH_DIR -u CS2_WORK_DIR -u L1_DATA_ROOT -u L1_WORK_ROOT HOME="$H" bash "$T/common/paths.sh" | sed -n 's/^CS2_DATA=//p')"   # the runtime folder
+LW="$(env -u CS2_PATCH_DIR -u CS2_WORK_DIR -u L1_DATA_ROOT -u L1_WORK_ROOT HOME="$H" bash "$T/common/paths.sh" | sed -n 's/^CS2_WORK=//p')"   # the workspace
+mkdir -p "$S" "$T/bin" "$T/runs" "$LD" "$H/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix"
 P="$S/licence-wait-probe.sh"; cp "$REPO/scripts/licence-wait-probe.sh" "$P"
 mutated() { echo "REFUSED: mutant did not apply"; exit 2; }
 case "${MUTANT:-0}" in
@@ -147,7 +149,7 @@ chmod +x "$T/bin"/*
 installed() {
   { printf '#!/bin/bash\n%s\n' "$1"
     [ "${2:-}" = bare ] || for f in acf_field update_pending; do sed -n "/^$f() {/,/^}/p" "$REPO/launchers/launch-cs2-dxmt11.sh"; done
-  } > "$H/cs2-patch/launch-cs2-dxmt11.sh"
+  } > "$LD/launch-cs2-dxmt11.sh"
 }
 installed '# >>> launch-feedback (a fake launcher)'
 STEAMAPPS="$H/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps"; mkdir -p "$STEAMAPPS"
@@ -155,17 +157,17 @@ manifest() { printf '"AppState"\n{\n\t"appid"\t\t"949230"\n\t"StateFlags"\t\t"%s
 manifest 4 23700737 23700737
 probe() {   # <name> <plan> [probe arguments]: output in $T/<name>.out; echoes the probe's exit code
   local name="$1" plan="$2"; shift 2
-  rm -rf "$T/state" "$H/cs2-patch/boot-verify"; mkdir -p "$T/state"
+  rm -rf "$T/state" "$LW/boot-verify"; mkdir -p "$T/state"
   env -u CS2_WRAPPER -u CS2_LAUNCHER -u CS2_LICENCE_WAIT HOME="$H" PATH="$T/bin:$PATH" STUB_PLAN="$plan" STUB_STATE="$T/state" \
     STUB_PREFIX="$H/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix" bash "$P" "$@" > "$T/$name.out" 2>&1 < /dev/null
   echo $?
 }
 boots() { cat "$T/state/calls" 2>/dev/null || echo 0; }
-dirs() { ls "$H/cs2-patch/boot-verify/licence-$1" 2>/dev/null | wc -l | tr -d ' '; }
+dirs() { ls "$LW/boot-verify/licence-$1" 2>/dev/null | wc -l | tr -d ' '; }
 said() { grep -c -- "$2" "$T/$1.out"; }
 
 check "five clean boots: exit 0 after 5, and it says 5 of 5" "$(probe five 'pass pass pass pass pass pass' 15):$(boots):$(said five '^5 of 5 passed at CS2_LICENCE_WAIT=15')" "0:5:1"
-check "  ...each in its own folder under ~/cs2-patch/boot-verify/licence-15, with boot-verify's output kept" "$(dirs 15):$(ls "$H"/cs2-patch/boot-verify/licence-15/*/boot-verify.out | wc -l | tr -d ' ')" "5:5"
+check "  ...each in its own folder under the workspace's boot-verify/licence-15, with boot-verify's output kept" "$(dirs 15):$(ls "$LW"/boot-verify/licence-15/*/boot-verify.out | wc -l | tr -d ' ')" "5:5"
 check "a count of runs is taken: 2 runs at 30 s" "$(probe two 'pass pass pass' 30 2):$(boots):$(dirs 30)" "0:2:2"
 check "a VOID and a first OTHER are repeated and not counted toward five: 7 boots" "$(probe repeat 'void pass other pass pass pass pass pass' 15):$(boots):$(said repeat '^5 of 5 passed')" "0:7:1"
 check "three VOID in a row stop it: exit 3 after 3 boots" "$(probe voids 'void void void pass pass pass pass pass' 15):$(boots):$(said voids 'three VOID runs in a row')" "3:3:1"
@@ -185,7 +187,7 @@ check "an installed launcher without the update-check functions: refused, no boo
 installed '# >>> launch-feedback (a fake launcher)'
 manifest 4 23700737 23700737
 check "the record is read before each boot into manifest-before.txt: current, with its numbers" \
-  "$(probe rec 'pass pass' 15 2):$(cat "$H"/cs2-patch/boot-verify/licence-15/*/manifest-before.txt | grep -c '^record before the boot: current (StateFlags 4, buildid 23700737, TargetBuildID 23700737)$')" "0:2"
+  "$(probe rec 'pass pass' 15 2):$(cat "$LW"/boot-verify/licence-15/*/manifest-before.txt | grep -c '^record before the boot: current (StateFlags 4, buildid 23700737, TargetBuildID 23700737)$')" "0:2"
 check "--expect-update with a current record, and a launcher that says current: exit 1, FAIL on the first boot" \
   "$(probe missed2 'current pass' --expect-update 15):$(boots):$(said missed2 'attempt 1: FAIL the update check called the game current')" "1:1:1"
 manifest 1026 23700737 25127643

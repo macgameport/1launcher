@@ -9,7 +9,7 @@
 #   bash scripts/test-update-check.sh [path/to/launch-cs2-dxmt11.sh]
 #
 # Exit 0 = every case passed. If the real pre-update manifest from 2026-10-10 is still in
-# ~/cs2-patch/rollback-build23700737/, it is checked as well (local only; it is never committed,
+# <workspace>/rollback-build23700737/, it is checked as well (local only; it is never committed,
 # because it carries a SteamID).
 #   MUTANT=1 ...   "Updating the game" is a pop-up again (note) and no step; must exit 1
 #   MUTANT=2 ...   "Still updating" is a pop-up again and no step; must exit 1
@@ -271,7 +271,8 @@ tty_case ttysilent '' CS2_UPDATE_ASK_SECS=1
 expect ttysilent has 'WARNING: game update waiting'; expect ttysilent lacks 'steam://'
 
 # 13. the real manifests, when present on this machine
-REAL_OLD="$HOME/cs2-patch/rollback-build23700737/appmanifest_949230.acf"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+REAL_OLD="$CS2_WORK/rollback-build23700737/appmanifest_949230.acf"
 REAL_NOW="$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_949230.acf"
 if [ -f "$REAL_OLD" ]; then
   run_case realold $NUL MANIFEST_OVERRIDE="$REAL_OLD" CS2_UPDATE=skip

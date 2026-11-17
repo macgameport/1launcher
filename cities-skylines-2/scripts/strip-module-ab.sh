@@ -31,7 +31,8 @@ N="${N:-5}"
 # drawable, magenta = the deferred create path, black with no colour = nothing hosting it. The
 # T* colour columns are already in bands.txt, so this needs no new scoring.
 MODULES="${MODULES:-baseline stage1 s2b}"
-OUT="${AB_OUT:-$HOME/cs2-patch/strip-ab/$(date +%Y%m%d-%H%M%S)}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+OUT="${AB_OUT:-$CS2_WORK/strip-ab/$(date +%Y%m%d-%H%M%S)}"
 TAG="$(basename "$OUT")"
 mkdir -p "$OUT"
 export SYNTH_PX=25 SYNTH_MS=120 SYNTH_REPEAT=3 SYNTH_PAUSE=3 PRESIZE=1000x650 SYNTH_DX=650 SYNTH_DY=350
@@ -40,7 +41,7 @@ export FRAMES="${FRAMES:-300}" CAPTURE=window
 echo "########## strip module A/B (whole drag)  $(date '+%F %T')  run dir $OUT"
 echo "  N=$N per module · FRAMES=$FRAMES · 25 px / 120 ms · window capture"
 for m in $MODULES; do
-  case "$m" in s1diag) f="$HOME/cs2-patch/winemac.so.s1-diag" ;; *) f="$HOME/cs2-patch/winemac.so.$m" ;; esac; [ -f "$f" ] || { echo "missing $f"; exit 2; }
+  case "$m" in s1diag) f="$CS2_WORK/winemac.so.s1-diag" ;; *) f="$CS2_WORK/winemac.so.$m" ;; esac; [ -f "$f" ] || { echo "missing $f"; exit 2; }
   echo "  $m  $(shasum -a 256 "$f" | cut -c1-16)"
 done
 
@@ -95,10 +96,10 @@ for r in $(seq 1 "$N"); do
     # and the run agree on where an arbitrary name's module lives.
     case "$m" in
       s1diag)   role=t0; mod="" ;;
-      baseline) role=s1; mod="$HOME/cs2-patch/winemac.so.baseline" ;;
+      baseline) role=s1; mod="$CS2_WORK/winemac.so.baseline" ;;
       stage1)   role=s1; mod="" ;;
       s2b)      role=t3; mod="" ;;
-      *)        role=s1; mod="$HOME/cs2-patch/winemac.so.$m" ;;
+      *)        role=s1; mod="$CS2_WORK/winemac.so.$m" ;;
     esac
     id="r${r}-${m}"; rd="$OUT/$TAG-$id"      # unique for all time -- see GOTCHAS on merged cells
     # ⚠ A row refused by its own precondition aborts in ~4 SECONDS, so without this the queue
@@ -113,7 +114,7 @@ for r in $(seq 1 "$N"); do
     done
     # Same gate video-gap-battery.sh carries, and for the same reason: this battery's metric is a
     # per-frame band mean during a timed drag, so a row taken while the machine is busy reports
-    # partly the machine. C52-C54 added it there after `~/cs2-patch` was found being Spotlight-
+    # partly the machine. C52-C54 added it there after the workspace was found being Spotlight-
     # indexed through a battery; it belonged here too and was simply never copied across.
     for w in $(seq 1 40); do
       l=$(uptime | sed -E 's/.*load averages?: ([0-9.]+).*/\1/')

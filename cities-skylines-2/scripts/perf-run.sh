@@ -14,13 +14,14 @@
 #   CS2_METALFX=1 DXMT_CONFIG="d3d11.metalSpatialUpscaleFactor=1.5" CS2_HUD=1 \
 #     bash scripts/perf-run.sh a2-metalfx-720p15
 #
-# Run logs land in ~/cs2-patch/perf-runs/ (outside the repo, on purpose — raw logs may carry
+# Run logs land in <workspace>/perf-runs/ (outside the repo, on purpose — raw logs may carry
 # paths/IDs; only reduced numbers go into docs/perf-pass-results.md, per the publishability rule).
 set -u
 
 CELL="${1:?usage: [CELL_ENV…] bash scripts/perf-run.sh <cell-name>}"
-RUNDIR="${CS2_PERF_DIR:-$HOME/cs2-patch/perf-runs}"
-LAUNCHER="${CS2_LAUNCHER:-$HOME/cs2-patch/launch-cs2-dxmt11.sh}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+RUNDIR="${CS2_PERF_DIR:-$CS2_WORK/perf-runs}"
+LAUNCHER="${CS2_LAUNCHER:-$CS2_DATA/launch-cs2-dxmt11.sh}"
 mkdir -p "$RUNDIR"
 TS=$(date '+%Y%m%d-%H%M%S')
 LOG="$RUNDIR/$CELL-$TS.log"

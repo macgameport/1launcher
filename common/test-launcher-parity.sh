@@ -113,7 +113,7 @@ check "1. the two copies are the same, byte for byte" "$(cmp -s "$T/fb.cs2" "$T/
 
 # --- 2. update-check: the differences kept on purpose, each with its reason. Lines as `diff` prints them
 #        (< Cities: Skylines II, > Surviving Mars) once the names are made equal.
-uc() { sed -n '/^# >>> update-check/,/^# <<< update-check/p' "$1" | sed -E 's/CS2_|SM_/X_/g; s/949230|3215050/APPID/g; s/Cities: Skylines II|Surviving Mars: Relaunched/TITLE/g; s/cs2-patch|sm-patch/DIR/g'; }
+uc() { sed -n '/^# >>> update-check/,/^# <<< update-check/p' "$1" | sed -E 's/CS2_|SM_/X_/g; s/949230|3215050/APPID/g; s/Cities: Skylines II|Surviving Mars: Relaunched/TITLE/g; s/sm-patch/DIR/g'; }
 uc "$CS2" > "$T/uc.cs2"; uc "$SM" > "$T/uc.sm"
 check "2. both launchers hold an update-check block" "$([ -s "$T/uc.cs2" ] && [ -s "$T/uc.sm" ] && echo yes)" yes
 diff "$T/uc.cs2" "$T/uc.sm" | grep '^[<>]' | LC_ALL=C sort > "$T/uc.got"

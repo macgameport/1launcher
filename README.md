@@ -21,7 +21,8 @@ publisher's support team: they cannot help with it. See also the [security polic
 | **Cities: Skylines II** | [`cities-skylines-2/`](cities-skylines-2/README.md) | Wine 11 + DXMT, free, no CrossOver | Playable; details in its README |
 | **Surviving Mars: Relaunched** | [`surviving-mars-relaunched/`](surviving-mars-relaunched/README.md) | Wine 10 + Apple's D3DMetal 3.0, free, no CrossOver: its [installer](surviving-mars-relaunched/INSTALL.md) fetches each piece from its publisher | Plays on its maintainer's Macs; integration glue, not a product |
 
-Everything that used to sit at the top level of this repository is now in `cities-skylines-2/`.
+Everything that used to sit at the top level of this repository is now in `cities-skylines-2/`. What
+changed in each release is in the [changelog](CHANGELOG.md).
 
 ## Cities: Skylines II — quick start
 

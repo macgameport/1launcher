@@ -32,6 +32,26 @@ with `--latest=false`, a tag that is never moved. **Published since 2026-11-16:*
 no installer app has been released. Moved forward to `7abda38` the same day (#24's two fixes), on James's
 word, after the test suites. Moved forward again to `f978ca7` the same evening (errno-by-name, #24 item 1, and #25), on
 James's word, after the test suites. Since then a push to `main` reaches no player until `release` is moved.
+`release` and the `v` tags are different names: `release` is what the pasted line installs and moves forward;
+a `v` tag is a fixed name for one version, which anyone can ask for, and is never moved.
+
+**Releases** (`docs/plans/local-files-layout.md` 3.7, decided 2026-11-09, O10). A release is an annotated tag
+`v<a>.<b>.<c>` and a GitHub release whose text is that tag's section of the root `CHANGELOG.md`, copied by a
+command and never typed into the page. The second number rises when a change asks someone with an install to
+do or notice something, the third for fixes, and the first stays 0 until James calls a release 1.0; one number
+covers the whole repo. `CHANGELOG.md` has one section per release, `## v<number> (<date>)`, newest first, under
+`## Unreleased`; no other line in a section starts with `## `, and a link in a section is a full `https://`
+address that names the tag. A published tag is never moved or deleted: a wrong release gets a successor, its
+section gains a first line on `main` naming it, and its page is made equal with
+`sec <tag> main | gh release edit <tag> --notes-file -` (asked of James first). Before the commands: the commit
+is pushed and on `origin/main`, and the project identity is checked (`gh auth status` shows `iosoceans`):
+
+```bash
+sec() { git show "${2:-$1}:CHANGELOG.md" | awk -v v="$1" '{ sub(/\r$/, "") } index($0, "## " v " ") == 1 || $0 == "## " v { p = 1; next } /^## / { p = 0 } p'; }
+sec v0.1.0 <commit> | grep -c '[^[:space:]]'     # 0 means a mistyped heading: stop
+git tag -a v0.1.0 -m v0.1.0 <commit> && git push origin v0.1.0
+sec v0.1.0 | gh release create v0.1.0 --verify-tag --title v0.1.0 --notes-file -
+```
 
 **A new game is a new folder in this repo:** never a new repo, never a new folder in the home directory.
 The only places outside the repo are `~/cs2-patch` (deployed copies and evidence), the wrappers in
@@ -131,5 +151,6 @@ three-repo count as three data points.** If it fails to earn its cost somewhere,
 ## Deliberate deviations from sibling-repo practice
 
 - **`.claude/rules/` in `.prettierignore`** (from meritmap, declined 2026-08-26) — Python / C / shell (20 py, 17 sh, 16 c); no package.json anywhere, so prettier can never run here. The guard exists because a repo `.prettierrc` whose `printWidth` differs from the global source's default 80 makes format-on-commit fight the session-start sync forever (diagnosed in meritmap, where it had run since 2026-08-14). Adopted in bespoke-tr, isnotus and homeOne, which have a JS toolchain that could grow a `.prettierrc`. Here it would configure a tool that will never exist. **Revisit if this repo ever gains a `package.json`.**
+- **`deploy/prod-<date>` tags** (from bespoke-tr, isnotus and meritmap, declined 2026-11-16) — nothing here is deployed to a host; what reaches players is the `release` branch and the `v` tags of "Releases" above, which follow meritmap's own `v0.` tags.
 
 @cities-skylines-2/CLAUDE.md

@@ -3010,7 +3010,10 @@ and the probe refused every run with "acf_field not found". Its own test caught 
   launcher log read `line 357: [: too many arguments` and then launched the installed build. Every test of the
   update check ran the terminal prompt or `CS2_UPDATE=apply`, never the dialog. Fixed by the same assignment
   first; `test-update-check.sh` in both games now drives the dialog through a fake `osascript` under
-  `/bin/bash`, with a mutant that puts the old form back.
+  `/bin/bash`, with a mutant that puts the old form back. **Seen working live 2026-11-17** on the MacBook: James
+  clicked Update first from `Cities Skylines II.app`; the log reads `Updating the game through Steam (build
+  25127643 -> 26404411)…`, `Game updated to build 26404411.`, then `Patches ensured (10, dxmt11 target).` a
+  second time before step 5, and the game exited `rc=0`.
 - **The search that would have found it:** `grep -n '"\$(.*{' <file>` over every `.sh`, then read each hit
   that is not the right side of an assignment. Only braces inside a **nested double-quoted** word are
   expanded: `"$(sed -n '/^f() {/,/^}/p' …)"` and `'^[0-9]{5,}'` in single quotes are left alone (measured

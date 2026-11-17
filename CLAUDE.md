@@ -33,7 +33,9 @@ no installer app has been released. Moved forward to `7abda38` the same day (#24
 word, after the test suites. Moved forward again to `f978ca7` the same evening (errno-by-name, #24 item 1, and #25), on
 James's word, after the test suites. Moved forward to `ce2fcd0`, the commit `v0.1.0` names, the same night (no
 installed file changed; `docs/plans/local-files-layout.md` step 1.0 and ON2, on James's word), after the test
-suites and `common/check-release-move.sh`. Since then a push to `main` reaches no player until `release` is moved.
+suites and `common/check-release-move.sh`. Since then a push to `main` reaches no player until `release` is moved. `release`
+has not taken the folder move, and moving it to `v0.2.0` or past it needs James's word on the move itself (ON1) and
+LT21 (`common/check-release-move.sh`).
 `release` and the `v` tags are different names: `release` is what the pasted line installs and moves forward;
 a `v` tag is a fixed name for one version, which anyone can ask for, and is never moved.
 

@@ -7,6 +7,8 @@ the pasted line installs it.
 
 ## Unreleased
 
+## v0.2.0 (2026-11-17)
+
 **Setup moves a Cities: Skylines II install out of the home folder.** Until now everything was in one
 folder, `~/cs2-patch`. From this version:
 

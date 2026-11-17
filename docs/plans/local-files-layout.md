@@ -1,6 +1,6 @@
 # Local files — out of the home folder, into the places macOS sets aside
 
-> **🔧 As-built (2026-11-16): L1 built, steps 0.9 to 1.8, its exit criteria met; L2 step 0 done (the prune); the rest of L2, and L3, not yet.**
+> **🔧 As-built (2026-11-16, 2026-11-17): L1 built, steps 0.9 to 1.8, its exit criteria met; L2 steps 0 to 4 done on the Studio (the folder has moved); steps 5 to 8, and L3, not yet.**
 > On `main`: step 0.9, the release gate (`e240d84`); step 1.0, `CHANGELOG.md` and `v0.1.0` at `ce2fcd0`, with its
 > page, and `release` moved there under ON2 (recorded in `42233be`). On the branch `local-files-layout`, not merged:
 > steps 1.1 to 1.6 (`c61d743`) and 1.7 (`ddce307`), then `main` merged in (`422c1b5`). All 41 test files exit 0 on
@@ -29,6 +29,26 @@
 > - LT7: the folder's names and the four repos' fingerprints are equal before and after.
 >
 > The record is kept in `<workspace>/local-files-layout-18-<stamp>/`.
+> L2 on the Studio, 2026-11-17, from the branch (`0055ba1`, `main` merged in):
+> - **Step 1, preflight.** Community watch was paused. No working directory was inside the folder. Both mirrors were
+>   level: winemac's one commit outside the remote branches is the tag `pre-fable6-main`, which the mirror holds.
+>   `release` held no `common/paths.sh`. LT6 and LT7 were recorded, and the dry run exited 0.
+> - **Step 2, the move.** Setup moved `~/cs2-patch` to the workspace in one rename and lifted six runtime names into
+>   the runtime folder. It ran 10 of 10 patch scripts, rebuilt both apps with the new launcher path, and exited 0.
+>   - `~/cs2-patch` is gone.
+>   - LT7: the names and the four trees' fingerprints are equal.
+>   - LT4: 21 of 21. LT9: the shim names the runtime folder. LT27: the badge marker moved, and the badge stays on.
+>   - The folders are 755. LT6 reads the same numbers from the workspace.
+> - **Step 3.** `README.txt` in the work root.
+> - **Step 4.** The task's 10 lines and 71 lines in 17 memory files were rewritten by the two rules, and the task was
+>   enabled again.
+>   - **A fault in step 0, found here:** the task's prompt cites `rederive-1.6.2f1/reply-issue15.md` as its style
+>     example, and step 0's check had searched the repo only. The folder was restored from the Trash into the
+>     workspace. Step 0's check should also have read the scheduled task and the memory files.
+>   - The root `CLAUDE.md`'s list of allowed places keeps `~/cs2-patch`, with its conditional "on a Mac whose
+>     install has not been moved yet": the MacBook's is there until L3.
+>
+> L2's record is in `<workspace>/local-files-layout-L2-<stamp>/`.
 > Verify against: `common/paths.sh`, `cities-skylines-2/scripts/move-install.sh`, `cities-skylines-2/scripts/setup.sh`
 > (`find_wrapper`, `move_line`, `mv_state`, `mv_relay`, `move_blocks`), `common/mac-inventory.sh`,
 > `common/check-release-move.sh`, and `cities-skylines-2/INSTALL.md`, "If your install was made before the folders moved".

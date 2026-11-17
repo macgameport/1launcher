@@ -3,6 +3,12 @@
 Getting **Cities: Skylines II** running on an Apple Silicon Mac, free — no CrossOver licence.
 Mods included.
 
+Setup keeps what the game runs (the launcher and the patch scripts) in **the runtime folder**,
+`~/Library/Application Support/1launcher/cities-skylines-2`. The Finder hides `~/Library`:
+`open "$HOME/Library/Application Support/1launcher/cities-skylines-2"` shows the folder. An install that has not been moved
+yet has the same files in `~/cs2-patch`, and each command below works there with that folder's name
+([If your install was made before the folders moved](#if-your-install-was-made-before-the-folders-moved)).
+
 ## The quick way
 
 One line in Terminal does the whole install. It makes the Wine wrapper, puts Steam for Windows in it,
@@ -173,7 +179,7 @@ use ship with them. Its last lines say how many of the ten patch scripts finishe
 > ([#23](https://github.com/macgameport/1launcher/issues/23)). Update the checkout (`git pull`) and run
 > `bash scripts/setup.sh` again.
 
-That checks your prerequisites, installs the launcher into `~/cs2-patch/`, applies the binary
+That checks your prerequisites, installs the launcher into the runtime folder, applies the binary
 patches, and builds a double-clickable **Cities Skylines II.app** in `~/Applications` using the
 game's own icon, and **14unch3r**, the window that lists every game set up on this Mac.
 
@@ -305,7 +311,7 @@ Retina/DPI registry values (per context, skip-if-already — steady-state boots 
 your
 in-game resolution choice is untouched, and an in-game DRS tweak lasts until the next launch.
 Overrides: `CS2_PROFILE=off` disables the feature entirely, `=home`/`=mobile` force a profile,
-and `DRY=1 bash ~/cs2-patch/cs2-display-profile.sh` previews what it would do without writing.
+and `DRY=1 bash "$HOME/Library/Application Support/1launcher/cities-skylines-2"/cs2-display-profile.sh` previews what it would do without writing.
 It fails open — any error is one warning line and the boot continues with your saved settings.
 
 ## Mod keybinding ⚠ badges
@@ -330,7 +336,7 @@ conflicts still surface normally when you rebind a key that's already taken.
 To turn it off again, `bash scripts/setup.sh --show-mod-badges`. That stops the launcher re-applying it;
 to put back a `Game.dll` it has already edited, use Steam's *Verify integrity of game files*.
 
-To look without changing anything: `python3 ~/cs2-patch/patch-modconflict-badge.py` says whether the two
+To look without changing anything: `python3 "$HOME/Library/Application Support/1launcher/cities-skylines-2"/patch-modconflict-badge.py` says whether the two
 edits are present.
 
 ## Measuring performance
@@ -338,7 +344,7 @@ edits are present.
 The game has no usable built-in FPS counter, so use Metal's own HUD. From a terminal:
 
 ```bash
-CS2_HUD=1 bash ~/cs2-patch/launch-cs2-dxmt11.sh
+CS2_HUD=1 bash "$HOME/Library/Application Support/1launcher/cities-skylines-2"/launch-cs2-dxmt11.sh
 ```
 
 You get Apple's Metal performance HUD (frame rate, frame time, GPU time) with DXMT's own lines
@@ -414,12 +420,73 @@ previous build's.
 If you ask for help, paste the lines from `NO FIX YET` down. The lines above them hold your home
 folder's path.
 
+## If your install was made before the folders moved
+
+Until November 2026 setup kept everything in one folder in the home folder, `~/cs2-patch`. It now keeps what
+the game runs in the runtime folder, `~/Library/Application Support/1launcher/cities-skylines-2`, as macOS asks of an app's own files.
+
+**What setup does to an older install.** The next time setup runs (from a checkout after `git pull`, or
+when you open the installer again), it moves the folder, says what it moved, and rebuilds the app so that it
+starts the launcher in its new place:
+
+- If `~/cs2-patch` holds only what setup put there, the folder itself is renamed to the runtime folder.
+- If it holds anything else (your own notes, test output, source trees), the whole folder is renamed to the
+  workspace, `~/Library/Developer/1launcher/cities-skylines-2`, and the files the game runs are lifted out of it into the runtime folder.
+
+Nothing is copied, renamed inside or deleted. Setup does not move the folder while the game, its launcher or
+another install is running: it stops and says so. If the move cannot be made safely for another reason (a
+Terminal window is open in the folder, say), setup skips it, says why, goes on in `~/cs2-patch`, and tries
+again at its next run. `bash scripts/setup.sh --check` says what a run would do and changes nothing.
+
+**What stops working until you point it at the runtime folder:** anything of yours that names `~/cs2-patch`.
+The usual three are a `.command` launcher copied out of this repository earlier (copy it again), a shell alias
+or a saved command, and a second app made with `make-shortcut.sh --name` (make it again). The game's own app
+and 14unch3r are rebuilt by setup and need nothing.
+
+**To keep the install in `~/cs2-patch`**, name the folder when you run setup. In a checkout:
+
+```bash
+CS2_PATCH_DIR=~/cs2-patch bash scripts/setup.sh
+```
+
+With the installer's pasted line, put the same words and a space in front of it:
+
+```bash
+CS2_PATCH_DIR=~/cs2-patch /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/macgameport/1launcher/release/install.sh)" 1launcher-install 949230
+```
+
+This is per run: a later run without those words moves the folder. To make it stand, put
+`export CS2_PATCH_DIR=~/cs2-patch` in your shell profile.
+
+**To put a folder back** after it has moved, quit the game and Steam first, and check that `~/cs2-patch` does
+not exist. If setup's "Moved:" lines named one folder only (no workspace was made), it is one move:
+
+```bash
+mv "$HOME/Library/Application Support/1launcher/cities-skylines-2" ~/cs2-patch
+```
+
+If a workspace was made, move it back, move the files the game runs back into it, and remove the emptied
+runtime folder:
+
+```bash
+mv ~/Library/Developer/1launcher/cities-skylines-2 ~/cs2-patch
+mv "$HOME/Library/Application Support/1launcher/cities-skylines-2"/* ~/cs2-patch/
+rm -f "$HOME/Library/Application Support/1launcher/cities-skylines-2"/.DS_Store
+rmdir "$HOME/Library/Application Support/1launcher/cities-skylines-2"
+```
+
+Then run setup with the line that keeps the install in `~/cs2-patch` (above), on this run and on every later
+one: that rebuilds the app to start the launcher there, and keeps later fixes coming. If you want the old
+code as well, `v0.1.0` is the last version whose setup knows only `~/cs2-patch`: `git checkout v0.1.0` in a
+clone, or the pasted line with `v0.1.0` after the app ID. Held there, an install gets no later fix, a patch
+re-derived after a game update included.
+
 ## Troubleshooting
 
 | Symptom | What's happening |
 |---|---|
 | "Steam did not auto-login" | The saved token expired. Open Steam inside the wrapper, sign in until the library loads, then relaunch. |
-| No main menu after a fresh start, and `platform service integration failed` in the game's `SceneFlow.log` | The game started before Steam had confirmed your licence. Start it once from Terminal with a longer wait, `CS2_LICENCE_WAIT=45 bash ~/cs2-patch/launch-cs2-dxmt11.sh`, and please open an issue: the default of 15 seconds rests on two Macs. |
+| No main menu after a fresh start, and `platform service integration failed` in the game's `SceneFlow.log` | The game started before Steam had confirmed your licence. Start it once from Terminal with a longer wait, `CS2_LICENCE_WAIT=45 bash "$HOME/Library/Application Support/1launcher/cities-skylines-2"/launch-cs2-dxmt11.sh`, and please open an issue: the default of 15 seconds rests on two Macs. |
 | Game exits immediately, launch fails with code 1 | A stale `.crash` marker from a force-kill. The launcher clears it automatically now; if it persists, delete `.../Steam/.crash` inside the prefix. |
 | Black screen with a working cursor | The Coherent Gameface UI fix didn't apply. Re-run `bash scripts/setup.sh` and check its patch output, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |
 | Mods won't download ("Preparing 2%", IO errors) | The patches are not all in place. Run `bash scripts/setup.sh` again and read its last lines: it says how many patch scripts finished and names any that failed, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |
@@ -435,7 +502,7 @@ is in **[docs/patch-inventory.md](docs/patch-inventory.md)**.
 ## Uninstall
 
 ```bash
-rm -rf ~/Applications/"Cities Skylines II.app" ~/Applications/"S734M.app" ~/Applications/14unch3r.app ~/cs2-patch
+rm -rf ~/Applications/"Cities Skylines II.app" ~/Applications/"S734M.app" ~/Applications/14unch3r.app ~/cs2-patch "$HOME/Library/Application Support/1launcher/cities-skylines-2"
 defaults delete local.1launcher.window 2>/dev/null; rm -f ~/Library/Preferences/local.1launcher.window.plist
 ```
 

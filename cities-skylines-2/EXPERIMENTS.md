@@ -4,6 +4,8 @@
 > session can tell what we already know, how much to trust it, and what would overturn it — without
 > re-deriving it from 2,500 lines of `GOTCHAS.md` prose. Checked by `scripts/check-experiments.py`,
 > which `button up` runs.
+>
+> **Paths.** Rows keep the path they were written with. Since the folders moved (`docs/plans/local-files-layout.md`), an old `~/cs2-patch/X` is `<runtime>/X` for the launcher, `repatch.sh`, `cs2-display-profile.sh`, `patch-modconflict-badge.py` and `patches/` (and for the leftovers `launch-cs2.sh`, `launch-cs2*.sh.bak` and `revenv/`), and `<workspace>/X` for every other name; `bash common/paths.sh` prints both folders.
 
 ## ✅ RESOLVED 2026-08-30 — the whole "renders art, no text" thread was one word: `nohup`
 

@@ -7,6 +7,8 @@
 > underlying Wine behaviour usually still applies. Entries mentioning DXVK, MoltenVK or
 > `VK_ERROR_DEVICE_LOST` are **historical** unless they also mention D3DMetal.
 > Current setup: [`../README.md`](README.md) · Patch detail: [`docs/patch-inventory.md`](docs/patch-inventory.md)
+>
+> **Paths.** Entries keep the path they were written with. Since the folders moved (`docs/plans/local-files-layout.md`), an old `~/cs2-patch/X` is `<runtime>/X` for the launcher, `repatch.sh`, `cs2-display-profile.sh`, `patch-modconflict-badge.py` and `patches/` (and for the leftovers `launch-cs2.sh`, `launch-cs2*.sh.bak` and `revenv/`), and `<workspace>/X` for every other name; `bash common/paths.sh` prints both folders.
 
 > **Every section has been audited against the 2026-08-30 library audit — so a section with no
 > `Ledger:` banner is "audited, unaffected", NOT "not yet looked at".** All 60 were classified; the

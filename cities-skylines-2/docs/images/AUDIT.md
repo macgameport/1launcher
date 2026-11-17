@@ -48,10 +48,10 @@ still describe images taken *before* that rename; they remain clean, just for th
    involved, so the check cannot be confounded by our own rendering problems. Do **not** read a
    rendered-text screenshot from the native app as evidence about wine's glyph handling; they are
    unrelated clients and only the account label is shared.
-   ⚠ This is **not** retroactive: captures already in `~/cs2-patch/evidence/` predate the rename, and
+   ⚠ This is **not** retroactive: captures already in the evidence store (`<workspace>/evidence/`) predate the rename, and
    the ones where text rendered carry the real name. They live outside the repo, which is exactly why
    the evidence store is outside the repo — leave them there.
-2. **Keep captures in the evidence store by default.** `~/cs2-patch/evidence/` is outside the repo
+2. **Keep captures in the evidence store by default.** `<workspace>/evidence/` is outside the repo
    for exactly this reason. Committing a window capture should be a deliberate act with a row here,
    not the default.
 3. **Do not mask or blur.** A mask you got wrong is worse than no mask, because it looks safe. There

@@ -52,7 +52,7 @@ the 11.16 daily engine: no ⚠ badge anywhere (also visible in the #4 captures).
 Detail, all of it recorded elsewhere: the offline collision table and the `.coc` edit protocol in
 GOTCHAS § "Mod keybinding defaults are extractable offline" · the four invalid-IL rounds and the
 rules they earned in GOTCHAS § "IL opcode surgery" · the patcher, its invocation and the launcher
-hook in `CLAUDE.md` § Where things live · backups and timings in `~/cs2-patch/change-ledger.txt`.
+hook in `CLAUDE.md` § Where things live · backups and timings in `<workspace>/change-ledger.txt`.
 **Left open by choice:** Anarchy's PageUp/Down triple-booking — no `Anarchy.coc` exists and minting
 one from scratch is format-risk; one in-game rebind creates it properly.
 
@@ -160,7 +160,7 @@ superseded, with the pointer to where the surviving content lives.
 - **~~Five `Game.dll.bak-modconflict-*` backups (~58 MB)~~** — pruned 2026-08-27, 58 MB → 12 MB. The
   one keeper is `Game.dll.bak-modconflict-20260827-164920`, byte-probed pristine at both patch
   sites; restoring it puts the DLL back to stock, and the launcher would re-apply on next boot, so
-  move the patcher aside if you want stock to *stay*. Recorded in `~/cs2-patch/change-ledger.txt`.
+  move the patcher aside if you want stock to *stay*. Recorded in `<workspace>/change-ledger.txt`.
 - **Steam's visible UI** (the ~225-line sub-thread). **Superseded in full by
   [`docs/steam-ui-findings.md`](docs/steam-ui-findings.md)** — the same material as one causal
   story, with `EXPERIMENTS.md`'s register (C1–C30) as the authority on trust and

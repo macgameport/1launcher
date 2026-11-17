@@ -4,7 +4,7 @@
 **Stack:** self-built stock Wine 11.16 + DXMT (`~/Applications/CS2dxmt11.app`): needs **10** of these patch
 scripts. The other six are for an engine with the errno defect (`CS2_ERRNO_PATCHES=1`). An older Wine 10 +
 D3DMetal stack was retired from this repository on 2026-11-09.
-**Applied by:** `~/cs2-patch/repatch.sh dxmt11` — idempotent, self-verifying (byte pattern, or by-name method lookup with the whole IL matched for the PDX.SDK five and the six errno scripts), a `.bak` before the first write to an unpatched file; a script whose code is not in a new build exits 3 and writes nothing (`patches/README.md`, "If a game update breaks them")
+**Applied by:** `repatch.sh dxmt11`, the copy in the runtime folder (`bash common/paths.sh` prints it) — idempotent, self-verifying (byte pattern, or by-name method lookup with the whole IL matched for the PDX.SDK five and the six errno scripts), a `.bak` before the first write to an unpatched file; a script whose code is not in a new build exits 3 and writes nothing (`patches/README.md`, "If a game update breaks them")
 **Last verified:** 2026-11-12 — 1.6.4f1: `setup.sh` reported 10 of 10 patch scripts finished without error after the `patch_cohtml` re-derivation, and boot-verify PASS (`20261112-155937`, the main menu); the other nine were not re-read against the new build. Before that 2026-10-10 — 1.6.2f1 re-derivation: all 10 dxmt11 patches + badge applied, boot-verify PASS ×3 and a forced mod re-download (C73); before that 2026-09-03, when targets and patch counts were re-measured against `repatch.sh`; the
 in-game verification behind §1 is 2026-08-22
 

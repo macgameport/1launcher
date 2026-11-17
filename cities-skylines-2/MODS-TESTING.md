@@ -191,6 +191,6 @@ Guaranteed to work; the mods just need to be downloaded on real (non-Wine) Windo
 - If a full native Windows PC is available, same thing via CS2 directly.
 
 ## Test protocol (avoid stale-log mistakes)
-Each patch change is stamped in `~/cs2-patch/change-ledger.txt`. Only interpret a game run whose
+Each patch change is stamped in `<workspace>/change-ledger.txt`. Only interpret a game run whose
 `Logs/SceneFlow.log` first-line timestamp is **after** the change being tested. Watch for real bytes
 in `.cache/Mods/pdx_mods/.downloading/` (the pre-created folders persist under Wine).

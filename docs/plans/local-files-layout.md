@@ -1,6 +1,6 @@
 # Local files — out of the home folder, into the places macOS sets aside
 
-> **🔧 As-built (2026-11-16): L1 built, steps 0.9 to 1.8, its exit criteria met; L2 and L3 not yet.**
+> **🔧 As-built (2026-11-16): L1 built, steps 0.9 to 1.8, its exit criteria met; L2 step 0 done (the prune); the rest of L2, and L3, not yet.**
 > On `main`: step 0.9, the release gate (`e240d84`); step 1.0, `CHANGELOG.md` and `v0.1.0` at `ce2fcd0`, with its
 > page, and `release` moved there under ON2 (recorded in `42233be`). On the branch `local-files-layout`, not merged:
 > steps 1.1 to 1.6 (`c61d743`) and 1.7 (`ddce307`), then `main` merged in (`422c1b5`). All 41 test files exit 0 on
@@ -340,6 +340,13 @@ Each phase ends green before the next starts.
 | Every other name: small scripts, notes and tools, each under 10 M | under 30 M | keep |
 
    By the steer's own limits the offers come to about 1.3 G of 62 G. The move does not need the space: it is a rename.
+   **Done 2026-11-16**, on James's "All offered, keep the .bak". Measured again first: 119 entries, 62.1 G. Thirteen
+   offered items went to the Trash (`stock-prefix`, `stage1-ab`, `rederive-1.6.2f1`, `revenv`, `v`, which turned out
+   to be a second unused Python environment, `launch-cs2.sh`, the five named backups and `fakewrap.app`,
+   `d3dm30-trial`). `launch-cs2-dxmt11.sh.bak` was kept against the table: step 1.8's setup had just rewritten it
+   with `main`'s launcher, the copy a rollback before the merge would use. Left: 106 entries, 61 G.
+   `check-experiments.py` exit 0, 57 passed, `pass live: 41 real logs`, `regen-winemac-patches.sh --check` exit 0,
+   and the four trees' fingerprints are unchanged. Nothing was emptied from the Trash.
 1. Preflight. The scheduled task disabled in the scheduler. `lsof -a -d cwd -u "$(id -u)" | grep -c "$HOME/cs2-patch"` prints 0: this phase is run from a session in the checkout, and every session and shell in the old folder is closed first. O7's mirrors are level with their sources (`git log --branches --not --remotes` prints nothing in either repo). The branch holds `main` (`git merge-base --is-ancestor origin/main HEAD`). LT21's standing half: `git ls-tree -r --name-only origin/release` does not list `common/paths.sh`. Record LT6's numbers, LT7's listing and fingerprints, and `bash scripts/move-install.sh --dry-run`, which must exit 0.
 2. `bash scripts/setup.sh` from the game folder, on the branch. Nothing stands in the way, so it runs the move, resolves to the runtime folder, copies the files, runs the patch pass and rebuilds the app with the new launcher path. LT7, LT4, LT9, LT27.
 3. One line in `<work root>/README.txt`, new unless one is there: this folder is not Xcode's, and its trees are the only copy of the work in them.

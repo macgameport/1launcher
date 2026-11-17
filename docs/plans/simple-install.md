@@ -28,8 +28,8 @@
 > second half. N6a carries picture 3 only, as planned; picture 4 was added at NL1. (5) The
 > experiments ledger gained a row for the probe's evidence folder (`exp_a934dc`): its gate was red on `main`
 > without one. (6) N1, N2 and most of N3 were written on Opus 5.5; N3's last fix, N4, N5, N6a and this header
-> on Fable 5.2; NL1's second half and its records on Opus 5.5. NL2 ran on 2026-11-12 (below). Still to come, each on James's word: NL3 to NL5,
-> and N6b after the release exists. Verify
+> on Fable 5.2; NL1's second half and its records on Opus 5.5. NL2 ran on 2026-11-12 (below). NL3 was done on 2026-11-16 (below; ND1, the pasted line
+> only, so no N6b for now). Still to come, each on James's word: NL4 and NL5. Verify
 > against: `install.sh`, `cities-skylines-2/scripts/install.sh`, `cities-skylines-2/scripts/make-wrapper.sh`,
 > `cities-skylines-2/scripts/setup.sh`, `common/make-installer-app.sh`, their five tests,
 > `common/test-launch-lock.sh`, `cities-skylines-2/INSTALL.md`.

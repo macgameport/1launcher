@@ -1,5 +1,27 @@
 # Local files — out of the home folder, into the places macOS sets aside
 
+> **🔧 As-built (2026-11-16): L1 partial — steps 0.9 to 1.7 built; 1.8 (live, on the Studio) and L2, L3 not yet.**
+> On `main`: step 0.9, the release gate (`e240d84`); step 1.0, `CHANGELOG.md` and `v0.1.0` at `ce2fcd0`, with its
+> page, and `release` moved there under ON2 (recorded in `42233be`). On the branch `local-files-layout`, not merged:
+> steps 1.1 to 1.6 (`c61d743`) and 1.7 (`ddce307`), then `main` merged in (`422c1b5`). All 41 test files exit 0 on
+> `422c1b5` with the real home, none changed a file. The pins are 57 passed and `pass live: 41 real logs`, and
+> `check-experiments.py` exits 0. The new and changed tests: `test-setup.sh` 156, `test-move-install.sh` 48 (12 mutants),
+> `common/test-paths.sh` 32 (4 mutants, LT15 inside it), `test-install.sh` 142, its golden file +71 −0. Every listed mutant
+> was seen red by the builder, and five of them were applied again by the session. LT19's first half and LT20b passed for
+> `v0.1.0`, and the installer installed from `archive/v0.1.0.tar.gz`. Deviations:
+> - The mover's output has one more line kind, `not moved: A (mv's words)`, and a failed first rename is a skip.
+> - After a skip, the move ends with `Nothing was moved.`; a dry run prints no "Now run" line.
+> - Setup's exit-2 message adds "or run setup again in its voice", because a fetched copy has no mover to run by hand.
+> - The "both folders" closing text is the builder's own: the plan gives none.
+> - LT12 was run by hand against a list written beforehand and is not a standing test: a dated record that gains a
+>   line would turn it red.
+> - LT16's `mv -f` mutant also removes the guard, since a plain `mv` overwrites when not at a terminal.
+> - LT4 on the Studio before any setup run read 12 of 21 identical, not 14.
+>
+> Verify against: `common/paths.sh`, `cities-skylines-2/scripts/move-install.sh`, `cities-skylines-2/scripts/setup.sh`
+> (`find_wrapper`, `move_line`, `mv_state`, `mv_relay`, `move_blocks`), `common/mac-inventory.sh`,
+> `common/check-release-move.sh`, and `cities-skylines-2/INSTALL.md`, "If your install was made before the folders moved".
+
 > **Status: Triple-checked 2026-11-16 — build-ready-with-fixes (pass 7, three lenses against `723c675`, folded; fitted re-check of the fold the same day, its fixes folded).**
 > The fold is "Seventh pass", after "Rework (2026-11-16)" below. ON1 to ON4 (section 8) were decided as recommended the same day.
 > Tracking: issue #22. File and line references are as of `723c675`, whose code is `5f282c3`'s. A path is relative to

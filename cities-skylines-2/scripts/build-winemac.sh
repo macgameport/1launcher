@@ -29,8 +29,9 @@
 # (macgameport, 2026-09-03)
 set -u
 OUT="${1:?usage: build-winemac.sh <out.so> [patcher [args...]]}"; shift || true
-NR="$HOME/cs2-patch/build-1116/wine-11.16-dxmt/dlls/winemac.drv"
-BLD="$HOME/cs2-patch/build-1116/wine-1116-vis-build"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+NR="$CS2_WORK/build-1116/wine-11.16-dxmt/dlls/winemac.drv"
+BLD="$CS2_WORK/build-1116/wine-1116-vis-build"
 # The patcher is handed ONE file and that file is what gets restored. cocoa_window.m for the colour
 # builds; PATCH_FILE=window.c for a mutant of the unix side (the size-loop signal, 2026-09-04).
 PATCH_FILE="${PATCH_FILE:-cocoa_window.m}"

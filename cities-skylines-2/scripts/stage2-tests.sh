@@ -23,7 +23,7 @@
 # Every row leaves its full run dir behind; the summary here is a digest, not the evidence.
 #
 # ⚠ WHILE THIS RUNS, TOUCH NOTHING IT READS. It re-reads drag-session.sh per row and re-reads the
-# four ~/cs2-patch/winemac.so.s2b* modules as it installs them, and bash reads a script
+# four <workspace>/winemac.so.s2b* modules as it installs them, and bash reads a script
 # incrementally. On 2026-09-04 an edit to drag-session.sh landed in the instant row S-C launched
 # and the row died on "unexpected EOF" (exit 2, no evidence); the same run had its modules rebuilt
 # underneath it, so S-D/S-E could not say which build they measured. Finish the run, then edit.
@@ -34,8 +34,9 @@ set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
 INST="$SS/wine/lib/wine/x86_64-unix/winemac.so"
-DAILY="$HOME/cs2-patch/winemac.so.stage1"
-OUT="${STAGE2_OUT:-$HOME/cs2-patch/stage2-tests/$(date +%Y%m%d-%H%M%S)}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+DAILY="$CS2_WORK/winemac.so.stage1"
+OUT="${STAGE2_OUT:-$CS2_WORK/stage2-tests/$(date +%Y%m%d-%H%M%S)}"
 ROWS="${ROWS:-S-A S-B S-C S-D S-E}"
 TAG="$(basename "$OUT")"
 mkdir -p "$OUT"
@@ -43,7 +44,7 @@ restore() { cp "$DAILY" "$INST" && echo "daily driver restored: $(shasum -a 256 
 trap restore EXIT
 echo "########## stage 2 tests $(date '+%F %T')  run dir $OUT"
 for m in s2b s2b-diag s2b-sigoff s2b-sigon; do
-  f="$HOME/cs2-patch/winemac.so.$m"; [ -f "$f" ] || { echo "missing $f"; exit 2; }
+  f="$CS2_WORK/winemac.so.$m"; [ -f "$f" ] || { echo "missing $f"; exit 2; }
   echo "  $m  $(shasum -a 256 "$f" | cut -c1-16)"
 done
 
@@ -68,10 +69,10 @@ row S-A env DRAG=synth TRACE=+err,+macdrv,+cursor,+timestamp DRAG_OUT="$OUT/S-A-
 digest "$OUT/S-A.log" "$OUT/S-A-$TAG/stdout.txt"
 row S-B env DRAG=synth TRACE=+err,+macdrv,+cursor,+timestamp DRAG_OUT="$OUT/S-B-$TAG" bash "$REPO/scripts/drag-session.sh" t2b
 digest "$OUT/S-B.log" "$OUT/S-B-$TAG/stdout.txt"
-row S-C env DRAG=synth TRACE=+err,+macdrv,+cursor,+timestamp MODULE="$HOME/cs2-patch/winemac.so.s2b-sigoff" DRAG_OUT="$OUT/S-C-$TAG" bash "$REPO/scripts/drag-session.sh" t3
+row S-C env DRAG=synth TRACE=+err,+macdrv,+cursor,+timestamp MODULE="$CS2_WORK/winemac.so.s2b-sigoff" DRAG_OUT="$OUT/S-C-$TAG" bash "$REPO/scripts/drag-session.sh" t3
 digest "$OUT/S-C.log" "$OUT/S-C-$TAG/stdout.txt"
-row S-D env CHURNS=1 MODULE="$HOME/cs2-patch/winemac.so.s2b" STAGE1_OUT="$OUT/S-D-$TAG" bash "$REPO/scripts/stage1-tests.sh"
+row S-D env CHURNS=1 MODULE="$CS2_WORK/winemac.so.s2b" STAGE1_OUT="$OUT/S-D-$TAG" bash "$REPO/scripts/stage1-tests.sh"
 digest "$OUT/S-D.log" "$OUT/S-D-$TAG/stdout.txt"
-row S-E env CHURNS=1 MUTANT=1 MODULE="$HOME/cs2-patch/winemac.so.s2b-sigon" STAGE1_OUT="$OUT/S-E-$TAG" bash "$REPO/scripts/stage1-tests.sh"
+row S-E env CHURNS=1 MUTANT=1 MODULE="$CS2_WORK/winemac.so.s2b-sigon" STAGE1_OUT="$OUT/S-E-$TAG" bash "$REPO/scripts/stage1-tests.sh"
 digest "$OUT/S-E.log" "$OUT/S-E-$TAG/stdout.txt"
 echo "########## done $(date '+%F %T') — $OUT"

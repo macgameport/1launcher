@@ -15,7 +15,7 @@
 # the script polled a log at the wrong path, ran the resize driver against the wrong prefix, matched
 # the driver's CRLF output with a `$` anchor (and closed the wrong window), and was killed by a tool
 # timeout that took Steam with it. Plan: docs/plans/verification-instruments.md § I1. Seed:
-# ~/cs2-patch/harness-2026-09-02/boot2.sh (outside the repo).
+# <workspace>/harness-2026-09-02/boot2.sh (outside the repo).
 #
 # FACTS ENCODED (measured 2026-09-02; launcher line numbers re-read 2026-11-10, driver 2026-09-03):
 #   - SceneFlow.log lives at <LocalLow>/Cities Skylines II/Logs/SceneFlow.log — not the Steam game
@@ -64,8 +64,8 @@
 # EXIT CODE: 0 PASS · 1 FAIL · 2 REFUSED (something already runs against the prefix; pids listed)
 #            · 3 VOID · 64 usage/setup
 #
-# RUN DIR: ~/cs2-patch/boot-verify/<stamp>/ (--out overrides): launcher.log, the driver's window list
-# and stamps, copies of the judged logs. Deliberately NOT under ~/cs2-patch/evidence/ — the ledger
+# RUN DIR: <workspace>/boot-verify/<stamp>/ (--out overrides): launcher.log, the driver's window list
+# and stamps, copies of the judged logs. Deliberately NOT under <workspace>/evidence/ — the ledger
 # checker treats every directory there as a render cell that needs an index row.
 #
 # TESTS (docs/plans/verification-instruments.md T1–T3), run 2026-09-02 19:11–19:20 on module 310f13d0:
@@ -91,8 +91,9 @@ usage() { sed -n '5,7p' "$0" >&2; exit 64; }
 APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
 SS="$APP/Contents/SharedSupport"
 ENGINE="${CS2_ENGINE:-$SS/wine}"   # an override for testing another engine: the driver joins that engine's wineserver
-LAUNCHER="${CS2_LAUNCHER:-$HOME/cs2-patch/launch-cs2-dxmt11.sh}"
-DRV="${CS2_DRIVER:-$HOME/cs2-patch/win-resize-driver.exe}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+LAUNCHER="${CS2_LAUNCHER:-$CS2_DATA/launch-cs2-dxmt11.sh}"
+DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
 export WINEPREFIX="$SS/prefix" WINEDEBUG=-all
 export DYLD_FALLBACK_LIBRARY_PATH="$APP/Contents/Frameworks:$ENGINE/lib:/usr/lib:/usr/local/lib"
 # The driver joins the game's wineserver, so it needs the launcher's esync/msync flags. Against a
@@ -234,7 +235,7 @@ if [ -n "$busy" ]; then
 fi
 
 # 2) launch, detached into its own session
-OUT="${OUT:-$HOME/cs2-patch/boot-verify/$(date +%Y%m%d-%H%M%S)}"; mkdir -p "$OUT"
+OUT="${OUT:-$CS2_WORK/boot-verify/$(date +%Y%m%d-%H%M%S)}"; mkdir -p "$OUT"
 LOG="$OUT/launcher.log"
 t0=$(date +%s)
 echo "boot-verify             : run dir $OUT"

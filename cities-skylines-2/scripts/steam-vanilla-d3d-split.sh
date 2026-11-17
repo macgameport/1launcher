@@ -37,7 +37,8 @@
 set -u
 
 APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
-VAN="${CS2_VANILLA_DIR:-$HOME/cs2-patch/build-1116/vanilla-1116}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+VAN="${CS2_VANILLA_DIR:-$CS2_WORK/build-1116/vanilla-1116}"
 MODE=""
 while [ $# -gt 0 ]; do
   case "$1" in

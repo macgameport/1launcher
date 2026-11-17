@@ -22,8 +22,9 @@
 # bottle at exactly that path with libLLVMCore.a present. Minutes, not an hour.
 # (An arm64 /opt/homebrew llvm@15 is the WRONG ARCH for this.)
 set -u
-FORK="${DXMT_FORK_DIR:-$HOME/cs2-patch/dxmt-fork}"
-WINE_INSTALL="${DXMT_WINE_INSTALL:-$HOME/cs2-patch/build-1116/engine-1116}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+FORK="${DXMT_FORK_DIR:-$CS2_WORK/dxmt-fork}"
+WINE_INSTALL="${DXMT_WINE_INSTALL:-$CS2_WORK/build-1116/engine-1116}"
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 die(){ echo "ERROR: $1"; exit 1; }
 step(){ echo; echo "== $1"; }

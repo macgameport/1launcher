@@ -1,7 +1,7 @@
 #!/bin/bash
 # test-p4-signals.sh — exercises scripts/p4-signals.py (perf-pass P4's load-signal gate) on synthetic
 # Player.logs shaped like the real graceful-exit allocator report, then (if present) on the real
-# perf-run logs in ~/cs2-patch/perf-runs. No game, no Wine. Runs in about a second.
+# perf-run logs in <workspace>/perf-runs. No game, no Wine. Runs in about a second.
 #
 #   bash scripts/test-p4-signals.sh [path/to/p4-signals.py]
 #
@@ -73,7 +73,8 @@ case_field "6 per frame uses ALLOC_TEMP_MAIN frames" default "r['failed_per_fram
 case_field "6 four identical bucket copies seen"   default   "r['bucket']['sections'], r['bucket']['identical']" "4 True"
 
 # Live: every real perf-run log, read with --expect control.
-L="$HOME/cs2-patch/perf-runs"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+L="$CS2_WORK/perf-runs"
 if ls "$L"/*-Player.log >/dev/null 2>&1; then
   n=0; bad=0
   for f in "$L"/*-Player.log; do

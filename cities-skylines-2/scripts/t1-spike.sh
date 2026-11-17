@@ -42,9 +42,10 @@ set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
 W="$SS/wine/bin/wine64"; S="$SS/prefix/drive_c/Program Files (x86)/Steam"
-DRV="${CS2_DRIVER:-$HOME/cs2-patch/win-resize-driver.exe}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
 INST="$SS/wine/lib/wine/x86_64-unix/winemac.so"
-OUT="${OUT_DIR:-$HOME/cs2-patch/t1-spike}"          # FIXED, not timestamped: `after` reads `before`
+OUT="${OUT_DIR:-$CS2_WORK/t1-spike}"          # FIXED, not timestamped: `after` reads `before`
 PHASE="${1:-}"
 case "$PHASE" in before|after|analyse) ;; *) echo "usage: $0 before|after|analyse" >&2; exit 64 ;; esac
 mkdir -p "$OUT"
@@ -96,7 +97,7 @@ capture() {   # capture <phase>
 case "$PHASE" in
   before|after)
     echo "########## T1 spike — $PHASE — $(date '+%F %T')"
-    echo "  display profile: $(CS2_PROFILE= DRY=1 bash "$HOME/cs2-patch/cs2-display-profile.sh" 2>&1 | tail -1)"
+    echo "  display profile: $(CS2_PROFILE= DRY=1 bash "$CS2_DATA/cs2-display-profile.sh" 2>&1 | tail -1)"
     down; capture "$PHASE" || exit 1; down
     [ "$PHASE" = before ] && exit 0
     ;;

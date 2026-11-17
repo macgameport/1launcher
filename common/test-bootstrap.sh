@@ -35,6 +35,7 @@ case "${MUTANT:-0}" in
   8) mutate 's#^  folder="\$(game_folder "\$top/common/games.tsv" "\$id")"$#  folder="$id"#' '^  folder="\$id"$' ;;
   9) mutate 's#^  awk -F.*#  case "$2" in 949230) echo cities-skylines-2 ;; esac#' '^  case "\$2" in 949230) echo cities-skylines-2 ;; esac$' ;;
   10) mutate 's#^      return 2 ;;$#      ;;#' '^      ;;$' ;;
+  11) mutate 's#^  bash "\$top/\$folder/scripts/install.sh" "\$@"$#  unset CS2_PATCH_DIR; bash "$top/$folder/scripts/install.sh" "$@"#' '^  unset CS2_PATCH_DIR; bash ' ;;
 esac
 
 fails=0
@@ -47,6 +48,7 @@ F="$T/fix"; mkdir -p "$F"
 REC='#!/bin/bash
 here="$(cd "$(dirname "$0")/.." && pwd)"
 echo "INSTALLER args=$* ref=${L1_FETCHED_REF:-} from=$(basename "$(dirname "$here")") game=$(basename "$here")" >> "$CALLS"
+echo "${CS2_PATCH_DIR:-}" > "$CALLS.patchdir"
 exit "${STUB_INSTALL_EXIT:-0}"'
 table() {   # <root> [the first game's folder]: the table, with a game that has no installer and a row gone wrong
   mkdir -p "$1/common"
@@ -97,6 +99,10 @@ said() { grep -c -- "$1" "$T/out"; }
 
 check "the file's last line is the call of main" "$(tail -n 1 "$REAL")" 'main "$@"'
 check "the script names no game's folder" "$(grep -cE 'cities-skylines-2|surviving-mars-relaunched' "$REAL")" 0
+
+# --- a variable put in front of the pasted line reaches the game's installer (docs/plans/local-files-layout.md, LT23)
+rc="$(CS2_PATCH_DIR=/x/named-folder pasted "$T/empty" "$F/good.tar.gz" x 949230)"
+check "CS2_PATCH_DIR in front of the pasted line arrives at the game's installer" "$rc:$(cat "$CALLS.patchdir")" "0:/x/named-folder"
 
 # --- the pasted form always fetches, and finds the game's folder in the table it fetched
 rc="$(pasted "$T/empty" "$F/good.tar.gz" x 949230)"

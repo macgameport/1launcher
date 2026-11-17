@@ -9,8 +9,11 @@ bodies, or the shortcuts — so everything below would otherwise be re-derived b
 
 macOS port notes for Cities: Skylines II under Wine + DXMT. Personal-tier: **no phases, no
 SPEC.md**; GitHub Issues ARE enabled (umbrella issues for multi-item work). Durable record = this
-repo + its issues + `~/cs2-patch/change-ledger.txt`.
-Patch scripts live in `~/cs2-patch/`, deliberately outside the repo.
+repo + its issues + `<workspace>/change-ledger.txt`.
+What the game runs (the launcher, `repatch.sh`, `patches/`) is in **the runtime folder**, and evidence, run folders and
+the source trees are in **the workspace**, both deliberately outside the repo: from the repo root, `bash common/paths.sh`
+prints them as `CS2_DATA` and `CS2_WORK`. The runtime folder's path has a space: quote it. **Never search, or grant
+access, above a `1launcher` folder:** `~/Library/Application Support` holds other apps' private data.
 
 ## Evidence rules — the ones that bite
 
@@ -50,7 +53,7 @@ Patch scripts live in `~/cs2-patch/`, deliberately outside the repo.
 - Keep Steam IDs, `[U:1:<n>]`, real usernames and absolute `/Users/<name>` paths out of committed
   files — use `$HOME`, `$WINEUSER`, `<REDACTED>`.
 - Cell `stdout.txt` / `windows.txt` were audited clean and are quotable. Evidence (including PNGs)
-  lives in `~/cs2-patch/evidence/`, outside the repo.
+  lives in `<workspace>/evidence/`, outside the repo.
 - `known-good.png` captures an arbitrary browser window — never retain it.
 
 ## If you run `gh`

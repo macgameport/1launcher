@@ -83,6 +83,7 @@ R="$T/repo"; mkdir -p "$R/cities-skylines-2/scripts" "$R/cities-skylines-2/patch
 S="$R/cities-skylines-2/scripts/install.sh"; cp "$HERE/install.sh" "$S"
 C="$R/common/install-core.sh"; cp "$REPO/common/install-core.sh" "$C"   # the shared stages: mutants apply in either file
 : > "$R/cities-skylines-2/repatch.sh"; : > "$R/common/make-launcher-app.sh"
+: > "$R/common/paths.sh"; : > "$R/cities-skylines-2/scripts/move-install.sh"   # setup's own files (docs/plans/local-files-layout.md, 3.4)
 mutate() {  # <sed expression> <grep that proves it applied>
   sed -i '' "$1" "$S" "$C"; cat "$S" "$C" | grep -q -- "$2" || { echo "REFUSED: mutant did not apply"; exit 2; }
 }
@@ -185,6 +186,7 @@ export ST="$T/state" CALLS="$T/calls"
 cat > "$R/cities-skylines-2/scripts/setup.sh" << 'X'
 #!/bin/bash
 echo "SETUP $* via=${CS2_VIA_INSTALLER:-} wrapper=${CS2_WRAPPER:-}" >> "$CALLS"
+printf '%s\n' "${CS2_PATCH_DIR:-}" > "$CALLS.patchdir"
 case " $* " in *" --mac-only "*)
   if [ -n "${STUB_NO_ROSETTA:-}" ] && [ ! -f "$ST/rosetta" ]; then echo "  Rosetta 2   MISSING"; exit 1; fi
   exit 0 ;;
@@ -660,6 +662,15 @@ check "the game started during the wait: exit 3 at step 6, setup not run" "$(run
 newh; done_all; mv "$R/cities-skylines-2/repatch.sh" "$T/repatch.away"
 check "the checkout's files gone: exit 4, setup not run" "$(run):$(grep -c '^SETUP  via' "$CALLS")" "4:0"
 mv "$T/repatch.away" "$R/cities-skylines-2/repatch.sh"
+# docs/plans/local-files-layout.md, LT22 and LT23
+newh; done_all; mv "$R/common/paths.sh" "$T/paths.away"
+check "common/paths.sh gone: exit 4, setup not run, and no Rosetta offer made of it" "$(run):$(grep -c '^SETUP  via' "$CALLS"):$(said 'softwareupdate --install-rosetta'):$(calls SOFTWAREUPDATE):$(said "The installer's own files are gone")" "4:0:0:0:1"
+mv "$T/paths.away" "$R/common/paths.sh"
+newh; done_all; mv "$R/cities-skylines-2/scripts/move-install.sh" "$T/mover.away"
+check "scripts/move-install.sh gone: exit 4, setup not run" "$(run):$(grep -c '^SETUP  via' "$CALLS")" "4:0"
+mv "$T/mover.away" "$R/cities-skylines-2/scripts/move-install.sh"
+newh; done_all
+check "CS2_PATCH_DIR put in front of the installer reaches setup" "$(CS2_PATCH_DIR=/x/named-folder run):$(cat "$CALLS.patchdir")" "0:/x/named-folder"
 
 # --- --check
 newh; done_all

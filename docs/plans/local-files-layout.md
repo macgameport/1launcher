@@ -1,5 +1,69 @@
 # Local files — out of the home folder, into the places macOS sets aside
 
+> **🔧 As-built (2026-11-16, 2026-11-17): L1 built, steps 0.9 to 1.8, its exit criteria met; L2 steps 0 to 5 done on the Studio (the folder has moved); steps 6 to 8, and L3, not yet.**
+> On `main`: step 0.9, the release gate (`e240d84`); step 1.0, `CHANGELOG.md` and `v0.1.0` at `ce2fcd0`, with its
+> page, and `release` moved there under ON2 (recorded in `42233be`). On the branch `local-files-layout`, not merged:
+> steps 1.1 to 1.6 (`c61d743`) and 1.7 (`ddce307`), then `main` merged in (`422c1b5`). All 41 test files exit 0 on
+> `422c1b5` with the real home, none changed a file. The pins are 57 passed and `pass live: 41 real logs`, and
+> `check-experiments.py` exits 0. The new and changed tests: `test-setup.sh` 156, `test-move-install.sh` 48 (12 mutants),
+> `common/test-paths.sh` 32 (4 mutants, LT15 inside it), `test-install.sh` 142, its golden file +71 −0. Every listed mutant
+> was seen red by the builder, and five of them were applied again by the session. LT19's first half and LT20b passed for
+> `v0.1.0`, and the installer installed from `archive/v0.1.0.tar.gz`. Deviations:
+> - The mover's output has one more line kind, `not moved: A (mv's words)`, and a failed first rename is a skip.
+> - After a skip, the move ends with `Nothing was moved.`; a dry run prints no "Now run" line.
+> - Setup's exit-2 message adds "or run setup again in its voice", because a fetched copy has no mover to run by hand.
+> - The "both folders" closing text is the builder's own: the plan gives none.
+> - LT12 was run by hand against a list written beforehand and is not a standing test: a dated record that gains a
+>   line would turn it red.
+> - LT16's `mv -f` mutant also removes the guard, since a plain `mv` overwrites when not at a terminal.
+> - LT4 on the Studio before any setup run read 12 of 21 identical, not 14.
+>
+> Step 1.8 ran on the Studio the same night, from the branch (`fc519aa`), with one idle process holding a working
+> directory inside `~/cs2-patch`:
+> - The dry run skipped for that process, naming it, and exited 1.
+> - `setup.sh` printed `move: ~/cs2-patch cannot be moved now`, went on there, ran 10 of 10 patch scripts, rebuilt
+>   both apps, and exited 0.
+> - LT4: 21 found, 21 identical. LT9: the shim names `~/cs2-patch/launch-cs2-dxmt11.sh`.
+> - LT10: boot-verify PASS (run `20261116-234032`), graceful exit. The launcher log has the patches, badge and display
+>   lines, and no `NOTE: no`, warning or error line.
+> - LT7: the folder's names and the four repos' fingerprints are equal before and after.
+>
+> The record is kept in `<workspace>/local-files-layout-18-<stamp>/`.
+> L2 on the Studio, 2026-11-17, from the branch (`0055ba1`, `main` merged in):
+> - **Step 1, preflight.** Community watch was paused. No working directory was inside the folder. Both mirrors were
+>   level: winemac's one commit outside the remote branches is the tag `pre-fable6-main`, which the mirror holds.
+>   `release` held no `common/paths.sh`. LT6 and LT7 were recorded, and the dry run exited 0.
+> - **Step 2, the move.** Setup moved `~/cs2-patch` to the workspace in one rename and lifted six runtime names into
+>   the runtime folder. It ran 10 of 10 patch scripts, rebuilt both apps with the new launcher path, and exited 0.
+>   - `~/cs2-patch` is gone.
+>   - LT7: the names and the four trees' fingerprints are equal.
+>   - LT4: 21 of 21. LT9: the shim names the runtime folder. LT27: the badge marker moved, and the badge stays on.
+>   - The folders are 755. LT6 reads the same numbers from the workspace.
+> - **Step 3.** `README.txt` in the work root.
+> - **Step 4.** The task's 10 lines and 71 lines in 17 memory files were rewritten by the two rules, and the task was
+>   enabled again.
+>   - **A fault in step 0, found here:** the task's prompt cites `rederive-1.6.2f1/reply-issue15.md` as its style
+>     example, and step 0's check had searched the repo only. The folder was restored from the Trash into the
+>     workspace. Step 0's check should also have read the scheduled task and the memory files.
+>   - The root `CLAUDE.md`'s list of allowed places keeps `~/cs2-patch`, with its conditional "on a Mac whose
+>     install has not been moved yet": the MacBook's is there until L3.
+>
+> - **Step 5** (branch pushed, `0d9a706`):
+>   - LT6 reads the same numbers. LT10: boot-verify PASS through the moved launcher (`20261117-000347`).
+>   - LT11: one start through `Cities Skylines II.app` by `open`. It reached the main menu in 100 s, the game closed
+>     6 s after `WM_CLOSE`, Steam followed, and no crash marker was left. The launcher log since its fresh stamp has
+>     the three lines and none of the forbidden ones. **A deviation, on James's word:** the session closed the game
+>     with boot-verify's `WM_CLOSE`, not James from the game's menu.
+>   - LT12: the 13 living and code files are exactly the allowed list; the rest are records of the kinds it allows.
+>   - LT13 passes. LT15's second half: 27 of 29 joined names exist. `stock-prefix` was pruned in step 0, and a script
+>     makes it again; `winemac.so.` is a prefix, not a name.
+>   - LT20a holds for `v0.2.0`'s section.
+>
+> L2's record is in `<workspace>/local-files-layout-L2-<stamp>/`.
+> Verify against: `common/paths.sh`, `cities-skylines-2/scripts/move-install.sh`, `cities-skylines-2/scripts/setup.sh`
+> (`find_wrapper`, `move_line`, `mv_state`, `mv_relay`, `move_blocks`), `common/mac-inventory.sh`,
+> `common/check-release-move.sh`, and `cities-skylines-2/INSTALL.md`, "If your install was made before the folders moved".
+
 > **Status: Triple-checked 2026-11-16 — build-ready-with-fixes (pass 7, three lenses against `723c675`, folded; fitted re-check of the fold the same day, its fixes folded).**
 > The fold is "Seventh pass", after "Rework (2026-11-16)" below. ON1 to ON4 (section 8) were decided as recommended the same day.
 > Tracking: issue #22. File and line references are as of `723c675`, whose code is `5f282c3`'s. A path is relative to
@@ -307,6 +371,13 @@ Each phase ends green before the next starts.
 | Every other name: small scripts, notes and tools, each under 10 M | under 30 M | keep |
 
    By the steer's own limits the offers come to about 1.3 G of 62 G. The move does not need the space: it is a rename.
+   **Done 2026-11-16**, on James's "All offered, keep the .bak". Measured again first: 119 entries, 62.1 G. Thirteen
+   offered items went to the Trash (`stock-prefix`, `stage1-ab`, `rederive-1.6.2f1`, `revenv`, `v`, which turned out
+   to be a second unused Python environment, `launch-cs2.sh`, the five named backups and `fakewrap.app`,
+   `d3dm30-trial`). `launch-cs2-dxmt11.sh.bak` was kept against the table: step 1.8's setup had just rewritten it
+   with `main`'s launcher, the copy a rollback before the merge would use. Left: 106 entries, 61 G.
+   `check-experiments.py` exit 0, 57 passed, `pass live: 41 real logs`, `regen-winemac-patches.sh --check` exit 0,
+   and the four trees' fingerprints are unchanged. Nothing was emptied from the Trash.
 1. Preflight. The scheduled task disabled in the scheduler. `lsof -a -d cwd -u "$(id -u)" | grep -c "$HOME/cs2-patch"` prints 0: this phase is run from a session in the checkout, and every session and shell in the old folder is closed first. O7's mirrors are level with their sources (`git log --branches --not --remotes` prints nothing in either repo). The branch holds `main` (`git merge-base --is-ancestor origin/main HEAD`). LT21's standing half: `git ls-tree -r --name-only origin/release` does not list `common/paths.sh`. Record LT6's numbers, LT7's listing and fingerprints, and `bash scripts/move-install.sh --dry-run`, which must exit 0.
 2. `bash scripts/setup.sh` from the game folder, on the branch. Nothing stands in the way, so it runs the move, resolves to the runtime folder, copies the files, runs the patch pass and rebuilds the app with the new launcher path. LT7, LT4, LT9, LT27.
 3. One line in `<work root>/README.txt`, new unless one is there: this folder is not Xcode's, and its trees are the only copy of the work in them.

@@ -34,7 +34,15 @@ IMG_AUDIT = os.path.join(IMG_DIR, "AUDIT.md")
 # silently. C4 sat at DISPROVEN in the register with two banners still reading VOID, and the
 # checker reported OK. An unparsed status is now drift, not a pass.
 STATUSES = ("SUPPORTED", "PARTIAL", "UNREVIEWED", "VOID", "RETRACTED", "DISPROVEN")
-STORE = os.path.expanduser("~/cs2-patch/evidence")
+def _paths():
+    """Where things are outside the repo: common/paths.sh prints KEY=value lines. Stops if the call fails."""
+    import subprocess
+    r = subprocess.run(["bash", os.path.join(REPO, "..", "common", "paths.sh")], capture_output=True, text=True)
+    if r.returncode != 0 or "CS2_WORK=" not in r.stdout:
+        sys.exit("check-experiments: common/paths.sh failed: %s" % r.stderr.strip())
+    return dict(l.split("=", 1) for l in r.stdout.splitlines() if "=" in l)
+PATHS = _paths()
+STORE = os.path.join(PATHS["CS2_WORK"], "evidence")
 
 FT_MARK = "cannot find the FreeType"
 

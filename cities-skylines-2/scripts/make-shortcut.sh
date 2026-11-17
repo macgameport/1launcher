@@ -78,9 +78,11 @@ while [ $# -gt 0 ]; do
 done
 check_name "$APPNAME"
 
-DEFAULT_LAUNCHER="$HOME/cs2-patch/launch-cs2-dxmt11.sh"
 DEFAULT_WRAPPER="$HOME/Applications/CS2dxmt11.app"
-[ -n "$LAUNCHER" ] || LAUNCHER="$DEFAULT_LAUNCHER"
+if [ -z "$LAUNCHER" ]; then
+  . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh" || exit 1
+  LAUNCHER="$CS2_DATA/launch-cs2-dxmt11.sh"
+fi
 [ -n "$GAME_EXE" ] || GAME_EXE="$DEFAULT_WRAPPER/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2.exe"
 # L1Prefix: the game path up to and including the first /Contents/SharedSupport/prefix that is followed by
 # /, kept only when it is absolute and that folder exists. It records what this builder was told: a launcher

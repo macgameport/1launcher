@@ -6,7 +6,7 @@
  * as winemac.drv's dxmt-rsz diagnostics, so the two streams can be read together.
  *
  * Build:  x86_64-w64-mingw32-gcc -O2 -o win-resize-driver.exe scripts/win-resize-driver.c -lgdi32
- *         then deploy to ~/cs2-patch/win-resize-driver.exe (the path the probes hardcode; the
+ *         then deploy to <workspace>/win-resize-driver.exe (the path the probes hardcode; the
  *         .exe is gitignored, so callers keep their `tr -d '\r'` -- they may run an older binary)
  * Usage:  wine win-resize-driver.exe list
  *         wine win-resize-driver.exe drive <hwnd-hex> <WxH> [WxH ...]   (settle 1500ms each)

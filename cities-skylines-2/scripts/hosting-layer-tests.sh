@@ -48,11 +48,12 @@ set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
 W="$SS/wine/bin/wine64"; S="$SS/prefix/drive_c/Program Files (x86)/Steam"
-DRV="${CS2_DRIVER:-$HOME/cs2-patch/win-resize-driver.exe}"
-SRC="${WINEMAC_SRC:-$HOME/cs2-patch/build-1116/wine-11.16-dxmt/dlls/winemac.drv}"
-BD="${WINEMAC_BUILD:-$HOME/cs2-patch/build-1116/wine-1116-vis-build}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
+SRC="${WINEMAC_SRC:-$CS2_WORK/build-1116/wine-11.16-dxmt/dlls/winemac.drv}"
+BD="${WINEMAC_BUILD:-$CS2_WORK/build-1116/wine-1116-vis-build}"
 INST="$SS/wine/lib/wine/x86_64-unix/winemac.so"
-OUT="${OUT_DIR:-$HOME/cs2-patch/hosting-layer-tests/$(date +%Y%m%d-%H%M%S)}"
+OUT="${OUT_DIR:-$CS2_WORK/hosting-layer-tests/$(date +%Y%m%d-%H%M%S)}"
 # Every build here comes from whatever branch $SRC happens to have checked out, and the nested repo
 # keeps `core` (the stock-applicable subset) beside `main` (= aquadran + core + the DXMT glue). A
 # core build installs and loads, then Steam's GPU process dies with c0000409 and nothing renders --

@@ -29,7 +29,8 @@
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 N="${N:-12}"
-OUT="${VID_OUT:-$HOME/cs2-patch/video-gap/$(date +%Y%m%d-%H%M%S)}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+OUT="${VID_OUT:-$CS2_WORK/video-gap/$(date +%Y%m%d-%H%M%S)}"
 TAG="$(basename "$OUT")"
 mkdir -p "$OUT"
 export SYNTH_PX=25 SYNTH_MS=120 SYNTH_REPEAT=3 SYNTH_PAUSE=3 PRESIZE=1000x650 SYNTH_DX=650 SYNTH_DY=350
@@ -73,14 +74,14 @@ fi
 # that shape. Back-compatible: MOD alone still runs one module.
 MODS="${MODS:-${MOD:-s1-diag}}"
 for m in $MODS; do
-  f="$HOME/cs2-patch/winemac.so.$m"
+  f="$CS2_WORK/winemac.so.$m"
   [ -f "$f" ] || { echo "missing $f"; exit 2; }
   echo "  module $m  $(shasum -a 256 "$f" | cut -c1-16)"
 done
 
 for r in $(seq 1 "$N"); do
  for MOD in $MODS; do
-  f="$HOME/cs2-patch/winemac.so.$MOD"
+  f="$CS2_WORK/winemac.so.$MOD"
   id="r${r}-$MOD"; rd="$OUT/$TAG-$id"
   # Same two reasons a row is worth waiting for rather than spending (see strip-module-ab.sh): a
   # refused row costs 4 s against a real row's 3.5 min, so a transient outage drains the queue.
@@ -129,7 +130,7 @@ if [ "$CAPMODE" != video ]; then
   exit 0
 fi
 for MOD in $MODS; do
-echo "  ---------- $MOD  $(shasum -a 256 "$HOME/cs2-patch/winemac.so.$MOD" | cut -c1-16)"
+echo "  ---------- $MOD  $(shasum -a 256 "$CS2_WORK/winemac.so.$MOD" | cut -c1-16)"
 MOD="$MOD" python3 - "$OUT" "$TAG" "$N" <<'PY'
 import sys, os, re
 out, tag, n = sys.argv[1], sys.argv[2], int(sys.argv[3])

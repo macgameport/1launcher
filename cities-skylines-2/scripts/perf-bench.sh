@@ -15,7 +15,7 @@
 #   Also wakes the display first and records `display_awake` / `locked` (a sleeping panel changes
 #   the numbers — see the state block below). Added 2026-10-10 (perf-pass
 #   re-check: a SIGTERM'd Player.log carries none of P4's load signals).
-# Output: human summary on stdout; one JSON row appended to ~/cs2-patch/perf-runs/results.jsonl
+# Output: human summary on stdout; one JSON row appended to <workspace>/perf-runs/results.jsonl
 #         (frame-time series reduced to stats — raw series stays in Benchmark.coc until the next run
 #         overwrites it; the run log names which cell owned it).
 set -u
@@ -25,7 +25,8 @@ WRAPPER="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
 PREFIX="$WRAPPER/Contents/SharedSupport/prefix"
 LOCALLOW="$PREFIX/drive_c/users/Wineskin/AppData/LocalLow/Colossal Order/Cities Skylines II"
 BC="$LOCALLOW/Benchmark.coc"
-RUNDIR="${CS2_PERF_DIR:-$HOME/cs2-patch/perf-runs}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+RUNDIR="${CS2_PERF_DIR:-$CS2_WORK/perf-runs}"
 SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
 mkdir -p "$RUNDIR"
 
@@ -72,7 +73,7 @@ DISPLAY_AWAKE=no; [ "$AWAKE_START" = yes ] && [ "$AWAKE_END" = yes ] && DISPLAY_
 # live only there); the launcher then shuts Steam down on its own. SIGTERM is the fallback, and the
 # row says which one ran. '/Cities2.exe' leading-slash scoping per GOTCHAS (self-match class).
 WINE="$WRAPPER/Contents/SharedSupport/wine/bin/wine64"
-DRV="${CS2_DRIVER:-$HOME/cs2-patch/win-resize-driver.exe}"
+DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
 PL="$LOCALLOW/Player.log"
 TEARDOWN=none
 game_gone() { ! pgrep -f "$PREFIX.*/Cities2.exe" >/dev/null 2>&1; }

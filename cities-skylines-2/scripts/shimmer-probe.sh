@@ -23,7 +23,8 @@ set -u
 SS=$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport
 export WINEPREFIX="$SS/prefix" WINEDEBUG=-all
 export DYLD_FALLBACK_LIBRARY_PATH="$HOME/Applications/CS2dxmt11.app/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
-W="$SS/wine/bin/wine64"; DRV=$HOME/cs2-patch/win-resize-driver.exe
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+W="$SS/wine/bin/wine64"; DRV=$CS2_WORK/win-resize-driver.exe
 # CHURN_A / CHURN_B / CHURN_N override the driver's size pair and step count (issue #7 T7:
 # width-only and height-only churns); the defaults are the C29 pair.
 mode="${1:-churn}"; out="${OUT_DIR:-/tmp/shimmer-$mode}"; rm -rf "$out"; mkdir -p "$out"

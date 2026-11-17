@@ -1,7 +1,7 @@
 #!/bin/bash
 # cs2-display-profile.sh — home (external) vs mobile (built-in) display profile for the CS2
 # launcher. Contract + design: docs/plans/launcher-display-profiles.md. Repo original lives in
-# scripts/; the launcher runs the deployed copy in ~/cs2-patch/.
+# scripts/; the launcher runs the deployed copy in the runtime folder.
 #
 # What it does, per boot, stateless: classify by the MAIN display (that is where Unity's
 # displayIndex 0 opens the window) and assert the matching profile —

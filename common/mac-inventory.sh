@@ -147,15 +147,41 @@ for a in "$HOME"/Applications/*.app; do
 done
 
 sec "the Cities: Skylines II install folder"
-I="$HOME/cs2-patch"
-if [ -e "$I" ]; then
-  echo "~/cs2-patch: $([ -L "$I" ] && echo "a symlink" || echo "a folder"), $(ls -A "$I" | wc -l | tr -d ' ') entries · launcher dated $(stat -f '%Sm' -t '%Y-%m-%d' "$I/launch-cs2-dxmt11.sh" 2>/dev/null || echo "absent")"
+# Before 2026-11 an install was one folder, ~/cs2-patch. Since then it is two: the runtime folder, what the game
+# runs, and the workspace, everything else (docs/plans/local-files-layout.md). The folders are spelled here and not
+# read from common/paths.sh, because this script is run as a lone copy; common/test-paths.sh holds them equal.
+OLD_I="$HOME/cs2-patch"
+NEW_I="$HOME/Library/Application Support/1launcher/cities-skylines-2"
+NEW_W="$HOME/Library/Developer/1launcher/cities-skylines-2"
+if [ -e "$OLD_I" ] && [ -e "$NEW_I" ]; then echo "layout: both the old folder and the runtime folder exist (setup uses the runtime folder, and warns)"
+elif [ -e "$OLD_I" ]; then echo "layout: old (one folder in the home folder; setup moves it on its next run)"
+elif [ -e "$NEW_I" ]; then echo "layout: new (the runtime folder under ~/Library)"
+else echo "layout: no install"; fi
+# what is reported of each: the old folder, every field; the runtime folder, the same but the two that belong to
+# a workspace (old-patchers, git repos); the workspace, its entry count and those two.
+old_patchers() { echo "a folder old-patchers: $([ -d "$1/old-patchers" ] && echo "yes, $(ls "$1/old-patchers" | wc -l | tr -d ' ') files, a file named patch_cohtml_license.py: $([ -f "$1/old-patchers/patch_cohtml_license.py" ] && echo PRESENT || echo absent)" || echo no)"; }
+git_repos() { echo "git repos inside it: $(for g in "$1"/*/.git "$1"/*/*/.git "$1"/*/*/*/.git "$1"/*/*/*/*/.git "$1"/*/*/*/*/*/.git; do [ -e "$g" ] && echo x; done | wc -l | tr -d ' ')"; }
+install_folder() {   # <folder> <label> <old|runtime>
+  local I="$1" L="$2"
+  if [ ! -e "$I" ]; then echo "$L: absent"; return; fi
+  echo "$L: $([ -L "$I" ] && echo "a symlink" || echo "a folder"), $(ls -A "$I" | wc -l | tr -d ' ') entries · launcher dated $(stat -f '%Sm' -t '%Y-%m-%d' "$I/launch-cs2-dxmt11.sh" 2>/dev/null || echo "absent")"
   echo "    patch scripts: $(ls "$I"/patches/*.py 2>/dev/null | wc -l | tr -d ' ') · library folder patches/_vendor: $([ -d "$I/patches/_vendor" ] && echo yes || echo no) · old Python environment revenv: $([ -d "$I/revenv" ] && echo yes || echo no)"
   B="$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2_Data/Managed"
   echo "    mod badge patch: file $([ -f "$I/patch-modconflict-badge.py" ] && echo installed || echo absent) · marker $([ -f "$I/patches/.mod-badges-on" ] && echo yes || echo no) · times it has run here: $(ls "$B"/Game.dll.bak-modconflict-* 2>/dev/null | wc -l | tr -d ' ')"
-  echo "    retired fallback launcher still there: $([ -f "$I/launch-cs2.sh" ] && echo yes || echo no) · a folder old-patchers: $([ -d "$I/old-patchers" ] && echo "yes, $(ls "$I/old-patchers" | wc -l | tr -d ' ') files, a file named patch_cohtml_license.py: $([ -f "$I/old-patchers/patch_cohtml_license.py" ] && echo PRESENT || echo absent)" || echo no)"
-  echo "    git repos inside it: $(for g in "$I"/*/.git "$I"/*/*/.git "$I"/*/*/*/.git "$I"/*/*/*/*/.git "$I"/*/*/*/*/*/.git; do [ -e "$g" ] && echo x; done | wc -l | tr -d ' ')"
-else echo "~/cs2-patch: absent"; fi
+  if [ "$3" = old ]; then
+    echo "    retired fallback launcher still there: $([ -f "$I/launch-cs2.sh" ] && echo yes || echo no) · $(old_patchers "$I")"
+    echo "    $(git_repos "$I")"
+  else
+    echo "    retired fallback launcher still there: $([ -f "$I/launch-cs2.sh" ] && echo yes || echo no)"
+  fi
+}
+install_folder "$OLD_I" "~/cs2-patch" old
+install_folder "$NEW_I" "runtime folder" runtime
+if [ -e "$NEW_W" ]; then
+  echo "workspace: $([ -L "$NEW_W" ] && echo "a symlink" || echo "a folder"), $(ls -A "$NEW_W" | wc -l | tr -d ' ') entries"
+  echo "    $(old_patchers "$NEW_W")"
+  echo "    $(git_repos "$NEW_W")"
+else echo "workspace: absent"; fi
 
 sec "Surviving Mars: old home and new places"
 S="$HOME/sm-patch"
@@ -167,7 +193,7 @@ for d in "$HOME/Library/Application Support/1launcher" "$HOME/Library/Developer/
 done
 
 sec "other things that name the old places"
-# the old checkouts' paths. ~/cs2-patch is not one: it is the install folder, and it stays
-echo "scheduled tasks: $(grep -l 'github/cs2\|sm-patch' "$HOME"/.claude/scheduled-tasks/*/SKILL.md 2>/dev/null | sed 's#.*/scheduled-tasks/##; s#/SKILL.md##' | tr '\n' ' ')"
+# the old checkouts' paths, and the old install folder: a task that names ~/cs2-patch stops working when it moves
+echo "scheduled tasks: $(grep -l 'github/cs2\|sm-patch\|cs2-patch' "$HOME"/.claude/scheduled-tasks/*/SKILL.md 2>/dev/null | sed 's#.*/scheduled-tasks/##; s#/SKILL.md##' | tr '\n' ' ')"
 echo "launch agents: $(grep -l 'github/cs2\|sm-patch' "$HOME"/Library/LaunchAgents/*.plist 2>/dev/null | wc -l | tr -d ' ')"
 echo "Claude project folders for old paths: $(ls -d "$HOME"/.claude/projects/*github-cs2 "$HOME"/.claude/projects/*sm-patch 2>/dev/null | wc -l | tr -d ' ')"

@@ -17,10 +17,11 @@
 # (scripts/make-vanilla-wrapper.sh shows the pattern) and test there.
 #
 # Usage:  bash scripts/build-winemac-visibility.sh
-#         CS2_BUILD_DIR=~/cs2-patch/build-1116 bash scripts/build-winemac-visibility.sh
+#         CS2_BUILD_DIR=<workspace>/build-1116 bash scripts/build-winemac-visibility.sh
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-WORK="${CS2_BUILD_DIR:-$HOME/cs2-patch/build-1116}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+WORK="${CS2_BUILD_DIR:-$CS2_WORK/build-1116}"
 WINE_VER=11.16
 TARBALL_SHA=c66e2090343dcd727f7f7fd2f87ee0bfb0b118790c1d745ab7b8a4c3a4197f2f
 APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"

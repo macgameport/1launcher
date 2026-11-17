@@ -19,7 +19,8 @@
 #             away from aquadran's so `git diff stock core` applies to stock AND stock+aquadran
 #   main      aquadran -> cherry-pick(core) -> glue
 set -u
-REPO="${WINEMAC_SRC:-$HOME/cs2-patch/build-1116/wine-11.16-dxmt/dlls/winemac.drv}"
+. "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
+REPO="${WINEMAC_SRC:-$CS2_WORK/build-1116/wine-11.16-dxmt/dlls/winemac.drv}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 MODE=out; OUT=""
 while [ $# -gt 0 ]; do

@@ -1,6 +1,6 @@
 # Local files — out of the home folder, into the places macOS sets aside
 
-> **🔧 As-built (2026-11-16, 2026-11-17): L1 built, steps 0.9 to 1.8, its exit criteria met; L2 steps 0 to 4 done on the Studio (the folder has moved); steps 5 to 8, and L3, not yet.**
+> **🔧 As-built (2026-11-16, 2026-11-17): L1 built, steps 0.9 to 1.8, its exit criteria met; L2 steps 0 to 5 done on the Studio (the folder has moved); steps 6 to 8, and L3, not yet.**
 > On `main`: step 0.9, the release gate (`e240d84`); step 1.0, `CHANGELOG.md` and `v0.1.0` at `ce2fcd0`, with its
 > page, and `release` moved there under ON2 (recorded in `42233be`). On the branch `local-files-layout`, not merged:
 > steps 1.1 to 1.6 (`c61d743`) and 1.7 (`ddce307`), then `main` merged in (`422c1b5`). All 41 test files exit 0 on
@@ -47,6 +47,17 @@
 >     workspace. Step 0's check should also have read the scheduled task and the memory files.
 >   - The root `CLAUDE.md`'s list of allowed places keeps `~/cs2-patch`, with its conditional "on a Mac whose
 >     install has not been moved yet": the MacBook's is there until L3.
+>
+> - **Step 5** (branch pushed, `0d9a706`):
+>   - LT6 reads the same numbers. LT10: boot-verify PASS through the moved launcher (`20261117-000347`).
+>   - LT11: one start through `Cities Skylines II.app` by `open`. It reached the main menu in 100 s, the game closed
+>     6 s after `WM_CLOSE`, Steam followed, and no crash marker was left. The launcher log since its fresh stamp has
+>     the three lines and none of the forbidden ones. **A deviation, on James's word:** the session closed the game
+>     with boot-verify's `WM_CLOSE`, not James from the game's menu.
+>   - LT12: the 13 living and code files are exactly the allowed list; the rest are records of the kinds it allows.
+>   - LT13 passes. LT15's second half: 27 of 29 joined names exist. `stock-prefix` was pruned in step 0, and a script
+>     makes it again; `winemac.so.` is a prefix, not a name.
+>   - LT20a holds for `v0.2.0`'s section.
 >
 > L2's record is in `<workspace>/local-files-layout-L2-<stamp>/`.
 > Verify against: `common/paths.sh`, `cities-skylines-2/scripts/move-install.sh`, `cities-skylines-2/scripts/setup.sh`

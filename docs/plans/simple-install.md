@@ -822,7 +822,10 @@ Steam, a sign-in, the game, a closed Terminal window, and Gatekeeper.
   exit 0 for both. NL4 and NL5 are next. `release` was moved forward to `7abda38` the same day, a
   fast-forward after the test suites, and the line checked again. Moved forward again to `f978ca7` that
   evening (the six errno scripts by name): all 38 test files passed on a clean checkout of it first, and
-  the line fetched from `release` with `--check` reached `f978ca7` for both games, exit 0.*
+  the line fetched from `release` with `--check` reached `f978ca7` for both games, exit 0. Moved forward again
+  to `ce2fcd0`, the commit of the first tag `v0.1.0`, the same night (`docs/plans/local-files-layout.md` step 1.0,
+  ON2): all 39 test files passed on it and the release gate `common/check-release-move.sh` with it, and the line
+  reached `ce2fcd0` for both games, exit 0.*
 - **NL4. A Mac account with nothing in it.** A new macOS user account (James makes it) or any Mac without
   the wrapper. From the public page: the ZIP downloaded, the app opened and approved, the installer run to
   Steam's sign-in window; and the pasted line, copied from Safari into Terminal, with what macOS says of

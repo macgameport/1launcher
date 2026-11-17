@@ -1,7 +1,7 @@
 # Local files — out of the home folder, into the places macOS sets aside
 
 > **Status: Triple-checked 2026-11-16 — build-ready-with-fixes (pass 7, three lenses against `723c675`, folded; fitted re-check of the fold the same day, its fixes folded).**
-> The fold is "Seventh pass", after "Rework (2026-11-16)" below. ON1 to ON4 (section 8) are still open for James.
+> The fold is "Seventh pass", after "Rework (2026-11-16)" below. ON1 to ON4 (section 8) were decided as recommended the same day.
 > Tracking: issue #22. File and line references are as of `723c675`, whose code is `5f282c3`'s. A path is relative to
 > `cities-skylines-2/` unless it starts with `common/`, `~`, `docs/plans/` or `surviving-mars-relaunched/`, is called a
 > root file, or is this file. "The unification plan" is `docs/plans/1launcher-unification.md`. This plan's phases are
@@ -269,7 +269,7 @@ Each phase ends green before the next starts.
 2. Done with this plan: the unification plan's O7 row, its section 2 "Unchanged" sentence and its T2 row point here.
 3. Done 2026-11-09: O4's amendment to the unification plan (`engine/` under the work root), checked by the third pass and built with Phase 3.
 4. Where the two plans meet now. The unification plan's Phase 4 is built (its header, 2026-11-10), so nothing of its waits on this plan and L3 is a visit of its own. `launch-cs2.sh` is gone, so the comment the first draft meant to edit at its `:5` no longer exists. That plan's T2 is read as LT4.
-5. Open: ON1 to ON4 (section 8). ON1 and ON2 change when `release` moves, so they are answered before L1 step 1.0; ON3 before L2 step 0; ON4 before L1 step 1.4.
+5. ON1 to ON4 (section 8): decided 2026-11-16, as recommended.
 6. Done 2026-11-16: pass 7 checked the rework (the status line). Its fold is new text that no pass has read; the house's practice is one fitted pass over a fold, and whether one runs before step 0.9 is the building session's call.
 
 ### L1 — the repo (the gate and a release commit on `main`; then a branch)
@@ -425,6 +425,8 @@ A mutant is applied to real source and seen red in the build, then restored. "Me
 | ON2 | Whether `release` is moved to `v0.1.0`'s commit at L1 step 1.0 | Yes: a fast-forward that changes no installed file (documents, and step 0.9's gate with its test), by the usual rule and through LT21, so that `v0.1.0` names exactly what the pasted line installed before the move. Without it, LT19 still holds `release` to be an ancestor of the tag |
 | ON3 | L2 step 0: whether the raw captures inside the nine run folders the ledger cites (42 G; `strip-ab` alone is 17.6 G) are thinned | No. They are the measurements under the ledger's claims, and the move needs no space. If the disk needs it, that is a plan of its own, cell by cell against the ledger |
 | ON4 | `common/mac-inventory.sh:170` says of `~/cs2-patch` "it is the install folder, and it stays", and the script lists nothing that names it. After this plan that is no longer true | Change it in L1 step 1.4, as LT25 has it: report both layouts and list what names the old folder. It was written for the unification plan's MacBook visit, which is over, and L3 needs the new report |
+
+**ON1 to ON4 taken 2026-11-16**, on James's "Yes, as recommended", put to him as the four recommendations above. So: the session merges the branch and cuts `v0.2.0` once L2 steps 1 to 5 are green, and `release` takes the move only on his word after the MacBook has moved too (L3), a game-update fix in between being his call then; `release` is moved to `v0.1.0`'s commit at L1 step 1.0, through LT21 and after the suites, which is the word ON2 asks for; the run folders' raw captures are not thinned; `common/mac-inventory.sh` reports both layouts (L1 step 1.4, LT25).
 
 ## Review corrections (triple-check 2026-11-09)
 

@@ -1,14 +1,16 @@
 # Wrapper names — find a wrapper by a marker, then give it a name nobody types
 
-**Status: Drafted 2026-11-18 — not yet checked.** No code is written from this file until it has been through
-`check it` and the probes of W0 have run. Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
+**Status: check-it'd 2026-11-18 — needs-rework (pass 1); reworked 2026-11-18, not yet re-checked.** No code is
+written from this file until a re-check has passed and the probes of W0 have run. Pass 1's findings and where each
+went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
 The fault: Spotlight offers the Wine wrappers beside, and on one Mac above, the game apps. A wrapper opened
 directly starts its own Steam outside the launcher and its lock. The wrappers cannot simply be renamed, because
 their file names are spelled as addresses across the code and on players' Macs.
 
 This plan does three things, in this order: the scripts find a wrapper by a marker in its `Info.plist`; the
-wrappers then take names that match no word a player types; a move step renames the wrappers that exist.
+wrappers then take names that match no word a player types; a move step renames the wrappers that exist. Before
+any of it is built, W0 tests on the MacBook whether a rename removes the fault at all.
 
 ## 0. Decisions already made (issue #26, 2026-11-17)
 
@@ -34,7 +36,7 @@ Macs were not measured (1.7).
 
 | App | Kind | `CFBundleName` | `CFBundleIdentifier` | `L1Role` | `L1SteamAppID` | `L1Prefix` |
 |---|---|---|---|---|---|---|
-| `CS2dxmt11.app` | wrapper (the game's) | Steambuild Metal | `com.S734M451538131.wineskin` | none | none | none |
+| `CS2dxmt11.app` | wrapper (the game's) | Steambuild Metal | of the form `com.<name><digits>.wineskin` | none | none | none |
 | `CS2dxmt11-pk110.app` | wrapper (the Windows Steam's) | Steambuild Metal | the same | none | none | none |
 | `SurvivingMars.app` | wrapper (the game's) | Steambuild Metal | the same | none | none | none |
 | `Cities Skylines II.app` | game app | Cities Skylines II | `local.cs2.dxmt11.launcher` | `game` | 949230 | `~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix` |
@@ -86,9 +88,13 @@ What this settles, and what it does not:
   named `1L-949230.app` would very likely join that list for the two keys `1l` on the way to "1launcher". The
   word split of such a name was not measured (probe P2). And `-store` in `1L-949230-store.app` would likely
   answer to `store`, a word in `S734M.app`'s alternate name "Steam Store".
-- **The ranking fault is not reproducible on the Studio.** No wrapper here has a last-used date. On the MacBook
-  the wrapper had been opened from Spotlight once (#26). `mdfind` shows what is in the index, not the order of
-  Spotlight's window.
+- **Whether the Studio shows the ranking fault is not measured.** No wrapper here has a last-used date, and on
+  the MacBook the wrapper had been opened from Spotlight once (#26); but nobody has typed the words into
+  Spotlight's window on the Studio and written down the order. `mdfind` shows what is in the index, not that
+  order. W0's P0 does it, at no cost.
+- **Spotlight splits a name where letters meet digits, and matches from the start of each piece** (pass 1's
+  platform lens: `11`, `dxmt`, `cs` and `pk110` each return the two `CS2dxmt11` wrappers). So a new name is judged
+  piece by piece, and P2 states its pass rule that way.
 - Nothing inside a wrapper is returned as an app (`Wineskin.app` inside each is not in the list).
 
 ### 1.3 How the scripts find a wrapper today
@@ -103,13 +109,13 @@ What this settles, and what it does not:
 | badge patch | the spelled path, no override | `scripts/patch-modconflict-badge.py:58-62` |
 | `boot-verify.sh`, `install-webhelper-shim.sh` | `CS2_WRAPPER`, else the spelled path | `:91`, `:25` |
 | `make-shortcut.sh` | the spelled path, for the game path and `L1Prefix` | `:81` |
-| `make-steam-shortcut.sh` | `--wrapper`, else `CS2dxmt11-pk110.app`; the donor `CS2dxmt11.app`; the clone at `:105`; **the path is written into `S734M.app`'s `launch` file** at `:143` | `:40-41` |
-| the folder mover | its own copy of setup's list | `scripts/move-install.sh:43` |
+| `make-steam-shortcut.sh` | `--wrapper`, else `CS2dxmt11-pk110.app`; the donor `CS2dxmt11.app`; the clone at `:105`, made whenever the store wrapper has no prefix (`:95-116`); **the path is written into `S734M.app`'s `launch` file** at `:143` | `:40-41` |
+| the folder mover | its own copy of setup's list, read only when it is run by hand with no `--lock` | `scripts/move-install.sh:42`, `:92-96` |
 | `mac-inventory.sh` | six names it "knows from the Studio" | `common/mac-inventory.sh:138`, `:146`, `:169` |
 | SM launcher | `SM_WRAPPER`, else the spelled path | `surviving-mars-relaunched/launch-relaunched.sh:69` |
 | SM setup, installer, app builder | the same default, spelled again | `scripts/setup.sh:88`, `scripts/install.sh:52`, `make-app.sh:25` |
 | SM engine and split tools | the spelled paths | `tools/make-engine.sh:83`, `tools/split-wrapper.sh:23-25` |
-| the shared installer | takes the path from the game's `game_wrapper`, exports the game's variable | `common/install-core.sh:145-154`, `:350-352` |
+| the shared installer | takes the path from the game's `game_wrapper`, then **exports the game's variable** (`use_wrapper`, called from `core_begin` and after a wrapper is made), so each setup it runs sees that variable whether or not the player gave it | `common/install-core.sh:145-154`, `:280`, `:356` |
 | 14unch3r | lists apps whose `L1Role` is `game` or `steam`, nothing else; reads `L1Prefix` for the lock | `common/launcher-window.swift:126-127`, `:135`, `:146` |
 
 Two facts the design leans on. The launchers already attribute processes by open files against the prefix
@@ -134,9 +140,12 @@ The 42 files that spell `CS2dxmt11.app`:
 - **11 player-facing:** the launcher, `repatch.sh`, `scripts/` `install.sh`, `setup.sh`, `make-shortcut.sh`,
   `make-steam-shortcut.sh`, `move-install.sh`, `boot-verify.sh`, `patch-modconflict-badge.py`,
   `install-webhelper-shim.sh`, and `common/mac-inventory.sh`.
-- **10 tests of those** (the golden file among them).
+- **10 tests of those** (the golden file among them). Counting every old name, and not this one alone, 21 test
+  files spell `CS2dxmt11`, `SurvivingMars.app` or `CS2.app` (`git grep -l` at `d50cf33`); section 6's second table
+  names the ones that change.
 - **20 research:** 19 scripts and `test-licence-wait-probe.sh`. 13 of the 19 read `CS2_WRAPPER` and fall back to
-  the spelled path; 6 spell it with no override (`capture-freeze.sh`, `livedrag-probe.sh`, `run-minrepro.sh`,
+  the spelled path, some in more than one place (`drag-session.sh:49` and `:92`, `t1-spike.sh` twice); 6 spell it
+  with no override (`capture-freeze.sh`, `livedrag-probe.sh`, `run-minrepro.sh`,
   `run-minrepro2.sh`, `run-minrepro3.sh`, `shimmer-probe.sh`), and `capture-freeze.sh:54` also attributes a
   wineserver by the name in its command line.
 - **1 dated record:** `docs/wine-bugs/measurement-engine1116.txt`.
@@ -151,10 +160,11 @@ are the four `README.md` and `INSTALL.md` files of the two games, both `CLAUDE.m
 |---|---|---|
 | The game apps' `L1Prefix` | hold the wrapper path (1.1) | read |
 | `S734M.app/Contents/MacOS/launch` | holds `WRAPPER=<path>` | `make-steam-shortcut.sh:143` |
-| The game apps' `launch` files | hold the launcher's path, not the wrapper's | `make-shortcut.sh` (the `SCRIPT=` line), `make-app.sh:65` |
+| The game apps' `launch` files | Cities: Skylines II's holds the launcher's path and not the wrapper's. **Surviving Mars's holds both**: `SCRIPT=` and `GAME_EXE=`, the game's program inside the wrapper, which its "already running" test compares with a command line; a second pattern there (`C:\…\Project Spark\Mars.exe`) does not depend on the path | `make-shortcut.sh` (the `SCRIPT=` line), `make-app.sh:65-66`, `:76-80` |
 | The launch lock | `<prefix>/.launcher.lock`, inside the wrapper: it moves with it | `launch-relaunched.sh:166` |
 | The Dock | one project item, `Cities Skylines II.app`; no wrapper | `defaults read com.apple.dock persistent-apps` |
 | LaunchServices | each wrapper is registered once, by its path | `lsregister -dump` |
+| The wrappers' bundle identifier | one value in all three, of the form `com.<name><digits>.wineskin`. Its name part is the first wrapper's name on this Mac, so it reads as made per wrapper by Porting Kit and copied by each clone, not as a constant of the template. The value itself is left out of this file (review corrections, S23) | `plutil -extract` |
 | A `steam://` handler | none: no wrapper declares a URL scheme | 1.1 |
 | The Wine registry in each prefix | the font entries hold the wrapper's own path (6 lines in each). `SurvivingMars.app`, a clone of another wrapper, holds its own name there and the donor's 0 times, so Wine rewrites them at start. `CS2dxmt11.app` has 4 more lines: Wine Mono's install source | `grep -c` on the `.reg` files |
 | Steam's library files in each prefix | no wrapper path (0 files) | `grep -l` on `config/*.vdf`, `steamapps/*.vdf` |
@@ -176,7 +186,14 @@ are the four `README.md` and `INSTALL.md` files of the two games, both `CLAUDE.m
 - `~/Library/LaunchAgents` and other folders of `~/Library` outside a `1launcher` folder.
 - Whether the template's own launcher keeps keys it does not know when it rewrites `Info.plist`
   (`common/make-wrapper.sh:140`). Our launchers never run it after the wrapper is made.
-- The `Info.plist` of a wrapper made by the published installer (`common/make-wrapper.sh`). None exists on the Studio.
+- The `Info.plist` of a wrapper made by the published installer (`common/make-wrapper.sh`). None exists on the
+  Studio. Its launcher is given the file name before it writes `Info.plist` (`make-wrapper.sh:140`), so such a
+  wrapper very likely holds its own file name inside, which the Studio's three do not. P3 reads it.
+- Where a wrapper's Wine server keeps its socket on this macOS. No Wine was running when the rework looked, and the
+  folder was not under `$TMPDIR`. Pass 1's platform lens reports it is keyed by the prefix's device and inode, not
+  its path. P5 reads the place.
+- Whether anything still holds a file of the wrapper when the installer reaches its setup step (3.4). The code
+  closes the Steam it started (`common/install-core.sh:479-493`); what outlives that is not readable. P5.
 
 ### 1.6 What is published
 
@@ -196,21 +213,29 @@ when it finds none.
 
 ## 2. Target
 
-1. No code file finds a wrapper by a spelled name, except one list of old names kept for Macs not moved yet.
-2. A wrapper's file name is a label. Renaming it by hand, to anything, breaks no start of a game.
+1. No code file finds a wrapper by a spelled name, except one table of old names kept for Macs not moved yet.
+2. A wrapper's file name is a label. Renaming it by hand, to anything, breaks no start of a game: not from the
+   game's app, not from 14unch3r, not from a terminal. `S734M.app` opens the store after a hand rename too (3.9;
+   WD5 is the choice to narrow this instead).
 3. No wrapper in `~/Applications` is returned by Spotlight for a word a player types: `surviving`, `mars`,
-   `smr`, `cities`, `skylines`, `cs2`, `steam`, `store`, `s734m`, `launcher`, `1launcher`, `14`.
+   `smr`, `cities`, `skylines`, `cs2`, `steam`, `store`, `s734m`, `launcher`, `1launcher`, `14`. And on the
+   MacBook, where Spotlight has learned a wrapper, the wrapper is no longer what its window offers for
+   `surviving mars` (P1 tests this before anything is built).
 4. Existing wrappers are renamed by setup, by a rename only, with nothing copied; setup says what it renamed.
+   This holds on both routes: a clone's `setup.sh`, and the pasted line's installer.
 5. 14unch3r lists the same apps as before.
+6. A setup run that fails part of the way leaves a game that still starts.
 
 ## 3. Design
 
-**3.1 The marker.** Two keys in the wrapper's `Contents/Info.plist`, in the vocabulary the apps already use:
+**3.1 The marker.** Two keys in the wrapper's `Contents/Info.plist`, in the vocabulary the apps already use, and
+one more that lives only while a rename is under way:
 
 | Key | Type | Value |
 |---|---|---|
 | `L1Role` | string | `game-wrapper` or `steam-wrapper` |
 | `L1SteamAppID` | integer | the game's Steam app ID; on a `game-wrapper` only |
+| `L1RenamePending` | boolean | `true` from just before the mover's rename until just after it; absent at every other time |
 
 - The identity of a game's wrapper is (role, app ID). The app ID is Valve's, opaque, and already the key by which
   everything published names a game (root `CLAUDE.md`, "Published addresses"). The role is a comparison string,
@@ -219,9 +244,16 @@ when it finds none.
   949230, as `1L-949230-store` would, is the kind of readable coupling the rule warns about.
 - 14unch3r lists an app only when `L1Role` is exactly `game` or `steam` (`launcher-window.swift:126-127`), so no
   build of it, old or new, lists a marked wrapper. WT6 holds that.
-- Written with `plutil -replace`, checked with `plutil -lint`, the file's mode put back to what it was
-  (`test-make-wrapper.sh:422` holds it at 666). `plutil -extract … raw` reads it, as
-  `make-steam-shortcut.sh:65` already does.
+- **One write.** The keys are put into a copy of the file in the same folder (`plutil -replace` and `-remove` on
+  the copy, then `plutil -lint`), the copy takes the original's mode (`test-make-wrapper.sh:422` holds it at
+  666), and the copy is renamed over the original. A wrapper with no `Info.plist`, or one that does not parse, is
+  never marked: the function returns 1 and says so. `plutil -extract … raw` reads the keys, as
+  `make-steam-shortcut.sh:65` already reads another.
+- **The file name stored inside.** If P3 shows that an installer-made wrapper holds its own file name in
+  `Info.plist`, the mover's write also sets each top-level string that equals the old name (with and without
+  `.app`) to the new one, in that same one write. This is part of the move, not a branch of a table.
+- Mode 666 means another account on the Mac can write or remove a marker. 3.2's rules for a candidate are what
+  stand between a planted marker and a launcher that runs `wine64` from it.
 - *Considered:* a marker file in the prefix beside `.launcher.lock`. It would survive anything that rewrites
   `Info.plist`. Rejected for now: `Info.plist` is where the three app builders and the window already look, and
   nothing of ours rewrites it. Probe P3 can reverse this.
@@ -232,127 +264,327 @@ functions and exports nothing; run, it prints.
 ```
 bash common/wrappers.sh find game 949230     # the path of that game's wrapper
 bash common/wrappers.sh find steam           # the Windows Steam's wrapper
+bash common/wrappers.sh name game 949230     # the file name a new wrapper of that game is given
 bash common/wrappers.sh list                 # every marked wrapper: role, app ID, path with ~
 ```
 
-`find` answers in this order:
+*What it knows about a game.* A deployed copy cannot read `common/games.tsv`, so `wrappers.sh` holds its own
+table, one row per game: the app ID, the game's variable (`CS2_WRAPPER`, `SM_WRAPPER`), the old names in today's
+order, and the game's program as a path under the prefix (`…/Cities Skylines II/Cities2.exe`,
+`…/Project Spark/Mars.exe`). The Windows Steam has a row with no ID, no variable and one old name. This table is
+the only place in the code that spells an old name, and WT5c fails when `games.tsv` has a game the table lacks.
 
-1. The game's variable (`CS2_WRAPPER`, `SM_WRAPPER`), when set: as today, and it is how a move is declined.
-2. The marker: the direct children of `~/Applications` that are real folders named `*.app` and carry the role
-   and app ID asked for. One: that is the answer.
-3. No marked wrapper: the old names, in today's order, for a Mac not moved yet. `CS2dxmt11.app`, `CS2.app`,
-   `/Applications/CS2dxmt11.app` for 949230; `SurvivingMars.app` for 3215050; `CS2dxmt11-pk110.app` for the
-   Windows Steam. This list is the only place in the code that spells them.
-4. Still none, for a game: the app in `~/Applications` that holds the game's program, which the CS2 launcher
-   does today (`:39-41`). Surviving Mars gains the same.
+*`find` answers in this order:*
 
-Exit 0 with one path; 1 with none; 2 when two wrappers carry the same marker, each printed with `~`. A caller
-that gets 2 stops and says to move one to the Trash or name one in the game's variable. Two can happen: a
-wrapper cloned by hand carries its donor's marker.
+1. **A wrapper named by the player:** the game's variable, when a person gave it (below). The path is printed
+   with a trailing slash taken off and is not judged: what each caller then requires of it is what it requires
+   today (the launcher takes it as it is, `launch-cs2-dxmt11.sh:34`; Cities: Skylines II's setup wants a prefix
+   in it, `setup.sh:105-106`; the installer may make a wrapper there). `find steam` has no variable:
+   `make-steam-shortcut.sh` keeps its `--wrapper` option, which wins over the resolver in that script.
+2. **The marker:** the direct children of `~/Applications` that carry the role and app ID asked for and pass
+   every test of a candidate (below). One: that is the answer. A marker with `L1RenamePending` counts.
+3. **No marked wrapper:** the table's old names, in today's order, each wanted with a prefix as today:
+   `~/Applications/CS2dxmt11.app`, `~/Applications/CS2.app`, `/Applications/CS2dxmt11.app` for 949230;
+   `~/Applications/SurvivingMars.app` for 3215050; `~/Applications/CS2dxmt11-pk110.app` for the Windows Steam.
+4. **Still none, for a game:** the app in `~/Applications` that holds the game's program, which the CS2 launcher
+   does today (`:39-41`). Surviving Mars gains the same. An app that carries a marker of another role or another
+   ID is passed over here: a store clone made by hand, without the strip at `make-steam-shortcut.sh:113-114`,
+   would hold `Cities2.exe`.
 
-Deployed files cannot read the checkout, so setup copies `wrappers.sh` beside each launcher: into the runtime
-folder for Cities: Skylines II, into the state folder for Surviving Mars. A launcher, `repatch.sh` and the badge
-patch look for it beside themselves, then in the checkout's `common/`. The installers' own-files lists
-(`cities-skylines-2/scripts/install.sh:115`, `surviving-mars-relaunched/scripts/setup.sh:123`) gain it.
-*Considered:* the function inlined in both launchers and held equal by `common/test-launcher-parity.sh`, as the
-lock code is. Rejected: there are four deployed readers, one of them Python.
+*A candidate of step 2* is a real folder and not a symlink, named `*.app`, a direct child of `~/Applications`,
+owned by this user and not writable by group or others (what `own_folder` asks, `move-install.sh:48-53`), with
+`Contents/SharedSupport/prefix` and an executable `Contents/SharedSupport/wine/bin/wine64`, and with no
+`com.apple.quarantine` attribute on the bundle. A marked app that fails a test is passed over, and `list` names
+it with the test it failed. The Studio's three wrappers pass (mode 755, the user's own, no quarantine attribute:
+read 2026-11-18); P1 and P3 read the same of the MacBook's and of an installer-made one.
+
+*Exit:* 0 with one path on standard output; 1 with none; 2 when two candidates carry the same marker, with one
+line on standard error per path, each with `~`, and nothing on standard output. Two can happen: a wrapper cloned
+by hand carries its donor's marker. **Every caller treats 2 as a stop of its own, never as "none":** the
+launchers show their failure line and start nothing; each setup and installer exits 1 before it changes
+anything; `repatch.sh` exits 1. The line says to move one to the Trash or to name one in the game's variable.
+WT4b holds each caller.
+
+*Who gave the variable.* The installer exports the game's variable itself once it has chosen a wrapper
+(`install-core.sh:153`), so inside a setup run by the installer a set variable says nothing about the player.
+`core_begin` therefore exports `L1_WRAPPER_GIVEN`, `1` when the game's variable was non-empty as the installer
+was started and `0` when not, before it calls `game_wrapper` (`:272`). Each setup, as its first act on the
+subject: when its `*_VIA_INSTALLER` is `1` and `L1_WRAPPER_GIVEN` is `0`, it unsets the game's variable. From
+there on, in setup, the mover, the resolver and the app builders, "a wrapper was named" means one thing: the
+variable is non-empty, and a person put it there. With `*_VIA_INSTALLER=1` and `L1_WRAPPER_GIVEN` not set at
+all, the variable is kept: the cautious reading, under which nothing is renamed. Pass 1's builder built this
+and its installer tests stayed green. Dropping the installer's export instead is not possible: Surviving Mars's
+installer test has a setup stub that reads it.
+
+*Deployed copies, and one reader.* Setup copies `wrappers.sh` beside each launcher: into the runtime folder for
+Cities: Skylines II, into the state folder for Surviving Mars. A deployed file looks for it beside itself and
+nowhere else. The repo's own copies of the same files look beside themselves and then at one fixed place each,
+by their own depth in the tree (`launchers/` two levels up into `common/`, `repatch.sh` one level up), found
+from `BASH_SOURCE` and not `$0`. The few lines that do this are the same in both launchers, and
+`common/test-launcher-parity.sh` gains the rule that holds them equal. The Cities: Skylines II launcher is the
+one deployed reader on a start: it resolves once and hands the game folder to `repatch.sh` in `CS2_GAME_DIR`,
+as it does today (`:228`), and now to the badge patch too, which reads `CS2_GAME_DIR` in place of its spelled
+path. Run by hand with no `CS2_GAME_DIR`, `repatch.sh` sources the file beside it and the badge patch runs
+`bash <beside itself>/wrappers.sh find game 949230`; either stops with one plain line when the file is not
+there. The installers source `common/wrappers.sh` from their own tree, and no longer hold a copy of the
+launcher's function. The bookkeeping that follows:
+
+- `common/check-deploy.sh:16-20` lists `wrappers.sh`; `move-install.sh:45`'s runtime names gain it;
+- both setups' own-files checks (`cities-skylines-2/scripts/setup.sh:69-74`,
+  `surviving-mars-relaunched/scripts/setup.sh:123`) and both installers' (`cities-skylines-2/scripts/install.sh:115`,
+  `surviving-mars-relaunched/scripts/install.sh:216`) gain `common/wrappers.sh` and `common/move-wrappers.sh`;
+- the state folder has no `check-deploy.sh` of its own, so Surviving Mars's `scripts/test-setup.sh` compares the
+  deployed file with `cmp` (WT15).
+
+*Considered:* the function inlined in both launchers and held equal by the parity test, as the lock code is.
+Rejected: `repatch.sh` and the Python badge patch are run by hand too, and the installers and both setups need
+the same rule.
 
 **3.3 Names and place.** The recommended names (WD3): `wrapper-949230.app`, `wrapper-3215050.app`, and
 `wrapper-0.app` for the Windows Steam's (0: no game). `common/make-wrapper.sh:58-59` accepts them. The rule that
-builds a name is one function in `wrappers.sh`. Because of 3.1 the name carries no load, so a later change of
-mind about it is a rename and nothing else.
+builds a name is the `name` function of `wrappers.sh`, and nothing else spells a new name. Because of 3.1 the
+name carries no load, so a later change of mind about it is a rename and nothing else.
 
-The place stays `~/Applications` (WD2), unless probe P2 selects otherwise:
+P2's pass rule, by the pieces Spotlight splits a name into (1.2): a wrapper may answer to the pieces of its own
+name (`w`, `wr`, `wrapper`, the digits) and to nothing in target 3's list. One keystroke, `w`, will show three
+wrappers beside "Windows Steam"; that is accepted, and stated to James before he decides WD3.
 
-| P2 outcome | Branch |
+The place stays `~/Applications` (WD2), unless a probe selects otherwise:
+
+| Probe outcome | Branch |
 |---|---|
-| A scratch app with the new name answers to none of the target's words, and is not shown where a player browses apps | **A: rename in place.** The design above |
-| It answers to no word, but macOS lists it wherever apps are browsed (the Apps view, Launchpad's successor) | A, and WD6 (make a directly opened wrapper harmless) moves from "later" to "next" |
-| It still answers to a word through the bundle name or another attribute | A, and the move also sets `CFBundleName` to the file name |
-| A folder named `*.noindex` in `~/Applications` keeps an app out of Spotlight | **B is available:** `~/Applications/1launcher.noindex/`, added to step 2 of the resolver. Chosen only if A's first row fails |
+| P1: on the MacBook, after a hand rename, Spotlight's window no longer offers the wrapper for `surviving mars`. P2: a scratch app made from an installer-made wrapper's whole `Info.plist`, under the new name, answers to none of the target's words and is not shown where a player browses apps | **A: rename in place.** The design of this section |
+| P2: it answers to no word, but macOS lists it wherever apps are browsed (the Apps view, Launchpad's successor) | A, and WD6 (make a directly opened wrapper harmless) moves from "later" to "next" |
+| P2: it still answers to a word through an attribute other than the file name | A, and the move also rewrites that attribute, in 3.1's one write |
+| P1: Spotlight still offers the renamed wrapper for the words it learned | A rename does not fix the fault where it was seen. **B** is tried in the same visit: the wrapper moved by hand into `~/Applications/1launcher.noindex/`. If B clears it, that folder becomes the place, and step 2 of the resolver and the mover's target follow. If B does not, the plan stops and goes back to James with WD6 as the candidate |
+| P2: a folder named `*.noindex` in `~/Applications` does not keep an app out of Spotlight | B is not available; the P1 row above then has only WD6 |
 
 *Rejected:* a symlink left at the old name (it puts the typed name back); `chflags hidden` (D6); moving the
 wrappers under `~/Library` (the local-files plan decided "`~/Applications` is the standard place", and its data
 root has a space, which Wine trees are kept off).
 
 **3.4 The move is a script.** `common/move-wrappers.sh [--dry-run] [--held-by <pid>] <role> [<app ID>]`, with
-the output and exit contract of `cities-skylines-2/scripts/move-install.sh`: line 1 is `state: none`,
-`state: old` or `state: part-way`; then `stop:` or `skip:` per reason; `would move:`, `moved:` or `not moved:`
-per rename; every path with `~`; exit 0, 1 (skipped) or 3 (stop: setup must not go on).
+the output contract of `cities-skylines-2/scripts/move-install.sh`: line 1 is `state: none`, `state: old` or
+`state: part-way`; then `stop:` or `skip:` per reason; `would move:`, `moved:` or `not moved:` per rename; every
+path with `~`. Exit 0 (renamed, finished an earlier rename, or nothing to do), 1 (skipped), 2 (the rename
+failed after the marker was written: the next run finishes it), 3 (stop).
 
-- **What it moves.** A wrapper found under one of the old names of 3.2 step 3. It writes the marker, then
-  renames. `part-way` is a marked wrapper still under an old name: the rename is finished. A marked wrapper under
-  any other name is left alone, whatever the name: that is someone's own rename, and target 2 says it may be.
-- **Which old-named app is the wrapper.** For a game: the one the resolver's step 3 returns, and it must have
-  `Contents/SharedSupport/prefix` and `wine/bin/wine64`. For the Windows Steam: the wrapper that a generated
-  `S734M.app` names in its `L1Prefix`, else `CS2dxmt11-pk110.app`.
-- **Stop** (nothing moved, setup stops): the wrapper's launch lock is held by a live process other than
-  `--held-by`; or any process has a file open under the wrapper, read from `lsof` output by path as
-  `move-install.sh:55-58` reads working directories, never from a command line. That covers the game, Steam, its
-  web helpers and the wineserver of that wrapper, and nothing of another wrapper.
-- **Skip** (nothing moved, setup goes on with the old name): the game's variable is set; the target name
-  exists; the wrapper or `~/Applications` is a symlink or not the user's own; `Info.plist` does not parse or
-  cannot be written; two candidates.
-- **When.** Each game's setup runs it for its own wrapper before it first asks for the wrapper
-  (`cities-skylines-2/scripts/setup.sh:114`, after the folder move; `surviving-mars-relaunched/scripts/setup.sh:88`).
-  Cities: Skylines II's setup also runs it for the Windows Steam's wrapper when one exists. `--check` reports
-  what a run would do.
-- **After it, in the same setup run.** The game's app is rebuilt, as every run does, and its `L1Prefix` now
-  comes from the resolver. 14unch3r is rebuilt, as every run does. `S734M.app` is rebuilt when it exists and is
-  the builder's own bundle: new, because no setup runs `make-steam-shortcut.sh` today and its `launch` file holds
-  the wrapper's path (WD5 asks whether that file should resolve at run time instead).
+*States.*
+
+| State | What is there | What a run does |
+|---|---|---|
+| `old` | an unmarked wrapper under an old name of 3.2's table, in `~/Applications` | writes the marker with `L1RenamePending`, renames, removes `L1RenamePending` |
+| `part-way` | a wrapper that carries `L1RenamePending`, under any name | renames it if it is still under an old name and the target is free, then removes the key |
+| `none` | anything else. Among it: a marked wrapper with no `L1RenamePending` under an old name, which is someone's own rename back (a rollback, a repaired Dock item), and a marked wrapper under any name of the owner's choosing | nothing. Target 2 says a name may be anything |
+
+The marker is written before the rename, so there is no moment at which a wrapper is under a new name and
+unmarked: a run killed between the two leaves a marked wrapper that step 2 of the resolver finds. To have setup
+rename a renamed-back wrapper again, rename it by hand to what `bash common/wrappers.sh name …` prints.
+
+*Which old-named app is the candidate.*
+
+- **For a game:** the app that step 3 of the resolver returns, and it must pass every test of a candidate of
+  3.2 but the marker. An old-named app outside `~/Applications` (`/Applications/CS2dxmt11.app`) is never
+  moved: it is skipped with a line, and step 3 goes on finding it under its old name.
+- **For the Windows Steam:** `~/Applications/CS2dxmt11-pk110.app`, and only when it passes the same tests, holds
+  `steam.exe`, is not the wrapper `find game` returns for any game of the table, carries no `game-wrapper`
+  marker, and holds no game's program. A generated `S734M.app` is a cross-check and not a source: when its
+  `L1Prefix` names another wrapper than the candidate, nothing is moved and a `skip:` line names both. So an
+  `S734M.app` once built with `--wrapper` at the game's wrapper cannot make the mover mark the game's wrapper as
+  the store's.
+
+*Stop* (nothing moved; exit 3):
+
+- the wrapper's launch lock is held by a live process other than `--held-by`;
+- for a game's wrapper, a process holds one of the wrapper's own named files open.
+
+*The open-files probe.* It is never a scan: `lsof -u` took 30.3 s for 64,104 lines on the Studio (pass 1's
+builder), and `lsof +D` would walk a 119 GB tree. It is `lsof -t -- <files>` on named files, 0.19 s each on the
+same Mac: the files that exist among `wineserver`, `wine64`, `wine`, `wine64-preloader` and `wine-preloader` in
+the wrapper's `Contents/SharedSupport/wine/bin/`, which every Wine process of that wrapper holds open as its
+program; and the prefix's server socket, if P5 finds where it is. Its output is read, not its exit code
+(`move-install.sh:54-55` says why). It has a hook of its own, `L1_WMOVE_PROBE=<program>`, called as
+`<program> holders <wrapper>` and printing one process per line; `L1_MOVE_PROBE` is the folder mover's and is
+not reused, because that stub's call count is tested (LT24). A second test variable,
+`L1_WMOVE_STOP_AFTER=rename`, ends the mover straight after its rename (WT7d). Tests stub it, but for one case that runs the real
+call on a scratch program (WT8). What it misses: a Wine server left by an engine outside the wrapper
+(`CS2_ENGINE`, `SM_ENGINE`) when the socket's place is not known; the lock and each setup's own "the game is
+running" test cover a running game in that case.
+
+*Skip* (nothing moved; exit 1; setup goes on under the old name and says so):
+
+- nothing is to be renamed this run: `L1_KEEP_WRAPPER_NAMES=1`, or a wrapper was named by the player (3.2);
+- **for the Windows Steam's wrapper, a process holds one of its named files.** Steam open in the store wrapper
+  is the ordinary state while someone is buying, and that wrapper has no lock; it keeps its old name this run,
+  one line says so, and the game's setup goes on;
+- the target name exists;
+- the wrapper or `~/Applications` is a symlink or not the user's own (a symlinked wrapper so stays under its old
+  name and in Spotlight; the line says that);
+- the wrapper is outside `~/Applications`;
+- `Info.plist` is missing, does not parse or cannot be written;
+- two candidates;
+- the store candidate fails one of its tests above.
+
+*To decline.* `L1_KEEP_WRAPPER_NAMES=1` in front of setup, of an installer, or of the pasted line: one word,
+the same for both games, with no path to type (WD9). It holds for that run only, as the folder's decline does;
+setup's line says so and prints the variable as a literal. A wrapper named by the player has the same effect,
+because a named wrapper is used as it is.
+
+*When, in each setup.* Stated once, because pass 1 found the first draft's order contradicted the code.
+
+Cities: Skylines II (`cities-skylines-2/scripts/setup.sh`):
+
+1. The wrapper is found once, above the header, where `:114` finds it today, now by the resolver. Exit 2 of the
+   resolver stops setup here.
+2. The header prints a `wrapper:` line beside the `move:` line, from `move-wrappers.sh --dry-run`. `--check`
+   ends after the preflight as today, having said what a run would rename.
+3. **Before anything is changed,** a stop of that dry run stops setup with exit 3, in the words of the folder
+   move's stop. A stop is only looked for when there is something to rename (`state: old` or `part-way`): on a
+   Mac already moved, setup runs beside an open Steam as it does today. It comes before the folder move (`:261`) on purpose: a stop after the folder had moved and
+   before the app was rebuilt would leave an app that names a launcher that is gone.
+4. The folder move, as today, with the lock of the wrapper found in step 1.
+5. The copies into the runtime folder, `wrappers.sh` among them.
+6. The mover for the game's wrapper, then for the Windows Steam's when one exists. A stop that appears only now
+   (something started since step 3) is reported as a skip, and setup goes on under the old name. Exit 2 is
+   reported with the mover's own lines, setup goes on with the marked wrapper under its old name, and the run
+   ends with one problem counted, as a patch failure is today.
+7. `WRAPPER`, `PREFIX`, `GDIR` and the badge step's folder (`:326-334`) are resolved again.
+8. The badge step, the game's app (its `L1Prefix` from the path of step 7), 14unch3r, and `S734M.app` (below).
+
+Surviving Mars (`surviving-mars-relaunched/scripts/setup.sh`):
+
+1. The wrapper is found by the resolver where `:88` spells it today; the running-game and lock stops (`:99`,
+   `:105`) follow as today; then the dry run's stop, exit 3.
+2. The state folder's tests and the own-files check (`:120`, `:124`), `--check`'s exit, and the copies (`:142-143`),
+   `wrappers.sh` among them. Nothing has been renamed if any of these exits.
+3. The mover. Then the wrapper is resolved again, and `make-app.sh` is given the game's program inside it.
+4. The game's app and 14unch3r, as today. If the app is not built (`:152`), the wrapper is already renamed, and
+   the game still starts: the deployed launcher is the new one and finds the wrapper by its marker (target 6).
+
+*Through the installer.* What changes in `common/install-core.sh` and the two `scripts/install.sh`:
+
+- `core_begin` exports `L1_WRAPPER_GIVEN` (3.2).
+- Each `game_wrapper` asks the resolver, and its default for a wrapper to be made is `name`'s answer. When the
+  resolver finds none, an old-named app with no prefix is still met with today's line, "looks incomplete … Move
+  it to the Trash" (`install-core.sh:275-279`), and nothing is made beside it.
+- Setup, run by the installer, unsets the variable the installer exported (3.2) and passes
+  `--held-by "$PPID"` to the mover, as the folder move does (`setup.sh:144`), so the installer's own hold on the
+  lock is let through.
+- **After setup returns, the installer resolves again.** Its `APP`, `WINEPREFIX` and `LOCK` name the old path,
+  and `release_lock` (`:121`) would miss, leaving the installer's process number in the renamed wrapper's lock.
+  A dead holder is treated as stale by the launchers' lock code (`:111-114`), but a reused number would read as "in use".
+  So one core function runs setup and, when `L1_WRAPPER_GIVEN` is `0`, unsets the variable, asks the resolver,
+  and points `LOCK` at the lock of the wrapper it returns; the exit trap then removes the installer's own link.
+  Both installers call it where they run setup today (`install.sh:121-122`, `:222-223`) and exit with setup's
+  code.
+- **Surviving Mars's stop before its step 7** (`scripts/install.sh:209-214`) today fires whenever `SM_WRAPPER`
+  was given, on the ground that the game's app starts the default wrapper. After this plan the app starts what
+  the resolver finds. The stop therefore fires only when the given wrapper is not the one `find game 3215050`
+  returns with the variable unset: an install into some other wrapper is still a test and gets no app, and a
+  player who names the wrapper the app would use anyway gets setup.
+- **Is anything of the installer's still using the wrapper when setup runs?** From the code: where the installer
+  started Steam it closes it, waits, and ends the Wine server (`:479-493`); where the game was already installed
+  it starts nothing. Not readable: a Wine server that outlives the 15-second wait, and what `make-wrapper.sh`'s
+  template launcher leaves behind on a new wrapper. P5 measures it in W0, and W2 has a live step through
+  `install.sh` and not setup alone:
+
+| P5 outcome | Design |
+|---|---|
+| no holder at the setup step, in three runs | as written |
+| a Wine server of that prefix still up | under the installer, setup first waits for it with `wineserver -w`, bounded at 15 s as the core's own wait is, then runs the dry run |
+| a holder that is the player's own Steam, open in that wrapper before the installer began | the stop is right: its line says to quit Steam and open the installer again |
+
+*After the move, in the same setup run.* The game's app is rebuilt, as every run does, and its `L1Prefix` comes
+from the wrapper resolved again. 14unch3r is rebuilt, as every run does. `S734M.app` is rebuilt when it exists
+and is the builder's own bundle, through a new `--no-clone` mode of `make-steam-shortcut.sh`: with no store
+wrapper it builds nothing and says so, where a plain run would clone the game's wrapper (`:95-116`). Setup never
+makes an `S734M.app` or a store wrapper that was not there.
 
 **3.5 Makers and cloners.**
 
-- The installers' default for a wrapper they make is the new name (`game_wrapper` in each game's `install.sh`).
-  `common/install-core.sh` marks the wrapper right after `make-wrapper.sh` succeeds (`:352`), which is after
-  the template's own launcher has written `Info.plist`.
+- `common/make-wrapper.sh` gains `--mark <role> [<app ID>]` and writes the marker itself, after the template's
+  launcher has written `Info.plist` and before its last step moves the wrapper into place (`:224-226`). So an
+  installer that dies between making and marking cannot leave an unmarked wrapper under a new name.
+  `common/install-core.sh` passes the option (`:350`, `:352`). An unmarked app under a new name can then only
+  be made by hand; step 4 of the resolver finds it if it holds the game, and otherwise `make-wrapper.sh`
+  refuses to replace it, as it refuses today.
+- The installers' default for a wrapper they make is `name`'s answer; neither `scripts/install.sh` spells a
+  default (`cities-skylines-2/scripts/install.sh:83-90`, `surviving-mars-relaunched/scripts/install.sh:52`).
 - `make-steam-shortcut.sh` marks its clone `steam-wrapper` straight after the copy (`:105`), replacing the
-  donor's marker, and finds donor and store through the resolver.
-- `tools/split-wrapper.sh` marks its clone `game-wrapper` 3215050 and takes its default name from the rule.
-- `common/mac-inventory.sh` reports marked wrappers by role and app ID, and still names the old ones.
+  donor's marker and app ID and removing any `L1RenamePending`, and finds donor and store through the resolver.
+- `tools/split-wrapper.sh` marks its clone `game-wrapper` 3215050 and takes the clone's and the store's
+  defaults from the resolver. Its donor has no default any more: the name it defaulted to (`:23`) now belongs
+  to the generated Steam app, so the donor is given in `SPLIT_DONOR`.
+- `tools/make-engine.sh:83` and `make-app.sh:25` take the wrapper from the resolver.
+- `common/mac-inventory.sh` reports marked wrappers by role and app ID, and still names the old ones
+  (`:138`, `:146`, `:169`).
 
 **3.6 Research scripts.** Recommended (WD4): all 19 take the resolver, in a commit of their own. The 13 that
-read `CS2_WRAPPER` change one default; the 6 that spell the path gain the same line, and `capture-freeze.sh:54`
-takes the name from the path found. Reason: `cell-fingerprint.sh` gates every render cell and `boot-verify.sh`
-is the boot proof, so the standing instruments must follow; and a census test (WT12) is only simple if no
-script is excepted. Cost: 19 one-line edits that only `bash -n` and the census test check, since the experiments
-are not re-run. Dated records, the ledger's old rows and `config.json` files already written keep the names
-they were written with, as O6 of the local-files plan decided for paths.
+read `CS2_WRAPPER` change each place they spell the default; the 6 that spell the path gain the same line, and
+`capture-freeze.sh:54` takes the name from the path found. Reason: `cell-fingerprint.sh` gates every render cell
+and `boot-verify.sh` is the boot proof, so the standing instruments must follow; and a census test (WT12) is only
+simple if no script is excepted. Cost: edits that only `bash -n` and the census test check, since the
+experiments are not re-run. Dated records, the ledger's old rows and `config.json` files already written keep
+the names they were written with, as O6 of the local-files plan decided for paths.
 
 **3.7 Documents.** Living documents name a wrapper by its role ("the game's wrapper", "the Windows Steam's
 wrapper") and give `bash common/wrappers.sh list` as the way to print the paths, so they are true before and
 after a Mac's wrappers move. Both `CLAUDE.md` files, the two games' `README.md` and `INSTALL.md`, `GOTCHAS.md`'s
 standing rules and `docs/agent-brief.md`. The root `CLAUDE.md`'s `common/` row gains the two new files and their
 tests. Plans and dated findings stay as written. One mapping sentence, as the game's `CLAUDE.md` has for
-`~/cs2-patch`, says which old name is which wrapper.
+`~/cs2-patch`, says which old name is which wrapper. The two `INSTALL.md` files gain the decline line and the
+way back (section 9).
 
 **3.8 Releases.** The change asks someone with an install to notice something, so the second number rises:
-**`v0.3.0`**. Built on a branch, `wrapper-names`, pushed and merged into nothing until the Studio's live steps
-pass, so that `main` can still take a game-update fix. `common/check-release-move.sh` gains a fourth question:
-a commit that holds `common/wrappers.sh` moves to `release` only when `v0.3.0` exists and is it or an ancestor.
+**`v0.3.0`**. Built on a branch, `wrapper-names`, pushed, and merged only after both Macs' live steps pass
+(WD7), so that `main` can still take a game-update fix and nothing reaches a clone before the Mac that showed
+the fault has been through it. The tag is cut on the merge, never before W3: a tag is not moved, and the MacBook
+is the only Mac that can show whether the fault is gone.
+
+`common/check-release-move.sh` gains a fourth question: a commit that holds `common/wrappers.sh` moves to
+`release` only when `v0.3.0` exists and is it or an ancestor. **The gate cannot hold ON1.** `v0.3.0` is past
+`v0.2.0`, so a move of `release` to it takes the folder move too, and the third question passes by itself. That
+order is held by James's word and not by the gate: W4's question to him names both moves.
 
 How each install reaches the new names:
 
 | Install made by | Path |
 |---|---|
-| The pasted line, while `release` is at `v0.1.0` | nothing changes until `release` moves. If it moves straight to `v0.3.0`, the next run of the installer does both moves in one setup run: the folder, then the wrapper (WT11) |
+| The pasted line, while `release` is at `v0.1.0` | nothing changes until `release` moves. If it moves straight to `v0.3.0`, the next run of the installer does both moves in one setup run: the folder, then the wrapper (WT11, WT17) |
 | The pasted line, after `release` has moved to `v0.2.0` | the next run of the installer after `release` moves to `v0.3.0` renames the wrapper |
 | A clone on `main` | the next `git pull` and setup after the merge |
-| Someone holding `v0.1.0` or `v0.2.0` on a Mac already moved | Cities: Skylines II still starts: that launcher finds the renamed wrapper by the game inside it (1.6). Its setup says there is no wrapper, its installer would make a second one, and the Surviving Mars launcher of those versions finds nothing. The way through is the game's variable naming the new path; the notes say so |
+| Someone holding `v0.1.0` or `v0.2.0` on a Mac already moved | **Cities: Skylines II** still starts: that launcher finds the renamed wrapper by the game inside it (1.6). That version's setup says there is no wrapper. Its installer finds the renamed wrapper the same way the launcher does (`install.sh:83-90`) and uses it; it makes a wrapper at the old name only when the renamed one holds no game. **Surviving Mars:** the launcher of those versions knows one spelled path and finds nothing, and its installer would make a wrapper at the old name beside the renamed one. The way through for both is to rename the wrapper back by hand (section 9); the new setup later leaves a renamed-back wrapper alone (3.4) |
 
 The section for `CHANGELOG.md`, to be written at the build from what was built:
 
 - Setup renames the game's Wine wrapper in `~/Applications`: the old and new names, per game.
 - Why: Spotlight offered the wrapper beside the game's app, and a wrapper opened directly starts Steam outside
   the launcher.
-- It is a rename with nothing copied; setup says what it renamed; it stops while the game, Steam or an install
-  is using the wrapper, and skips when it cannot be done safely.
+- It is a rename with nothing copied; setup says what it renamed; it stops while the game, a launch or an
+  install is using the game's wrapper, and skips when it cannot be done safely, among them while Steam is open
+  in the Windows Steam's wrapper.
 - What stops working until pointed at the new name: anything of the player's own that names the old path (a
   Dock item made from the wrapper, an alias, a saved command, a Porting Kit entry).
-- To decline: the game's variable with the old path, in a clone and with the pasted line, as `v0.2.0`'s section
-  shows for the folder.
+- To decline: `L1_KEEP_WRAPPER_NAMES=1`, printed as a literal, in a clone and with the pasted line, for that run.
 - Going back to an earlier version on a moved Mac: the row above.
+
+**3.9 After a hand rename: the window and the Steam app.** Two readers hold a wrapper's path from the last
+setup run, and target 2 has to say what a hand rename does to them (WD5).
+
+- **14unch3r.** A stale `L1Prefix` is not only a lost "running" state. `state(of:)` returns `.absent` when the
+  file it looks for under the prefix is not there (`launcher-window.swift:157-160`), the row is dimmed (`:765`)
+  and reads "Not installed in Steam. See its set-up guide." (`:168`). Recommended: when the folder `L1Prefix`
+  names does not exist, the window takes the prefix of the one app in the same folder whose `L1Role` is
+  `game-wrapper` with the row's app ID (`steam-wrapper` for the Steam row). It already reads every app's
+  `Info.plist` there, it runs nothing from the wrapper, and with none or two it stays as today.
+- **`S734M.app`.** Its `launch` file holds `WRAPPER=<path>` (`make-steam-shortcut.sh:143`). Recommended: the
+  builder also writes the path of the runtime folder's `wrappers.sh`, and the file, when `$WRAPPER` has no
+  `wine64`, asks it for `find steam` before it shows its alert. No third copy of `wrappers.sh` is made.
+- **Surviving Mars's app.** Its `GAME_EXE=` line (1.5) only feeds the "already running" notice, which has a
+  second pattern that does not depend on the path. It is left as it is and is right again after the next setup.
+
+If WD5 is answered "narrow": neither change is built, target 2 reads "from the game's app or a terminal", and
+the notes say that the window and the Steam app follow a hand rename at the next setup run.
 
 ## 4. Phases
 
@@ -360,162 +592,361 @@ Each phase ends green before the next starts. Live steps, and anything public, r
 
 ### W0 — decisions and probes (no code)
 
-1. James answers WD1 to WD8 (section 8).
-2. **P1, read-only, the MacBook.** `common/mac-inventory.sh`, then the `mdls` and `mdfind` lines of 1.2 there.
-   Records which wrappers exist, their last-used dates, and what `mdfind` returns for `surviving mars` and `cs2`.
-3. **P2, writes a scratch app, the Studio.** A folder `~/Applications/wrapper-999999.app` holding only an
-   `Info.plist` with the three wrappers' `CFBundleName`, version and copyright strings and a `launch` file that
-   exits. `mdimport` it. Then: `mdfind` for every word of target 3 and for `w`, `wr`, `wrapper`, `999999`;
-   the same with the scratch app named `1L-999999.app` (the issue's form); the same inside
-   `~/Applications/1launcher.noindex/`. James types the words into Spotlight and looks at the Apps view. Both
-   scratch items go to the Trash afterwards. The outcome selects a row of 3.3's table and settles WD3.
-4. **P3, read-only where possible.** On a wrapper made by `common/make-wrapper.sh` (a scratch one, made as the
-   installer plan's live steps made them, then put in the Trash): its `Info.plist` names and what `mdls` shows.
-   If James agrees to open that scratch wrapper once directly: whether the template's launcher keeps `L1Role`.
-   If it drops the key, 3.1's marker moves to a file in the prefix.
-5. The plan is checked. The probes' results are folded in first, so the check reads the measured design.
+The probes come before the design is frozen, in this order. Each records its result in section 1 of this file.
+Those that write anything are on James's word, so WD10 is answered first; the other decisions wait for the
+results (step 7).
+
+1. **P0, the Studio, nothing written.** James types `surviving mars`, `cs2` and `steam` into Spotlight and the
+   order of the window's first rows is written down. It replaces the unmeasured line of 1.2.
+2. **P1, the MacBook: the fault itself.** Read-only first: `common/mac-inventory.sh`; the `mdls` and `mdfind`
+   lines of 1.2; `xattr -l`, the mode and the owner of each wrapper; the use count and last-used date of the
+   Surviving Mars wrapper; and what Spotlight's window shows for `surviving mars` and `cs2`, written down as
+   the "before". Then, with nothing of Wine running there: the Surviving Mars wrapper is renamed by hand to the
+   recommended name; `mdfind` is polled until the old name is gone from it; James types the same words and the
+   window's order is written down; the wrapper is renamed back. The outcome selects a row of 3.3's table. If
+   the wrapper is still offered, branch B is tried in the same visit.
+3. **P3, a scratch wrapper, the Studio.** A wrapper made by `common/make-wrapper.sh` under a scratch name, as
+   the installer plan's live steps made them, then put in the Trash. Recorded: its whole `Info.plist` (kept in
+   the workspace, not in this file), which keys hold its file name, `mdls`, `codesign -dv`, its mode, owner and
+   attributes, and the form of its bundle identifier. If James agrees to open it once directly: whether the
+   template's launcher keeps `L1Role` when it rewrites the file. If it drops the key, 3.1's marker moves to a
+   file in the prefix.
+4. **P2, scratch apps, the Studio. After P3,** because it copies P3's `Info.plist` and not the Studio's own
+   wrappers': a folder `~/Applications/wrapper-999999.app` holding that file whole (the stored name set to the
+   new one, `NSBGOnly`, the package type and the icon as found) and a stub program that exits. `mdimport` it.
+   Then `mdfind` for every word of target 3 and for the name's own pieces; the same with the issue's form,
+   `1L-999999.app`; the same inside `~/Applications/1launcher.noindex/`. James types the words and looks at the
+   Apps view. Everything goes to the Trash afterwards. 3.3 has the pass rule and the branches; it settles WD3.
+5. **P4, the Studio: what a rename costs.** With nothing of Wine running: the Surviving Mars wrapper is renamed
+   by hand, the game is started with `SM_WRAPPER` naming it, and three things are recorded: the time from start
+   to the game's window against the last start before the rename; whether macOS checked the wrapper again;
+   whether Steam was still signed in without a prompt. Then the name is put back. A start slower by more than
+   30 s, or a new check by macOS, goes into section 5 and the notes as something a player will meet. A Steam
+   sign-in prompt stops the plan until its cause is known: a rename that signs every player out is not shipped
+   on this evidence.
+6. **P5, the installer's setup step.** With the scratch wrapper of P3 before it goes to the Trash, or a fixture
+   run of the real installer in it as the installer plan's live steps did: at the moment the installer would
+   run setup, `lsof -t` on 3.4's named files, and the place and holder of the prefix's server socket, three
+   times. 3.4's table says what each outcome changes.
+7. James answers WD1 to WD9 and WD11 (section 8), with the probes' results in front of him.
+8. The results are folded into sections 1 and 3, and the plan is checked again. No code before that check passes.
 
 ### W1 — the repo (branch `wrapper-names`)
 
-1.1 `common/wrappers.sh` and `common/test-wrappers.sh` (WT1 to WT5, WT12).
-1.2 `common/move-wrappers.sh` and `common/test-move-wrappers.sh` (WT7 to WT9).
-1.3 The deployed readers: both launchers, `repatch.sh`, the badge patch; both setups copy `wrappers.sh` and run
-    the mover; the three app builders; `make-steam-shortcut.sh`'s clone; `split-wrapper.sh`; `make-engine.sh`;
-    both installers and `install-core.sh`'s marking; `move-install.sh:43`; `mac-inventory.sh`. Their tests and
-    the golden file.
-1.4 14unch3r: no code change; WT6 added to `common/test-launcher-window.sh`.
-1.5 The research scripts (3.6), a commit of their own.
-1.6 `common/check-release-move.sh`'s fourth question and its test (WT13).
-1.7 Documents (3.7), and this plan's as-built header.
-1.8 Every test file exits 0 on the branch; every mutant of section 6 applied to real source and seen red.
+1.1 `common/wrappers.sh` and `common/test-wrappers.sh` (WT1 to WT5c, WT12).
+1.2 `common/move-wrappers.sh` and `common/test-move-wrappers.sh` (WT7 to WT9c).
+1.3 `common/make-wrapper.sh`'s `--mark`; `common/install-core.sh` (`L1_WRAPPER_GIVEN`, the option passed, the
+    function that runs setup and resolves again); both `scripts/install.sh`; Surviving Mars's stop before
+    step 7 (WT10, WT11).
+1.4 The deployed readers: both launchers, `repatch.sh`, the badge patch; both setups in the order of 3.4;
+    `common/check-deploy.sh`; `move-install.sh:42` and `:45`; the three app builders;
+    `make-steam-shortcut.sh`'s clone, `--no-clone` and start-time lookup; `split-wrapper.sh`; `make-engine.sh`;
+    `mac-inventory.sh`. Their tests, the golden file, and every row of section 6's second table (WT14 to WT18).
+1.5 14unch3r: the prefix found by marker when `L1Prefix` is stale (3.9, if WD5 is yes); WT6 and WT6b in
+    `common/test-launcher-window.sh`.
+1.6 The research scripts (3.6), a commit of their own.
+1.7 `common/check-release-move.sh`'s fourth question and its test (WT13).
+1.8 Documents (3.7), `CHANGELOG.md`'s section under `## Unreleased`, and this plan's as-built header.
+1.9 Every test file that exits 0 at `d50cf33` exits 0 on the branch (`common/check-identifiers.sh` exits 1 on
+    `main` already, with 9 hits, by pass 1's builder: it is not this plan's and is recorded, not fixed here);
+    every mutant of section 6 applied to real source and seen red, then restored.
 
 ### W2 — the Studio
 
-James is told first; every Steam of the account is closed with `steam.exe -shutdown`, never `kill -9`.
+James is told first; every Steam of the account is closed with `steam.exe -shutdown`, never `kill -9`. Recorded
+before step 2: the three wrapper names, each wrapper's `Info.plist` copied into the workspace, and `--check`'s
+output.
 
 1. `bash scripts/setup.sh --check` for each game: it names the three renames and nothing else.
-2. Cities: Skylines II's setup. It renames the game's wrapper and the Windows Steam's, and rebuilds the game's
-   app, `S734M.app` and 14unch3r. Then `scripts/boot-verify.sh`, detached with a log: `VERDICT: PASS`.
-3. Surviving Mars's setup. It renames that wrapper. The game is started from 14unch3r and reaches its menu; the
-   time from start to window is noted against the last start before the rename.
-4. `S734M.app` opens the store.
-5. `bash common/wrappers.sh list` prints three marked wrappers; `--list` of 14unch3r prints two games and one
-   Steam app, all `ready`; `lsregister -dump` holds no old wrapper path, or the stale ones are recorded.
-6. `mdfind` for every word of target 3: no wrapper. James types `surviving mars`, `cs2` and `steam` into
-   Spotlight: the top hit is the game's app, the game's app and `S734M.app`.
-7. The acceptance test of the keys-and-labels rule, by hand: one wrapper renamed to an arbitrary name, the game
-   started from its app, then the name put back.
+2. Cities: Skylines II's setup, from the branch. It renames the game's wrapper and the Windows Steam's, and
+   rebuilds the game's app, `S734M.app` and 14unch3r. Then `scripts/boot-verify.sh`, detached with a log:
+   `VERDICT: PASS`.
+3. **Surviving Mars through its installer, not its setup:** `bash surviving-mars-relaunched/scripts/install.sh`
+   from the branch, with the game installed, so that it goes straight to its setup step with the installer's
+   own lock held and its own export in the environment. Pass: the wrapper is renamed; the installer exits 0;
+   no `.launcher.lock` is left in the renamed wrapper. Then the game is started from 14unch3r and reaches its
+   menu. Pass: the time from start to window is within 30 s of P4's "before", and Steam is signed in without a
+   prompt.
+4. `S734M.app` opens the store, signed in without a prompt.
+5. `bash common/wrappers.sh list` prints three marked wrappers and no `L1RenamePending`; `--list` of 14unch3r
+   prints two games and one Steam app, all `ready`. `lsregister -dump` is read for the three old paths and the
+   count is written down; it is a record, not a pass condition.
+6. Spotlight. `mdfind` is polled, up to 60 s after an `mdimport` of each renamed wrapper, until the old names
+   are gone. Then, for every word of target 3: no wrapper is returned, **and the positive control is**: the
+   game's app, `S734M.app` or 14unch3r that 1.2's table shows for that word still is. James types
+   `surviving mars`, `cs2` and `steam`: the first row is the game's app, the game's app and `S734M.app`, set
+   against P0's record.
+7. The acceptance test of the keys-and-labels rule, by hand, on the Surviving Mars wrapper: renamed to
+   `anything-at-all.app`; the game started from its app, then from 14unch3r (its row `ready`, if WD5 is yes);
+   quit; the name put back to what `wrappers.sh name` prints. On the Windows Steam's wrapper: renamed,
+   `S734M.app` opened, the name put back.
 8. What names the old paths outside the repo: the 9 memory files; anything James finds in Porting Kit.
-9. Merge the branch into `main`; `v0.3.0` cut on it, by the commands of the root `CLAUDE.md` (WD7).
 
 ### W3 — the MacBook
 
-A visit of its own, after W2. P1's record is the starting point. Steps 1 to 7 of W2 there. Step 6 is the one
-that matters most: it is the Mac where the fault was seen, and the only one with a wrapper Spotlight has learned.
+A visit of its own, after W2, on the branch (`git fetch`, then the branch checked out). P1's record is the
+"before". Steps 1 to 7 of W2 there; its step 3 is Surviving Mars's installer too, and its wrapper there "was
+made the old way". Step 6 is the one that matters most: it is the Mac where the fault was seen, and the only
+one with a wrapper Spotlight has learned. Pass for it: `surviving mars` typed into Spotlight no longer shows a
+wrapper in the window's first rows, against P1's "before". If it does, nothing is merged: the branch stays, and
+3.3's P1 row says what is tried.
+
+### W3b — merge and `v0.3.0`
+
+After W2 and W3 are green: the branch is merged into `main` with `--no-ff`, pushed, and `v0.3.0` is cut on the
+merge by the commands of the root `CLAUDE.md` (WD7). `CHANGELOG.md`'s section is read against what was built
+before the tag.
 
 ### W4 — `release`
 
-On James's word, on the commit he names: the test files pass, `common/check-release-move.sh` passes, then
-`git push origin <commit>:release`; the root `CLAUDE.md`'s "Published since" sentence records it. Then the pasted
-line, run on the Studio, reports nothing to move. WD8 is the order of this against ON1 of the local-files plan.
+On James's word, on the commit he names, and with the question put to him in these terms: this move takes the
+wrapper rename and, if `release` is still at `v0.1.0`, the folder move of ON1 with it. Then: the test files
+pass, `common/check-release-move.sh` passes, `git push origin <commit>:release`; the root `CLAUDE.md`'s
+"Published since" sentence records it. Then the pasted line, run on the Studio, renames nothing and exits 0.
 
 ## 5. Who notices what
 
 | Audience | Effect | Mitigation |
 |---|---|---|
-| Players who installed with the pasted line | nothing until `release` moves. Then, at their next run of the installer, the wrapper in `~/Applications` has a new name and the game's app works as before | setup prints the rename; `v0.3.0`'s notes |
+| Players who installed with the pasted line | nothing until `release` moves. Then, at their next run of the installer, the wrapper in `~/Applications` has a new name and the game's app works as before. This route is the installer's, which exports the game's variable itself: 3.2's rule is what lets the rename happen there | setup prints the rename; `v0.3.0`'s notes; WT11 |
 | Someone who starts the game by opening the wrapper | that habit is the fault. The wrapper is no longer found under its old name; the game's app and 14unch3r are | the notes name the game's app |
 | Someone with their own Dock item, alias or saved command naming a wrapper | it stops working until pointed at the new name | the notes; setup's line gives both names |
+| Someone with Steam open in the Windows Steam's wrapper while setup runs | the game's setup goes on; the store wrapper keeps its old name this run and one line says so; the next run renames it | 3.4's skip; WT8 |
+| Someone whose game, launch or install is using the game's wrapper | setup stops before it changes anything, exit 3, and says to try again when it has finished | 3.4, step 3 of each order; WT17 |
 | People with a clone | the same, from the merge, at their next pull and setup | `--check` says what a run would do |
-| Anyone holding `v0.1.0` or `v0.2.0` on a moved Mac | 3.8's last row | the notes; the game's variable |
-| New installs | the wrapper is made under the new name and marked at birth | WT10 |
-| Someone playing one game while the other game's setup runs | nothing: the mover looks only at the wrapper it was told about | WT8 |
+| Someone who declines | `L1_KEEP_WRAPPER_NAMES=1` for that run; both games, both routes. Surviving Mars's installer no longer stops short of its app for a player who names the wrapper the app uses | 3.4; WT9, WT11 |
+| Anyone holding `v0.1.0` or `v0.2.0` on a moved Mac | 3.8's last row: Cities: Skylines II starts; Surviving Mars does not until its wrapper is renamed back | the notes; section 9 |
+| Someone whose setup fails after the rename | the game still starts from its app: the new launcher was copied before the rename | 3.4's orders; WT17 |
+| Someone who renames a wrapper by hand | every start of a game works. 14unch3r and `S734M.app` follow at once if WD5 is yes, else at the next setup run | 3.9; W2 step 7 |
+| New installs | the wrapper is made under the new name and marked before it is moved into place | WT10 |
+| Someone playing one game while the other game's setup runs | nothing: the mover looks only at the named files of the wrapper it was told about | WT8 |
+| A player with a wrapper in `/Applications` | it keeps its old name and is found as before | 3.4; WT9 |
+| Everyone, at the first start after the rename | what P4 measures: a slower first start or a new check by macOS, if there is one | the notes, from P4 |
 | Porting Kit, if it lists the wrappers | its entry would name a path that is gone. Not checked (1.5) | W2 step 8 |
 | Claude sessions | memory and both `CLAUDE.md` files name the old paths | 3.7; W2 step 8 |
 
 ## 6. Test plan
 
 A mutant is a named change to real source that must turn the test red; each is applied and seen red at the
-build, then restored. Tests run in a scratch home and never touch the real `~/Applications`.
+build, then restored. Tests run in a scratch home and never touch the real `~/Applications`; the system folder
+of step 3 is read from a test variable there.
+
+Three fixtures, named in the table because pass 1 found mutants that stayed green on the wrong one. **Bare:** a
+wrapper with a prefix and a stub `wine64`, and no game's program. **Game:** bare, plus the game's program.
+**Steam:** bare, plus `steam.exe`. A resolver or mover test whose mutant leaves an unmarked wrapper behind uses
+bare or steam, because step 4 of the resolver finds a game fixture whatever its name or marker.
 
 | # | Test | Passes when | Mutant |
 |---|---|---|---|
-| WT1 | `find` by marker | with a wrapper of an arbitrary name marked `game-wrapper` 949230 among unmarked apps, `find game 949230` prints it, exit 0 | the resolver's step 2 removed: it falls to the old names and finds none |
-| WT2 | the game's variable wins | with `CS2_WRAPPER` set and a marked wrapper present, the variable's path is printed | step 1 moved after step 2 |
-| WT3 | old names, only while nothing is marked | an unmarked `CS2dxmt11.app` is found; with a marked wrapper beside it, the marked one is | the "no marked wrapper" condition dropped from step 3 |
-| WT4 | two markers | two wrappers marked alike: exit 2, both paths printed with `~`, nothing chosen | the count check replaced by "take the first" |
-| WT5 | what is not a wrapper | a symlink named `*.app`, an app in a subfolder, an `Info.plist` that does not parse, and `L1Role` `game` are all passed over | the symlink test removed |
+| WT1 | `find` by marker | a bare wrapper of an arbitrary name marked `game-wrapper` 949230, among unmarked apps: `find game 949230` prints it, exit 0 | step 2 removed: exit 1 |
+| WT2 | a wrapper named by the player wins | with `CS2_WRAPPER` naming an unmarked bare wrapper and a marked one beside it, the named path is printed, its trailing slash gone; a named path that does not exist is printed too | step 1 moved after step 2: the marked one is printed |
+| WT3 | old names, only while nothing is marked | an unmarked bare `CS2dxmt11.app` is found; an old-named app with no prefix is passed over for the next name; with a marked bare wrapper beside it, the marked one is printed | (a) steps 2 and 3 swapped (b) the prefix test dropped from step 3 (the case `test-setup.sh` MUTANT=36 held) |
+| WT4 | two markers | two bare wrappers marked alike: exit 2, both paths on standard error with `~`, standard output empty | the count check replaced by "take the first" |
+| WT4b | every caller stops on 2 | with two wrappers marked alike: the CS2 launcher and the Surviving Mars launcher start no Wine and print the line; each setup and each installer exits 1 with nothing copied or built; `repatch.sh` exits 1 | in each caller in turn, 2 treated as 1 |
+| WT5 | what is not a candidate | each of these, marked, is passed over, and `list` names the test it failed: a symlink named `*.app` whose target is a whole marked wrapper; an app in a subfolder; an `Info.plist` that does not parse; `L1Role` `game`; another app ID; no prefix; no `wine64`; a folder writable by group; a `com.apple.quarantine` attribute | (a) the symlink test removed (b) the quarantine test removed (c) the `wine64` test removed |
+| WT5b | step 4 | an unmarked game fixture under an unknown name is found, for Surviving Mars as for Cities: Skylines II; one that holds the program but is marked `steam-wrapper` is passed over | (a) Surviving Mars's row loses its program path (b) the "marked otherwise" test removed |
+| WT5c | the table, `name` and `list` | every game of `common/games.tsv` has a row; `name` prints the three names of 3.3; `list` prints role, app ID and `~` path of each marked wrapper and nothing of the home folder's name | (a) a row removed (b) `list` printing the path as it is |
 | WT6 | 14unch3r does not list wrappers | `launcher-window --list`, with marked wrappers of both roles in the folder, prints the game apps and the Steam app only | the guard at `launcher-window.swift:127` widened to accept any role that starts `game` or `steam` |
-| WT7 | the move | an old-named wrapper is marked, renamed, and the output is `state: old` and one `moved:` line; a second run is `state: none`; the `Info.plist` mode is unchanged and the file lints | the marker written after the rename, with the run stopped between the two: the wrapper is then found by no step |
-| WT8 | the stops | a live holder of the launch lock, and a process with a file open under the wrapper, each give exit 3 and no rename; a process with a file open under another wrapper does not | the open-files probe pointed at `~/Applications` instead of the wrapper |
-| WT9 | the skips, and a hand rename | the variable set, the target name taken, a symlinked wrapper: exit 1, nothing renamed. A marked wrapper under a name of the tester's own is `state: none` and keeps its name | the "old names only" condition dropped: the mover renames the hand-named wrapper |
-| WT10 | a new install | the installer, with fixtures, makes the wrapper under the new name and it carries the marker; the golden file shows the new name | the marking line removed from `install-core.sh` |
-| WT11 | both moves in one run | a scratch home in the `v0.1.0` layout (`~/cs2-patch`, `CS2dxmt11.app`): one run of setup moves the folder, renames the wrapper, and the app's `launch` file and `L1Prefix` name the new places | the mover called before the folder move |
-| WT12 | the census | `git grep -l` for the old wrapper names in code files equals a list kept in the test: `common/wrappers.sh`, `common/mac-inventory.sh`, the fixtures of named tests, the one dated record | an old name put back into `repatch.sh` |
+| WT6b | 14unch3r after a hand rename (WD5) | a game app whose `L1Prefix` names a folder that is gone, with one marked wrapper of its app ID beside it: the row is `ready`; with two: as today | the lookup removed: the row is `absent` |
+| WT7 | the move | a bare old-named wrapper: `state: old`, one `moved:` line, exit 0; it carries the marker and no `L1RenamePending`; `Info.plist` lints and has its old mode; the stored name follows (if P3 says there is one); a second run is `state: none` | the marker not written: `find` exits 1 on the bare fixture |
+| WT7b | part-way is finished | a wrapper under an old name with the marker and `L1RenamePending`: `state: part-way`, one `moved:`, exit 0, the key gone | the part-way branch removed |
+| WT7c | a failed rename | with `mv` made to fail: `not moved:`, exit 2, the marker and `L1RenamePending` present, the name unchanged, and `find` prints the old path; a second run with `mv` working is `state: part-way` and finishes | the key not written with the marker: the next run reads `state: none` and never finishes |
+| WT7d | killed after the rename | on a steam fixture, with `L1_WMOVE_STOP_AFTER=rename`: the wrapper is under the new name and `find steam` prints it | the marker written after the rename: `find steam` exits 1 |
+| WT8 | the stops, and the probe | a live holder of the launch lock: exit 3, no rename; the same holder named in `--held-by`: renamed. A holder reported by the stubbed probe, game role: exit 3. Steam role: exit 1 and a `skip:` line. The real probe, unstubbed, with a scratch program running from the fixture's `wine/bin/wineserver`: exit 3; the same program running from another fixture wrapper: renamed. A recording `lsof` on `PATH` shows every call as `-t --` with file operands | (a) the probe given every wrapper's files (b) the steam-role holder left a stop (c) `--held-by` ignored (d) the call replaced by a scan by user |
+| WT9 | the skips, and names left alone | each gives exit 1 and renames nothing: `L1_KEEP_WRAPPER_NAMES=1`; a wrapper named by the player; the target name taken; a symlinked wrapper; a wrapper not the user's own; one in the system folder; no `Info.plist`; one that does not parse; one that cannot be written; two candidates. A marked wrapper with no `L1RenamePending` under an old name, and one under a name of the tester's own, are `state: none` and keep their names | (a) part-way read from "marked and old-named" without the key: the renamed-back wrapper is renamed again (b) candidates taken from step 2 as well: the hand-named wrapper is renamed (c) the keep-names test dropped |
+| WT9b | the store candidate | each is a `skip:` and marks nothing: `S734M.app`'s `L1Prefix` names the game's wrapper; `CS2dxmt11-pk110.app` carries `game-wrapper`; it holds `Cities2.exe`; it has no `steam.exe` | the "not the game's wrapper" test removed: the game fixture ends up marked `steam-wrapper` |
+| WT9c | `--dry-run` | the lines read `would move:`, the exit is the real run's, and the wrapper's name and the bytes of its `Info.plist` are unchanged | the marker written in a dry run |
+| WT10 | a new install | `common/test-make-wrapper.sh`: with `--mark game 949230` the finished wrapper carries the marker, and a run killed before the last step leaves nothing at the target. Both `scripts/test-install.sh`: the recorded call of the stub maker holds `--mark game <ID>` and the new name; the golden file shows the new name | (a) the marking removed from `make-wrapper.sh` (b) the option dropped in `install-core.sh` |
+| WT11 | the installer's route | through `cities-skylines-2/scripts/install.sh` and through Surviving Mars's, with fixtures, the game installed, an old-named wrapper and no variable given: the wrapper is renamed and marked, the app's `L1Prefix` names it, the installer exits 0 and no `.launcher.lock` is left in it. With the variable given by the caller: nothing renamed, and the line says a wrapper was named. With `*_VIA_INSTALLER=1`, the variable set and `L1_WRAPPER_GIVEN` not set, setup alone: nothing renamed. Surviving Mars with `SM_WRAPPER` naming the wrapper the resolver would find: setup runs and the app is built; naming another: the stop before step 7 | (a) the export removed from `core_begin` (b) setup's unset removed (c) the resolving again after setup removed: a lock is left (d) the unset default read as "not given" (e) Surviving Mars's stop put back to "whenever given" |
+| WT12 | the census | over a scratch copy of the tracked files, not the working tree: the code files that match `CS2dxmt11`, `SurvivingMars` before `.app` or a non-letter, or `CS2.app` equal a list kept in the test: `common/wrappers.sh`, the fixtures of named tests, the one dated record. `CS2dxmt11` also catches `CS2dxmt11-pk110` and names spelled without `.app` (`mac-inventory.sh:138`) | (a) an old name put back into the copy's `repatch.sh` (b) `CS2dxmt11-pk110` put back into `make-steam-shortcut.sh` |
 | WT13 | the release gate | a commit holding `common/wrappers.sh` fails without `v0.3.0`, passes with it as an ancestor | the fourth question's tag changed to `v0.2.0` |
-| WT14 | the store's app | after a move, a rebuilt `S734M.app`'s `launch` file names the renamed wrapper, and a foreign `S734M.app` is not touched | the rebuild made unconditional |
-| WT15 | deployed copies | a launcher in a scratch runtime folder with `wrappers.sh` beside it, and no checkout, finds a marked wrapper; with neither, it stops with one plain line | setup's copy of `wrappers.sh` removed |
-| WT16 | clones | `make-steam-shortcut.sh`'s clone of a marked game wrapper carries `steam-wrapper` and no app ID | the re-marking after `:105` removed: `find game 949230` then exits 2 |
+| WT14 | the store's app | after a move, a rebuilt `S734M.app`'s `launch` file names the renamed wrapper. With no store wrapper and no `S734M.app` before setup, there is none after, and no wrapper was cloned. A foreign `S734M.app` is not touched. With `$WRAPPER` gone and a marked store wrapper elsewhere, the `launch` file finds it (WD5) | (a) `--no-clone` dropped from setup's call: a clone appears (b) the rebuild not run after a move (c) the start-time lookup removed |
+| WT15 | deployed copies | both `scripts/test-setup.sh`: after a run the deployed `wrappers.sh` exists and `cmp` finds it equal to the repo's; `common/check-deploy.sh` counts it. A launcher in a scratch runtime folder with the file beside it and no checkout finds a marked wrapper; the same for `repatch.sh` run by hand, the badge patch run by hand, and `launch-relaunched.sh` in a scratch state folder; with the file gone, each stops with one plain line | (a) setup's copy of the file removed, in each setup (b) the look beside itself dropped, in each reader (c) the line removed from `check-deploy.sh` |
+| WT16 | clones | `make-steam-shortcut.sh`'s clone of a marked bare donor, made in a scratch folder, carries `steam-wrapper`, no app ID and no `L1RenamePending`. `split-wrapper.sh`'s clone carries `game-wrapper` 3215050 | (a) the re-marking after `:105` removed: `find game 949230` exits 2 (b) the marking removed from `split-wrapper.sh`: `find steam` exits 2 |
+| WT17 | the order in each setup | **Both moves in one run:** a scratch home in the `v0.1.0` layout (`~/cs2-patch`, `CS2dxmt11.app`): one run of Cities: Skylines II's setup moves the folder, renames the wrapper, and the app's `launch` file, its `L1Prefix` and the badge step's folder name the new places. **A stop comes first:** with a holder reported, setup exits 3 and the folder has not moved and nothing was copied. **Surviving Mars:** with an own file missing, setup exits 1 and the wrapper keeps its name; with the app builder made to fail, setup exits 1, the wrapper is renamed, the deployed launcher and `wrappers.sh` are there, and that launcher's `find` prints the renamed wrapper | (a) `WRAPPER` not resolved again after the move: `L1Prefix` names the old path (b) the dry run's stop moved after the folder move (c) Surviving Mars's mover moved before the copies: the wrapper is renamed in the first case |
+| WT18 | the inventory | `common/mac-inventory.sh` reports each marked wrapper by role and app ID, and still names an unmarked old one | the marker not read |
 
-Live, not automatable: W2 steps 2 to 7 and W3. A green suite does not show what Spotlight's window puts first.
+Existing tests that change, by name. Pass 1's builder met each of these.
+
+| File | What changes |
+|---|---|
+| `cities-skylines-2/scripts/test-setup.sh` | MUTANT=36 (`:45`, `:105`) patches the loop over `WRAPPERS`, which is gone: retired there and rehomed as WT3's second mutant. The two badge cases (`:224`, `:383`) assert a warning that names the spelled wrapper; they become "the badge step uses the wrapper setup found". The probe stub (`:136`) is joined by one for `L1_WMOVE_PROBE`: without it every run would reach the real `lsof`. New cases: WT15, WT17 |
+| `cities-skylines-2/scripts/test-move-install.sh` | MUTANT=7 (`:12`, `:33`) patches the same list in `move-install.sh`'s by-hand lock fallback: rewritten against the resolver (the builder's rewrite went red) |
+| `cities-skylines-2/scripts/test-install.sh` and `test-install.golden` | the "copies held identical to the launcher's" rule (`:169`) and `launchers_choice` (`:374-386`) end for `find_wrapper`: the installer sources the resolver. "A wrapper without a prefix folder" (`:393`) keeps its result, exit 1 and nothing deleted, under the rule of 3.4. The golden file is recorded again (127 lines name `CS2dxmt11`). New cases: WT10, WT11 |
+| `surviving-mars-relaunched/scripts/test-install.sh` | its mutants 11 ("setup run with `SM_WRAPPER` given") and 20 ("`SM_WRAPPER` read after `core_begin`") are rewritten for 3.4's stop and `L1_WRAPPER_GIVEN`; its stub maker records `--mark`; its fixture wrappers gain an `Info.plist`. New cases: WT10, WT11 |
+| `surviving-mars-relaunched/scripts/test-setup.sh` | the launcher's function held identical; new cases WT15, WT17 |
+| `cities-skylines-2/scripts/test-make-steam-shortcut.sh` | its rule that every build has a `--from` that does not exist (`:3-5`) gains one exception, WT16's scratch donor; `--no-clone` and the start-time lookup (WT14) |
+| `common/test-make-wrapper.sh` | `--mark` (WT10); the mode case at `:422` now also holds after a marking |
+| `common/test-mac-inventory.sh` | `:158-159` ("one of the six this script knows", "a wrapper it knows is reported") follow WT18 |
+| `common/test-launcher-parity.sh` | a rule for the lines by which each launcher finds `wrappers.sh` |
+| `common/test-launcher-window.sh` | WT6, WT6b |
+| `common/test-check-release-move.sh` | WT13 |
+| The other test files among the 21 of 1.4 | each either keeps an old name as a fixture and goes on WT12's list, or takes the name from `wrappers.sh name`. Which, per file, is settled at the build and checked by WT12 |
+
+Live, not automatable: W0's probes, W2 steps 2 to 7, W3 and W4. A green suite does not show what Spotlight's
+window puts first.
 
 ## 7. Exit criteria
 
-1. WT1 to WT16 pass on the branch, every mutant seen red, every other test file still exits 0.
-2. W2 and W3 pass on both Macs, with the boot-verify verdict and the Spotlight results recorded in this file.
-3. `git grep` finds the old wrapper names in no code file outside WT12's list.
-4. `v0.3.0` exists with its page, and the root `CLAUDE.md` records where `release` stands.
-5. #26's checkboxes are ticked; anything found and not fixed has an issue of its own.
+1. W0: P0 to P5 are recorded in section 1, each with the row of 3.3 or 3.4 it selected, and the plan has passed
+   a re-check after them.
+2. WT1 to WT18 pass on the branch, every mutant seen red, every row of section 6's second table done, and every
+   test file that exits 0 at `d50cf33` still exits 0.
+3. W2 and W3 pass on both Macs, with each step's pass condition, the boot-verify verdict and the Spotlight
+   results recorded in this file, P0's and P1's "before" beside them.
+4. `git grep` finds the old wrapper names in no code file outside WT12's list.
+5. `v0.3.0` exists with its page, cut after W3.
+6. W4: `release` has moved on James's word, the root `CLAUDE.md` records where it stands, and the pasted line run
+   on the Studio renamed nothing and exited 0. Until then this plan is built but not published, and its header
+   says so.
+7. #26's checkboxes are ticked; anything found and not fixed has an issue of its own.
 
 ## 8. Decisions for James
 
 | # | Question | Recommendation |
 |---|---|---|
-| WD1 | The marker: `L1Role` `game-wrapper` / `steam-wrapper` with `L1SteamAppID`, in `Info.plist` | Yes, as 3.1. It reuses the keys three builders and the window already know, and no build of 14unch3r lists it. P3 can move it to a file in the prefix |
-| WD2 | The place: rename in `~/Applications`, or also move into a folder Spotlight skips | Rename in place. The measurements say the file name is the only thing a player's word matches. P2 decides whether a `.noindex` folder is needed; the resolver makes either cheap |
-| WD3 | The names. The issue's `1L-…` shares a prefix with "1launcher" (`mdfind 1L` returns `14unch3r.app`), and `-store` is a word of `S734M.app`'s alternate names | `wrapper-949230.app`, `wrapper-3215050.app`, `wrapper-0.app`, confirmed by P2. Since the name is only a label after this plan, a wrong choice costs one rename |
+| WD1 | The marker: `L1Role` `game-wrapper` / `steam-wrapper` with `L1SteamAppID` in `Info.plist`, and `L1RenamePending` while a rename is under way | Yes, as 3.1. It reuses the keys three builders and the window already know, and no build of 14unch3r lists it. The third key is what lets a rename back by hand stay put. P3 can move the marker to a file in the prefix |
+| WD2 | The place: rename in `~/Applications`, or also move into a folder Spotlight skips | Rename in place, if P1 shows the rename clears the fault on the MacBook. The measurements say the file name is the only thing a player's word matches; what Spotlight has learned is the unknown, and P1 tests it before any code. 3.3 has the branch for each outcome |
+| WD3 | The names. The issue's `1L-…` shares a prefix with "1launcher" (`mdfind 1L` returns `14unch3r.app`), and `-store` is a word of `S734M.app`'s alternate names | `wrapper-949230.app`, `wrapper-3215050.app`, `wrapper-0.app`, confirmed by P2. One keystroke, `w`, will show the three beside "Windows Steam". Since the name is only a label after this plan, a wrong choice costs one rename |
 | WD4 | How far into the research scripts | All 19, in a commit of their own (3.6). The other choice: only the standing instruments, with the rest on WT12's list and broken on a moved Mac until someone needs them |
-| WD5 | Should `S734M.app`'s `launch` file find the wrapper at run time, by carrying a copy of `wrappers.sh`, instead of holding its path | Yes. It is the one file that a hand rename would break, and target 2 says a hand rename breaks nothing. 14unch3r's use of `L1Prefix` stays as it is: a stale one only costs the "running" state until the next setup |
-| WD6 | A renamed wrapper can still be double-clicked in Finder. Should a directly opened wrapper be made harmless (its `CFBundleExecutable` replaced by a file that opens the game's app) | Not in this plan: an issue of its own. It changes Porting Kit's bundle further and needs its own probe. It becomes the next thing if P2 shows the wrappers where apps are browsed |
-| WD7 | Who merges and cuts `v0.3.0` | As O10 and ON1 had it for `v0.2.0`: the session merges and cuts it once W2's steps 1 to 8 are green; `release` is a separate act on his word |
-| WD8 | The order against ON1 (`release` to `v0.2.0`) | Independent. ON1 stays his word and does not wait for this plan, which has probes and a check ahead of it. If `release` is still at `v0.1.0` when `v0.3.0` exists, it can go straight there: WT11 covers both moves in one run |
+| WD5 | After a hand rename, should 14unch3r and `S734M.app` find the wrapper again by themselves (3.9), or is target 2 narrowed to "from the game's app or a terminal" | Build both. Without them the window shows the game as "Not installed in Steam" and the Steam app shows its alert until the next setup run, and the rule's own test, rename on a whim and nothing breaks, fails at W2 step 7. The cost is one lookup in Swift over plists the window already reads, and four lines in a generated file |
+| WD6 | A renamed wrapper can still be double-clicked in Finder. Should a directly opened wrapper be made harmless (its `CFBundleExecutable` replaced by a file that opens the game's app) | Not in this plan: an issue of its own. It changes Porting Kit's bundle further and needs its own probe. It becomes the next thing if P2 shows the wrappers where apps are browsed, and the only candidate if P1 shows that neither a rename nor a `.noindex` folder clears what Spotlight learned |
+| WD7 | When the branch is merged and `v0.3.0` cut, and by whom | After W3, the MacBook's live step, by the session, as O10 had it for `v0.2.0`. The MacBook is the only Mac that showed the fault, a tag is never moved, and nobody is waiting. The other choice, merge after W2 and tag after W3, gives clones the rename before the Mac that matters has run it |
+| WD8 | The order against ON1 (`release` to `v0.2.0`) | Independent, and held by his word alone: the gate cannot tell a move to `v0.3.0` from "both moves at once" (3.8). If `release` is still at `v0.1.0` when `v0.3.0` exists, it can go straight there, and W4's question to him says in so many words that the folder move goes with it. WT17 covers both moves in one run |
+| WD9 | How a player declines | `L1_KEEP_WRAPPER_NAMES=1`, for that run: one word for both games and both routes, no path to type. The first draft's way, the game's variable with the old path, did not work through the pasted line for Surviving Mars and is what the installer itself sets. A wrapper named by the player still means "use this one as it is" |
+| WD10 | The probes that write, each on his word: P1's hand rename of the MacBook's Surviving Mars wrapper and back (and, if needed, its move into a `.noindex` folder and back); P2's scratch apps; P3's and P5's scratch wrapper, a download of about 237 MB; P4's hand rename of the Studio's Surviving Mars wrapper, one start of the game, and back | Yes to all five, in W0's order. P1 is the one that can save the whole build: it is the first test of whether a rename fixes the fault where it was seen |
+| WD11 | The wrappers' bundle identifier was printed in this file at `d50cf33`, which is pushed. It holds no account or person's name; its name part is the first wrapper's name and its digits look made per wrapper (1.5) | Leave the history as it is and keep the value out from here on, as this rework does. P3 says whether an installer-made wrapper gets its own. If he would rather it were gone from the history, that is a rewrite of a pushed branch and his call alone |
 
 ## 9. Rollback
 
 - **Before the merge:** the branch is dropped. Nothing on any Mac changed except what the probes made, which
-  went to the Trash.
-- **A Mac that was moved:** rename each wrapper back by hand with the game and Steam closed, and run setup with
-  the game's variable naming the old path; or leave the marker in place and run setup from `main`, which finds
-  the wrapper by its marker under either name. The marker is harmless to every earlier version.
+  went to the Trash, and the two hand renames of P1 and P4, which were put back in the same step.
+- **A Mac that was moved, to go back to the old names:** with the game and Steam closed, rename each wrapper back
+  by hand. The marker stays and is harmless to every earlier version, and because it carries no
+  `L1RenamePending` the new setup leaves the wrapper under its old name from then on (3.4, WT9). Then run setup
+  once: it rebuilds the apps with the old path. `L1_KEEP_WRAPPER_NAMES=1` is for a Mac not moved yet; it is not
+  needed after a rename back.
+- **A Mac that was moved, to stay moved on an older version:** nothing to do for Cities: Skylines II. Surviving
+  Mars at `v0.1.0` or `v0.2.0` needs its wrapper renamed back, as above (3.8's last row).
+- **A rename that failed half-way** (exit 2): the wrapper is marked and under its old name; every script finds it
+  by the marker; the next setup run finishes it.
 - **After `release` has moved:** `release` only moves forward. A fault gets a successor version; meanwhile the
-  decline line of the notes keeps an install on its old name.
-- **Recorded before W2 step 2 on each Mac:** the three wrapper names and the output of `--check`.
+  decline line of the notes keeps an install not yet moved on its old name, on both routes and for both games.
+- **Recorded before W2 step 2 and W3 on each Mac:** the three wrapper names, each `Info.plist`, and the output
+  of `--check`.
 
 ## 10. Not in this plan
 
 - **Making a directly opened wrapper harmless** (WD6).
 - **A guard in the launchers against a second game or a second Steam.** `docs/plans/launcher-window.md` already
   lists it as not built. Since the split, no lock serialises the Windows Steam against a game's wrapper.
-- **The wrappers' shared bundle identifier** (`com.S734M451538131.wineskin`). Three apps with one identifier may
-  confuse LaunchServices and Spotlight's ranking; changing it touches what the template's tools key on.
-- **Moving the wrappers out of `~/Applications`**, unless P2 selects branch B.
-- **14unch3r resolving a prefix by marker** when `L1Prefix` is stale.
+- **The wrappers' shared bundle identifier** (1.5). Three apps with one identifier may confuse LaunchServices and
+  Spotlight's ranking; changing it touches what the template's tools key on. P1 and P3 record what bears on it.
+- **Moving the wrappers out of `~/Applications`**, unless P1 selects branch B.
 - **Renaming `S734M.app`, the game apps or 14unch3r.** They are the things meant to be clicked.
 - **Porting Kit's own records.** Not readable under this project's rule; James looks, at W2 step 8.
 - **Spotlight's Search Privacy list** as a fix. It is a per-Mac system setting the owner changes by hand; #26
   names it as the stopgap until this plan is built.
 - **Re-running the experiments** whose scripts 3.6 edits.
+- **A wrapper in `/Applications`.** It is found and used, and never renamed.
+- **`common/check-identifiers.sh`'s 9 hits on `main`.** Older than this plan.
+
+## Review corrections (check it 2026-11-18, pass 1)
+
+Six lenses against `d50cf33`: architecture, platform facts and the builder `build-ready-with-fixes`;
+correctness, rollout with security, and the test plan `needs-rework`. The builder (Opus 5.5) built W1 in a
+scratch worktree and ran the tests and mutants. Pass verdict: needs-rework. The session re-read B1 and B3 in the
+code before the rework; the rework opened each cited file again. Four blockers and 23 should-fix items; all are
+folded but for the two noted under "Rejected or changed".
+
+| # | Finding | Lenses | Folded into |
+|---|---|---|---|
+| B1 | The installer exports the game's variable before it runs setup (`install-core.sh:153`, from `:280` and `:356`), and the first draft skipped the move whenever that variable was set. No run of the pasted line would ever have renamed | architecture, correctness, rollout, builder (built the fix) | 1.3; 3.2 ("Who gave the variable", `L1_WRAPPER_GIVEN`); 3.4 (skip row, "Through the installer"); section 5 row 1; WT11 with five mutants; target 4 |
+| B2 | A rename inside an installer run left the installer's `APP`, `WINEPREFIX` and `LOCK` on the old path, and nothing said whether the installer's own Steam or Wine server still held the wrapper | correctness | 3.4 ("After setup returns, the installer resolves again"; the P5 table); W0 step 6; W2 step 3 through `install.sh`; WT11's lock assertion |
+| B3 | Declining for Surviving Mars through the pasted line could not work: its installer stops before its app whenever `SM_WRAPPER` is given (`install.sh:209-214`) | rollout | 3.4 ("To decline", and the stop's new condition); WD9; section 5; section 9; 3.8's notes; WT9, WT11 |
+| B4 | Three mutants could not turn their tests red (the resolver's step 4 found the fixture anyway; the order mutant was equivalent; the test placed the deployed file itself), a half-way rename had no test, and the marking mutant stayed green in Surviving Mars's installer test | test plan, builder | section 6: the three fixtures; WT7 to WT7d; WT10 (new, two places); WT15; WT17 |
+| S1 | A scan with `lsof` took 30.3 s, four times per setup, past the tests' 20 s limit | builder | 3.4 ("The open-files probe"); `L1_WMOVE_PROBE`; WT8; second table (`test-setup.sh`) |
+| S2 | Steam open in the store wrapper would have stopped the game's setup | architecture, rollout, correctness, builder | 3.4 (skip row); section 5; WT8 |
+| S3 | A wrapper renamed back on purpose would have been renamed again as "part-way" | rollout | 3.1 (`L1RenamePending`); 3.4 (states); section 9; WT7b, WT7c, WT9 |
+| S4 | The store candidate was taken from `S734M.app`'s `L1Prefix`, which can name the game's wrapper | rollout | 3.4 (the store candidate); WT9b |
+| S5 | Setup's rebuild of `S734M.app` could clone a wrapper | rollout, test plan | 3.4 (`--no-clone`); WT14 |
+| S6 | A marked app outranked the known names with nothing asked of it | rollout | 3.2 (a candidate of step 2; measured on the Studio's three); WT5 |
+| S7 | The first draft said a stale `L1Prefix` costs only the "running" state. It dims the row and says "Not installed in Steam" | architecture | 3.9; target 2; WD5; WT6b; W2 step 7 |
+| S8 | 1.5 said no game app's `launch` file holds the wrapper's path. Surviving Mars's does | correctness | 1.5; 3.9; 3.4 (Surviving Mars, step 3) |
+| S9 | An installer-made wrapper very likely holds its file name in `Info.plist`, and the scratch app of P2 copied the Studio's instead | architecture, platform | 1.5; 3.1 (the stored name); W0 (P3 before P2); 3.3's table; WT7 |
+| S10 | The fault itself was never probed before the build, and the tag was cut before the MacBook's step | architecture, platform | 1.2; W0 (P0, P1); 3.3 (the P1 rows); 3.8 and W3b (the tag after W3); WD2, WD7, WD10; target 3 |
+| S11 | The cost of a rename was first measured at a live step, with no threshold | platform | W0 (P4, with its thresholds); W2 steps 3 and 4; section 5 |
+| S12 | A failed Surviving Mars setup could leave a renamed wrapper and an old launcher | rollout | 3.4 (Surviving Mars's order); target 6; WT17 |
+| S13 | "Before it first asks for the wrapper, after the folder move" described an order the code does not have | correctness, builder | 3.4 ("When, in each setup"); WT17 |
+| S14 | A wrapper in `/Applications`, once renamed, would have been found by no step | correctness | 3.4 (never moved); section 5; section 10; WT9 |
+| S15 | An unmarked wrapper under a new name had no state, and a wrapper with no `Info.plist` no rule | correctness | 3.5 (`make-wrapper.sh --mark`, before its last step); 3.1; 3.4 (skip row); WT10; second table |
+| S16 | Deployed-copy bookkeeping: `check-deploy.sh`, the mover's runtime names, no deploy check for the state folder, a fallback to "the checkout" that a deployed file cannot make, four deployed readers | architecture | 3.2 ("Deployed copies, and one reader"); 3.9 (no third copy); WT15; second table |
+| S17 | Unspecified: how a name maps to an app ID in a deployed copy; a variable for `find steam`; where exit 2 goes; the installer's rule for an old-named app with no prefix; Surviving Mars's default | builder | 3.2 (the table, step 1, exit); 3.4 ("Through the installer"); 3.5; WT4b, WT5c |
+| S18 | Features with no test | test plan | WT5b, WT5c, WT9, WT9b, WT9c, WT10, WT16, WT18 |
+| S19 | Existing tests that change were not named | test plan | section 6's second table; 1.4 |
+| S20 | The census read the working tree and missed two of the names | test plan | WT12 |
+| S21 | Live steps that could not fail, had no bound or no "before", and W4 in no exit criterion | test plan, rollout | W2 steps 3 to 7; W3; section 7 |
+| S22 | The fourth question lets `release` take the folder move without ON1's word | rollout | 3.8; W4; WD8 |
+| S23 | The wrappers' bundle identifier was printed without knowing whether it is the template's constant | rollout | 1.1, 1.5, section 10 (the value removed); WD11; P3 |
+| minor | The folder mover's list is at `:42`; step 1 covered three behaviours; several research scripts spell the default more than once; a second plist reader; `split-wrapper.sh`'s donor default; mode 666; a symlinked wrapper stays visible; step 4 and other markers; a Wine server of an outside engine; one keystroke shows three wrappers; the old Cities: Skylines II installer finds a renamed wrapper | several | 1.3, 1.4; 3.1; 3.2; 3.3; 3.4; 3.5; 3.8's last row |
+
+Rejected or changed:
+
+- **S16's last suggestion, in part.** "One deployed reader, not four" is taken for a start of the game. It is
+  not taken for `repatch.sh` and the badge patch run by hand, which both `CLAUDE.md` files document: they keep a
+  lookup of their own, beside themselves only.
+- **A minor: the installer's own-files loop "at about `:111`".** It is at `:115`, as the first draft had it
+  (`grep -n`). The other half of that note is right: `setup.sh:123` is Surviving Mars's setup, not its
+  installer, and 3.2 now names both.
+- **B3's first option** (change the stop only for a wrapper equal to the old default) is replaced by a rule
+  that does not spell a default, and by a decline that does not go through the game's variable at all.
+- **S10's "or"** is taken on both sides: the fault is probed in W0 and the tag waits for W3.
+- **The test-file count.** Pass 1 said 18 test files spell an old name. Counted over the three patterns at
+  `d50cf33` it is 21, and 1.4 says how it was counted.
+
+### Rework (2026-11-18) — reworked, not re-checked
+
+One agent (Fable 5.2) rewrote sections 2 to 10 in place and corrected section 1, against `d50cf33`. It opened
+`common/install-core.sh`, `common/make-wrapper.sh`, `common/check-deploy.sh`, `common/check-release-move.sh`,
+`common/launcher-window.swift`, both games' `scripts/setup.sh` and `scripts/install.sh`, both launchers,
+`repatch.sh`, the badge patch, `move-install.sh`, `make-shortcut.sh`, `make-steam-shortcut.sh`, `make-app.sh`,
+`split-wrapper.sh` and the test lines section 6 cites. It read the mode, owner and attributes of the Studio's
+three wrappers and their bundle identifiers, and wrote nothing outside this file. It built nothing and gives no
+verdict: the next pass checks this text.
+
+Choices the rework made, for the re-check to challenge:
+
+1. The decline is a variable of its own, and a wrapper named by the player is a separate reason with the same
+   effect.
+2. The installer keeps its export; setup undoes it when the player did not give it, and reads "not set at all"
+   as given.
+3. The rename runs after the copies in both setups, with its stop tested once before anything is changed; a
+   stop that appears later in the same run is downgraded to a skip.
+4. The marker is written by `make-wrapper.sh` before its last step, not by the installer afterwards.
+5. A renamed-back wrapper stays put for good, and the way to undo that is a hand rename.
+6. 14unch3r's lookup and `S734M.app`'s start-time lookup are in scope, behind WD5.
+7. The branch is merged only after the MacBook's step, and the MacBook runs the branch.
+8. `S734M.app` reads the runtime folder's copy of `wrappers.sh` and gets none of its own.
+
+Not verified: every mutant (none was run by the rework; the builder's results are quoted where the findings
+gave them); the line numbers of `v0.1.0` and `v0.2.0` in 3.8's last row, which are today's; the form of a
+bundle identifier beyond the three on the Studio; where a Wine server keeps its socket; that `lsof -t` on a
+program file lists every process running it under Rosetta (the builder timed the call, P5 and WT8's unstubbed
+case test what it returns); the MacBook.
 
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |
 |---|---|---|---|---|---|---|
+| 2026-11-18 | 1 (full) | architecture · correctness · rollout + security · test-plan · platform-facts · builder-simulation | 6 agents; the builder built W1 in a scratch worktree and ran the tests and mutants; B1 and B3 re-read in the code by the session; reworked by one agent the same day, audited two-sided, not re-checked | Fable 5.2 (five lenses), Opus 5.5 (builder-simulation) | `d50cf33` | needs-rework |
 
 Key paths: `common/paths.sh` · `common/install-core.sh` · `common/make-wrapper.sh` · `common/mac-inventory.sh` ·
-`common/launcher-window.swift` · `common/check-release-move.sh` · `common/games.tsv` ·
-`cities-skylines-2/launchers/launch-cs2-dxmt11.sh` · `cities-skylines-2/repatch.sh` ·
-`cities-skylines-2/scripts/` `setup.sh`, `install.sh`, `move-install.sh`, `make-shortcut.sh`,
-`make-steam-shortcut.sh`, `boot-verify.sh`, `install-webhelper-shim.sh`, `patch-modconflict-badge.py`,
-`cell-fingerprint.sh` and the 18 other research scripts of 1.4 · `surviving-mars-relaunched/launch-relaunched.sh`,
-`make-app.sh`, `scripts/setup.sh`, `scripts/install.sh`, `tools/make-engine.sh`, `tools/split-wrapper.sh` ·
-`CHANGELOG.md` · both `CLAUDE.md` · `docs/plans/local-files-layout.md`, `docs/plans/launcher-window.md`.
+`common/launcher-window.swift` · `common/check-release-move.sh` · `common/check-deploy.sh` · `common/games.tsv` ·
+`common/test-launcher-parity.sh` · `cities-skylines-2/launchers/launch-cs2-dxmt11.sh` ·
+`cities-skylines-2/repatch.sh` · `cities-skylines-2/scripts/` `setup.sh`, `install.sh`, `move-install.sh`,
+`make-shortcut.sh`, `make-steam-shortcut.sh`, `boot-verify.sh`, `install-webhelper-shim.sh`,
+`patch-modconflict-badge.py`, `cell-fingerprint.sh`, `test-setup.sh`, `test-install.sh`, `test-move-install.sh`
+and the 18 other research scripts of 1.4 · `surviving-mars-relaunched/launch-relaunched.sh`, `make-app.sh`,
+`scripts/setup.sh`, `scripts/install.sh`, `scripts/test-install.sh`, `tools/make-engine.sh`,
+`tools/split-wrapper.sh` · `CHANGELOG.md` · both `CLAUDE.md` · `docs/plans/local-files-layout.md`,
+`docs/plans/launcher-window.md`.

@@ -107,6 +107,27 @@ What this settles, and what it does not:
   with the macOS Steam installed, whatever the wrappers are called, so that row is to read "no wrapper among the
   rows", with `S734M.app`'s place recorded. The CrossOver rows stay in the measurement: a player's Mac may carry
   other Steams too, and they hide no wrapper.
+- **P1, run on the Studio by James's choice (2026-11-18): a rename takes the wrapper out of the window, and the
+  game's app does not take its place.** With nothing of Wine running and no file in it open, `SurvivingMars.app`
+  was renamed by `mv` to `wrapper-3215050.app` and `mdimport`ed; `mdfind` dropped the old name within 3 s, and
+  `surviving` and `mars` then returned `Surviving Mars Relaunched.app` alone (the new name answers to `wrapper`
+  and `3215050` only). James typed, opening nothing:
+
+  | Typed | Measured: Spotlight's window, top first |
+  |---|---|
+  | `surv` | the field completes to "surviving-mars-relaunched"; Top Hit the repo's folder of that name; then a TV show, a folder, a Markdown file, a web result. No wrapper; no app |
+  | `surviving mars` | the field completes to the same folder, Top Hit; then a folder, a Markdown file, two web results. No wrapper; no app |
+
+  James: the window "flashed what we wanted", then showed these rows. Then the wrapper was renamed back
+  (`L1Prefix` of the game's app resolves again). So what P1 asked is answered for the Studio: the rename takes
+  the wrapper out, completion included, at once. What it shows besides is not in target 3: **the game's app is
+  not offered in its place.** It is an application to Spotlight (`kMDItemContentType` application-bundle, kind
+  Application, `CFBundlePackageType` APPL, as for `14unch3r.app` and `S734M.app`) and is in the index for both
+  words. Not measured yet: whether it is in the window's Applications filter. Read from `lsregister -dump`, not
+  yet known to bear on it: Launch Services holds a second app with the game's app's bundle identifier,
+  `local.sm-patch.relaunched.launcher`, the scratch copy of the Surviving Mars plan's ML4 in that game's
+  `runs/ml4-20261113/scratch-app/`; and records for `~/.Trash/S734M.app`, `~/.Trash/Install Cities Skylines II.app`
+  and a probe wrapper `CS2probe3`. The MacBook's learned pick (#26) was not probed.
 - **Spotlight splits a name where letters meet digits, and matches from the start of each piece** (pass 1's
   platform lens: `11`, `dxmt`, `cs` and `pk110` each return the two `CS2dxmt11` wrappers). So a new name is judged
   piece by piece, and P2 states its pass rule that way.

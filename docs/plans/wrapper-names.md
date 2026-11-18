@@ -128,6 +128,16 @@ What this settles, and what it does not:
   `local.sm-patch.relaunched.launcher`, the scratch copy of the Surviving Mars plan's ML4 in that game's
   `runs/ml4-20261113/scratch-app/`; and records for `~/.Trash/S734M.app`, `~/.Trash/Install Cities Skylines II.app`
   and a probe wrapper `CS2probe3`. The MacBook's learned pick (#26) was not probed.
+
+  Then, with the wrapper back under its old name, James typed `surviving mars` with the window's Applications
+  filter on. Measured: `Surviving Mars Relaunched.app` first, `SurvivingMars` (the wrapper) second. So the game's
+  app is in the window and, among apps, ranks above the wrapper. Inferred: the fault is in the one Top Hit of the
+  window without a filter, which on this Mac went to the wrapper (P0) and, with the wrapper renamed, to the
+  repo's folder `surviving-mars-relaunched` (its name meets the words as closely as the app's). That folder is a
+  checkout's, and a player who installed by the pasted line has none (nor a folder of screenshots by that name),
+  so on a player's Mac the rename may leave the game's app as the Top Hit, and on this one it does not. Which
+  of the two a player meets is a reading on a Mac with no checkout (the MacBook has one too): this goes to the
+  fold with P1's other findings.
 - **Spotlight splits a name where letters meet digits, and matches from the start of each piece** (pass 1's
   platform lens: `11`, `dxmt`, `cs` and `pk110` each return the two `CS2dxmt11` wrappers). So a new name is judged
   piece by piece, and P2 states its pass rule that way.

@@ -232,9 +232,27 @@ are the four `README.md` and `INSTALL.md` files of the two games, both `CLAUDE.m
 - `~/Library/LaunchAgents` and other folders of `~/Library` outside a `1launcher` folder.
 - Whether the template's own launcher keeps keys it does not know when it rewrites `Info.plist`
   (`common/make-wrapper.sh:140`). Our launchers never run it after the wrapper is made.
-- The `Info.plist` of a wrapper made by the published installer (`common/make-wrapper.sh`). None exists on the
-  Studio. Its launcher is given the file name before it writes `Info.plist` (`make-wrapper.sh:140`), so such a
-  wrapper very likely holds its own file name inside, which the Studio's three do not. P3 reads it.
+- ~~The `Info.plist` of a wrapper made by the published installer.~~ **Read by P3 (2026-11-18).** A wrapper was
+  made on the Studio by `common/make-wrapper.sh` as `~/Applications/l1-p3-scratch.app`, with Cities: Skylines
+  II's engine pin and the template, both from the copies already in the workspace (sha256 checked by the
+  script; nothing downloaded); exit 0, 1.3 GB. Its `Info.plist` is kept in the workspace,
+  `wrapper-names-p3/Info.plist`, not in this file. Measured:
+  - **It holds its file name, in one key:** `CFBundleName` = `l1-p3-scratch` (the name without `.app`; `grep -c`
+    of the name in the file: 1). The Studio's Porting Kit wrappers hold "Steambuild Metal" there instead.
+  - **Its bundle identifier is made from its file name:** form `com.<the name without its hyphens><digits>.wineskin`.
+    So a player's wrapper carries its old name in its identifier after a rename, and 3.1 leaves it (privacy
+    grants are keyed on it); that is a label left stale, not a key read by anything of ours. WD11: such an
+    identifier holds the wrapper's own name and digits, nothing of a person.
+  - `NSBGOnly` = 1; no `CFBundleURLTypes`. `codesign -dv`: ad hoc, `Info.plist=not bound`, Mach-O x86_64; `codesign
+    --verify` fails as on the Studio's three. Spotlight: `kMDItemDisplayName` and `kMDItemAlternateNames` are the
+    file name only, so `CFBundleName` is not among the names Spotlight holds.
+  - **Modes:** the bundle folder `drwxr-xr-x`, the user's own; `Contents` `drwxrwxrwx`; `Info.plist` `-rw-rw-rw-`;
+    the prefix `drwxrwxrwx`; 2,043 entries inside are writable by group or others. No extended attribute at all on
+    the bundle (no quarantine). So it passes 3.2's tests of a candidate as written, because they judge the bundle
+    folder itself; a test that also judged `Contents` or anything inside would pass over every installer-made
+    wrapper. 3.3's P3 row is not selected.
+  - Not read: whether the template's own launcher keeps `L1Role` when it rewrites `Info.plist`. That needs the
+    wrapper opened once directly (W0 step 3), on James's word.
 - Where a wrapper's Wine server keeps its socket on this macOS. No Wine was running when the rework looked, and the
   folder was not under `$TMPDIR`. Pass 1's platform lens reports it is keyed by the prefix's device and inode, not
   its path. P5 reads the place.

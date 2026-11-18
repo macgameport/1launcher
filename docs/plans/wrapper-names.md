@@ -261,6 +261,30 @@ are the four `README.md` and `INSTALL.md` files of the two games, both `CLAUDE.m
     prefix is not needed. Not exercised: the template launcher's first-run write at `make-wrapper.sh:140`,
     which runs only while the prefix is made. The flipped `use start.exe` belongs with WD6 (a wrapper opened
     directly), not with this plan.
+- **P2, the Studio (2026-11-18): the new names answer to no word a player types.** Three scratch apps, each
+  holding P3's `Info.plist` as made (its bundle identifier, so the old name, kept; `CFBundleName` set to the new
+  name), the Wineskin icon, and a stub `wineskinlauncher` that exits: `~/Applications/wrapper-999999.app`,
+  `~/Applications/1L-999999.app`, and `~/Applications/1launcher.noindex/wrapper-999998.app`. `mdimport`ed; all
+  three registered with Launch Services. Then put in the Trash with the `.noindex` folder.
+
+  | Read | Measured |
+  |---|---|
+  | `mdfind -onlyin ~/Applications`, each of target 3's twelve words | no scratch app for any |
+  | the same, the names' pieces | `wrapper-999999`: `w`, `wr`, `wrapper`, `999999`, `99`, and `1` (through an attribute other than its name; nobody types `1` alone). `1L-999999`: `1l`, `1`, `l`, `999999`, `99`; not `1launcher` or `14` |
+  | the bundle identifier | not matched: `scratch` and `l1p3scratch` return the P3 wrapper only, by its file name |
+  | the `.noindex` app | in no query, not even by its file name |
+  | Spotlight's window, `wrapper` | three files; no app |
+  | Spotlight's window, `w` | completes to "iA Writer.app", Top Hit; then Citrix Workspace. No scratch app |
+  | Spotlight's window, `1l` | completes to "1launcher", the repo's folder, Top Hit; then files. No scratch app |
+  | Applications filter, `w` | `wrapper-999999` not shown |
+  | The Apps view | none of the three. James: "steam appears in the dock, none of these" |
+
+  So 3.3's row A holds for the names: no target word, no attribute other than the file name that a target
+  word reaches, and not where apps are browsed. WD3: `wrapper-<ID>` meets P2's rule, and in the window it did
+  not appear even for its own word; `1L-<ID>` met it too on this Mac, but its `1l` is the start of "1launcher".
+  A `.noindex` folder keeps an app out of the index (branch B is available, and not needed after P1). Caveat:
+  the scratch apps were minutes old and never opened; a renamed wrapper keeps its own history (P1 is that
+  case).
 - Where a wrapper's Wine server keeps its socket on this macOS. No Wine was running when the rework looked, and the
   folder was not under `$TMPDIR`. Pass 1's platform lens reports it is keyed by the prefix's device and inode, not
   its path. P5 reads the place.

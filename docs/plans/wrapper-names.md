@@ -285,6 +285,26 @@ are the four `README.md` and `INSTALL.md` files of the two games, both `CLAUDE.m
   A `.noindex` folder keeps an app out of the index (branch B is available, and not needed after P1). Caveat:
   the scratch apps were minutes old and never opened; a renamed wrapper keeps its own history (P1 is that
   case).
+- **P4, the Studio (2026-11-18): a rename costs a few seconds at the first start, and nothing else.** With
+  nothing of Wine or Steam running and no file of it open, `SurvivingMars.app` was renamed by hand to
+  `wrapper-3215050.app`, and the installed launcher was run with `SM_WRAPPER` naming it (`SM_QUIET=1`, as the
+  app runs it; log in the workspace's `wrapper-names-p4/`). The game played for 38 minutes and was quit from
+  its menu; the launcher uploaded the saves, shut Steam down and exited 0. The name was then put back, and the
+  game's app's `L1Prefix` resolves again.
+
+  | Read | Before (the last three starts, 2026-11-16 and 18, by the app) | After the rename |
+  |---|---|---|
+  | launcher start to the game's window (to step 5, plus `frame-fix`'s first sighting) | 26, 26, 28 s | 35 s |
+  | of which, to Steam's logon `OK` (`connection_log.txt`) | 10 and 12 s | 15 s |
+  | of which, logon to step 5 (the 15 s licence wait, the cloud and update checks) | 15 and 15 s | 19 s |
+  | a check by macOS (`log show`, `com.apple.syspolicy.exec`) | one Gatekeeper scan of an unsigned single file in the first second of each start read (06:25 and 15:20), result 2 | the same, once, result 2 |
+  | Steam's sign-in | saved login, logon `OK` | saved login, logon `OK`; no prompt. James: no dialog of any kind appeared |
+
+  Against W0 step 5's thresholds: 7 to 9 s slower, inside the 30 s; no new check by macOS; no sign-in prompt,
+  so nothing stops the plan. Not explained: `syspolicyd` made more certificate checks during this start
+  (101 `SecTrustEvaluateIfNecessary` lines in the minute, against 34 and 23), none naming a file. One start
+  only: whether the extra seconds come from the new path or are the spread of Steam's sign-in is not
+  separated. Section 5's row "everyone, at the first start after the rename" can say a few seconds at most.
 - Where a wrapper's Wine server keeps its socket on this macOS. No Wine was running when the rework looked, and the
   folder was not under `$TMPDIR`. Pass 1's platform lens reports it is keyed by the prefix's device and inode, not
   its path. P5 reads the place.

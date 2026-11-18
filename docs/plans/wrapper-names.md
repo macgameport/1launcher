@@ -83,7 +83,7 @@ What this settles, and what it does not:
   attribute here: `steam` returns `S734M.app` alone. So on wrappers of this make a rename takes away every word
   a player types. The task brief's worry that the bundle name matches "steam" is not borne out on this Mac.
 - **The issue's unmeasured line about Cities: Skylines II holds for the index:** `cs2` returns both of its
-  wrappers. Which app Spotlight's window puts first was not measured here.
+  wrappers, and Spotlight's window puts both of them first (P0, below).
 - **`1L` is not a free prefix.** It returns `14unch3r.app`, through its alternate name "1launcher". A wrapper
   named `1L-949230.app` would very likely join that list for the two keys `1l` on the way to "1launcher". The
   word split of such a name was not measured (probe P2). And `-store` in `1L-949230-store.app` would likely
@@ -96,15 +96,17 @@ What this settles, and what it does not:
   |---|---|---|
   | `surviving mars` | the field completes to "SurvivingMars.app"; Top Hit **`SurvivingMars.app`**, the wrapper; then two folders and three Markdown files. `Surviving Mars Relaunched.app` is not among the six rows shown | wrapper: no last-used date, no use count; game's app: last used 2026-11-18, use count 8 |
   | `steam` | Top Hit `/Applications/Steam.app` (the macOS Steam); then the two CrossOver Steam apps and their two Support Center apps in `~/Applications/CrossOver/`, then a folder. No wrapper; `S734M.app` is not among the six rows shown | — |
-  | `cs2` | not yet read: the word typed was `sc2`, which returns StarCraft II's apps and says nothing about this plan | — |
+  | `cs2` | the field completes to "CS2dxmt11.app"; Top Hit **`CS2dxmt11.app`**, the game's wrapper; then **`CS2dxmt11-pk110.app`**, the Windows Steam's; then two images. Neither `Cities Skylines II.app` nor `S734M.app`, both of which carry "CS2" as an alternate name, is among the four rows shown | both wrappers: no last-used date, no use count |
 
-  Inferred, not measured: the wrapper outranks the game's app with no use behind it and against the game's
-  app's eight uses, so on this Mac the fault comes from the name and not from a pick Spotlight learned. The
-  file name `SurvivingMars` meets both words typed; the game's app meets them through its alternate name
-  "Surviving Mars", and the window ranks that lower. This bears on the fold after W0 (step 8), not changed here:
-  P1's question can be asked on the Studio as well as the MacBook; and W2 step 6's pass condition for `steam`
-  ("the first row is `S734M.app`") cannot be met on a Mac with the macOS Steam installed, whatever the wrappers
-  are called, so that row is to read "no wrapper among the rows", with `S734M.app`'s place recorded.
+  Inferred, not measured: the wrappers outrank the game's apps with no use behind them (Surviving Mars's
+  wrapper against its game's app's eight uses), so on this Mac the fault comes from the file name and not from a
+  pick Spotlight learned. `SurvivingMars` meets both words typed, and `CS2dxmt11` starts with `cs2`; the game's
+  apps and `S734M.app` meet them only through alternate names, which the window ranks lower.
+  This bears on the fold after W0 (step 8), not changed here: P1's question can be asked on the Studio as well as
+  the MacBook; and W2 step 6's pass condition for `steam` ("the first row is `S734M.app`") cannot be met on a Mac
+  with the macOS Steam installed, whatever the wrappers are called, so that row is to read "no wrapper among the
+  rows", with `S734M.app`'s place recorded. The CrossOver rows stay in the measurement: a player's Mac may carry
+  other Steams too, and they hide no wrapper.
 - **Spotlight splits a name where letters meet digits, and matches from the start of each piece** (pass 1's
   platform lens: `11`, `dxmt`, `cs` and `pk110` each return the two `CS2dxmt11` wrappers). So a new name is judged
   piece by piece, and P2 states its pass rule that way.

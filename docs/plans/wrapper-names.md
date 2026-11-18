@@ -251,8 +251,16 @@ are the four `README.md` and `INSTALL.md` files of the two games, both `CLAUDE.m
     the bundle (no quarantine). So it passes 3.2's tests of a candidate as written, because they judge the bundle
     folder itself; a test that also judged `Contents` or anything inside would pass over every installer-made
     wrapper. 3.3's P3 row is not selected.
-  - Not read: whether the template's own launcher keeps `L1Role` when it rewrites `Info.plist`. That needs the
-    wrapper opened once directly (W0 step 3), on James's word.
+  - **Opened once directly, on James's word: the marker survives.** `L1Role` `game-wrapper`, `L1SteamAppID`
+    `999999` (an ID no game has) and `L1RenamePending` `probe` were added with `plutil -insert` (58 keys, mode
+    666 kept). James double-clicked the wrapper: the template's launcher showed Wineskin's settings window
+    (Install Software, Winetricks, Advanced, Quit), since the wrapper names no program, and started no Wine.
+    While it was open the file was byte-identical. On **Quit** it was rewritten: still 58 keys, the three
+    marker keys unchanged, mode 666, and one value changed, **`use start.exe` from 1 to 0**. So Wineskin's own
+    rewrite keeps keys it does not know, and 3.1's marker stays in `Info.plist`; the "considered" file in the
+    prefix is not needed. Not exercised: the template launcher's first-run write at `make-wrapper.sh:140`,
+    which runs only while the prefix is made. The flipped `use start.exe` belongs with WD6 (a wrapper opened
+    directly), not with this plan.
 - Where a wrapper's Wine server keeps its socket on this macOS. No Wine was running when the rework looked, and the
   folder was not under `$TMPDIR`. Pass 1's platform lens reports it is keyed by the prefix's device and inode, not
   its path. P5 reads the place.

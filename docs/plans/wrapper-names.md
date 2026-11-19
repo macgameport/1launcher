@@ -305,11 +305,37 @@ are the four `README.md` and `INSTALL.md` files of the two games, both `CLAUDE.m
   (101 `SecTrustEvaluateIfNecessary` lines in the minute, against 34 and 23), none naming a file. One start
   only: whether the extra seconds come from the new path or are the spread of Steam's sign-in is not
   separated. Section 5's row "everyone, at the first start after the rename" can say a few seconds at most.
-- Where a wrapper's Wine server keeps its socket on this macOS. No Wine was running when the rework looked, and the
-  folder was not under `$TMPDIR`. Pass 1's platform lens reports it is keyed by the prefix's device and inode, not
-  its path. P5 reads the place.
-- Whether anything still holds a file of the wrapper when the installer reaches its setup step (3.4). The code
-  closes the Steam it started (`common/install-core.sh:479-493`); what outlives that is not readable. P5.
+- **P5, the Studio (2026-11-18 and 19): nothing holds the wrapper when the installer reaches its setup step.**
+  The real Surviving Mars installer was run three times with `SM_WRAPPER` naming a new scratch wrapper,
+  `~/Applications/l1-p5-scratch.app`, which the first run made from the cached downloads (`L1_DOWNLOADS`, each
+  checked by size and sha256): Wine 10.0, D3DMetal 3.0, Steam for Windows. With `SM_WRAPPER` set the installer
+  stops before step 7, at the moment setup would run; a watcher read 3.4's probe there and 15 s later. Then both
+  scratch wrappers (P3's and P5's) went to the Trash.
+
+  | Run | Path | During the download | At the setup step | 15 s later |
+  |---|---|---|---|---|
+  | 1 | the download path: James signed in, chose Install, and the installer saw 10 GB arrive and closed Steam | `lsof -t` on the named files: 16 processes, the wrapper's `wineserver`, Wine's services, `steam.exe`, `steamservice.exe` and six `steamwebhelper.exe`; the same 16 had a file of the wrapper open | none | none |
+  | 2 | the game already installed: no Steam started | not taken | none | none |
+  | 3 | the same | not taken | none | none |
+
+  So 3.4's first row holds: **as written**. The core's background `wsrv -w` (`install-core.sh:493-494`) did not
+  outlive Steam's shutdown in run 1. The probe saw every Wine process of a live wrapper through two named files
+  (only `wine64` and `wineserver` exist in this wrapper's `bin/`), including a `wineserver` started by the path
+  `wine/lib/wine/../../bin/wineserver`, since `lsof` matches the file and not the path typed.
+
+  **Where the server keeps its socket:** `/private/tmp/.wine-<uid>/server-<device>-<inode>/`, the prefix
+  folder's device and inode in hex (matched by `stat` for the scratch wrapper, `16d47a0`, and the Studio's
+  `SurvivingMars.app`, `e8a4bc`). The server's working folder is that one, and it holds a socket there while it
+  runs; once it ends, an empty `lock` file and the folder stay. An `mv` within the volume keeps the prefix's
+  inode, so the place is the same under the old name and the new one. The probe may add that folder's `socket`
+  to its named files; it is not needed to see this installer's processes, which hold the named files anyway.
+
+  Run 1's first attempt (2026-11-18) stopped at step 6 with exit 4: Steam's own first update (242 MB) was cut
+  again and again ("Exhausted list of download hosts"), the pattern F8 met through the VPN. Read after that
+  stop: no holder and no process with a file of the wrapper. Once James had changed the VPN's server, the
+  update took 14 s. Also met: the D3DMetal licence question needs a terminal; run from a tab no one was looking
+  at, it waited unseen. A player runs the pasted line in their own Terminal, and the installer app opens one
+  (`common/make-installer-app.sh:107`), so this was the probe's setup and not a finding.
 
 ### 1.6 What is published
 

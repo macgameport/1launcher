@@ -1,7 +1,9 @@
 # Wrapper names — find a wrapper by a marker, then give it a name nobody types
 
 **Status: check-it'd 2026-11-18 — build-ready-with-fixes (pass 2, folded).** No code is
-written from this file until the probes of W0 have run and their outcomes are folded into it and re-checked. The
+written from this file until the probes of W0 have run and their outcomes are folded into it and re-checked.
+W0 steps 1 to 7 are done (2026-11-20): P0 to P5 are recorded in section 1 and James has answered section 8; step 8,
+the fold into sections 1 and 3 and the re-check, is next. The
 findings of both passes and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
 The fault: Spotlight offers the Wine wrappers beside, and on one Mac above, the game apps. A wrapper opened
@@ -1032,6 +1034,13 @@ window puts first.
 | WD9 | How a player declines | `L1_KEEP_WRAPPER_NAMES=1`, for that run: one word for both games and both routes, no path to type. The first draft's way, the game's variable with the old path, did not work through the pasted line for Surviving Mars and is what the installer itself sets. A wrapper named by the player still means "use this one as it is" |
 | WD10 | The probes that write, each on his word: P1's hand rename of the MacBook's Surviving Mars wrapper and back (and, if needed, its move into a `.noindex` folder and back); P2's scratch apps; P3's and P5's scratch wrapper, a download of about 237 MB, and for P5 one download of a game into it by the installer (3.4's download path, as ML4 did); P4's hand rename of the Studio's Surviving Mars wrapper, one start of the game, and back | Yes to all five, in W0's order. P1 is the one that can save the whole build: it is the first test of whether a rename fixes the fault where it was seen |
 | WD11 | The wrappers' bundle identifier was printed in this file at `d50cf33`, which is pushed. It holds no account or person's name; its name part is the first wrapper's name and its digits look made per wrapper (1.5). Pass 2: the template's launcher writes it per wrapper (`make-wrapper.sh:140`), and it is in this file at no commit after `d50cf33` | Leave the history as it is and keep the value out from here on, as this rework does. P3 says whether an installer-made wrapper gets its own. If he would rather it were gone from the history, that is a rewrite of a pushed branch and his call alone |
+
+**Answered 2026-11-20 (W0 step 7), with P0 to P5's results in front of James: every decision as recommended.**
+WD10 was answered first, yes to all five probes, and they ran on 2026-11-18 and 19. WD1: the marker in
+`Info.plist` (P3: Wineskin's rewrite keeps it). WD2: rename in place, branch A; P1 ran on the Studio, not the
+MacBook, so W3's step 6 is the MacBook's test, and nothing is merged if it fails (3.3's P1 row). WD3:
+`wrapper-<ID>`. WD4: all 19. WD5: build both. WD6: an issue of its own, not this plan. WD7: merge and `v0.3.0`
+after W3. WD8: independent of ON1. WD9: `L1_KEEP_WRAPPER_NAMES=1`. WD11: history left, the value kept out.
 
 ## 9. Rollback
 

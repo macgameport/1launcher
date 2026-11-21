@@ -88,7 +88,7 @@ set -u
 
 usage() { sed -n '5,7p' "$0" >&2; exit 64; }
 
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+APP="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else by its marker
 SS="$APP/Contents/SharedSupport"
 ENGINE="${CS2_ENGINE:-$SS/wine}"   # an override for testing another engine: the driver joins that engine's wineserver
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"

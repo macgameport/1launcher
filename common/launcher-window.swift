@@ -38,7 +38,7 @@ struct Row {
     let sortTitle: String
     let path: String      // the app as it was reached, or an offer's guide address
     let key: String       // the resolved path: one app reached twice is one row
-    let prefix: String?
+    var prefix: String?   // L1Prefix, or after a hand rename of the wrapper, the prefix of the one marked wrapper
     var state: State
 }
 
@@ -197,6 +197,25 @@ func titled(_ rows: [Row]) -> [Row] {
 
 // Every row in the folders, states read now. A folder given twice, or the same folder by two spellings,
 // adds nothing the second time: the first spelling of an app is the one kept.
+// After a hand rename of a wrapper the L1Prefix an app was built with names a folder that is gone. The wrapper
+// carries a marker in its Info.plist (docs/plans/wrapper-names.md, 3.1 and 3.9): L1Role game-wrapper with the game's
+// L1SteamAppID, or steam-wrapper. The one app in the same folder that carries the row's marker gives the prefix;
+// with none or two, nothing does. Nothing is run from the wrapper: its Info.plist is read as every app's is.
+func markedWrapper(_ folder: String, _ names: [String], role: Role, appID want: Int?) -> String? {
+    var hits: [String] = []
+    for name in names where name.lowercased().hasSuffix(".app") && !hasControl(name) {
+        let path = (folder == "/" ? "" : folder) + "/" + name
+        var st = stat()
+        guard lstat(path, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR else { continue }
+        guard let data = readPlainFile(path + "/Contents/Info.plist", limit: 1_048_576) else { continue }
+        guard let d = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any] else { continue }
+        let mark = d["L1Role"] as? String
+        if role == .steam, mark == "steam-wrapper" { hits.append(path) }
+        if role == .game, mark == "game-wrapper", let id = want, appID(d["L1SteamAppID"]) == id { hits.append(path) }
+    }
+    return hits.count == 1 ? hits[0] + "/Contents/SharedSupport/prefix" : nil
+}
+
 func rows(in folders: [String]) -> [Row] {
     var seen = Set<String>(), found: [Row] = []
     for f in folders.map(absolute) {
@@ -204,6 +223,9 @@ func rows(in folders: [String]) -> [Row] {
         for name in names.sorted() {
             guard var r = row(f, name), !seen.contains(r.key) else { continue }
             seen.insert(r.key)
+            if let p = r.prefix, !fm.fileExists(atPath: p), let w = markedWrapper(f, names, role: r.role, appID: r.appID) {
+                r.prefix = w
+            }
             r.state = state(of: r)
             found.append(r)
         }

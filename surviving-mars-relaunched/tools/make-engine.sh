@@ -80,7 +80,9 @@ if [ "${1:-}" = --install ]; then
 else
   # A Steam app named S734M.app has no SharedSupport, so it is passed over like an absent wrapper
   SRC="$HOME/Applications/S734M.app/Contents/SharedSupport/wine"
-  [ -d "$SRC" ] || SRC="$HOME/Applications/SurvivingMars.app/Contents/SharedSupport/wine.d3dm21-BAK"
+  _r="$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh"   # the game's wrapper (docs/plans/wrapper-names.md), else its name
+  _w="$(bash "$_r" find game 3215050 2>/dev/null)" || _w="$HOME/Applications/$(bash "$_r" name game 3215050 2>/dev/null)"
+  [ -d "$SRC" ] || SRC="$_w/Contents/SharedSupport/wine.d3dm21-BAK"
   SRC="${ENGINE_SRC:-$SRC}"
   OUT="${1:-$SM_WORK/engine/wine-d3dm30}"
 fi

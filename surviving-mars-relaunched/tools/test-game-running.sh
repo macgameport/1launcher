@@ -8,7 +8,8 @@
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 SHIM="$HOME/Applications/Surviving Mars Relaunched.app/Contents/MacOS/launch"
-eval "$(grep -E '^(APP|SS|GAME)=' "$HERE/launch-relaunched.sh")"
+APP="$(bash "$HERE/../common/wrappers.sh" find game 3215050)"   # as the launcher finds it (docs/plans/wrapper-names.md)
+eval "$(grep -E '^(SS|GAME)=' "$HERE/launch-relaunched.sh")"
 eval "$(sed -n '/^game_running() {/,/^}/p' "$HERE/launch-relaunched.sh")"
 [ "$(type -t game_running)" = function ] || { echo "REFUSED: game_running not found in the launcher"; exit 2; }
 if [ -f "$SHIM" ]; then

@@ -24,12 +24,14 @@ set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 ME="$HERE/tools/make-engine.sh"
 SRCW="$HOME/Applications/S734M.app/Contents/SharedSupport/wine"
-[ -d "$SRCW" ] || SRCW="$HOME/Applications/SurvivingMars.app/Contents/SharedSupport/wine.d3dm21-BAK"
+_r="$HERE/../common/wrappers.sh"   # the game's wrapper, found by its marker (docs/plans/wrapper-names.md), else its name
+GW="$(bash "$_r" find game 3215050 2>/dev/null)" || GW="$HOME/Applications/$(bash "$_r" name game 3215050 2>/dev/null)"
+[ -d "$SRCW" ] || SRCW="$GW/Contents/SharedSupport/wine.d3dm21-BAK"
 [ -x "$SRCW/bin/wine64" ] || { echo "REFUSED: no Wine to clone at $SRCW"; exit 2; }
 fwver() { plutil -extract CFBundleShortVersionString raw "$1/Versions/A/Resources/Info.plist" 2>/dev/null; }
 GP="${CX_GPTK:-}"
 if [ -z "$GP" ]; then
-  GP="$HOME/Applications/SurvivingMars.app/Contents/SharedSupport/wine/lib"
+  GP="$GW/Contents/SharedSupport/wine/lib"
   case "$(fwver "$GP/external/D3DMetal.framework")" in 3.*) ;; *) GP="" ;; esac
 fi
 [ -n "$GP" ] && [ -d "$GP/external/D3DMetal.framework" ] \

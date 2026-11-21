@@ -15,7 +15,9 @@
 #   7. a die does not begin by printing ERROR: and call _alert, osascript is called outside the block anywhere
 #      but in the update question, the cloud warning does not go through _alert, or a second note or step is
 #      defined outside the block;
-#   8. a probe's test for the `Licence wait:` line does not find the line the block prints.
+#   8. a probe's test for the `Licence wait:` line does not find the line the block prints;
+#   9. the find-wrapper blocks (how each launcher finds common/wrappers.sh, docs/plans/wrapper-names.md 3.2) differ
+#      by a byte, or a launcher does not set the three values the block reads just above it.
 # The lock functions are compared in common/test-launch-lock.sh.
 #   bash common/test-launcher-parity.sh            exit 0 = every rule holds; exit 2 = a file is missing
 #   MUTANT=1 ...    one byte changed in one copy of the launch-feedback block; must exit 1
@@ -33,6 +35,7 @@
 #   MUTANT=13 ...   a second note defined outside the block; must exit 1
 #   MUTANT=14 ...   step 0 used outside acquire_lock; must exit 1
 #   MUTANT=15 ...   a step text of 63 characters; must exit 1
+#   MUTANT=16 ...   one launcher's find-wrapper block looks one more place; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/launcher-parity-test.XXXX)"
@@ -74,6 +77,7 @@ case "${MUTANT:-0}" in
   13) printf '%s\n' 'note() { echo "$1"; }' >> "$SM"; grep -q '^note() { echo "\$1"; }$' "$SM" || mutated ;;
   14) mutate "$CS2" 's/^step 4 "Checking for a game update…"$/step 0 "Checking for a game update…"/' 'step 0 "Checking for a game update…"' ;;
   15) mutate "$SM" "s/^step 4 \"Checking for a game update…\"\$/step 4 \"$X63\"/" "step 4 \"$X63\"" ;;
+  16) mutate "$CS2" 's|^APP=""; WRAPPER_RC=3$|APP=""; WRAPPER_RC=3; [ -f "$HOME/wrappers.sh" ] \&\& _l1w="$HOME"|' '[ -f "$HOME/wrappers.sh" ] && _l1w="$HOME"' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 fails=0
@@ -235,6 +239,15 @@ for p in "${PROBES[@]}"; do
   check "8. ${p##*/}: its wait_lines finds that line for 15 and not for 45" \
     "$( [ -n "$fn" ] && { eval "$fn"; echo "$(wait_lines "$T/wait15.log" 15):$(wait_lines "$T/wait15.log" 45)"; } )" "1:0"
 done
+
+# --- 9. find-wrapper: one text in two files, each launcher's own values just above it
+fw() { sed -n '/^# >>> find-wrapper (/,/^# <<< find-wrapper$/p' "$1"; }
+fw "$CS2" > "$T/fw.cs2"; fw "$SM" > "$T/fw.sm"
+check "9. both launchers hold a find-wrapper block" "$([ -s "$T/fw.cs2" ] && [ -s "$T/fw.sm" ] && echo yes)" yes
+check "9. the two copies are the same, byte for byte" "$(cmp -s "$T/fw.cs2" "$T/fw.sm" && echo same || echo differ)" same
+vals() { grep -B1 '^# >>> find-wrapper (' "$1" | head -n 1 | sed 's/   #.*//'; }
+check "9. each sets its own game, variable and folder on the line above it" "$(vals "$CS2")|$(vals "$SM")" \
+  "WRAPPER_APPID=949230; WRAPPER_VAR=CS2_WRAPPER; WRAPPER_GAMEDIR=..|WRAPPER_APPID=3215050; WRAPPER_VAR=SM_WRAPPER; WRAPPER_GAMEDIR=."
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

@@ -84,6 +84,8 @@
 #   MUTANT=68 ...   a symlink to the app read as have; must exit 1
 #   MUTANT=69 ...   an alias to another app read as have; must exit 1
 #   MUTANT=70 ...   exit 0 on a failed write; must exit 1
+#   MUTANT=71 ...   the role guard widened to any role that starts game or steam (WT6, wrapper-names); must exit 1
+#   MUTANT=72 ...   the lookup of the marked wrapper removed (WT6b); must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SRC="$HERE/launcher-window.swift"
@@ -193,6 +195,9 @@ case "${MUTANT:-0}" in
   68) swap 'guard (st.st_mode & S_IFMT) == S_IFREG else { return "other" }' 'guard (st.st_mode & S_IFMT) != S_IFDIR else { return "other" }' ;;
   69) swap 'return a == b ? "have" : "other"' 'return "have"' ;;
   70) swap 'if let why = makeAlias(app, path) { print("failed\t\(why)"); exit(1) }' 'if let why = makeAlias(app, path) { print("failed\t\(why)"); exit(0) }' ;;
+  71) swap 'guard roleText == "game" || roleText == "steam" else { return nil }' 'guard let rt = roleText, rt.hasPrefix("game") || rt.hasPrefix("steam") else { return nil }'
+      swap 'let role: Role = roleText == "steam" ? .steam : .game' 'let role: Role = (roleText ?? "").hasPrefix("steam") ? .steam : .game' ;;
+  72) swap 'if let p = r.prefix, !fm.fileExists(atPath: p), let w = markedWrapper(f, names, role: r.role, appID: r.appID) {' 'if let p = r.prefix, !fm.fileExists(atPath: p), false, let w = markedWrapper(f, names, role: r.role, appID: r.appID) {' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 P="$T/launcher-window"
@@ -723,6 +728,27 @@ out="$("$P" --start "$W/a b;c/FixC.app" 2>&1)"; rc=$?
 waitfor "$W/c.pids" 1
 check "--start: the path is one argument (a folder named with a space and a ;)" "$out $rc $(count "$W/c.pids")" "started 0 1"
 for f in $STARTED; do [ -f "$f" ] && for p in $(cat "$f"); do kill "$p" 2>/dev/null; done; done
+
+# --- WT6, WT6b (docs/plans/wrapper-names.md, 3.1 and 3.9): a wrapper is never a row; a renamed one is found again
+wrap() {   # <app> <game-wrapper|steam-wrapper> [<app id>]: a marked Wine wrapper with a prefix, as setup leaves one
+  mkdir -p "$1/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps"
+  plist "$1" "$(k L1Role "$(s "$2")")${3:+$(k L1SteamAppID "$(n "$3")")}$(k CFBundleName "$(s 'Steambuild Metal')")"
+}
+F="$T/wt6"
+game "$F/Cities.app" Cities 949230; steamapp "$F/S734M.app" S734M
+wrap "$F/wrapper-949230.app" game-wrapper 949230; wrap "$F/wrapper-0.app" steam-wrapper; wrap "$F/wrapper-3215050.app" game-wrapper 3215050
+check "WT6 marked wrappers of both roles are not rows: the game app and the Steam app only" "$(list "$F" | cut -f1,4 | tr '\t\n' ': ')" "game:Cities steam:S734M "
+F="$T/wt6b"; G="$F/wrapper-949230.app/Contents/SharedSupport/prefix"
+wrap "$F/wrapper-949230.app" game-wrapper 949230; manifest "$G" 949230
+game "$F/Cities.app" Cities 949230 "$F/CS2dxmt11.app/Contents/SharedSupport/prefix"
+wrap "$F/wrapper-0.app" steam-wrapper; steamexe "$F/wrapper-0.app/Contents/SharedSupport/prefix"
+steamapp "$F/S734M.app" S734M "$F/old-store.app/Contents/SharedSupport/prefix"
+check "WT6b a game app whose L1Prefix is gone, one marked wrapper of its id beside it: ready" "$(list "$F" | cut -f1,3 | tr '\t\n' ': ')" "game:ready steam:ready "
+wrap "$F/second.app" game-wrapper 949230; manifest "$F/second.app/Contents/SharedSupport/prefix" 949230
+check "WT6b ...with two marked alike: absent, as today" "$(list "$F" | grep '^game' | cut -f3)" absent
+F="$T/wt6c"; wrap "$F/wrapper-949230.app" game-wrapper 949230; manifest "$F/wrapper-949230.app/Contents/SharedSupport/prefix" 949230
+game "$F/Cities.app" Cities 949230 "$(prefix wt6c-real)"
+check "WT6b ...a prefix that exists is used as it is, whatever is beside it" "$(list "$F" | grep '^game' | cut -f3)" absent
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

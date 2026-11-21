@@ -14,7 +14,7 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/repatch-test.XXXX)"
 trap 'rm -rf "$T"' EXIT
 I="$T/inst"; mkdir -p "$I/patches" "$T/home"
-cp "$REPO/repatch.sh" "$I/repatch.sh"
+cp "$REPO/repatch.sh" "$I/repatch.sh"; cp "$REPO/../common/wrappers.sh" "$I/wrappers.sh"   # as setup deploys them
 case "${MUTANT:-0}" in
   1) sed -i '' 's#^  python3 "\$HERE/\$p" "\$@" || rc=\$?$#  python3 "$HERE/$p" "$@" || true#' "$I/repatch.sh"
      grep -q '^  python3 "\$HERE/\$p" "\$@" || true$' "$I/repatch.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
@@ -133,7 +133,21 @@ check "a folder as the argument: exit 0" "$(run bash "$I/repatch.sh" "$G2")" 0
 check "  ...ten, all in that folder, and a line about the errno six" "$(names)/$(cut -f2 "$T/log" | grep -c "^$T/B.app/")/$(said 'needs CS2_ERRNO_PATCHES=1')" "$TEN/10/1"
 check "  ...and CS2_ERRNO_PATCHES=1 makes it sixteen there" "$(run CS2_ERRNO_PATCHES=1 bash "$I/repatch.sh" "$G2"):$(names)" "0:$SIXTEEN"
 check "no argument, CS2_GAME_DIR set: ten, in that folder" "$(run CS2_GAME_DIR="$G" bash "$I/repatch.sh"):$(names)/$(cut -f2 "$T/log" | grep -c "^$T/A.app/")" "0:$TEN/10"
-check "no argument and no wrapper: exit 1, naming the default wrapper's game folder" "$(run bash "$I/repatch.sh"):$(said "^ERROR: no Cities2.exe under: $T/home/Applications/CS2dxmt11.app/"):$(wc -l < "$T/log" | tr -d ' ')" "1:1:0"
+check "no argument and no wrapper: exit 1, one plain line, nothing run" "$(run bash "$I/repatch.sh"):$(said '^repatch.sh: no wrapper of the game was found. Name the game folder in CS2_GAME_DIR.$'):$(wc -l < "$T/log" | tr -d ' ')" "1:1:0"
+# --- the wrapper found by its marker (docs/plans/wrapper-names.md, WT15, WT4b), with wrappers.sh beside repatch.sh
+mkw() {   # <app>: a wrapper carrying the game's marker, with the game in it
+  mkdir -p "$1/$ST" "$1/Contents/SharedSupport/wine/bin"; : > "$1/$ST/Cities2.exe"
+  printf '#!/bin/sh\nexit 0\n' > "$1/Contents/SharedSupport/wine/bin/wine64"; chmod 755 "$1/Contents/SharedSupport/wine/bin/wine64"
+  printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict><key>L1Role</key><string>game-wrapper</string><key>L1SteamAppID</key><integer>949230</integer></dict></plist>' > "$1/Contents/Info.plist"
+}
+mkw "$T/home/Applications/any name.app"
+check "run by hand with a marked wrapper of any name: ten, in its game folder" "$(run bash "$I/repatch.sh"):$(names)/$(cut -f2 "$T/log" | grep -c "^$T/home/Applications/any name.app/")" "0:$TEN/10"
+mkw "$T/home/Applications/another.app"
+check "two wrappers marked alike: exit 1, the duplicates line, nothing run" "$(run bash "$I/repatch.sh"):$(said 'Move one to the Trash, or name the one to use in CS2_WRAPPER.'):$(wc -l < "$T/log" | tr -d ' ')" "1:1:0"
+rm -rf "$T/home/Applications/another.app"; mv "$I/wrappers.sh" "$T/wrappers.sh.aside"
+check "wrappers.sh not beside it: exit 1, one plain line, nothing run" "$(run bash "$I/repatch.sh"):$(said '^repatch.sh: wrappers.sh is not beside it'):$(wc -l < "$T/log" | tr -d ' ')" "1:1:0"
+check "  ...CS2_GAME_DIR still works without it" "$(run CS2_GAME_DIR="$G" bash "$I/repatch.sh"):$(names)" "0:$TEN"
+mv "$T/wrappers.sh.aside" "$I/wrappers.sh"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

@@ -417,7 +417,7 @@ one more that lives only while a rename is under way:
   stand between a planted bundle and a launcher that runs `wine64` from it. They judge the bundle folder only
   (3.2), so they do not stop another account changing `wine64` or the marker inside an existing wrapper whose
   `Contents` is writable by all, as an installer-made one's is (P3). That is today's state, not made worse by
-  this plan, and has an issue of its own (exit criterion 7).
+  this plan, and is #29.
 - *Considered:* a marker file in the prefix beside `.launcher.lock`. It would survive anything that rewrites
   `Info.plist`. Rejected: `Info.plist` is where the three app builders and the window already look, nothing of
   ours rewrites it, and Wineskin's own rewrite of it, when a wrapper is opened directly and quit, kept the three
@@ -1083,10 +1083,10 @@ and took the game's download; the rewrite only changes that one string.
 6. W4: `release` has moved on James's word, the root `CLAUDE.md` records where it stands, and the pasted line run
    on the Studio renamed nothing and exited 0. Until then this plan is built but not published, and its header
    says so.
-7. #26's checkboxes are ticked; anything found and not fixed has an issue of its own. Known at the W0 fold, each
-   opened on James's word: WD6 (a wrapper opened directly); the game's app not offered in Spotlight's window
-   without a filter even when no wrapper is (P1); and what another account can change inside a wrapper whose
-   `Contents` is writable by all (P3, 3.1).
+7. #26's checkboxes are ticked; anything found and not fixed has an issue of its own. Known at the W0 fold, opened
+   2026-11-21 on James's word: #27, WD6 (a wrapper opened directly); #28, the game's app not offered in
+   Spotlight's window without a filter even when no wrapper is (P1); and #29, what another account can change
+   inside a wrapper whose `Contents` is writable by all (P3, 3.1).
 
 ## 8. Decisions for James
 
@@ -1108,7 +1108,7 @@ and took the game's download; the rewrite only changes that one string.
 WD10 was answered first, yes to all five probes, and they ran on 2026-11-18 and 19. WD1: the marker in
 `Info.plist` (P3: Wineskin's rewrite keeps it). WD2: rename in place, branch A; P1 ran on the Studio, not the
 MacBook, so W3's step 6 is the MacBook's test, and nothing is merged if it fails (3.3's P1 row). WD3:
-`wrapper-<ID>`. WD4: all 19. WD5: build both. WD6: an issue of its own, not this plan. WD7: merge and `v0.3.0`
+`wrapper-<ID>`. WD4: all 19. WD5: build both. WD6: an issue of its own, not this plan (#27). WD7: merge and `v0.3.0`
 after W3. WD8: independent of ON1. WD9: `L1_KEEP_WRAPPER_NAMES=1`. WD11: history left, the value kept out.
 
 The table's rows are the questions as they were put, written before the probes; where a row's conditions name a
@@ -1141,7 +1141,7 @@ rename nor a `.noindex` folder clears what Spotlight learned, which W3 step 6 no
 
 ## 10. Not in this plan
 
-- **Making a directly opened wrapper harmless** (WD6: an issue of its own, not opened yet). P3 gives it a fact:
+- **Making a directly opened wrapper harmless** (WD6: #27). P3 gives it a fact:
   a wrapper opened directly and quit has its `use start.exe` flipped from 1 to 0 by Wineskin's rewrite.
 - **A guard in the launchers against a second game or a second Steam.** `docs/plans/launcher-window.md` already
   lists it as not built. Since the split, no lock serialises the Windows Steam against a game's wrapper.
@@ -1152,9 +1152,9 @@ rename nor a `.noindex` folder clears what Spotlight learned, which W3 step 6 no
   installer-made wrappers do not. The MacBook's are unread.
 - **Moving the wrappers out of `~/Applications`**, unless W3 step 6 selects branch B (3.3).
 - **The game's app as Spotlight's Top Hit** (P1). Not a target (target 3): what else is on the Mac decides it.
-  An issue of its own (exit criterion 7).
-- **Modes inside an installer-made wrapper** (P3: `Contents` and the prefix writable by all). As today; an issue
-  of its own (3.1, exit criterion 7).
+  #28.
+- **Modes inside an installer-made wrapper** (P3: `Contents` and the prefix writable by all). As today; #29
+  (3.1).
 - **Renaming `S734M.app`, the game apps or 14unch3r.** They are the things meant to be clicked.
 - **Porting Kit's own records.** Not readable under this project's rule; James looks, at W2 step 8.
 - **Spotlight's Search Privacy list** as a fix. It is a per-Mac system setting the owner changes by hand; #26
@@ -1357,7 +1357,8 @@ before folding M3 and S5. None rejected.
 | minor | M1 P1's reach (`surviving mars` only, filter with the wrapper present); M2 P2's caveat; M3 who sets the modes inside; M4 `CFBundleName`'s evidence is 1.2; M5 W0 steps 2, 3 and 6 marked as run; M6 3.3's P3 row usable on the branch; M7 the P5 table's rows 2 and 3; M8 "named files"; M9 `steam` at W3 step 0; M10 P4's bound; M11 3.1 narrowed to `CFBundleName`, what P3 found and WT7 tests | target 3; section 5; 3.1; 3.2; 3.3; 3.4; W0; W3; 1.5; WD3's row |
 | gap | No live step renames an installer-made wrapper; P1's Top Hit finding has no issue | section 6 ("Live, not automatable"); exit criterion 7; section 10 |
 
-The issues exit criterion 7 names are not opened: each is a public post, on James's word.
+The issues exit criterion 7 names were opened on James's word the same day, #27 to #29, and the verdict was posted
+on #26.
 
 ## Review log
 

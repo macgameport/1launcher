@@ -30,21 +30,17 @@
 set -u
 
 # ---------------------------------------------------------------- locate the wrapper
-find_wrapper() {
-  [ -n "${CS2_WRAPPER:-}" ] && { echo "$CS2_WRAPPER"; return; }
-  for cand in "$HOME/Applications/CS2dxmt11.app" "$HOME/Applications/CS2.app" \
-              "/Applications/CS2dxmt11.app"; do
-    [ -d "$cand/Contents/SharedSupport/prefix" ] && { echo "$cand"; return; }
-  done
-  # last resort: any wrapper in ~/Applications that has the game installed inside it
-  for cand in "$HOME/Applications"/*.app; do
-    [ -f "$cand/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2.exe" ] \
-      && { echo "$cand"; return; }
-  done
-  echo ""
-}
-
-APP="$(find_wrapper)"
+WRAPPER_APPID=949230; WRAPPER_VAR=CS2_WRAPPER; WRAPPER_GAMEDIR=..   # this launcher's own: its game, and in the repo, its game's folder
+# >>> find-wrapper (the same in both launchers: common/test-launcher-parity.sh compares the copies)
+# common/wrappers.sh finds the wrapper by its marker, whatever its name (docs/plans/wrapper-names.md, 3.2).
+# A deployed launcher reads the copy setup put beside it, and nothing else; the repo's own copy, whose game
+# folder holds scripts/setup.sh, reads the checkout's common/wrappers.sh.
+_l1w="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -f "$_l1w/wrappers.sh" ] && [ -f "$_l1w/$WRAPPER_GAMEDIR/scripts/setup.sh" ]; then _l1w="$_l1w/$WRAPPER_GAMEDIR/../common"; fi
+APP=""; WRAPPER_RC=3
+if [ -f "$_l1w/wrappers.sh" ]; then . "$_l1w/wrappers.sh"; APP="$(l1w_find game "$WRAPPER_APPID")"; WRAPPER_RC=$?; fi
+unset _l1w
+# <<< find-wrapper
 QUIET="${CS2_QUIET:-0}"
 # >>> launch-feedback-config (this launcher's own values)
 STEPS=5
@@ -88,10 +84,14 @@ die() {   # fatal: alert dialog when quiet, pause-on-keypress otherwise
   exit 1
 }
 
+case "$WRAPPER_RC" in
+  3) die "wrappers.sh is not beside the launcher, so the game's wrapper cannot be found. Run the game's setup again." ;;
+  2) die "Two wrappers carry this game's marker. Move one to the Trash, or name the one to use in $WRAPPER_VAR." ;;
+esac
 [ -n "$APP" ] || die "No Wine wrapper found. Install the Porting Kit Wine 11 + DXMT wrapper (see INSTALL.md), or set CS2_WRAPPER=/path/to/Wrapper.app"
 
 SS="$APP/Contents/SharedSupport"
-APPTAG="$(basename "$APP")"          # e.g. CS2dxmt11.app — used to scope pgrep to THIS wrapper
+APPTAG="$(basename "$APP")"          # the wrapper's file name, whatever it is — used to scope pgrep to THIS wrapper
 export WINE="$SS/wine/bin/wine64"
 export WINEPREFIX="$SS/prefix"
 export PATH="$SS/wine/bin:$PATH"
@@ -237,7 +237,7 @@ ensure_patches() {
   # 0b) Badge patch (Game.dll): re-ensure after game updates — Steam replaces Game.dll and
   #     repatch.sh does not cover it (see patch-modconflict-badge.py; fail-open by design).
   if [ -f "$PATCH_DIR/patch-modconflict-badge.py" ]; then   # installed only where the player asked: setup.sh --hide-mod-badges
-    BP_OUT=$(python3 "$PATCH_DIR/patch-modconflict-badge.py" apply 2>&1) \
+    BP_OUT=$(CS2_GAME_DIR="$GDIR" python3 "$PATCH_DIR/patch-modconflict-badge.py" apply 2>&1) \
       && echo "Badge patch: $(printf '%s' "$BP_OUT" | tail -1)" \
       || echo "WARNING: badge-patch check failed — continuing (cosmetic). $(printf '%s' "$BP_OUT" | head -1)"
   fi

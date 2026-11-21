@@ -17,7 +17,8 @@
 #
 # What it does:
 #   1. verifies the wrapper, Steam and the game are where they should be
-#   2. moves an install made before the folders moved out of the home folder (scripts/move-install.sh), then
+#   2. moves an install made before the folders moved out of the home folder (scripts/move-install.sh), gives
+#      the Wine wrappers their new names (common/move-wrappers.sh; L1_KEEP_WRAPPER_NAMES=1 declines), then
 #      copies the launcher + repatch.sh + patches/ into the runtime folder, which `bash common/paths.sh`
 #      prints (macOS TCC blocks .app bundles from executing scripts inside ~/Documents, so they cannot live
 #      in the repo). Exit 3: a launcher or an install is running, and nothing was moved or copied
@@ -67,14 +68,14 @@ done
 #     that moves an older install. A --mac-only run needs neither and is outside the check: scripts/install.sh
 #     reads that run's exit 1 as "Rosetta is missing".
 PATHS="$REPO/../common/paths.sh"; MOVER="$REPO/scripts/move-install.sh"
+RESOLVER="$REPO/../common/wrappers.sh"; WMOVER="$REPO/../common/move-wrappers.sh"   # docs/plans/wrapper-names.md
 if [ "$MAC_ONLY" = 0 ]; then
-  for f in "$PATHS" "$MOVER"; do
+  for f in "$PATHS" "$MOVER" "$RESOLVER" "$WMOVER"; do
     [ -f "$f" ] || { echo "  !! setup's own files are missing ($(tilde "$f")). Open the installer again, or run setup from a whole checkout."; exit 1; }
   done
 fi
 
 LAUNCHER_SRC="$REPO/launchers/launch-cs2-dxmt11.sh"
-WRAPPERS="CS2dxmt11.app CS2.app"
 
 ok=0; bad=0; cautions=0; problems=0
 say()  { printf "  %-52s %s\n" "$1" "$2"; }
@@ -98,20 +99,25 @@ GUIDE="$(tilde "$REPO/INSTALL.md")"
 [ -n "${L1_FETCHED_REF:-}" ] && GUIDE="https://github.com/macgameport/1launcher/blob/main/cities-skylines-2/INSTALL.md"
 
 
-# --- the wrapper, found once: the move's lock is in it (below), and the preflight reads the same answer.
-#     $CS2_WRAPPER when it is set, and then only if it has a prefix; else the first name of WRAPPERS that has one.
-find_wrapper() {
-  local w
-  if [ -n "${CS2_WRAPPER:-}" ]; then
-    [ -d "$CS2_WRAPPER/Contents/SharedSupport/prefix" ] && printf '%s' "$CS2_WRAPPER"
-  else
-    for w in $WRAPPERS; do
-      [ -d "$HOME/Applications/$w/Contents/SharedSupport/prefix" ] && { printf '%s' "$HOME/Applications/$w"; break; }
-    done
+# --- the wrapper, found once: the move's lock is in it (below), and the preflight reads the same answer. The
+#     rule is common/wrappers.sh's (docs/plans/wrapper-names.md, 3.2): $CS2_WRAPPER when a person set it, else the
+#     wrapper that carries the game's marker, else an old name, else the app that holds the game; and setup wants
+#     a prefix in it. A --mac-only run needs no wrapper.
+#     Under the installer, which exports CS2_WRAPPER itself, the variable says nothing about the player:
+#     L1_WRAPPER_GIVEN does, and when it is 0 the variable is dropped, so that it means one thing from here on.
+[ "${CS2_VIA_INSTALLER:-0}" = 1 ] && [ "${L1_WRAPPER_GIVEN:-}" = 0 ] && unset CS2_WRAPPER
+WRAPPER=""
+find_wrapper() {   # sets WRAPPER; exits 1 when two wrappers carry the game's marker, before anything is changed
+  local w rc=0
+  w="$(l1w_find game 949230)" || rc=$?
+  if [ "$rc" = 2 ]; then
+    echo "  !! Setup stops here, before it changes anything: two wrappers carry the game's marker (the lines above)."
+    exit 1
   fi
+  WRAPPER=""; [ "$rc" = 0 ] && [ -d "$w/Contents/SharedSupport/prefix" ] && WRAPPER="$w"
   return 0
 }
-WRAPPER="$(find_wrapper)"
+if [ "$MAC_ONLY" = 0 ]; then . "$RESOLVER"; find_wrapper; fi
 
 # --- where the files go (docs/plans/local-files-layout.md, 3.3). The rule is common/paths.sh's.
 OLD_INSTALL="$HOME/cs2-patch"
@@ -129,14 +135,46 @@ if [ "$MAC_ONLY" = 0 ]; then
   [ -n "$DEST" ] || DEST="$CS2_DATA"
 fi
 # three voices, as the other route-dependent lines below
+WDECLINE_VAR='L1_KEEP_WRAPPER_NAMES=1'
 if [ -n "${L1_FETCHED_REF:-}" ]; then
   AGAIN="open the installer again"
   DECLINE="put $DECLINE_VAR and a space in front of the line you pasted (the whole line: $GUIDE)"
+  WDECLINE="put $WDECLINE_VAR and a space in front of the line you pasted"
 elif [ "${CS2_VIA_INSTALLER:-0}" = 1 ]; then
-  AGAIN="open the installer again"; DECLINE="$DECLINE_VAR bash scripts/install.sh"
+  AGAIN="open the installer again"; DECLINE="$DECLINE_VAR bash scripts/install.sh"; WDECLINE="$WDECLINE_VAR bash scripts/install.sh"
 else
-  AGAIN="run setup again"; DECLINE="$DECLINE_VAR bash scripts/setup.sh"
+  AGAIN="run setup again"; DECLINE="$DECLINE_VAR bash scripts/setup.sh"; WDECLINE="$WDECLINE_VAR bash scripts/setup.sh"
 fi
+# the wrapper mover (common/move-wrappers.sh): under the installer its own hold on the lock is let through, and a
+# holder of the wrapper's files is a skip, so that an install is never failed by a rename
+wmover() {   # [--dry-run] game|steam
+  local a=()
+  [ "${CS2_VIA_INSTALLER:-0}" = 1 ] && a+=(--holders-skip --held-by "$PPID")
+  if [ "${*: -1}" = game ]; then bash "$WMOVER" ${a[@]+"${a[@]}"} "${@:1:$#-1}" game 949230
+  else bash "$WMOVER" ${a[@]+"${a[@]}"} "$@"; fi
+}
+WM_GAME_OUT=""; WM_GAME_RC=0
+wrapper_line() {   # the header's wrapper: lines, from the dry runs; WM_GAME_* keep the game's, for the stop below
+  local role out rc st any=0
+  for role in game steam; do
+    rc=0; out="$(wmover --dry-run "$role" 2>&1)" || rc=$?
+    st="$(mv_state "$out")"
+    [ "$role" = game ] && { WM_GAME_OUT="$out"; WM_GAME_RC=$rc; WM_GAME_STATE="$st"; }
+    case "$st" in
+      none) ;;
+      old|part-way)
+        any=1
+        if printf '%s\n' "$out" | grep -q '^  would '; then printf '%s\n' "$out" | sed -n 's/^  \(would .*\)$/wrapper: \1/p'
+        else
+          if [ "$role" = game ]; then echo "wrapper: the game's wrapper cannot be renamed now"; else echo "wrapper: the Windows Steam's wrapper cannot be renamed now"; fi
+          printf '%s\n' "$out" | grep -E '^  (stop|skip): '
+        fi ;;
+      *) any=1; echo "wrapper: the wrapper mover gave no answer:"; printf '%s\n' "$out" ;;
+    esac
+  done
+  [ "$any" = 1 ] || echo "wrapper: nothing to rename"
+  return 0
+}
 mover() {   # [--dry-run]: the move script, with this wrapper's launch lock; the installer's own hold is let through
   local a
   a=("$@")
@@ -184,7 +222,7 @@ move_line() {
 echo "=== Cities: Skylines II on macOS — setup ==="
 if [ -n "${L1_FETCHED_REF:-}" ]; then echo "repo: a temporary copy of macgameport/1launcher at $L1_FETCHED_REF"
 else echo "repo: $(tilde "$REPO")"; fi
-if [ "$MAC_ONLY" = 0 ]; then paths_lines; move_line; fi
+if [ "$MAC_ONLY" = 0 ]; then paths_lines; move_line; wrapper_line; fi
 echo
 echo "Preflight:"
 
@@ -255,6 +293,15 @@ echo "All $ok checks passed."
 [ "$CHECK_ONLY" = 1 ] && { echo "(--check: stopping before making changes)"; exit 0; }
 caution_ask
 
+# ---------------------------------------------------------------- a wrapper that cannot be renamed now
+# Before anything is changed, and before the folder move: a stop after the folder had moved and before the app was
+# rebuilt would leave an app that names a launcher that is gone. Looked for only when there is something to rename.
+if [ "$WM_GAME_RC" = 3 ] && { [ "${WM_GAME_STATE:-}" = old ] || [ "${WM_GAME_STATE:-}" = part-way ]; }; then
+  echo; echo "  !! Setup stops here, before it moves or copies anything:"; printf '%s\n' "$WM_GAME_OUT" | grep '^  stop: '
+  echo "     Going on would rename a wrapper that is in use. When it has finished, $AGAIN."
+  exit 3
+fi
+
 # ---------------------------------------------------------------- an install made before the folders moved
 MOVED=0; SKIPPED=0; BESIDE_LINK=0; BOTH=0
 if [ "$NAMED" = 0 ]; then
@@ -315,6 +362,30 @@ mkdir -p "$DEST/patches" && cp "$REPO"/patches/*.py "$DEST/patches/" 2>/dev/null
 # cp -R onto an existing folder merges, and would keep a file a newer version no longer has.
 rm -rf "$DEST/patches/_vendor" && cp -R "$REPO/patches/_vendor" "$DEST/patches/_vendor" \
   && echo "  patches/_vendor (dnfile and pefile, which the patch scripts use)"
+cp "$RESOLVER" "$DEST/" && echo "  wrappers.sh (how the launcher finds the game's wrapper)"
+
+# ---------------------------------------------------------------- the wrappers' names (docs/plans/wrapper-names.md, 3.4)
+# After the copies, so that a wrapper renamed here is found by the launcher just deployed even if setup fails later.
+# A stop that appears only now (something started since the header) is a skip: setup goes on under the old name.
+RENAMED=""; WM_SKIPPED=0
+echo
+echo "The Wine wrappers' names:"
+for _role in game steam; do
+  _rc=0; _out="$(wmover "$_role" 2>&1)" || _rc=$?
+  case "$_rc" in
+    0) [ "$(mv_state "$_out")" = none ] || printf '%s\n' "$_out" | sed '1d'
+       RENAMED="$RENAMED$(printf '%s\n' "$_out" | sed -n 's/^  moved: //p')
+" ;;
+    1|3) WM_SKIPPED=1; printf '%s\n' "$_out" | sed '1d' | sed 's/^  stop: /  skip: /' ;;
+    *) problems=$((problems+1)); printf '%s\n' "$_out" | sed '1d'
+       echo "  !! the rename stopped part-way: the wrapper is marked and keeps its old name until the next run, and the game still starts" ;;
+  esac
+done
+RENAMED="$(printf '%s' "$RENAMED" | sed '/^$/d')"
+[ -n "$RENAMED" ] || [ "$WM_SKIPPED" = 1 ] || echo "  nothing to rename"
+find_wrapper   # resolved again: the wrapper may have a new name now
+PREFIX="${WRAPPER:-}/Contents/SharedSupport/prefix"
+GDIR="$PREFIX/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II"
 
 # --- the mod badge patch is opt-in. It edits the game's Game.dll to hide a keybinding badge, which is a
 #     preference and not a compatibility fix (INSTALL.md, "Mod keybinding badges"). The launcher applies it
@@ -323,15 +394,13 @@ rm -rf "$DEST/patches/_vendor" && cp -R "$REPO/patches/_vendor" "$DEST/patches/_
 BADGE_SRC="$REPO/scripts/patch-modconflict-badge.py"
 BADGE_DST="$DEST/patch-modconflict-badge.py"
 BADGE_MARK="$DEST/patches/.mod-badges-on"
-# the script edits this wrapper's Game.dll and no other, whatever CS2_WRAPPER says
-BADGE_DLL_DIR="$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2_Data/Managed"
+# the script edits the Game.dll of the wrapper setup found: the launcher gives it the game folder
+BADGE_DLL_DIR="$GDIR/Cities2_Data/Managed"
 badge_has_run() { ls "$BADGE_DLL_DIR"/Game.dll.bak-modconflict-* >/dev/null 2>&1; }
 badge_install() { cp "$BADGE_SRC" "$BADGE_DST" && : > "$BADGE_MARK"; }
 case "$BADGES" in
   hide)
     badge_install && echo "  mod badge patch: on. It takes effect at the next launch; --show-mod-badges turns it off"
-    [ "$WRAPPER" = "$HOME/Applications/CS2dxmt11.app" ] \
-      || echo "  !! the badge patch only knows ~/Applications/CS2dxmt11.app. Your wrapper is $(tilde "$WRAPPER"), so it will not find your game."
     ;;
   show)
     rm -f "$BADGE_DST" "$BADGE_MARK"
@@ -414,6 +483,14 @@ else
     echo "  window: not built (see the line above)"
   fi
 fi
+# S734M.app, the Windows Steam, names its wrapper's path: rebuilt when it is there, so that it follows a rename. Only
+# the builder's own bundle is rebuilt (the builder refuses any other), and --no-clone makes no store wrapper that was
+# not there. Never counted as a problem: the game does not need it.
+if [ -e "$HOME/Applications/S734M.app" ] && [ -f "$REPO/scripts/make-steam-shortcut.sh" ]; then
+  echo
+  echo "Rebuilding S734M, the Windows Steam:"
+  bash "$REPO/scripts/make-steam-shortcut.sh" --no-clone 2>&1 | sed 's/^/  /' || true
+fi
 
 # 14unch3r's shortcut on the Desktop (docs/plans/launcher-window-look.md, 2.9): one alias, made only on a yes, and
 # never in place of anything already there; the window program says what is at the path. Run after the problems
@@ -448,6 +525,26 @@ desktop_step() {
     none|unlooked) DESKTOP_LINE="Desktop:   no shortcut made. $ADD_ONE" ;;
     failed*)       DESKTOP_LINE="Desktop:   the shortcut could not be made: $(printf '%s' "$_state" | cut -s -f2)" ;;
   esac
+  return 0
+}
+
+# what a rename of the wrappers, or one that was skipped, leaves the owner to know (docs/plans/wrapper-names.md, 3.8)
+rename_blocks() {
+  local l first=1
+  if [ -n "$RENAMED" ]; then
+    echo
+    while IFS= read -r l; do
+      if [ "$first" = 1 ]; then echo "Renamed:   $l"; first=0; else echo "           $l"; fi
+    done <<< "$RENAMED"
+    echo "           The game's app and 14unch3r find a wrapper by a mark inside it, whatever its name. Anything of yours"
+    echo "           that names an old path (a Dock item made from a wrapper, an alias, a saved command, a Porting Kit"
+    echo "           entry) must be pointed at the new one. To keep the old names on a Mac not renamed yet: $WDECLINE"
+  fi
+  if [ "$WM_SKIPPED" = 1 ]; then
+    echo
+    echo "Not renamed: a wrapper kept its name, for the reason given above. Every start of the game still works."
+    echo "           The next run tries again: $AGAIN."
+  fi
   return 0
 }
 
@@ -489,7 +586,7 @@ if [ "${CS2_VIA_INSTALLER:-0}" = 1 ]; then
   AFTER_UPDATE="open the installer again (updates reset the patched DLLs)."
 fi
 if [ "$problems" -gt 0 ]; then
-  move_blocks
+  move_blocks; rename_blocks
   echo
   echo "=== setup finished with $problems problem(s): see the lines marked !! above ==="
   exit 1
@@ -512,7 +609,7 @@ In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
 After a game update: $AFTER_UPDATE
 Troubleshooting: INSTALL.md, then GOTCHAS.md.
 DONE
-move_blocks
+move_blocks; rename_blocks
 if [ "$NOFIX" = 1 ]; then
   echo
   echo "=== setup finished, but not every Mac fix is out yet for this build of the game: see the lines marked >> above ==="

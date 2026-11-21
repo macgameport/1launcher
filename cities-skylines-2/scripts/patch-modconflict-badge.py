@@ -41,6 +41,7 @@ Usage:
 Run with python3 (dnfile comes from patches/_vendor). Re-run after any CS2
 game update (Steam replaces Game.dll; methods are re-resolved by name).
 """
+import os
 import struct
 import subprocess
 import sys
@@ -55,11 +56,28 @@ for _v in (_here / "patches" / "_vendor", _here.parent / "patches" / "_vendor"):
         break
 import dnfile
 
-GAME_DLL = Path.home() / (
-    "Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/"
-    "Program Files (x86)/Steam/steamapps/common/Cities Skylines II/"
-    "Cities2_Data/Managed/Game.dll"
-)
+def game_dir():
+    """The game folder: CS2_GAME_DIR (the launcher passes it), else in the wrapper common/wrappers.sh finds.
+    An install folder holds wrappers.sh beside this file; the checkout's copy, in scripts/, reads the
+    checkout's common/wrappers.sh."""
+    given = os.environ.get("CS2_GAME_DIR", "")
+    if given:
+        return Path(given)
+    w = _here / "wrappers.sh"
+    if not w.is_file() and (_here / "setup.sh").is_file():
+        w = _here.parent.parent / "common" / "wrappers.sh"
+    if not w.is_file():
+        sys.exit("FAIL: wrappers.sh is not beside this file, so the game's wrapper cannot be found. "
+                 "Run setup again, or name the game folder in CS2_GAME_DIR.")
+    r = subprocess.run(["bash", str(w), "find", "game", "949230"], stdout=subprocess.PIPE, text=True)
+    if r.returncode == 2:
+        sys.exit("FAIL: two wrappers carry the game's marker. Move one to the Trash, or name the one to use in CS2_WRAPPER.")
+    if r.returncode != 0 or not r.stdout.strip():
+        sys.exit("FAIL: no wrapper of the game was found. Name the game folder in CS2_GAME_DIR.")
+    return Path(r.stdout.strip()) / "Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II"
+
+
+GAME_DLL = None   # set by main(): game_dir() / Cities2_Data/Managed/Game.dll
 
 
 def method_body_range(pe, type_name, method_name):
@@ -146,7 +164,9 @@ PATCHES = [
 
 
 def main():
+    global GAME_DLL
     apply = len(sys.argv) > 1 and sys.argv[1] == "apply"
+    GAME_DLL = game_dir() / "Cities2_Data/Managed/Game.dll"
     if not GAME_DLL.exists():
         sys.exit(f"FAIL: {GAME_DLL} not found")
     if apply:

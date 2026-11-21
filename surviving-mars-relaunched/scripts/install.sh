@@ -46,10 +46,11 @@ TOOLS_PART=nm               # what this game needs of Apple's Command Line Tools
 STEAM_ARGS="-no-cef-sandbox"
 GPTK_PAGE="https://github.com/Gcenx/game-porting-toolkit/releases/tag/Game-Porting-Toolkit-3.0-3"
 # The core exports SM_WRAPPER itself once it has chosen a wrapper (install-core.sh, use_wrapper), so what
-# the caller gave is read here, before the core is: whether one was given decides the stop before step 7,
-# and the path as the launcher would spell it is what the launcher's game_running looks for.
+# the caller gave is read here, before the core is: whether one was given decides the stop before step 7.
+# SPELLED, the path as the launcher would spell it, is what the launcher's game_running looks for: the
+# resolver's choice (common/wrappers.sh), set by game_wrapper.
 GIVEN_WRAPPER="${SM_WRAPPER:-}"
-SPELLED="${SM_WRAPPER:-$HOME/Applications/SurvivingMars.app}"; SPELLED="${SPELLED%/}"
+SPELLED=""
 SM_TMP=""
 
 # --- copies of the launcher's own lines (launch-relaunched.sh); scripts/test-install.sh holds them identical
@@ -98,8 +99,13 @@ WORDS
 game_cleanup() { [ -n "${SM_TMP:-}" ] && rm -rf "$SM_TMP"; return 0; }   # the core calls it at every exit
 wine_whole() { [ -x "$1/Contents/SharedSupport/wine/bin/wine64" ] && [ -x "$1/Contents/SharedSupport/wine/bin/wineserver" ]; }   # the core's test
 swap_waiting() { [ -d "$1/Contents/SharedSupport/wine.new" ] && [ -e "$1/Contents/SharedSupport/wine.d3dm21-BAK" ]; }
-game_wrapper() {   # sets W. An engine swap stopped part way is finished here, before the core judges the wrapper
-W="$SPELLED"
+game_wrapper() {   # sets W: the resolver's choice, else the old-named app with no prefix, which the core then stops
+# on, else the path of a wrapper to be made. An engine swap stopped part way is finished here, before the core
+# judges the wrapper
+W="$(l1w_find game "$GAME_APPID")"; _rc=$?
+[ "$_rc" = 2 ] && exit 1   # two wrappers carry the game's marker: the resolver has named both
+if [ "$_rc" != 0 ]; then W="$(l1w_incomplete game "$GAME_APPID")" || W="$HOME/Applications/$(l1w_name game "$GAME_APPID")"; fi
+W="${W%/}"; SPELLED="$W"
 swap_waiting "$W" || return 0
 # LOCK and WINEPREFIX are not set yet: the link is read as it is
 _h="$(readlink "$W/Contents/SharedSupport/prefix/.launcher.lock" 2>/dev/null)"
@@ -206,18 +212,24 @@ core_game 6
 stage 7 "The game's app"
 if [ "$CHECK" = 1 ]; then say "would run setup.sh"; exit 0; fi
 if [ "$NO_SETUP" = 1 ]; then END=quiet; say "Stopped before step 7, as asked."; exit 0; fi
-if [ -n "$GIVEN_WRAPPER" ]; then
-  END=quiet
-  say "Stopped before step 7: SM_WRAPPER names another wrapper, and the game's app starts the default one."
-  say "So an install into $(tilde "$W") is a test, and gets no app."
-  exit 0
+if [ -n "$GIVEN_WRAPPER" ]; then   # the game's app starts what the resolver finds: a wrapper given is that one, or a test
+  _app_w="$(unset SM_WRAPPER; l1w_find game "$GAME_APPID" 2> /dev/null)"
+  [ -d "$_app_w" ] && _app_w="$(cd "$_app_w" && pwd -P)"
+  if [ "$_app_w" != "$W" ]; then
+    END=quiet
+    say "Stopped before step 7: SM_WRAPPER names another wrapper than the one the game's app starts."
+    say "So an install into $(tilde "$W") is a test, and gets no app."
+    exit 0
+  fi
 fi
 if prefix_known && game_running; then say "!! The game is running. Quit it, then open the installer again."; exit 3; fi
 for f in "$SETUP" "$GAME_ROOT/launch-relaunched.sh" "$GAME_ROOT/make-app.sh" "$GAME_ROOT/tools/frame-fix.exe" \
-         "$MAKE_ENGINE" "$FETCH" "$GAME_ROOT/../common/make-launcher-app.sh"; do
+         "$MAKE_ENGINE" "$FETCH" "$GAME_ROOT/../common/make-launcher-app.sh" "$GAME_ROOT/../common/wrappers.sh" \
+         "$GAME_ROOT/../common/move-wrappers.sh"; do
   [ -e "$f" ] || { say "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
 done
 set --
 [ "$YES" = 1 ] && set -- "$@" --yes
 SM_VIA_INSTALLER=1 bash "$SETUP" "$@"
+core_after_setup $?
 exit $?

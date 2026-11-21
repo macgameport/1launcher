@@ -66,7 +66,18 @@
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SM_STATE="${SM_STATE:-$HOME/Library/Application Support/1launcher/surviving-mars-relaunched}"
-APP="${SM_WRAPPER:-$HOME/Applications/SurvivingMars.app}"   # the wrapper whose prefix, Steam and game this is
+# APP is the wrapper whose prefix, Steam and game this is.
+WRAPPER_APPID=3215050; WRAPPER_VAR=SM_WRAPPER; WRAPPER_GAMEDIR=.   # this launcher's own: its game, and in the repo, its game's folder
+# >>> find-wrapper (the same in both launchers: common/test-launcher-parity.sh compares the copies)
+# common/wrappers.sh finds the wrapper by its marker, whatever its name (docs/plans/wrapper-names.md, 3.2).
+# A deployed launcher reads the copy setup put beside it, and nothing else; the repo's own copy, whose game
+# folder holds scripts/setup.sh, reads the checkout's common/wrappers.sh.
+_l1w="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -f "$_l1w/wrappers.sh" ] && [ -f "$_l1w/$WRAPPER_GAMEDIR/scripts/setup.sh" ]; then _l1w="$_l1w/$WRAPPER_GAMEDIR/../common"; fi
+APP=""; WRAPPER_RC=3
+if [ -f "$_l1w/wrappers.sh" ]; then . "$_l1w/wrappers.sh"; APP="$(l1w_find game "$WRAPPER_APPID")"; WRAPPER_RC=$?; fi
+unset _l1w
+# <<< find-wrapper
 SS="$APP/Contents/SharedSupport"
 GAME="$SS/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"
 HELPER="$HERE/tools/frame-fix.exe"
@@ -130,6 +141,11 @@ die() {
   exit 1
 }
 
+case "$WRAPPER_RC" in
+  3) die "wrappers.sh is not beside the launcher, so the game's wrapper cannot be found. Run the game's setup again." ;;
+  2) die "Two wrappers carry this game's marker. Move one to the Trash, or name the one to use in $WRAPPER_VAR." ;;
+esac
+[ -n "$APP" ] || die "The game's wrapper is missing. Open the installer again: it makes one."
 arch -x86_64 /usr/bin/true 2>/dev/null || die "Rosetta is missing (a macOS update removes it). Run: softwareupdate --install-rosetta --agree-to-license"
 [ -d "$WINEPREFIX" ] || die "The game's wrapper is missing: $APP. Open the installer again: it makes one. (On a Mac set up from a checkout: bash surviving-mars-relaunched/tools/split-wrapper.sh)"
 [ -x "$WINE" ] || die "The game's Wine engine is missing: $ENGINE."

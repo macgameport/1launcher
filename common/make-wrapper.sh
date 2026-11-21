@@ -8,6 +8,8 @@
 #   bash common/make-wrapper.sh ENGINE --wrapper <path.app>           # make it (an absolute path)
 #   bash common/make-wrapper.sh ENGINE --wrapper <path.app> --check   # say what it would do; write nothing
 #   where ENGINE is --engine-url <url> --engine-bytes <n> --engine-sha <sha256>, all three
+#   --mark game <Steam app ID> | --mark steam   writes the wrapper's marker (common/wrappers.sh) before the
+#                                               finished wrapper is moved into place
 #
 #   exit 0 = made (or, with --check, could be made); 1 = refused or failed, said why, nothing left;
 #   2 = a wrong option; 3 = another install is making a wrapper in that folder.
@@ -31,7 +33,7 @@ tilde() { case "$1" in "$HOME") printf '~' ;; "$HOME"/*) printf '~%s' "${1#"$HOM
 say() { echo "  $*"; }
 die() { echo "  !! $*"; exit 1; }
 
-CHECK=0; TARGET=""; ENGINE_URL=""; ENGINE_BYTES=""; ENGINE_SHA=""
+CHECK=0; TARGET=""; ENGINE_URL=""; ENGINE_BYTES=""; ENGINE_SHA=""; MARK_ROLE=""; MARK_ID=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --check) CHECK=1; shift ;;
@@ -41,6 +43,12 @@ while [ $# -gt 0 ]; do
                if [ $# -lt 2 ] || [ -z "$2" ]; then echo "$1 needs a value"; exit 2; fi
                case "$1" in --engine-url) ENGINE_URL="$2" ;; --engine-bytes) ENGINE_BYTES="$2" ;; *) ENGINE_SHA="$2" ;; esac
                shift 2 ;;
+    --mark) case "${2:-}" in
+              game) case "${3:-}" in ''|*[!0-9]*) echo "--mark game needs a Steam app ID"; exit 2 ;; esac
+                    MARK_ROLE=game; MARK_ID="$3"; shift 3 ;;
+              steam) MARK_ROLE=steam; shift 2 ;;
+              *) echo "--mark needs game <Steam app ID> or steam"; exit 2 ;;
+            esac ;;
     -h|--help) sed -n '2,/^set -u$/p' "$0" | sed '$d'; exit 0 ;;
     *) echo "unknown option: $1 (try --help)"; exit 2 ;;
   esac
@@ -49,6 +57,10 @@ done
   || { echo "--engine-url, --engine-bytes and --engine-sha are all needed (try --help)"; exit 2; }
 case "$ENGINE_BYTES" in *[!0-9]*) echo "--engine-bytes must be a number"; exit 2 ;; esac
 [ -n "$TARGET" ] || { echo "--wrapper is needed (try --help)"; exit 2; }
+if [ -n "$MARK_ROLE" ]; then
+  [ -f "$(dirname "$0")/wrappers.sh" ] || { echo "--mark needs wrappers.sh beside this script"; exit 2; }
+  . "$(dirname "$0")/wrappers.sh"
+fi
 [ "$(id -u)" = 0 ] && die "do not run this as root (with sudo): it would leave files only root can change in your home folder"
 
 # 1. the target
@@ -221,7 +233,10 @@ kill -0 "$w" 2>/dev/null && "$SS/wine/bin/wineserver" -k > /dev/null 2>&1
 V="$("$SS/wine/bin/wine64" --version 2>/dev/null | head -n 1)"
 case "$V" in wine-*) ;; *) die "wine64 --version did not answer" ;; esac
 
-# 9. into place, last
+# 9. marked (common/wrappers.sh), then into place, last: so no wrapper is ever under its name unmarked
+if [ -n "$MARK_ROLE" ]; then
+  e="$(l1w_mark "$APP" "$MARK_ROLE" "${MARK_ID:--}" 0 2>&1)" || die "the wrapper could not be marked: $e"
+fi
 { [ -e "$TARGET" ] || [ -L "$TARGET" ]; } && die "$(tilde "$TARGET") appeared while the wrapper was being made; nothing was replaced"
 mv "$APP" "$TARGET" || die "the wrapper could not be moved to $(tilde "$TARGET")"
 if [ ! -x "$TARGET/Contents/MacOS/wineskinlauncher" ]; then

@@ -33,6 +33,7 @@ G="$T/repo/surviving-mars-relaunched"
 mkdir -p "$G/scripts" "$G/tools" "$T/repo/common" "$T/bin" "$T/home/Applications"
 cp "$HERE/scripts/setup.sh" "$G/scripts/"; cp "$HERE/launch-relaunched.sh" "$HERE/make-app.sh" "$G/"
 cp "$HERE/tools/frame-fix.exe" "$G/tools/"
+cp "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$T/repo/common/"   # docs/plans/wrapper-names.md
 printf '#!/bin/bash\necho "make-launcher-app $*" >> "%s/calls"\nexit "${WINDOW_RC:-0}"\n' "$T" > "$T/repo/common/make-launcher-app.sh"
 S="$G/scripts/setup.sh"
 case "$M" in
@@ -71,7 +72,12 @@ stub osascript 'exit 0'
 H="$T/home"; STATE="$T/state"; APP="$T/apps/Surviving Mars Relaunched.app"
 W="$H/Applications/SurvivingMars.app"; PFX="$W/Contents/SharedSupport/prefix"
 GAMEDIR="$PFX/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"
-mkdir -p "$GAMEDIR" "$T/apps"
+mkdir -p "$GAMEDIR" "$T/apps" "$W/Contents/SharedSupport/wine/bin"
+printf '#!/bin/sh\nexit 0\n' > "$W/Contents/SharedSupport/wine/bin/wine64"; chmod 755 "$W/Contents/SharedSupport/wine/bin/wine64"
+# the game's marker (docs/plans/wrapper-names.md, 3.1): a case about something else meets a wrapper setup leaves under its name
+printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string><key>L1Role</key><string>game-wrapper</string><key>L1SteamAppID</key><integer>3215050</integer></dict></plist>' > "$W/Contents/Info.plist"
+stub wprobe '[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"; exit 0'   # the wrapper mover's open-files probe
+export L1_WMOVE_PROBE="$T/bin/wprobe"
 run() {   # <args...>: setup's exit code; its output in $T/out. The caller sets STUB_* and SM_VIA_INSTALLER
   : > "$T/calls"
   (cd "$T" && PATH="$T/bin:$PATH" HOME="$H" SM_STATE="$STATE" SM_APP="$APP" SM_GAME_EXE="$GAMEDIR/Mars.exe" /bin/bash "$S" "$@") > "$T/out" 2>&1 < /dev/null

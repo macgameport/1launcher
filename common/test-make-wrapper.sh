@@ -44,6 +44,7 @@
 #   MUTANT=31 ...  pgrep asked for every user's wineservers; must exit 1
 #   MUTANT=32 ...  users/Wineskin taken as a folder when it is a link; must exit 1
 #   MUTANT=33 ...  ended before userdef.reg is there; must exit 1
+#   MUTANT=34 ...  the marking removed (WT10, docs/plans/wrapper-names.md); must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REAL="$HERE/make-wrapper.sh"
@@ -53,7 +54,7 @@ REALHOME="$HOME"
 T="$(mktemp -d /tmp/make-wrapper-test.XXXX)"
 OTHER=""; OWN=""   # two sleeps started below, standing for another wrapper's wineserver and the new prefix's
 trap '[ -n "$OTHER$OWN" ] && kill $OTHER $OWN 2>/dev/null; hdiutil detach -quiet "$T/cs-mnt" 2>/dev/null; rm -rf "$T"' EXIT
-S="$T/make-wrapper.sh"; cp "$REAL" "$S"; cp "$HERE/fetch.sh" "$T/fetch.sh"
+S="$T/make-wrapper.sh"; cp "$REAL" "$S"; cp "$HERE/fetch.sh" "$T/fetch.sh"; cp "$HERE/wrappers.sh" "$T/wrappers.sh"
 mutate() {  # <sed expression> <grep that proves it applied>: in the copy or in its fetch.sh
   sed -i '' "$1" "$S" "$T/fetch.sh"; cat "$S" "$T/fetch.sh" | grep -q -- "$2" || { echo "REFUSED: mutant did not apply"; exit 2; }
 }
@@ -97,6 +98,7 @@ case "${MUTANT:-0}" in
   31) mutate 's#pgrep -x -U "\$ME" wineserver#pgrep -x wineserver#' 'pgrep -x wineserver' ;;
   32) mutate 's# \&\& \[ ! -L "\$SS/prefix/drive_c/users/Wineskin" \]##' '^    && \[ -d "\$SS/prefix/drive_c/users/Wineskin" \] \\$' ;;
   33) mutate 's# \&\& \[ -f "\$SS/prefix/userdef.reg" \]##' '\[ -f "\$SS/prefix/user.reg" \] \\$' ;;
+  34) mutate 's#^  e="\$(l1w_mark "\$APP" .*#  e=""  \# MUTANT-34#' 'MUTANT-34' ;;
 esac
 
 fails=0
@@ -125,6 +127,7 @@ mk_template() {   # <out> [two-apps|no-launcher|no-freetype|no-gnutls|no-inotify
   local d="$F/src/tpl" a; rm -rf "$d"; mkdir -p "$d/in" "$d/out"
   a="$d/in/Wineskin-3.0.6-2.app"; mkdir -p "$a/Contents/MacOS" "$a/Contents/Frameworks" "$a/Contents/SharedSupport/Logs"
   for l in libfreetype.6.dylib libgnutls.30.dylib libinotify.0.dylib libSDL2.dylib; do : > "$a/Contents/Frameworks/$l"; done
+  printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict><key>CFBundleName</key><string>Wineskin</string></dict></plist>' > "$a/Contents/Info.plist"
   case "${2:-}" in
     no-freetype) rm "$a/Contents/Frameworks/libfreetype.6.dylib" ;;
     no-gnutls) rm "$a/Contents/Frameworks/libgnutls.30.dylib" ;;
@@ -154,7 +157,7 @@ if [ -n "${STUB_WAITS:-}" ]; then
   fi
   echo $$ >> "$STUB_PIDS"
   u="$p/drive_c/users/Wineskin"
-  : > "$b/Contents/Info.plist"; chmod 755 "$b/Contents/Info.plist"
+  touch "$b/Contents/Info.plist"; chmod 755 "$b/Contents/Info.plist"
   : > "$b/Contents/SharedSupport/Logs/LastRunX11.log"
   if [ -n "${STUB_WINESKIN_LINK:-}" ]; then rmdir "$u"; ln -s "$STUB_TARGETS/Wineskin" "$u"
   else
@@ -414,7 +417,8 @@ stub_gone() {   # the launcher stub of the case just run: gone; or alive, and th
 }
 ONE='  Another Windows program is open on this Mac, so the installer finished this step itself.'
 
-newh; check "another wineserver, a whole prefix that stands still: made, exit 0" "$(STUB_WAITS=0 STUB_SERVERS="$OTHER" run)" 0
+newh; check "another wineserver, a whole prefix that stands still, --mark game 949230: made, exit 0" "$(STUB_WAITS=0 STUB_SERVERS="$OTHER" run --mark game 949230)" 0
+check "  ...marked, the marking after the modes are set (WT10)" "$(plutil -extract L1Role raw -o - "$H/$W/Contents/Info.plist" 2>/dev/null)" game-wrapper
 check "  ...the program ended by this script, once, after the still looks and not before, and gone" \
   "$(how):$([ "$(term_look)" -ge "$STILL" ] && echo late):$(stub_gone)" "LAUNCHER TERM|:late:gone"
 check "  ...each of the six links gone, by name, and nothing else in users/Wineskin" "$(links_left "$H/$W"):$(ls -A "$H/$W/$UW" | tr '\n' ' ')" ":"
@@ -470,7 +474,7 @@ check "  ...the links' targets still hold their files after the build folder's r
 # program, and only cleanup can end it.
 newh
 STUB_WAITS=0 env -u CS2_WRAPPER -u L1_DOWNLOADS HOME="$H" PATH="$T/bin:$PATH" FIXDIR="$F/good" \
-  bash "$S" $(eng) --wrapper "$H/$W" > "$H.out" 2>&1 < /dev/null &
+  bash "$S" $(eng) --wrapper "$H/$W" --mark game 949230 > "$H.out" 2>&1 < /dev/null &
 sp=$!
 i=0; while { [ ! -s "$STUB_PIDS" ] || [ "$(calls "$LOOKS")" -lt 3 ]; } && [ "$i" -lt 500 ]; do /bin/sleep 0.02; i=$((i + 1)); done
 { kill -TERM "$sp"; wait "$sp"; rc=$?; } 2> /dev/null
@@ -480,6 +484,14 @@ check "  ...no line of bash's, and the links' targets still hold their files" "$
 
 check "the stand-in for the other Wine is alive after every case, and neither killall nor pkill was ever called" "$(other_alive):$(calls "$SWEEP_CALLS")" "alive:0"
 kill "$OTHER" "$OWN" 2>/dev/null; wait "$OTHER" "$OWN" 2>/dev/null; OTHER=""; OWN=""
+
+# --- marked (WT10)
+newh; check "made with --mark game 949230: exit 0" "$(run --mark game 949230)" 0
+grep -q . "$H.out" && [ "$(said made)" = 0 ] && sed "s/^/   | /" "$H.out"
+mk() { plutil -extract "$1" raw -o - "$H/$W/Contents/Info.plist" 2>/dev/null || echo none; }
+check "  ...the finished wrapper carries the marker, and no L1RenamePending" "$(mk L1Role):$(mk L1SteamAppID):$(mk L1RenamePending)" "game-wrapper:949230:none"
+newh; check "made with --mark steam: the marker steam-wrapper, no app ID" "$(run --mark steam):$(mk L1Role):$(mk L1SteamAppID)" "0:steam-wrapper:none"
+newh; check "--mark game with no app ID: a wrong option, exit 2" "$(run --mark game)" 2
 
 # --- L1_DOWNLOADS
 DL="$T/dl"; mkdir -p "$DL"; cp "$F/good/$ENGINE" "$DL/"

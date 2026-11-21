@@ -45,7 +45,6 @@ $sys/CS2dxmt11.app"
   return 0
 }
 l1w_games() { echo 949230; echo 3215050; }   # the app IDs of the table's games
-
 l1w_tilde() { case "$1" in "$HOME") printf '~' ;; "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;; *) printf '%s' "$1" ;; esac; }
 l1w_key() { plutil -extract "$2" raw -o - "$1/Contents/Info.plist" 2>/dev/null; }   # <app> <key>
 l1w_role() {   # <role>: the marker's value for a role

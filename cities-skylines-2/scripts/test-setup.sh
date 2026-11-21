@@ -42,10 +42,10 @@
 #   MUTANT=33 ...  setup's default folder is ~/cs2-patch again; must exit 1
 #   MUTANT=34 ...  the move lifts patches/*.py file by file and not the folder; must exit 1
 #   MUTANT=35 ...  the runtime folder's owner and mode are not looked at; must exit 1
-#   MUTANT=36 ...  the wrapper is the first on the list whether or not it is there; must exit 1
+#   (MUTANT=36 retired 2026-11-21: the list it patched is gone; common/test-wrappers.sh MUTANT=4 holds the case)
 #   MUTANT=37 ...  setup checks for common/paths.sh only, not for the move script; must exit 1
 #   MUTANT=38 ...  the check for setup's own files is made for a --mac-only run too; must exit 1
-#   MUTANT=39 ...  a CS2_WRAPPER with no prefix falls through to the list; must exit 1
+#   MUTANT=39 ...  a CS2_WRAPPER with no prefix taken as the wrapper; must exit 1
 #   MUTANT=40 ...  the "already moved" stop is not made under --check; must exit 1
 #   MUTANT=41 ...  the closing blocks about the move are not printed before the problems exit; must exit 1
 #   MUTANT=42 ...  the move script does not test the folders' owner and mode on a finishing run; must exit 1
@@ -102,12 +102,10 @@ case "${MUTANT:-0}" in
   34) perl -0pi -e 's/    elif mv_q "\$1\/\$n" "\$2\/\$n"; then/    elif if [ "\$n" = patches ]; then mkdir "\$2\/patches" && mv "\$1\/patches"\/*.py "\$2\/patches\/"; else mv "\$1\/\$n" "\$2\/\$n"; fi; then/' "$R/scripts/move-install.sh"
       grep -q 'if \[ "\$n" = patches \]; then mkdir' "$R/scripts/move-install.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   35) mutate 's#^      own_folder "\$d" || { echo .*#      true#' '^      true$' ;;
-  36) mutate 's#^    for w in \$WRAPPERS; do$#    for w in ${WRAPPERS%% *}; do printf "%s" "$HOME/Applications/$w"; return 0; done; for w in; do#' 'for w in \${WRAPPERS%% \*}; do printf' ;;
-  37) mutate 's#^  for f in "\$PATHS" "\$MOVER"; do$#  for f in "$PATHS"; do#' '^  for f in "\$PATHS"; do$' ;;
-  38) perl -0pi -e 's/\nif \[ "\$MAC_ONLY" = 0 \]; then\n  for f in "\$PATHS" "\$MOVER"; do\n/\nif true; then\n  for f in "\$PATHS" "\$MOVER"; do\n/' "$S"
+  37) mutate 's#^  for f in "\$PATHS" "\$MOVER" "\$RESOLVER" "\$WMOVER"; do$#  for f in "$PATHS" "$RESOLVER" "$WMOVER"; do#' '^  for f in "\$PATHS" "\$RESOLVER" "\$WMOVER"; do$' ;;
+  38) perl -0pi -e 's/\nif \[ "\$MAC_ONLY" = 0 \]; then\n  for f in "\$PATHS" "\$MOVER" "\$RESOLVER" "\$WMOVER"; do\n/\nif true; then\n  for f in "\$PATHS" "\$MOVER" "\$RESOLVER" "\$WMOVER"; do\n/' "$S"
       grep -q '^if true; then$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
-  39) perl -0pi -e 's/  if \[ -n "\$\{CS2_WRAPPER:-\}" \]; then\n    \[ -d "\$CS2_WRAPPER\/Contents\/SharedSupport\/prefix" \] && printf/  if [ -n "\${CS2_WRAPPER:-}" ] && [ -d "\$CS2_WRAPPER\/Contents\/SharedSupport\/prefix" ]; then\n    printf/' "$S"
-      grep -q '^  if \[ -n "\${CS2_WRAPPER:-}" \] && \[ -d "\$CS2_WRAPPER/Contents/SharedSupport/prefix" \]; then$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  39) mutate 's#^  WRAPPER=""; \[ "\$rc" = 0 \] \&\& \[ -d "\$w/Contents/SharedSupport/prefix" \] \&\& WRAPPER="\$w"$#  WRAPPER=""; [ "$rc" = 0 ] \&\& WRAPPER="$w"#' '^  WRAPPER=""; \[ "\$rc" = 0 \] && WRAPPER="\$w"$' ;;
   40) mutate 's#^    if \[ "\${CS2_PATCH_DIR:-}" = "\$OLD_INSTALL" \] \&\& #    if [ "$CHECK_ONLY" = 0 ] \&\& [ "${CS2_PATCH_DIR:-}" = "$OLD_INSTALL" ] \&\& #' '^    if \[ "\$CHECK_ONLY" = 0 \] && \[ "\${CS2_PATCH_DIR:-}" = ' ;;
   41) mutate 's#^  move_blocks$#  : no blocks here#' '^  : no blocks here$' ;;
   42) perl -0pi -e 's/    if \[ -e "\$d" \] \|\| \[ -L "\$d" \]; then own_folder "\$d" \|\| reason skip [^\n]*\n/    :\n/' "$R/scripts/move-install.sh"
@@ -129,7 +127,11 @@ chmod +x "$T/bin"/*
 mkdir -p "$T/badpy"; printf '#!/bin/bash\nexit 1\n' > "$T/badpy/python3"; chmod +x "$T/badpy/python3"
 # the window builder: a stub that records each call, and whether the game's app was there when it ran
 export WINDOW_CALLS="$T/window.calls"; : > "$WINDOW_CALLS"
-mkdir -p "$T/common"; cp "$REPO/../common/paths.sh" "$T/common/"
+mkdir -p "$T/common"; cp "$REPO/../common/paths.sh" "$REPO/../common/wrappers.sh" "$REPO/../common/move-wrappers.sh" "$T/common/"
+# the wrapper mover's open-files probe (docs/plans/wrapper-names.md, 3.4): a stub that reports $STUB_WHOLDERS, so that no run
+# reaches the real lsof
+printf '#!/bin/bash\n[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"\nexit 0\n' > "$T/bin/wprobe"; chmod +x "$T/bin/wprobe"
+export L1_WMOVE_PROBE="$T/bin/wprobe"
 # the move script's probes: a stub that answers $STUB_OPEN and $STUB_CWD, one volume for every folder, and records each call
 export PROBE_CALLS="$T/probe.calls"; : > "$PROBE_CALLS"
 printf '#!/bin/bash\necho "$1" >> "$PROBE_CALLS"\ncase "$1" in open) [ -n "${STUB_OPEN:-}" ] && echo "$STUB_OPEN" ;; cwd) [ -n "${STUB_CWD:-}" ] && echo "$STUB_CWD" ;; dev) echo 1 ;; esac\nexit 0\n' > "$T/bin/probe"; chmod +x "$T/bin/probe"
@@ -159,12 +161,18 @@ BADGE="$INST/patch-modconflict-badge.py"
 MARK="$INST/patches/.mod-badges-on"
 GAME="Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II"
 
-home() {   # <dir> [wrapper name]: a HOME holding a fake wrapper with Steam and the game in it
-  local p="$1/Applications/${2:-CS2dxmt11.app}/Contents/SharedSupport"
-  mkdir -p "$p/wine/bin" "$1/Applications/${2:-CS2dxmt11.app}/$GAME/Cities2_Data/Managed"
+home() {   # <dir> [wrapper name] [unmarked]: a HOME holding a fake wrapper with Steam and the game in it. It carries the
+  # game's marker (docs/plans/wrapper-names.md, 3.1), so that a case about something else meets a wrapper setup leaves
+  # under its name; "unmarked" makes one under an old name that setup renames, as a Mac not moved yet has
+  local a="$1/Applications/${2:-CS2dxmt11.app}"; local p="$a/Contents/SharedSupport"
+  mkdir -p "$p/wine/bin" "$a/$GAME/Cities2_Data/Managed"
   printf '#!/bin/bash\necho wine-11.0\n' > "$p/wine/bin/wine64"; chmod +x "$p/wine/bin/wine64"
   : > "$p/prefix/drive_c/Program Files (x86)/Steam/steam.exe"
-  : > "$1/Applications/${2:-CS2dxmt11.app}/$GAME/Cities2.exe"
+  : > "$a/$GAME/Cities2.exe"
+  printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string></dict></plist>' > "$a/Contents/Info.plist"
+  if [ "${3:-}" != unmarked ]; then
+    plutil -replace L1Role -string game-wrapper "$a/Contents/Info.plist"; plutil -replace L1SteamAppID -integer 949230 "$a/Contents/Info.plist"
+  fi
 }
 ran_here() { : > "$1/Applications/CS2dxmt11.app/$GAME/Cities2_Data/Managed/Game.dll.bak-modconflict-20260827-164900"; }
 run() {    # <home> [setup.sh arguments]: output in <home>.out; echoes the exit code, or "timeout" after 20 s
@@ -219,9 +227,13 @@ check "  ...it is kept, refreshed, and the choice recorded" "$(cmp -s "$R/script
 rm "$H/Applications/CS2dxmt11.app/$GAME/Cities2_Data/Managed"/Game.dll.bak-modconflict-*
 check "  ...and a later run keeps it after the backups are deleted" "$(run "$H"):$(has "$H/$BADGE")" "0:yes"
 
-# --- a wrapper the badge patch does not know
+# --- the badge step uses the wrapper setup found, whatever its name (docs/plans/wrapper-names.md)
 H="$T/h4"; home "$H" CS2.app
-check "--hide-mod-badges with another wrapper: exit 0, with a warning" "$(run "$H" --hide-mod-badges):$(said "$H" 'the badge patch only knows ~/Applications/CS2dxmt11.app')" "0:1"
+check "--hide-mod-badges with another wrapper: exit 0, on, and no warning about the wrapper" "$(run "$H" --hide-mod-badges):$(said "$H" 'mod badge patch: on'):$(said "$H" 'only knows')" "0:1:0"
+H="$T/h4b"; home "$H" "Some Name.app"; mkdir -p "$H/$INST"; echo old > "$H/$BADGE"
+: > "$H/Applications/Some Name.app/$GAME/Cities2_Data/Managed/Game.dll.bak-modconflict-20260827-164900"
+check "  ...an old copy where the patch has run in that wrapper: kept, as before" "$(run "$H"):$(said "$H" 'mod badge patch: on, as before')" "0:1"
+H="$T/h4"
 
 # --- --check writes nothing, whatever else is asked
 H="$T/h5"; home "$H"; before=$(snap "$H")
@@ -293,7 +305,7 @@ for rc in 1 3; do
   check "the window builder exits $rc: setup exits 0, says so once, counts no problem, marks nothing !!" \
     "$(STUB_WINDOW_RC=$rc run "$H"):$(said "$H" '^  window: not built (see the line above)$'):$(said "$H" '^=== setup complete ===$'):$(said "$H" 'setup finished with'):$(said "$H" '!!.*window'):$(said "$H" 'or open 14unch3r')" "0:1:1:0:0:0"
 done
-mkdir -p "$T/nocommon/common"; cp -R "$R" "$T/nocommon/repo"; cp "$T/common/paths.sh" "$T/nocommon/common/"; : > "$WINDOW_CALLS"
+mkdir -p "$T/nocommon/common"; cp -R "$R" "$T/nocommon/repo"; cp "$T/common/paths.sh" "$T/common/wrappers.sh" "$T/common/move-wrappers.sh" "$T/nocommon/common/"; : > "$WINDOW_CALLS"
 check "a common/ with paths.sh and no window builder: setup exits 0 and says the builder is not in this checkout" \
   "$(SETUP_REPO="$T/nocommon/repo" run "$H"):$(said "$H" '^  window: not built (common/make-launcher-app.sh is not in this checkout)$'):$(said "$H" '^=== setup complete ===$'):$(lines "$WINDOW_CALLS")" "0:1:1:0"
 mkdir -p "$T/bare"; cp -R "$R" "$T/bare/repo"; HB="$T/hbare"; home "$HB"; before=$(snap "$HB")
@@ -301,7 +313,7 @@ check "no common/ at all: setup stops at once, exit 1, with the words for its ow
   "$(SETUP_REPO="$T/bare/repo" run "$HB"):$(said "$HB" "^  !! setup's own files are missing (.*common/paths.sh). Open the installer again, or run setup from a whole checkout.\$"):$(said "$HB" 'Preflight\|^==='):x$(snap "$HB")" "1:1:0:x$before"
 check "  ...with --mac-only that run is outside the check: exit 0, and the Mac is looked at" \
   "$(SETUP_REPO="$T/bare/repo" run "$HB" --mac-only):$(said "$HB" "setup's own files"):$(said "$HB" 'Rosetta 2  *OK$'):x$(snap "$HB")" "0:0:1:x$before"
-mkdir -p "$T/nomover/common"; cp -R "$R" "$T/nomover/repo"; cp "$T/common/paths.sh" "$T/common/make-launcher-app.sh" "$T/nomover/common/"; rm "$T/nomover/repo/scripts/move-install.sh"
+mkdir -p "$T/nomover/common"; cp -R "$R" "$T/nomover/repo"; cp "$T/common/paths.sh" "$T/common/make-launcher-app.sh" "$T/common/wrappers.sh" "$T/common/move-wrappers.sh" "$T/nomover/common/"; rm "$T/nomover/repo/scripts/move-install.sh"
 check "no scripts/move-install.sh: the same stop, before the header and the preflight, and nothing written" \
   "$(SETUP_REPO="$T/nomover/repo" run "$HB"):$(said "$HB" "^  !! setup's own files are missing (.*scripts/move-install.sh). Open the installer again, or run setup from a whole checkout.\$"):$(said "$HB" 'Preflight\|^==='):x$(snap "$HB")" "1:1:0:x$before"
 check "  ...and with --mac-only: exit 0" \
@@ -378,11 +390,11 @@ check "  ...a failing patch says to open the installer again, not git pull" \
 check "  ...without it, the checkout and git pull" "$(STUB_FAIL=patch_mkparent.py run "$H"):$(said "$H" 'git pull')" "1:1"
 check "  ...a missing prerequisite points at the guide's address" \
   "$(L1_FETCHED_REF=release STUB_ROSETTA=1 run "$H"):$(said "$H" '^Full walkthrough: https://github.com/macgameport/1launcher/blob/main/cities-skylines-2/INSTALL.md$')" "1:1"
-H="$T/hp"; home "$H"; home "$H" CS2.app; rm -rf "$H/Applications/CS2dxmt11.app"
+H="$T/hp"; home "$H" CS2.app unmarked
 check "the lines setup itself prints give the home folder as ~" \
-  "$(run "$H" --hide-mod-badges):$(said "$H" "^Installing launcher + patches into ~/$INST\$"):$(said "$H" 'Your wrapper is ~/Applications/CS2.app,')" "0:1:1"
+  "$(run "$H" --hide-mod-badges):$(said "$H" "^Installing launcher + patches into ~/$INST\$"):$(said "$H" '^Renamed:   ~/Applications/CS2.app -> ~/Applications/wrapper-949230.app$')" "0:1:1"
 check "  ...and none of them holds the home folder whole" \
-  "$(grep -E '^(repo:|Installing launcher|  !! the badge patch|Full walkthrough)' "$H.out" | grep -c "$H")" 0
+  "$(grep -E '^(repo:|wrapper:|Installing launcher|  moved:|Renamed:|Full walkthrough)' "$H.out" | grep -c "$H")" 0
 
 # --- a fix not out yet for this build: repatch.sh exits 3 (docs/plans/patch-outcomes.md, 2.4; PT5)
 manifest() {   # <home> [buildid]: the game's Steam manifest, two folders above the game's, with that build

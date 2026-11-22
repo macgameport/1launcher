@@ -1,7 +1,7 @@
 # CS2 macOS patch inventory
 
 **Game:** Cities: Skylines II `1.6.4f1` (Steam build 26404411, since 2026-11-10; `patch_cohtml` re-derived 2026-11-12). Before that `1.6.2f1` (build 25127643; re-derived 2026-10-10), and 1.6.0f1 `419.d6c6`
-**Stack:** self-built stock Wine 11.16 + DXMT (`~/Applications/CS2dxmt11.app`): needs **10** of these patch
+**Stack:** self-built stock Wine 11.16 + DXMT (the game's wrapper: `bash common/wrappers.sh find game 949230`): needs **10** of these patch
 scripts. The other six are for an engine with the errno defect (`CS2_ERRNO_PATCHES=1`). An older Wine 10 +
 D3DMetal stack was retired from this repository on 2026-11-09.
 **Applied by:** `repatch.sh dxmt11`, the copy in the runtime folder (`bash common/paths.sh` prints it) — idempotent, self-verifying (byte pattern, or by-name method lookup with the whole IL matched for the PDX.SDK five and the six errno scripts), a `.bak` before the first write to an unpatched file; a script whose code is not in a new build exits 3 and writes nothing (`patches/README.md`, "If a game update breaks them")

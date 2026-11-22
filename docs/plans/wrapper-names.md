@@ -2,9 +2,34 @@
 
 **Status: check-it'd 2026-11-21 — build-ready-with-fixes (pass 3, the W0 fold re-checked, folded).** W0 is done:
 P0 to P5 are recorded in section 1 (2026-11-18 and 19), James answered section 8 (2026-11-20), and step 8's fold
-and its re-check are at the foot ("W0 fold", 2026-11-21). W1 may start on the branch `wrapper-names`; the
-MacBook's reads of W3 step 0 are taken at the first visit there. The
+and its re-check are at the foot ("W0 fold", 2026-11-21). W1 is built on the branch `wrapper-names` (as-built
+header below); W2, the Studio, is next, on James's word; the MacBook's reads of W3 step 0 are taken at the first
+visit there. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
+
+> **🔧 As-built (2026-11-21): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
+> `release`); W2 to W4 not started.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
+> `5d8d263` and `6e9a3cf` (1.3 to 1.5: makers, installers, launchers, setups, the other readers, 14unch3r),
+> `78328e1`, `e9f7431`, `0fc680a` (the new cases: WT4b, WT11, WT14 to WT17), `422b183` (the tests that read a
+> real wrapper), `a2f935d` (1.6, the 19 research scripts), `11c1fd1` (1.7, the release gate, and WT12's list), and
+> the documents commit that carries this header. Every test file passes; every mutant of section 6 was applied to
+> a copy of the real source and seen red, then restored (W1's step 1.9). Deviations from the text above:
+> - **How a launcher tells its repo copy from a deployed one.** Not by depth alone: the repo's copy is the one
+>   whose game folder holds `scripts/setup.sh` (`launchers/..` for Cities: Skylines II, `.` for Surviving Mars,
+>   the `WRAPPER_GAMEDIR` each launcher sets above the shared block). A deployed copy so never looks above its
+>   `1launcher` folder. `repatch.sh` and the badge patch use the same test.
+> - **Output the plan did not fix.** The mover prints `would finish:` / `finished:` for a part-way wrapper under a
+>   name not old (no rename), and for two wrappers marked alike prints its state and a `skip:` (exit 1). Setup's
+>   header relays a skip's reasons only under `--check`; in a run the rename step prints them once. Setup closes
+>   with a `Renamed:` block (both names, how to decline) beside `Moved:`.
+> - **WT12's list** is thirteen files: the resolver, the dated record, and eleven test files whose fixtures hold
+>   old-name behaviour on purpose. `test-setup.sh` MUTANT=36 is retired (its list is gone; `test-wrappers.sh`
+>   MUTANT=4 holds the case) and `test-move-install.sh` MUTANT=7 re-aimed at the resolver's call.
+>
+> Verify against: `common/wrappers.sh`, `common/move-wrappers.sh`, `common/install-core.sh`,
+> `common/make-wrapper.sh`, `common/launcher-window.swift`, `common/check-release-move.sh`,
+> `cities-skylines-2/scripts/setup.sh`, `surviving-mars-relaunched/scripts/setup.sh`, both `scripts/install.sh`,
+> both launchers (the `find-wrapper` block), and the tests `common/test-wrappers.sh`, `common/test-move-wrappers.sh`.
 
 The fault: Spotlight offers the Wine wrappers beside, and on one Mac above, the game apps. A wrapper opened
 directly starts its own Steam outside the launcher and its lock. The wrappers cannot simply be renamed, because
@@ -876,6 +901,8 @@ section 8 on 2026-11-20; the fold is the "W0 fold" at the foot. What is left of 
 8. The results are folded into sections 1 and 3, and the plan is checked again. No code before that check passes.
 
 ### W1 — the repo (branch `wrapper-names`)
+
+**Built 2026-11-21** (the as-built header at the top says what and where; every item below is done).
 
 1.1 `common/wrappers.sh` and `common/test-wrappers.sh` (WT1 to WT5c, WT12).
 1.2 `common/move-wrappers.sh` and `common/test-move-wrappers.sh` (WT7 to WT9c).

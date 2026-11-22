@@ -204,7 +204,8 @@ check "WT14 --no-clone with no store wrapper: exit 0, it says so, nothing built 
   "$rc:$(grep -c '^S734M: not built: there is no storefront wrapper' "$T/mk.out"):$([ -e "$T/d17/S734M.app" ] && echo built):$([ -e "$T/w16/None.app" ] && echo cloned)" "0:1::"
 # the start-time lookup: a shim built for a store wrapper that is then renamed by hand finds it by its marker,
 # through the runtime folder's wrappers.sh, and starts Steam in it (its wine64 is the recording stub)
-HL="$T/hl"; RTF="$HL/Library/Application Support/1launcher/cities-skylines-2"; mkdir -p "$HL/Applications" "$RTF"
+HL="$T/hl"; mkdir -p "$HL/Applications"
+RTF="$(env -u CS2_PATCH_DIR -u CS2_WORK_DIR -u L1_DATA_ROOT -u L1_WORK_ROOT HOME="$HL" bash "$REPO/../common/paths.sh" | sed -n 's/^CS2_DATA=//p')"; mkdir -p "$RTF"   # the runtime folder
 cp "$REPO/../common/wrappers.sh" "$RTF/"; fx "$HL/Applications/old.app" steam-wrapper
 ( cd "$T/cwd" && HOME="$HL" PATH="$T/bin:$PATH" bash "$MAKE" --wrapper "$HL/Applications/old.app" --from "$T/no-such-donor.app" --dest "$T/d18" ) > "$T/mk.out" 2>&1
 check "WT14 the shim records the runtime folder's wrappers.sh" "$(sed -n 's/^WRAPPERS_SH=//p' "$T/d18/S734M.app/Contents/MacOS/launch" | sed 's/\\ / /g')" "$RTF/wrappers.sh"

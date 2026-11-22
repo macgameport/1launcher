@@ -25,7 +25,7 @@ the simpler answer is to run the game in CrossOver. What transfers to any setup 
   It refuses to start on a cloud conflict (which would otherwise silently block every later upload)
   or on D3DMetal 2.1, and holds a per-prefix lock so two launches cannot race.
 - `tools/split-wrapper.sh` — how the first two Macs were set up, before there was an installer: it built
-  `~/Applications/SurvivingMars.app` from the two cs2 wrappers the game used to be spread across
+  the game's own wrapper from the two cs2 wrappers the game used to be spread across
   (`docs/plans/one-wrapper-per-game.md`). An install from nothing does not use it.
 - `tools/make-engine.sh --install <wrapper>` — puts D3DMetal 3.0 into a wrapper's own Wine 10 in place
   of its D3DMetal 2.1, keeping the original as `wine.d3dm21-BAK`. The pieces come from the folder named
@@ -54,8 +54,9 @@ the simpler answer is to run the game in CrossOver. What transfers to any setup 
 - A Steam account that owns the game, and about 20 GB of free disk space.
 - Apple's Command Line Tools, which the installer asks Apple for when they are missing: the engine swap
   and the app's icon and progress window need them.
-- The game's own wrapper, `~/Applications/SurvivingMars.app` (not to be confused with
-  `Surviving Mars Relaunched.app`, the double-click app). The installer makes it. The game, its Steam,
+- The game's own wrapper, `~/Applications/wrapper-3215050.app` (`SurvivingMars.app` until v0.3.0, when setup
+  renamed it; `bash common/wrappers.sh list` prints it), not to be confused with
+  `Surviving Mars Relaunched.app`, the double-click app. The installer makes it. The game, its Steam,
   saves, mods and Paradox login all live in it.
 - One Steam on this Steam account at a time, across all wrappers and Macs: a second one signing in
   replaces the first's session, and the replaced one skips the cloud upload at exit. Buy and browse in
@@ -99,7 +100,7 @@ engine, default `~/Library/Developer/1launcher/surviving-mars-relaunched`), `SM_
 sign-in, default 15), `SM_WRAPPER`, `SM_ENGINE`, `SM_STEAM_ENGINE` (launcher); `ENGINE_SRC`,
 `CX_GPTK` (make-engine.sh); `SPLIT_*` (split-wrapper.sh, for its test).
 
-On a Mac whose D3DMetal came from CrossOver, after CrossOver updates it: `bash tools/make-engine.sh --install ~/Applications/SurvivingMars.app --rebuild`.
+On a Mac whose D3DMetal came from CrossOver, after CrossOver updates it: `bash tools/make-engine.sh --install "$(bash ../common/wrappers.sh find game 3215050)" --rebuild`.
 
 ## Findings that apply to any Wine or Proton setup
 

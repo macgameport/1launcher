@@ -31,6 +31,10 @@ access, above a `1launcher` folder:** `~/Library/Application Support` holds othe
 - **Never attribute a wine process by command line.** Webhelper children and a self-restarted
   `steam.exe` all carry Windows-style argv. Attribute by open files against the **prefix**:
   `lsof -p <pid> | grep -q "<prefix>"`.
+- **Never name a wrapper by its file name.** The game's wrapper and the Windows Steam's are found by a marker
+  in their `Info.plist`, and setup renames them: `bash common/wrappers.sh list` prints them, `find game 949230`
+  the game's (and its prefix is `<that>/Contents/SharedSupport/prefix`). An old name in a dated record is a
+  label of its time.
 - **Never `kill -9` Steam.** It leaves a 0-byte `.crash` marker that makes the next launch exit 1.
   Use `steam.exe -shutdown`, then `WINEPREFIX=<prefix> wineserver -k`.
 - **Read the real exit code.** `<cmd> | tail` reports *tail's* status — a failing gate announces

@@ -7,6 +7,34 @@ the pasted line installs it.
 
 ## Unreleased
 
+**Setup renames the Wine wrappers in `~/Applications`** (docs/plans/wrapper-names.md). Spotlight offered them
+beside the game's app, and a wrapper opened directly starts Steam outside the launcher and its lock. The new
+names are ones nobody types:
+
+- Cities: Skylines II: `CS2dxmt11.app` (on an older Mac `CS2.app`) becomes `wrapper-949230.app`;
+- the Windows Steam, where the engine build made one: `CS2dxmt11-pk110.app` becomes `wrapper-0.app`;
+- Surviving Mars: Relaunched: `SurvivingMars.app` becomes `wrapper-3215050.app`.
+
+Every script now finds a wrapper by a mark setup writes into its `Info.plist`, never by its name, so a name is a
+label and can be anything. It is a rename with nothing copied, and setup says what it renamed. It stops, before it
+changes anything, while the game, a launch or an install is using the game's wrapper; it skips a rename it cannot
+make safely, among them while Steam is open in the Windows Steam's wrapper, says why, and tries again at its next
+run. `--check` says what a run would do. A new install makes its wrapper under the new name, marked. The first
+start after the rename can take a few seconds longer (7 to 9 s on the Studio, one start); Steam stays signed in and
+macOS asks nothing.
+
+**What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
+made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find a
+wrapper whatever its name, after a rename by hand too.
+
+**To keep the old names**, put `L1_KEEP_WRAPPER_NAMES=1` in front of setup, the installer or the pasted line, for
+that run. A wrapper named in `CS2_WRAPPER` or `SM_WRAPPER` keeps its name too.
+
+**Going back to an earlier version on a renamed Mac:** Cities: Skylines II still starts, but that version's setup
+finds no wrapper; Surviving Mars does not start until its wrapper is renamed back. To rename one back, quit the
+game and Steam, `mv` it to its old name, and run setup once: from then on setup leaves it under that name. Both
+`INSTALL.md` files say how, in "The Wine wrappers' names" and "The wrapper's name".
+
 ## v0.2.0 (2026-11-17)
 
 **Setup moves a Cities: Skylines II install out of the home folder.** Until now everything was in one

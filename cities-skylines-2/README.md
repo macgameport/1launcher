@@ -157,7 +157,7 @@ under Rosetta is the likely place — not measured).
    and Chromium's software fallback fails the same way.
 
    **The storefront still works — from the second app.** The engine build (INSTALL §6)
-   preserves your wine 11.0 wrapper as `CS2dxmt11-pk110.app` (an APFS clone: under a minute,
+   preserves your wine 11.0 wrapper as the Windows Steam's own wrapper (an APFS clone: under a minute,
    ~no extra disk, the game install stripped from the clone) and installs **S734M.app**,
    the Windows Steam, beside the game shortcut (it was called **CS2 Steam Store.app** until 2026-11-10). Double-click it to buy DLC or browse; **Steam
    licences are account-level**, so a purchase there carries over to the game wrapper. Its

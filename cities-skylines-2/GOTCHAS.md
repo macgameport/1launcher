@@ -1137,7 +1137,7 @@ was still running after a session I had reported clean.
    `rundll32.exe setupapi,InstallHinfSection … wine.inf` (a prefix update that never finished) had
    `…/SharedSupport/wine/share/wine/wine.inf` open and **no prefix path at all**. A
    `lsof | grep "$WINEPREFIX"` sweep is structurally blind to it. Match on the **wrapper root**
-   (`…/CS2dxmt11.app`) to catch both, not the prefix subdirectory.
+   (`…/<the wrapper>.app`) to catch both, not the prefix subdirectory.
 2. **Other prefixes.** Probing PK 11.0 or wine-stable leaves *their* services running. Tearing down
    the prefix under test says nothing about them — sweep every wrapper you touched this session.
 
@@ -1158,11 +1158,12 @@ confirmed by name that no `steam.exe` is in the set, and check both prefixes for
    pattern could find. **Enumerate every PID and let `lsof` decide.** It is slower and it is the
    only version that is correct.
 
-**Sweep that actually works:**
+**Sweep that actually works** (its pattern since 2026-11-21 matches every wrapper in `~/Applications` by its
+place and not by a list of names, which setup changes: `docs/plans/wrapper-names.md`):
 
 ```bash
 for p in $(ps -axo pid=); do
-  lsof -p "$p" 2>/dev/null | grep -qE '/(CS2dxmt11|CS2dxmt11-pk110|S734M)\.app' \
+  lsof -p "$p" 2>/dev/null | grep -qE '/Applications/[^/]+\.app/Contents/SharedSupport/' \
     && echo "$p  $(ps -o etime= -p $p) $(ps -o command= -p $p | cut -c1-60)"
 done
 ```

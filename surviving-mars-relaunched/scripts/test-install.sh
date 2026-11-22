@@ -29,6 +29,8 @@
 #    30 the stop before step 7 put back to "whenever SM_WRAPPER is given" (docs/plans/wrapper-names.md, WT11 (e))
 #    31 game_wrapper not asking the resolver's incomplete (WT11 (f))
 #    32 the marking option dropped in the core (WT10 (b))
+#    33 core_after_setup removed at this installer's call, setup's exit code kept (WT11 (c))
+#    34 setup's unset of SM_WRAPPER removed (WT11 (b))       35 --holders-skip not passed by setup (WT11 (g))
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -114,10 +116,12 @@ PY
   30) sed -i '' 's|^  if \[ "\$_app_w" != "\$W" \]; then$|  if true; then|' "$S" ;;
   31) sed -i '' 's|W="\$(l1w_incomplete game "\$GAME_APPID")" \|\| W=|W=|' "$S" ;;
   32) sed -i '' 's| --mark game "\$GAME_APPID"||g' "$CORE" ;;
+  33) sed -i '' 's|^core_after_setup \$?$|(exit $?)|' "$S" ;;
+  34|35) ;;   # applied below, to the real setup.sh of the WT11 copy
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
-  cmp -s "$HERE/scripts/install.sh" "$S" && cmp -s "$REPO/common/install-core.sh" "$CORE" && { echo "REFUSED: mutant $M did not apply"; exit 2; }
+  case "$M" in 34|35) ;; *) cmp -s "$HERE/scripts/install.sh" "$S" && cmp -s "$REPO/common/install-core.sh" "$CORE" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;; esac
   bash -n "$S" && bash -n "$CORE" || { echo "REFUSED: mutant $M does not parse"; exit 2; }
 fi
 
@@ -398,6 +402,38 @@ check "the version expression equals the launcher's" "$(same 'D3DM_VER=$(plutil'
 check "the version pattern equals the launcher's" "$(same 'case "$D3DM_VER" in' '  [3-9]')" "$(want 'case "$D3DM_VER" in' '  [3-9]' 2)"
 check "game_running equals the launcher's" "$(fn "$S" 'game_running() {' | shasum | cut -c1-12):$(fn "$S" 'game_running() {' | wc -l | tr -d ' ')" "$(fn "$LAUNCHER" 'game_running() {' | shasum | cut -c1-12):8"
 check "no line of the installer names the other game" "$(grep -c -i -E 'cities|skylines|949230|CS2' "$HERE/scripts/install.sh")" 0
+
+# --- WT11 (docs/plans/wrapper-names.md): the installer's route through the real setup.sh, wrappers.sh and
+#     move-wrappers.sh, in a second scratch copy; its app builder is the real one with xcrun a stub, its window
+#     builder a stub, the mover's probe a stub
+R2="$T/repo2"; G2="$R2/surviving-mars-relaunched"; mkdir -p "$R2/common" "$G2/scripts" "$G2/tools"
+cp "$S" "$G2/scripts/install.sh"; cp "$CORE" "$R2/common/install-core.sh"   # the copies under test: their mutants apply here too
+cp "$HERE/scripts/setup.sh" "$G2/scripts/"; cp "$HERE/launch-relaunched.sh" "$HERE/make-app.sh" "$G2/"; cp "$HERE/tools/frame-fix.exe" "$G2/tools/"
+cp "$G/tools/fetch-d3dmetal.sh" "$G/tools/make-engine.sh" "$G2/tools/"
+cp "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
+printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"
+S2="$G2/scripts/setup.sh"
+case "$M" in
+  34) sed -i '' 's|^\[ "\${SM_VIA_INSTALLER:-0}" = 1 \] \&\& \[ "\${L1_WRAPPER_GIVEN:-}" = 0 \] \&\& unset SM_WRAPPER$|: no unset|' "$S2"
+      grep -q '^: no unset$' "$S2" || { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+  35) sed -i '' 's|a+=(--holders-skip --held-by "\$PPID")|a+=(--held-by "$PPID")|' "$S2"
+      grep -q -- '--holders-skip --held-by' "$S2" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+esac
+stub xcrun 'exit 1'
+stub wprobe '[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"; exit 0'
+# a pgrep that, as the real one, exits 1 when nothing matches: the app builder refuses while its app's program runs
+mkdir -p "$T/bin2"; printf '#!/bin/bash\ni=""; pat=""; for a in "$@"; do [ "$a" = -i ] && i=-i; pat="$a"; done\ngrep -E $i -- "$pat" "$ST/procs" 2>/dev/null | cut -d" " -f1 | grep .\n' > "$T/bin2/pgrep"; chmod +x "$T/bin2/pgrep"
+OLDW="$HOME/Applications/SurvivingMars.app"; NEWW="$HOME/Applications/$(bash "$REPO/common/wrappers.sh" name game 3215050)"
+oldw() { rm -rf "$HOME/Applications"/*.app "$HOME/Library"; world; mkwrap "$OLDW" 3.0 steam game; }
+run2() { : > "$CALLS"; env -u SM_WRAPPER -u L1_WRAPPER_GIVEN PATH="$T/bin2:$PATH" L1_WMOVE_PROBE="$T/bin/wprobe" "$@" /bin/bash "$G2/scripts/install.sh" < /dev/null > "$T/out" 2>&1; echo $?; }
+oldw; rc=$(run2)
+check "WT11 through the real setup: an old-named wrapper, no variable given: renamed and marked, exit 0" \
+  "$rc:$([ -d "$NEWW" ] && echo renamed):$(plutil -extract L1Role raw -o - "$NEWW/Contents/Info.plist" 2>/dev/null)" "0:renamed:game-wrapper"
+check "  ...the app's L1Prefix names the renamed wrapper, and no .launcher.lock is left in it" \
+  "$(plutil -extract L1Prefix raw -o - "$HOME/Applications/Surviving Mars Relaunched.app/Contents/Info.plist" 2>/dev/null):$(lockof "$NEWW")" "$NEWW/Contents/SharedSupport/prefix:"
+oldw; rc=$(run2 STUB_WHOLDERS=4242)
+check "WT11 a holder reported by the probe: exit 0, one skip line, nothing renamed" "$rc:$(o 'skip: something of the wrapper'):$([ -d "$OLDW" ] && echo kept)" "0:1:kept"
+rm -rf "$HOME/Applications"/*.app "$HOME/Library"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

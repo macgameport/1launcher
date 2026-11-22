@@ -11,7 +11,8 @@
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 TS=$(date +%Y%m%d-%H%M%S); OUT="${1:-/tmp/cs2-minrepro3-$TS}"; mkdir -p "$OUT"
-SS="$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+SS="$CS2W/Contents/SharedSupport"
 WINEBIN="${CS2_WINE:-$SS/wine/bin/wine64}"
 export WINEPREFIX="${CS2_PREFIX:-$SS/prefix}" WINEDEBUG="${WINEDEBUG:--all}"
 LOG="$OUT/log.txt"

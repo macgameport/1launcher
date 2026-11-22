@@ -18,7 +18,8 @@
 # (macgameport, 2026-09-03)
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+SS="$CS2W/Contents/SharedSupport"
 W="$SS/wine/bin/wine64"; S="$SS/prefix/drive_c/Program Files (x86)/Steam"
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
 DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
@@ -33,7 +34,7 @@ CHURNS="${CHURNS:-3}"
 MODULE="${MODULE:-}"        # optional: install this .so first (A/B against a saved build)
 mkdir -p "$OUT"
 export WINEPREFIX="$SS/prefix"
-export DYLD_FALLBACK_LIBRARY_PATH="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
+export DYLD_FALLBACK_LIBRARY_PATH="$CS2W/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
 
 _owns() { lsof -p "$1" 2>/dev/null | grep -q "$WINEPREFIX"; }
 steam_up() { for p in $(pgrep -f "steam.exe" 2>/dev/null); do _owns "$p" && return 0; done; return 1; }

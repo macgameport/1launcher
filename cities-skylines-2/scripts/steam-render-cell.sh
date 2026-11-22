@@ -56,7 +56,8 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+APP="$CS2W"
 SS="$APP/Contents/SharedSupport"
 [ -x "$SS/wine/bin/wine64" ] || { echo "ERROR: no wine at $SS/wine/bin/wine64"; exit 1; }
 export WINE="$SS/wine/bin/wine64"

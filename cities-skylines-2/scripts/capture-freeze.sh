@@ -51,12 +51,13 @@ for sig in nextDrawable CAMetalLayer presentDrawable winemetal MTLDrawable \
 done
 
 # [4] wineserver sample (is win32 event routing itself alive?)
-WS=$(pgrep -f "CS2dxmt11.app.*wineserver" | head -1)
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+WS=$(pgrep -f "$(basename "$CS2W").*wineserver" | head -1)
 [ -n "$WS" ] && sample "$WS" 3 -file "$OUT/sample-wineserver.txt" >/dev/null 2>&1
 
 # [5] log tails: game side + the diag wine/macdrv trace if this run used
 #     scripts/diag-launch-dxmt11.sh
-LL="$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/users/Wineskin/AppData/LocalLow/Colossal Order/Cities Skylines II"
+LL="$CS2W/Contents/SharedSupport/prefix/drive_c/users/Wineskin/AppData/LocalLow/Colossal Order/Cities Skylines II"
 tail -60 "$LL/Player.log"           > "$OUT/Player.log.tail"    2>/dev/null
 tail -30 "$LL/Logs/SceneFlow.log"   > "$OUT/SceneFlow.log.tail" 2>/dev/null
 DIAG=$(ls -t /tmp/cs2-diag-*.log 2>/dev/null | head -1)
@@ -70,6 +71,6 @@ fi
 echo
 echo "=== done: $OUT ==="
 echo "Recover afterwards with the usual: quit via Steam if possible, else"
-echo "  WINEPREFIX=\"\$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix\" \\"
-echo "    \"\$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/wine/bin/wineserver\" -k"
+echo "  WINEPREFIX=\"${CS2W/#$HOME/\$HOME}/Contents/SharedSupport/prefix\" \\"
+echo "    \"${CS2W/#$HOME/\$HOME}/Contents/SharedSupport/wine/bin/wineserver\" -k"
 echo "(never kill -9 — it leaves a .crash marker; the launcher clears stale ones anyway)"

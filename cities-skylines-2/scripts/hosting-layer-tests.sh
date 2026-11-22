@@ -46,7 +46,8 @@
 #     "changed", which is indistinguishable from the layer having moved.
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+SS="$CS2W/Contents/SharedSupport"
 W="$SS/wine/bin/wine64"; S="$SS/prefix/drive_c/Program Files (x86)/Steam"
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
 DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
@@ -77,7 +78,7 @@ mkdir -p "$OUT"
 [ -x /tmp/pixel-probe ] || swiftc -O "$REPO/scripts/pixel-probe.swift" -o /tmp/pixel-probe || exit 1
 [ -x /tmp/winlist ] || swiftc -O "$REPO/scripts/winlist.swift" -o /tmp/winlist || exit 1
 export WINEPREFIX="$SS/prefix"
-export DYLD_FALLBACK_LIBRARY_PATH="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
+export DYLD_FALLBACK_LIBRARY_PATH="$CS2W/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
 
 # the cell harness caffeinates only its own ~215 s window; these tests keep working after it, and
 # a display that sleeps mid-run makes every capture silently empty

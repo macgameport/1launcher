@@ -297,7 +297,7 @@ caution_ask
 # Before anything is changed, and before the folder move: a stop after the folder had moved and before the app was
 # rebuilt would leave an app that names a launcher that is gone. Looked for only when there is something to rename.
 if [ "$WM_GAME_RC" = 3 ] && { [ "${WM_GAME_STATE:-}" = old ] || [ "${WM_GAME_STATE:-}" = part-way ]; }; then
-  echo; echo "  !! Setup stops here, before it moves or copies anything:"; printf '%s\n' "$WM_GAME_OUT" | grep '^  stop: '
+  echo; echo "  !! Setup stops here, before it moves or copies anything: the wrapper: lines above say why."
   echo "     Going on would rename a wrapper that is in use. When it has finished, $AGAIN."
   exit 3
 fi

@@ -20,11 +20,23 @@
 #   MUTANT=16 incomplete reading every old name                    WT5c (d)
 #   MUTANT=17 an old name put back into the census copy's repatch.sh                      WT12 (a)
 #   MUTANT=18 the Windows Steam's old name put back into the copy's make-steam-shortcut.sh WT12 (b)
+#   MUTANT=19 the CS2 launcher's look beside itself dropped                WT15 (b)
+#   MUTANT=20 the SM launcher's look beside itself dropped                 WT15 (b)
+#   MUTANT=21 the badge patch's look beside itself dropped                 WT15 (b)
+#   MUTANT=22 the CS2 launcher treats exit 2 as none                       WT4b
+#   MUTANT=23 the SM launcher treats exit 2 as none                        WT4b
+#   MUTANT=24 the badge patch treats exit 2 as none                        WT4b
 # Each must exit 1.
 set -u
 REPO="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/test-wrappers.XXXXXX)"; trap 'rm -rf "$T"' EXIT
 W="$T/wrappers.sh"; cp "$REPO/common/wrappers.sh" "$W"
+# the deployed readers (WT15, WT4b): a scratch runtime folder and a scratch state folder, each with wrappers.sh
+# beside the launcher, and no checkout around them
+RT="$T/rt"; SMST="$T/st"; mkdir -p "$RT/patches" "$SMST"
+cp "$REPO/cities-skylines-2/launchers/launch-cs2-dxmt11.sh" "$REPO/cities-skylines-2/scripts/patch-modconflict-badge.py" "$RT/"
+cp -R "$REPO/cities-skylines-2/patches/_vendor" "$RT/patches/_vendor"
+cp "$REPO/surviving-mars-relaunched/launch-relaunched.sh" "$SMST/"
 # WT12 runs over a scratch copy of the files git knows (tracked, and new ones not ignored), never the checkout
 C="$T/census"; mkdir -p "$C"
 (cd "$REPO" && git ls-files -z --cached --others --exclude-standard | while IFS= read -r -d '' f; do [ -f "$f" ] && printf '%s\0' "$f"; done \
@@ -49,7 +61,14 @@ case "${MUTANT:-0}" in
   16) mutate 's/(\n  \[ "\$1" = game \] && l1w_row game "\$\{2:-\}" \|\| return 1\n)/$1  while IFS= read -r first; do if [ -d "\$first" ] && [ ! -d "\$first\/Contents\/SharedSupport\/prefix" ]; then printf "%s\\n" "\$first"; return 0; fi; done <<< "\$L1W_OLD"; return 1 # MUTANT-16\n/' 'MUTANT-16' "$W" ;;
   17) printf '%s\n' 'APP="$HOME/Applications/CS2dxmt11.app"   # MUTANT-17' >> "$C/cities-skylines-2/repatch.sh" ;;
   18) printf '%s\n' 'STORE="$HOME/Applications/CS2dxmt11-pk110.app"   # MUTANT-18' >> "$C/cities-skylines-2/scripts/make-steam-shortcut.sh" ;;
+  19) mutate 's/if \[ ! -f "\$_l1w\/wrappers.sh" \] && \[ -f "\$_l1w\/\$WRAPPER_GAMEDIR\/scripts\/setup.sh" \]; then/if : MUTANT-19; then/' 'MUTANT-19' "$RT/launch-cs2-dxmt11.sh" ;;
+  20) mutate 's/if \[ ! -f "\$_l1w\/wrappers.sh" \] && \[ -f "\$_l1w\/\$WRAPPER_GAMEDIR\/scripts\/setup.sh" \]; then/if : MUTANT-20; then/' 'MUTANT-20' "$SMST/launch-relaunched.sh" ;;
+  21) mutate 's/    if not w.is_file\(\) and \(_here \/ "setup.sh"\).is_file\(\):/    if True:  # MUTANT-21/' 'MUTANT-21' "$RT/patch-modconflict-badge.py" ;;
+  22) mutate 's/  2\) die "Two wrappers carry/  9) die "Two wrappers carry/' '9) die "Two wrappers' "$RT/launch-cs2-dxmt11.sh" ;;
+  23) mutate 's/  2\) die "Two wrappers carry/  9) die "Two wrappers carry/' '9) die "Two wrappers' "$SMST/launch-relaunched.sh" ;;
+  24) mutate 's/    if r.returncode == 2:/    if r.returncode == 99:  # MUTANT-24/' 'MUTANT-24' "$RT/patch-modconflict-badge.py" ;;
 esac
+cp "$W" "$RT/wrappers.sh"; cp "$W" "$SMST/wrappers.sh"
 pass=0; fail=0
 check() { if [ "$2" = "$3" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: $1"; echo "   got:  $2"; echo "   want: $3"; fi; }
 
@@ -203,6 +222,33 @@ check "l1w_mark to the Windows Steam's role: no app ID, no pending, another stor
 printf 'not a plist' > "$P"
 check "l1w_mark refuses an Info.plist that does not parse, and leaves it" "$(R bash -c '. "$1"; l1w_mark "$HOME/Applications/old.app" game 949230 1 2>&1; echo "rc=$?"' _ "$W" | oneline)|$(cat "$P")" \
   "~/Applications/old.app's Info.plist does not parse|rc=1|not a plist"
+
+# --- WT15, WT4b: the deployed readers find the wrapper with the wrappers.sh beside them, stop on two, and say so
+#     when the file is gone. No Wine is started: each fixture's wine64 records every call.
+WCALLS="$T/wine.calls"
+rw() {   # <app>: a marked wrapper whose wine64 records its calls, with a prefix and nothing in it
+  mkw "$1" bare game-wrapper "$2"
+  printf '#!/bin/sh\necho "$0 $*" >> "%s"\necho wine-11.0\n' "$WCALLS" > "$1/Contents/SharedSupport/wine/bin/wine64"
+}
+cs2l() { : > "$WCALLS"; env -u CS2_WRAPPER HOME="$H" CS2_QUIET=0 bash "$RT/launch-cs2-dxmt11.sh" < /dev/null 2>&1; }
+sml() { : > "$WCALLS"; env -u SM_WRAPPER HOME="$H" SM_QUIET=0 SM_STATE="$SMST" bash "$SMST/launch-relaunched.sh" < /dev/null 2>&1; }
+badge() { env -u CS2_GAME_DIR HOME="$H" python3 "$RT/patch-modconflict-badge.py" 2>&1; }
+newhome; rw "$H/Applications/marked one.app" 949230; rw "$H/Applications/marked sm.app" 3215050
+check "WT15 the CS2 launcher in a runtime folder, wrappers.sh beside it, finds the marked wrapper" "$(cs2l | grep -c 'inside marked one.app')" 1
+check "WT15 the SM launcher in a state folder finds its marked wrapper" "$(sml | grep -c 'marked sm.app')" 1
+check "WT15 the badge patch run by hand finds the marked wrapper" "$(badge | grep -c "marked one.app/Contents/SharedSupport/prefix/.*Game.dll not found")" 1
+rw "$H/Applications/second.app" 949230; rw "$H/Applications/second sm.app" 3215050
+out="$(cs2l)"
+check "WT4b the CS2 launcher with two marked alike: exit 1, the duplicates line, no Wine started" \
+  "$(printf '%s\n' "$out" | grep -c "^ERROR: Two wrappers carry this game's marker. Move one to the Trash, or name the one to use in CS2_WRAPPER.$"):$(wc -l < "$WCALLS" | tr -d ' ')" "1:0"
+out="$(sml)"
+check "WT4b the SM launcher with two marked alike: the duplicates line, no Wine started" \
+  "$(printf '%s\n' "$out" | grep -c "^ERROR: Two wrappers carry this game's marker. Move one to the Trash, or name the one to use in SM_WRAPPER.$"):$(wc -l < "$WCALLS" | tr -d ' ')" "1:0"
+check "WT4b the badge patch with two marked alike: the duplicates line" "$(badge | grep -c 'two wrappers carry the game.s marker')" 1
+mv "$RT/wrappers.sh" "$T/aside.sh" 2>/dev/null; rm -f "$SMST/wrappers.sh"
+check "WT15 with wrappers.sh gone: the CS2 launcher stops with one plain line" "$(cs2l | grep -c '^ERROR: wrappers.sh is not beside the launcher')" 1
+check "WT15 ...the SM launcher too" "$(sml | grep -c '^ERROR: wrappers.sh is not beside the launcher')" 1
+check "WT15 ...and the badge patch" "$(badge | grep -c '^FAIL: wrappers.sh is not beside this file')" 1
 
 # --- WT12: the census. Code files (no .md) that spell an old wrapper name, against the list kept here.
 ALLOWED="common/test-wrappers.sh

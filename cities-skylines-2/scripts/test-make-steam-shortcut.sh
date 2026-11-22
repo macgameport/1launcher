@@ -5,6 +5,9 @@
 # clone a real wrapper; HOME is a scratch folder too. A built shim is run only after the fixture's steam.exe is
 # deleted, so it stops at its first check, before either wine64 line, with a recording osascript first on PATH.
 # Keys are read with plutil, never by grepping the plist. No game, no Steam, no Wine.
+# One exception to the rule on --from (docs/plans/wrapper-names.md, WT16): a scratch donor, a fixture with a stub
+# wine64, is cloned once to see the clone marked as the Windows Steam's. And one built shim is run with its
+# fixture's steam.exe in place (WT14): its wine64 is a stub that records the call.
 #   bash scripts/test-make-steam-shortcut.sh      exit 0 = every case passed
 #   MUTANT=1 ...   the own-bundle test is dropped (a wrapper named S734M.app is deleted); must exit 1
 #   MUTANT=2 ...   the old CS2 Steam Store.app is removed without the own-bundle test; must exit 1
@@ -14,6 +17,9 @@
 #   MUTANT=6 ...   nohup is added to a start line (macOS strips DYLD_*, Steam draws no text); must exit 1
 #   MUTANT=7 ...   the builder drops L1Role; must exit 1
 #   MUTANT=8 ...   the name is checked after the target was removed; must exit 1
+#   MUTANT=9 ...   the clone not marked as the Windows Steam's (WT16 (a)); must exit 1
+#   MUTANT=10 ...  the shim's start-time lookup removed (WT14 (c)); must exit 1
+#   MUTANT=11 ...  --no-clone ignored: a store wrapper is cloned (WT14); must exit 1
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 MAKE="$REPO/scripts/make-steam-shortcut.sh"
@@ -21,7 +27,7 @@ T="$(mktemp -d /tmp/make-steam-shortcut-test.XXXX)"
 trap 'rm -rf "$T"' EXIT
 M="${MUTANT:-0}"
 mutated() { echo "REFUSED: mutant did not apply"; exit 2; }
-case "$M" in 0|1|2|3|4|5|6|7|8) ;; *) echo "REFUSED: no mutant $M"; exit 2 ;; esac
+case "$M" in 0|1|2|3|4|5|6|7|8|9|10|11) ;; *) echo "REFUSED: no mutant $M"; exit 2 ;; esac
 fails=0
 check() {  # <name> <got> <want>
   if [ "$2" = "$3" ]; then echo "PASS  $1"; else echo "FAIL  $1 (got '$2', want '$3')"; fails=$((fails + 1)); fi
@@ -29,7 +35,8 @@ check() {  # <name> <got> <want>
 
 # a scratch copy of the builder for the mutants, laid out as in the repo so that it finds pe-icon.py
 if [ "$M" != 0 ]; then
-  mkdir -p "$T/mut/scripts"; cp "$MAKE" "$REPO/scripts/pe-icon.py" "$T/mut/scripts/"; MAKE="$T/mut/scripts/make-steam-shortcut.sh"
+  mkdir -p "$T/mut/scripts" "$T/common"; cp "$MAKE" "$REPO/scripts/pe-icon.py" "$T/mut/scripts/"; MAKE="$T/mut/scripts/make-steam-shortcut.sh"
+  cp "$REPO/../common/wrappers.sh" "$REPO/../common/paths.sh" "$T/common/"   # where the copy looks for them
 fi
 case "$M" in
   1) sed -i '' 's/^  \[ -e "\$t" \] || \[ -L "\$t" \] || return 0$/  return 0/' "$MAKE"; grep -q '|| return 0$' "$MAKE" && mutated ;;
@@ -40,6 +47,9 @@ case "$M" in
      grep -q '^  osascript -e "display alert \\"\$TITLE\\"' "$MAKE" || mutated ;;
   6) sed -i '' 's/^  "\$SS\/wine\/bin\/wine64" "\$STEAM" -no-cef-sandbox /  nohup "$SS\/wine\/bin\/wine64" "$STEAM" -no-cef-sandbox /' "$MAKE"; grep -q '^  nohup ' "$MAKE" || mutated ;;
   7) sed -i '' '/<key>L1Role<\/key>/d' "$MAKE"; grep -q '<key>L1Role</key>' "$MAKE" && mutated ;;
+  9) sed -i '' 's/^  l1w_mark "\$WRAPPER" steam - 0 || .*/  : not marked/' "$MAKE"; grep -q '^  : not marked$' "$MAKE" || mutated ;;
+  10) sed -i '' 's/^if \[ ! -x "\$WRAPPER\/Contents\/SharedSupport\/wine\/bin\/wine64" \] && \[ -f "\$WRAPPERS_SH" \]; then$/if false; then/' "$MAKE"; grep -q '^if false; then$' "$MAKE" || mutated ;;
+  11) sed -i '' 's/^if \[ ! -d "\$SS\/prefix" \] && \[ "\$NOCLONE" = 1 \]; then$/if false; then/' "$MAKE"; grep -q '^if false; then$' "$MAKE" || mutated ;;
   8) awk '/^check_name "\$APPNAME"$/ { next } { print } /^rm -rf "\$APP"$/ { print "check_name \"$APPNAME\"" }' "$MAKE" > "$MAKE.new" && cat "$MAKE.new" > "$MAKE"
      [ "$(grep -n '^check_name "\$APPNAME"$' "$MAKE" | cut -d: -f1)" -gt "$(grep -n '^rm -rf "\$APP"$' "$MAKE" | cut -d: -f1)" ] 2>/dev/null || mutated ;;
 esac
@@ -171,6 +181,38 @@ check "--name as the last word: exit 2, said, and no hang" "$( ( cd "$T/cwd" && 
 # --- a plutil that fails
 rc=$(PRE="$T/badplutil" mk "$T/d10")
 check "every plutil call fails: the error line, no bundle left, exit 1" "$rc:$(said "ERROR: $T/d10/S734M.app/Contents/Info.plist is not a valid property list; the app was not built"):$([ -e "$T/d10/S734M.app" ] && echo left)" "1:1:"
+
+# --- docs/plans/wrapper-names.md: WT16, the clone marked; WT14, --no-clone and the start-time lookup
+fx() {   # <app> [game-wrapper|steam-wrapper]: a fixture wrapper whose wine64 records into <app>.calls, with steam.exe
+  local s="$1/Contents/SharedSupport"
+  mkdir -p "$s/wine/bin" "$s/prefix/drive_c/Program Files (x86)/Steam"
+  printf '#!/bin/bash\necho "$*" >> "%s.calls"\necho wine-11.0\n' "$1" > "$s/wine/bin/wine64"; chmod +x "$s/wine/bin/wine64"
+  : > "$s/prefix/drive_c/Program Files (x86)/Steam/steam.exe"; : > "$1.calls"
+  printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string></dict></plist>' > "$1/Contents/Info.plist"
+  [ -n "${2:-}" ] && plutil -replace L1Role -string "$2" "$1/Contents/Info.plist"
+  [ "${2:-}" = game-wrapper ] && plutil -replace L1SteamAppID -integer 949230 "$1/Contents/Info.plist"
+  [ "${2:-}" = game-wrapper ] && plutil -replace L1RenamePending -bool true "$1/Contents/Info.plist"
+  return 0
+}
+mkdir -p "$T/w16"; fx "$T/w16/Daily.app" game-wrapper
+rc=$( ( cd "$T/cwd" && HOME="$T/home" PATH="$T/bin:$PATH" bash "$MAKE" --wrapper "$T/w16/Store2.app" --from "$T/w16/Daily.app" --dest "$T/d16" ) > "$T/mk.out" 2>&1; echo $?)
+check "WT16 a clone of a marked donor: built, and the clone carries steam-wrapper, no app ID, no L1RenamePending" \
+  "$rc:$(key "$T/w16/Store2.app" L1Role):$(key "$T/w16/Store2.app" L1SteamAppID):$(key "$T/w16/Store2.app" L1RenamePending)" "0:steam-wrapper:(none):(none)"
+check "  ...and the donor keeps its own marker" "$(key "$T/w16/Daily.app" L1Role)" game-wrapper
+rc=$( ( cd "$T/cwd" && HOME="$T/home" PATH="$T/bin:$PATH" bash "$MAKE" --wrapper "$T/w16/None.app" --from "$T/w16/Daily.app" --dest "$T/d17" --no-clone ) > "$T/mk.out" 2>&1; echo $?)
+check "WT14 --no-clone with no store wrapper: exit 0, it says so, nothing built and nothing cloned" \
+  "$rc:$(grep -c '^S734M: not built: there is no storefront wrapper' "$T/mk.out"):$([ -e "$T/d17/S734M.app" ] && echo built):$([ -e "$T/w16/None.app" ] && echo cloned)" "0:1::"
+# the start-time lookup: a shim built for a store wrapper that is then renamed by hand finds it by its marker,
+# through the runtime folder's wrappers.sh, and starts Steam in it (its wine64 is the recording stub)
+HL="$T/hl"; RTF="$HL/Library/Application Support/1launcher/cities-skylines-2"; mkdir -p "$HL/Applications" "$RTF"
+cp "$REPO/../common/wrappers.sh" "$RTF/"; fx "$HL/Applications/old.app" steam-wrapper
+( cd "$T/cwd" && HOME="$HL" PATH="$T/bin:$PATH" bash "$MAKE" --wrapper "$HL/Applications/old.app" --from "$T/no-such-donor.app" --dest "$T/d18" ) > "$T/mk.out" 2>&1
+check "WT14 the shim records the runtime folder's wrappers.sh" "$(sed -n 's/^WRAPPERS_SH=//p' "$T/d18/S734M.app/Contents/MacOS/launch" | sed 's/\\ / /g')" "$RTF/wrappers.sh"
+mv "$HL/Applications/old.app" "$HL/Applications/renamed by hand.app"; : > "$HL/Applications/old.app.calls"   # the stub's record keeps its path
+: > "$T/osa.kinds"; HOME="$HL" PATH="$T/bin:$PATH" bash "$T/d18/S734M.app/Contents/MacOS/launch" > /dev/null 2>&1
+i=0; while [ ! -s "$HL/Applications/old.app.calls" ] && [ "$i" -lt 30 ]; do sleep 0.1; i=$((i + 1)); done
+check "WT14 after a hand rename the shim finds the store wrapper by its marker and starts Steam in it, no alert" \
+  "$(grep -c -- '-no-cef-sandbox' "$HL/Applications/old.app.calls"):$(grep -c alert "$T/osa.kinds")" "1:0"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

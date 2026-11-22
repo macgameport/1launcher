@@ -740,7 +740,7 @@ wrap "$F/wrapper-949230.app" game-wrapper 949230; wrap "$F/wrapper-0.app" steam-
 check "WT6 marked wrappers of both roles are not rows: the game app and the Steam app only" "$(list "$F" | cut -f1,4 | tr '\t\n' ': ')" "game:Cities steam:S734M "
 F="$T/wt6b"; G="$F/wrapper-949230.app/Contents/SharedSupport/prefix"
 wrap "$F/wrapper-949230.app" game-wrapper 949230; manifest "$G" 949230
-game "$F/Cities.app" Cities 949230 "$F/CS2dxmt11.app/Contents/SharedSupport/prefix"
+game "$F/Cities.app" Cities 949230 "$F/gone.app/Contents/SharedSupport/prefix"
 wrap "$F/wrapper-0.app" steam-wrapper; steamexe "$F/wrapper-0.app/Contents/SharedSupport/prefix"
 steamapp "$F/S734M.app" S734M "$F/old-store.app/Contents/SharedSupport/prefix"
 check "WT6b a game app whose L1Prefix is gone, one marked wrapper of its id beside it: ready" "$(list "$F" | cut -f1,3 | tr '\t\n' ': ')" "game:ready steam:ready "

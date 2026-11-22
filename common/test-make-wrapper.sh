@@ -283,10 +283,10 @@ newh() {
   TG="$T/tg$n"; export STUB_TARGETS="$TG"   # what the launcher stub's links point at: folders here, a file in each
   for l in Desktop Documents Downloads Music Pictures Movies Wineskin; do mkdir -p "$TG/$l"; echo "the player's" > "$TG/$l/file"; done
 }
-W="Applications/CS2dxmt11.app"
+W="Applications/wrapper-949230.app"
 eng() { echo --engine-url "$ENGINE_URL" --engine-bytes "$EB" --engine-sha "$ES"; }   # no space in any of them
 run() {   # the copy, HOME at $H (newh first, in the calling shell); output in $H.out; echoes the exit code.
-  # The engine options always; --wrapper ~/Applications/CS2dxmt11.app unless the arguments name one.
+  # The engine options always; --wrapper ~/Applications/wrapper-949230.app unless the arguments name one.
   local w=""; case " $* " in *" --wrapper "*) ;; *) w="$H/$W" ;; esac
   env -u CS2_WRAPPER -u L1_DOWNLOADS HOME="$H" PATH="$T/bin:$PATH" FIXDIR="${FIXDIR:-$F/good}" \
     ${DL:+L1_DOWNLOADS="$DL"} bash "$S" $(eng) ${w:+--wrapper "$w"} "$@" > "$H.out" 2>&1 < /dev/null
@@ -302,12 +302,12 @@ check "  ...wine64, prefix/system.reg, users/Wineskin and Frameworks at the targ
   "$([ -x "$H/$W/Contents/SharedSupport/wine/bin/wine64" ] && echo y):$([ -f "$H/$W/Contents/SharedSupport/prefix/system.reg" ] && echo y):$([ -d "$H/$W/Contents/SharedSupport/prefix/drive_c/users/Wineskin" ] && echo y):$([ -f "$H/$W/Contents/Frameworks/libinotify.0.dylib" ] && echo y):$(left)" "y:y:y:y:0"
 check "  ...no file of it carries the quarantine attribute" "$(xattr -lr "$H/$W" 2>/dev/null | grep -c quarantine)" 0
 check "  ...the launcher called once, with WSS-wineprefixcreate, from a bundle named as the target" \
-  "$(cat "$LAUNCHER_CALLS")" "LAUNCHER WSS-wineprefixcreate bundle=CS2dxmt11.app"
+  "$(cat "$LAUNCHER_CALLS")" "LAUNCHER WSS-wineprefixcreate bundle=wrapper-949230.app"
 check "  ...curl called twice, with exactly the two published addresses" \
   "$(calls "$CURL_CALLS"):$(grep -c " $TEMPLATE_URL\$" "$CURL_CALLS"):$(grep -c " $ENGINE_URL\$" "$CURL_CALLS")" "2:1:1"
 check "  ...curl given the https-only options" "$(grep -c -- '--proto =https --tlsv1.2 -fL --retry 2' "$CURL_CALLS")" 2
-check "  ...wineserver waited for, in the new prefix" "$(grep -c "WINESERVER -w prefix=.*/CS2dxmt11.app/Contents/SharedSupport/prefix\$" "$WINESERVER_CALLS")" 1
-check "  ...the wrapper's path printed with ~, and the home folder nowhere in the output" "$(said 'made ~/Applications/CS2dxmt11.app'):$(grep -c "$H" "$H.out")" "1:0"
+check "  ...wineserver waited for, in the new prefix" "$(grep -c "WINESERVER -w prefix=.*/wrapper-949230.app/Contents/SharedSupport/prefix\$" "$WINESERVER_CALLS")" 1
+check "  ...the wrapper's path printed with ~, and the home folder nowhere in the output" "$(said 'made ~/Applications/wrapper-949230.app'):$(grep -c "$H" "$H.out")" "1:0"
 newh; rm -rf "$H/Applications"; check "no ~/Applications yet: made, the folder made" "$(run):$([ -d "$H/$W/Contents/SharedSupport/prefix" ] && echo y)" "0:y"
 newh; mkdir -p "$T/else$n"; check "--wrapper elsewhere: made there" "$(run --wrapper "$T/else$n/My Wrapper.app"):$([ -f "$T/else$n/My Wrapper.app/Contents/SharedSupport/prefix/system.reg" ] && echo y)" "0:y"
 newh; mkdir -p "$T/cw$n"
@@ -335,7 +335,7 @@ check "target exists as a file: exit 1, left as it was, nothing downloaded" "$(r
 newh; ln -s "$T/nowhere" "$H/$W"
 check "target is a dangling link: exit 1, left as it was, nothing downloaded" "$(run):$([ -L "$H/$W" ] && echo link):$(calls "$CURL_CALLS")" "1:link:0"
 newh; refused "a relative path" "$(run --wrapper Applications/X.app)"
-newh; refused "a name not ending .app" "$(run --wrapper "$H/Applications/CS2dxmt11")"
+newh; refused "a name not ending .app" "$(run --wrapper "$H/Applications/wrapper-949230")"
 newh; refused "a name with a character the template launcher cannot take" "$(run --wrapper "$H/Applications/CS2;x.app")"
 newh; refused "a folder that does not exist" "$(run --wrapper "$T/nofolder$n/X.app")"
 newh; refused "too little space" "$(STUB_DF_KB=1000 run)"
@@ -505,7 +505,7 @@ DL=""
 # --- --check
 newh; rm -rf "$H/Applications"
 check "--check: exit 0, says what it would download, writes nothing, does not make ~/Applications" \
-  "$(run --check):$(said 'would make ~/Applications/CS2dxmt11.app'):$(calls "$CURL_CALLS"):$([ -e "$H/Applications" ] && echo made || echo none)" "0:1:0:none"
+  "$(run --check):$(said 'would make ~/Applications/wrapper-949230.app'):$(calls "$CURL_CALLS"):$([ -e "$H/Applications" ] && echo made || echo none)" "0:1:0:none"
 newh; check "--check with too little space: exit 1" "$(STUB_DF_KB=1000 run --check)" 1
 check "--help prints the usage" "$(bash "$S" --help | grep -c 'exit 0 = made')" 1
 

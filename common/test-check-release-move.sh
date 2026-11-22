@@ -4,6 +4,7 @@
 #   bash common/test-check-release-move.sh     exit 0 = every case passed
 #   MUTANT=1 ...    the tag test is dropped; must exit 1
 #   MUTANT=2 ...    the main test is dropped; must exit 1
+#   MUTANT=3 ...    the fourth question's tag changed to v0.2.0 (WT13, docs/plans/wrapper-names.md); must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 [ -f "$HERE/check-release-move.sh" ] || { echo "REFUSED: check-release-move.sh not found"; exit 2; }
@@ -16,10 +17,11 @@ drop() {   # <fixed text>: delete the one line of the copy that holds it
 }
 case "${MUTANT:-0}" in
   0) ;;
-  1) drop 'if [ -z "$T" ]; then'
-     sed -i '' 's/^  elif git merge-base --is-ancestor "\$T" "\$C"; then/  if [ -z "$T" ] || git merge-base --is-ancestor "$T" "$C"; then/' "$T/gate.sh" ;;
+  1) drop '    if [ -z "$T" ]; then'
+     sed -i '' 's/^    elif git merge-base --is-ancestor "\$T" "\$C"; then/    if [ -z "$T" ] || git merge-base --is-ancestor "$T" "$C"; then/' "$T/gate.sh" ;;
   2) drop 'if git merge-base --is-ancestor "$C" origin/main; then'
      drop 'else echo "FAIL  ${C:0:7} is not on origin/main"; bad=1; fi' ;;
+  3) sed -i '' 's/^released common\/wrappers.sh v0.3.0$/released common\/wrappers.sh v0.2.0/' "$T/gate.sh"; grep -q 'wrappers.sh v0.2.0' "$T/gate.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   *) echo "REFUSED: no mutant $MUTANT"; exit 2 ;;
 esac
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
@@ -52,6 +54,11 @@ expect 0 "$D" "a later commit of main"
 git tag -d v0.2.0 >/dev/null && git push -q origin :refs/tags/v0.2.0
 git tag -a v0.2.0 -m v0.2.0 "$D" && git push -q origin v0.2.0
 expect 1 "$C" "v0.2.0 names a later commit" "is not it or an ancestor"
+# WT13: a commit that holds common/wrappers.sh moves only with v0.3.0 as it or an ancestor
+W="$(commit common/wrappers.sh wrappers)"; git push -q origin main
+expect 1 "$W" "WT13 common/wrappers.sh with no v0.3.0" "v0.3.0 does not exist"
+git tag -a v0.3.0 -m v0.3.0 "$W" && git push -q origin v0.3.0
+expect 0 "$W" "WT13 the commit v0.3.0 names, v0.2.0 an ancestor"
 git push -q -f origin "$S:release"
 expect 1 "$D" "release is not an ancestor" "would not be a fast-forward"
 bash "$T/gate.sh" >/dev/null 2>&1; rc=$?

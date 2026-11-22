@@ -251,9 +251,21 @@ check "WT15 ...the SM launcher too" "$(sml | grep -c '^ERROR: wrappers.sh is not
 check "WT15 ...and the badge patch" "$(badge | grep -c '^FAIL: wrappers.sh is not beside this file')" 1
 
 # --- WT12: the census. Code files (no .md) that spell an old wrapper name, against the list kept here.
-ALLOWED="common/test-wrappers.sh
+# The resolver's table; the one dated record; and the fixtures of tests that hold old-name behaviour on purpose
+# (a Mac not moved yet, the installer's old default, a store wrapper under its old name). A new entry needs a reason.
+ALLOWED="cities-skylines-2/docs/wine-bugs/measurement-engine1116.txt
+cities-skylines-2/scripts/test-install.golden
+cities-skylines-2/scripts/test-install.sh
+cities-skylines-2/scripts/test-licence-wait-probe.sh
+cities-skylines-2/scripts/test-move-install.sh
+cities-skylines-2/scripts/test-setup.sh
+common/test-mac-inventory.sh
+common/test-move-wrappers.sh
+common/test-wrappers.sh
 common/wrappers.sh
-docs/wine-bugs/measurement-engine1116.txt"
+surviving-mars-relaunched/scripts/test-install.sh
+surviving-mars-relaunched/scripts/test-setup.sh
+surviving-mars-relaunched/tools/test-engine-source.sh"
 got="$(cd "$C" && grep -rlE 'CS2dxmt11|SurvivingMars(\.app|[^A-Za-z]|$)|CS2\.app' --exclude='*.md' . 2>/dev/null | sed 's#^\./##' | LC_ALL=C sort)"
 check "WT12 the code files that spell an old wrapper name are the census list" "$got" "$(printf '%s\n' "$ALLOWED" | LC_ALL=C sort)"
 

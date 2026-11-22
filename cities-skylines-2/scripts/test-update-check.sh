@@ -273,7 +273,7 @@ expect ttysilent has 'WARNING: game update waiting'; expect ttysilent lacks 'ste
 # 13. the real manifests, when present on this machine
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
 REAL_OLD="$CS2_WORK/rollback-build23700737/appmanifest_949230.acf"
-REAL_NOW="$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_949230.acf"
+REAL_NOW="$(bash "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/wrappers.sh" find game 949230 2>/dev/null)/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_949230.acf"
 if [ -f "$REAL_OLD" ]; then
   run_case realold $NUL MANIFEST_OVERRIDE="$REAL_OLD" CS2_UPDATE=skip
   expect realold has 'WARNING: game update waiting \(build 23700737 -> 25127643\)'

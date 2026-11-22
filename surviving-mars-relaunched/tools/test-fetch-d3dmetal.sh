@@ -7,7 +7,7 @@
 # with a .. part, which macOS's tar will not write.
 # Two parts run the real codesign: a look-alike framework this test builds and signs itself, with Apple's
 # identifier and version 3.0, must be refused; and where Apple's own pieces are on this Mac (CX_GPTK, or an
-# installed SurvivingMars.app that reads 3) the script must pass on an archive made from them. Where either
+# installed wrapper of the game that reads 3) the script must pass on an archive made from them. Where either
 # cannot be run the test prints SKIP with the reason, and does not call it a pass.
 #   bash tools/test-fetch-d3dmetal.sh            exit 0 = every case passed
 #   MUTANT=<n> bash tools/test-fetch-d3dmetal.sh   each must exit 1; 2 = the mutant did not apply
@@ -244,7 +244,7 @@ else
 fi
 
 # --- the real codesign, on Apple's own pieces where this Mac has them
-REAL="${CX_GPTK:-$HOME/Applications/SurvivingMars.app/Contents/SharedSupport/wine/lib}"
+REAL="${CX_GPTK:-$(bash "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/wrappers.sh" find game 3215050 2>/dev/null)/Contents/SharedSupport/wine/lib}"   # the game's wrapper, as the launcher finds it
 case "$(plutil -extract CFBundleShortVersionString raw "$REAL/external/D3DMetal.framework/Versions/A/Resources/Info.plist" 2>/dev/null)" in
   3.*)
     mk real "$REAL"; pins real
@@ -253,7 +253,7 @@ case "$(plutil -extract CFBundleShortVersionString raw "$REAL/external/D3DMetal.
     check "Apple's own framework and library from this Mac pass the script's two signature checks" "$rc:$(tail -n 1 "$T/out")" "0:$I/lib"
     check "  ...and what is left equals the source, the signature included" "$(diff -rq "$REAL/external" "$I/lib/external" > /dev/null 2>&1; echo $?)" 0
     rm -rf "$I" ;;
-  *) echo "SKIP  no D3DMetal 3 pieces on this Mac (CX_GPTK, or an installed SurvivingMars.app): the script's signature checks were not run on Apple's own files" ;;
+  *) echo "SKIP  no D3DMetal 3 pieces on this Mac (CX_GPTK, or the game's installed wrapper): the script's signature checks were not run on Apple's own files" ;;
 esac
 
 echo "$fails failure(s)"

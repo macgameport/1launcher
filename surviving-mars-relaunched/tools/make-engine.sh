@@ -32,7 +32,7 @@
 # that also took FSR 2 out of use was not verified).
 #
 # Standalone mode builds from the S734M wrapper's Wine while that wrapper is in ~/Applications, and from
-# the copy of it SurvivingMars.app keeps as wine.d3dm21-BAK once it is gone: the wrapper goes to the
+# the copy of it the game's wrapper keeps as wine.d3dm21-BAK once it is gone: the wrapper goes to the
 # Trash, and its name to the Steam app (docs/plans/launcher-window.md, D11). Either is only read.
 # The four D3DMetal DLLs and their Mac-side libraries change layout between the versions: 2.1 has a
 # separate d3d12.so/dxgi.so/... per DLL, 3.0 links all of them to one libd3dshared.dylib.

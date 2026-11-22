@@ -56,7 +56,7 @@ check "3 other wine failure" "$(run_block "$T/bin/wine")" "DIED: Wine cannot sta
 check "3 carries wine output" "$(run_block "$T/bin/wine")" "Library not loaded"
 
 # Live: the real wrapper's engine, with the launcher's own environment, must pass.
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+APP="$(bash "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/wrappers.sh" find game 949230 2>/dev/null)"   # CS2_WRAPPER, else as the launcher finds it
 if [ -x "$APP/Contents/SharedSupport/wine/bin/wine64" ]; then
   rm -f "$T/bin/wine" "$T/bin/arch"
   got="$( export DYLD_FALLBACK_LIBRARY_PATH="$APP/Contents/Frameworks:$APP/Contents/SharedSupport/wine/lib:/usr/lib:/usr/local/lib"

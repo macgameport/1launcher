@@ -2,8 +2,8 @@
 # launch-relaunched.sh -- Surviving Mars: Relaunched (Windows, Steam app 3215050) on macOS.
 #
 # The game is DirectX 12 only (Mars.exe loads d3d12.dll, exports D3D12SDKVersion 618, no D3D11 or
-# Vulkan path), so it needs D3DMetal: DXMT is D3D11-only. It has its own wrapper,
-# ~/Applications/SurvivingMars.app (docs/plans/one-wrapper-per-game.md, built 2026-11-07 by
+# Vulkan path), so it needs D3DMetal: DXMT is D3D11-only. It has its own wrapper in ~/Applications, found
+# by common/wrappers.sh whatever its name (docs/plans/one-wrapper-per-game.md, built 2026-11-07 by
 # tools/split-wrapper.sh): an APFS clone of the Kegworks/Sikarugir "Steambuild Metal" wrapper S734M
 # (Wine 10; first menu 2026-10-31) with Cities: Skylines II stripped out, the game in its own Steam
 # library, and D3DMetal 3.0 from CrossOver 26 in its wine/ (tools/make-engine.sh --install; the 2.1

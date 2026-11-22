@@ -112,6 +112,7 @@ case "${MUTANT:-0}" in
   34) perl -0pi -e 's/    elif mv_q "\$1\/\$n" "\$2\/\$n"; then/    elif if [ "\$n" = patches ]; then mkdir "\$2\/patches" && mv "\$1\/patches"\/*.py "\$2\/patches\/"; else mv "\$1\/\$n" "\$2\/\$n"; fi; then/' "$R/scripts/move-install.sh"
       grep -q 'if \[ "\$n" = patches \]; then mkdir' "$R/scripts/move-install.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   35) mutate 's#^      own_folder "\$d" || { echo .*#      true#' '^      true$' ;;
+  36) echo "REFUSED: mutant 36 is retired (the header says where its case went)"; exit 2 ;;
   37) mutate 's#^  for f in "\$PATHS" "\$MOVER" "\$RESOLVER" "\$WMOVER"; do$#  for f in "$PATHS" "$RESOLVER" "$WMOVER"; do#' '^  for f in "\$PATHS" "\$RESOLVER" "\$WMOVER"; do$' ;;
   38) perl -0pi -e 's/\nif \[ "\$MAC_ONLY" = 0 \]; then\n  for f in "\$PATHS" "\$MOVER" "\$RESOLVER" "\$WMOVER"; do\n/\nif true; then\n  for f in "\$PATHS" "\$MOVER" "\$RESOLVER" "\$WMOVER"; do\n/' "$S"
       grep -q '^if true; then$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;

@@ -16,6 +16,8 @@
 #    11 the running-game test is removed                 12 --mac-only goes on to copy
 #    13 "also in Spotlight and Launchpad" for an app in any folder
 #    14 the closing line about mods from Paradox Mods is removed
+#    docs/plans/wrapper-names.md: 15 the copy of wrappers.sh removed (WT15 (a))   16 the mover before the state folder's tests and the copies (WT17 (c))
+#    17 the early test of the two files removed (WT17 (f))   18 the resolver's exit 2 treated as none (WT4b)
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -36,6 +38,7 @@ cp "$HERE/tools/frame-fix.exe" "$G/tools/"
 cp "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$T/repo/common/"   # docs/plans/wrapper-names.md
 printf '#!/bin/bash\necho "make-launcher-app $*" >> "%s/calls"\nexit "${WINDOW_RC:-0}"\n' "$T" > "$T/repo/common/make-launcher-app.sh"
 S="$G/scripts/setup.sh"
+py() { python3 -I - "$@"; }
 case "$M" in
   0) ;;
   1) sed -i '' 's|^if ! SM_SCRIPT="\$STATE/launch-relaunched.sh" bash |if ! SM_SCRIPT="$GAME_ROOT/launch-relaunched.sh" bash |' "$S" ;;
@@ -52,6 +55,26 @@ case "$M" in
   12) sed -i '' '/^  \[ "\$ROSETTA" = 1 \] || exit 1$/{N;s/.*/  :/;}' "$S" ;;
   13) sed -i '' 's/^  case "\$(dirname "\$1")" in "\$HOME\/Applications"|\/Applications) return 0 ;; esac$/  return 0/' "$S" ;;
   14) sed -i '' '/^  If you use mods from Paradox Mods: /d' "$S" ;;
+  15) sed -i '' '/^put "\$REPO\/common\/wrappers.sh" "\$STATE\/wrappers.sh"$/d' "$S" ;;
+  16) py "$S" << 'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+i = s.index("# --- the wrapper's name, after the copies"); j = s.index("find_wrapper   # resolved again")
+blk = s[i:j]; s = s[:i] + s[j:]
+k = s.index("# --- the state folder:"); s = s[:k] + blk + s[k:]
+open(p, "w").write(s)
+PY
+     ;;
+  17) py "$S" << 'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = 'for f in "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh"; do\n'
+i = s.index(a); j = s.index("done\n", i) + 5
+s = s[:i] + s[j:]
+open(p, "w").write(s)
+PY
+     ;;
+  18) sed -i '' 's/^  if \[ "\$rc" = 2 \]; then echo "  !! Setup stops here/  if false; then echo "  !! Setup stops here/' "$S" ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
@@ -181,6 +204,47 @@ check "  ...a folder inside one of them, a scratch folder, the home folder: no" 
 # --- game_running is the launcher's own, word for word
 fn() { awk '/^game_running\(\) \{$/ { p = 1 } p { print } p && /^\}$/ { exit }' "$1"; }
 check "game_running equals the launcher's" "$(fn "$S" | shasum | cut -c1-12):$(fn "$S" | wc -l | tr -d ' ')" "$(fn "$HERE/launch-relaunched.sh" | shasum | cut -c1-12):8"
+
+# --- docs/plans/wrapper-names.md: WT4b, WT15, WT17. A second home, whose wrapper is under its old name, unmarked.
+H1="$H"; A1="$APP"
+H="$T/home2"; W2="$H/Applications/SurvivingMars.app"; NW2="$H/Applications/wrapper-3215050.app"
+mkw2() {   # an unmarked Surviving Mars wrapper under its old name, with the game in it
+  rm -rf "$H"; mkdir -p "$W2/Contents/SharedSupport/wine/bin" "$W2/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"
+  printf '#!/bin/sh\nexit 0\n' > "$W2/Contents/SharedSupport/wine/bin/wine64"; chmod 755 "$W2/Contents/SharedSupport/wine/bin/wine64"
+  : > "$W2/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe"
+  printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string></dict></plist>' > "$W2/Contents/Info.plist"
+  rm -rf "$STATE"
+}
+snaph() { (cd "$H" && find . | LC_ALL=C sort | shasum | cut -c1-12); }
+mkw2; before="$(snaph)"
+check "WT17 --check: one wrapper: line, would move, both names, exit 0, nothing changed" \
+  "$(run --check):$(grep -c '^wrapper: would move: ~/Applications/SurvivingMars.app -> ~/Applications/wrapper-3215050.app$' "$T/out"):$(snaph)" "0:1:$before"
+rc=$(run)
+check "WT17 a run renames the wrapper, marks it, and the app finds it" \
+  "$rc:$([ -d "$NW2" ] && echo renamed):$(plutil -extract L1Role raw -o - "$NW2/Contents/Info.plist" 2>/dev/null)" "0:renamed:game-wrapper"
+check "  ...it says what it renamed, both names, and how to decline" \
+  "$(grep -c '^Renamed:    ~/Applications/SurvivingMars.app -> ~/Applications/wrapper-3215050.app$' "$T/out"):$(grep -c 'L1_KEEP_WRAPPER_NAMES=1' "$T/out")" "1:1"
+check "WT15 the deployed wrappers.sh is there, the same bytes as the repo's" "$(cmp -s "$REPO/common/wrappers.sh" "$STATE/wrappers.sh" && echo same)" same
+check "  ...and the launcher in the state folder finds the renamed wrapper with it" "$(HOME="$H" bash "$STATE/wrappers.sh" find game 3215050)" "$NW2"
+check "WT17 --check on a home already moved: nothing to rename" "$(run --check):$(grep -c '^wrapper: nothing to rename$' "$T/out")" "0:1"
+mkw2; mv "$G/tools/frame-fix.exe" "$T/ff.aside"
+check "WT17 an own file missing: exit 1, and the wrapper keeps its name" "$(run):$([ -d "$W2" ] && echo kept)" "1:kept"
+mv "$T/ff.aside" "$G/tools/frame-fix.exe"
+mkw2; APP="$T/apps/Foreign.app"; mkdir -p "$APP/Contents/SharedSupport"
+rc=$(run)
+check "WT17 the app builder failing: exit 1, the wrapper renamed, the launcher and wrappers.sh deployed, and it finds the wrapper" \
+  "$rc:$([ -d "$NW2" ] && echo renamed):$([ -f "$STATE/launch-relaunched.sh" ] && [ -f "$STATE/wrappers.sh" ] && echo deployed):$(HOME="$H" bash "$STATE/wrappers.sh" find game 3215050 2>/dev/null)" "1:renamed:deployed:$NW2"
+APP="$A1"; rm -rf "$T/apps/Foreign.app"
+mkw2; mv "$T/repo/common/wrappers.sh" "$T/wr.aside"
+check "WT17 wrappers.sh missing: exit 1 in the own-files words, before any call of the resolver" \
+  "$(run):$(grep -c "^  !! setup's own files are missing (.*common/wrappers.sh)" "$T/out"):$(grep -c 'command not found' "$T/out")" "1:1:0"
+mv "$T/wr.aside" "$T/repo/common/wrappers.sh"
+mkw2; cp -R "$W2" "$H/Applications/twin.app"
+plutil -replace L1Role -string game-wrapper "$W2/Contents/Info.plist"; plutil -replace L1SteamAppID -integer 3215050 "$W2/Contents/Info.plist"
+plutil -replace L1Role -string game-wrapper "$H/Applications/twin.app/Contents/Info.plist"; plutil -replace L1SteamAppID -integer 3215050 "$H/Applications/twin.app/Contents/Info.plist"
+check "WT4b two wrappers marked alike: exit 1, setup's line, nothing copied" \
+  "$(run):$(grep -c "^  !! Setup stops here, before it changes anything: two wrappers carry the game's marker" "$T/out"):$(copies)" "1:1:0"
+H="$H1"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

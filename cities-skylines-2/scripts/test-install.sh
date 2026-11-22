@@ -66,6 +66,8 @@
 # Wrapper names (docs/plans/wrapper-names.md, WT10, WT11); each must exit 1:
 #   64 the marking option dropped in the core (WT10 (b))    65 L1_WRAPPER_GIVEN not exported by core_begin (WT11 (a))
 #   66 game_wrapper not asking the resolver's incomplete (WT11 (f))
+#   67 setup's unset of CS2_WRAPPER removed (WT11 (b))      68 an unset L1_WRAPPER_GIVEN read as "not given" (WT11 (d))
+#   69 --holders-skip not passed by setup (WT11 (g))        70 core_after_setup removed at this installer's call (WT11 (c))
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -164,6 +166,8 @@ case "${MUTANT:-0}" in
   64) sed -i '' 's# --mark game "\$GAME_APPID"##g' "$C"; grep -q -- '--mark game' "$C" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   65) mutate 's#^export L1_WRAPPER_GIVEN$#: no export#' '^: no export$' ;;
   66) mutate 's#^W="\$(l1w_incomplete game "\$GAME_APPID")" || W=#W=#' '^W="\$HOME/Applications/\$(l1w_name' ;;
+  67|68|69) ;;   # applied below, to the real setup.sh of the WT11 copy
+  70) mutate 's#^core_after_setup \$?$#(exit $?)   \# no core_after_setup: the code kept, the lock not followed#' '^(exit \$?)   # no core_after_setup' ;;
 esac
 
 fails=0
@@ -737,6 +741,50 @@ check "  ...with the game installed Steam is not needed, so it is not looked for
 newh; bash "$MKW" "$WR" steam; : > "$ST/lookalike"; dl installed
 check "a line that only names steam.exe is not a Steam: the install goes on" "$(run):$(said 'Steam is open in'):$(starts)" "0:0:1"
 
+# --- WT11 (docs/plans/wrapper-names.md): the installer's route through the real setup.sh, wrappers.sh and
+#     move-wrappers.sh, in a second scratch copy. Its patch scripts are empty files run by the python3 stub; its
+#     window builder a stub; xcrun a stub, so that the app builder compiles nothing; the mover's probe a stub.
+R2="$T/repo2"; G2="$R2/cities-skylines-2"; mkdir -p "$R2/common" "$G2/patches/_vendor" "$T/wt11bin"
+cp -R "$REPO/cities-skylines-2/scripts" "$REPO/cities-skylines-2/launchers" "$REPO/cities-skylines-2/repatch.sh" "$G2/"
+for f in "$REPO"/cities-skylines-2/patches/patch_*.py; do : > "$G2/patches/$(basename "$f")"; done
+cp "$S" "$G2/scripts/install.sh"; cp "$C" "$R2/common/install-core.sh"   # the copies under test: a mutant of either applies here too
+cp "$REPO/common/paths.sh" "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
+printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"; printf '#!/bin/bash\nexit 1\n' > "$T/wt11bin/xcrun"
+printf '#!/bin/bash\n[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"\nexit 0\n' > "$T/wt11bin/wprobe"
+# this Mac, the same on any Mac, so that the transcript does not depend on the one it runs on (as scripts/test-setup.sh has it)
+printf '#!/bin/bash\n[ "$1" = -productVersion ] && echo 27.2\n' > "$T/wt11bin/sw_vers"
+printf '#!/bin/bash\n[ "$*" = "-n hw.optional.arm64" ] && { echo 1; exit 0; }\nexec /usr/sbin/sysctl "$@"\n' > "$T/wt11bin/sysctl"
+printf '#!/bin/bash\n[ "$1" = -x86_64 ] && exit 0\nexec /usr/bin/arch "$@"\n' > "$T/wt11bin/arch"
+chmod +x "$T/wt11bin"/*
+S2="$G2/scripts/setup.sh"
+case "${MUTANT:-0}" in
+  67) sed -i '' 's#^\[ "\${CS2_VIA_INSTALLER:-0}" = 1 \] \&\& \[ "\${L1_WRAPPER_GIVEN:-}" = 0 \] \&\& unset CS2_WRAPPER$#: no unset#' "$S2"; grep -q '^: no unset$' "$S2" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  68) sed -i '' 's#\[ "\${L1_WRAPPER_GIVEN:-}" = 0 \] \&\& unset CS2_WRAPPER#[ "${L1_WRAPPER_GIVEN:-0}" = 0 ] \&\& unset CS2_WRAPPER#' "$S2"; grep -q 'L1_WRAPPER_GIVEN:-0' "$S2" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  69) sed -i '' 's#a+=(--holders-skip --held-by "\$PPID")#a+=(--held-by "$PPID")#' "$S2"; grep -q -- '--holders-skip --held-by' "$S2" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+esac
+run2() {   # [VAR=value ...] -- [install.sh arguments]: the WT11 copy; output in $H.out; echoes the exit code
+  local envs=(); while [ "$1" != -- ]; do envs+=("$1"); shift; done; shift
+  env -u CS2_WRAPPER -u L1_TRACE -u CS2_VIA_INSTALLER -u L1_WRAPPER_GIVEN HOME="$H" PATH="$T/wt11bin:$B:$PATH" L1_KILL="$B/killrec" \
+    L1_WMOVE_PROBE="$T/wt11bin/wprobe" ${envs[@]+"${envs[@]}"} bash "$G2/scripts/install.sh" "$@" > "$H.out" 2>&1 < /dev/null
+  echo $?
+}
+NW="$H/Applications/$NEWNAME"
+oldw() { newh; WR="$H/Applications/$OLDNAME"; bash "$MKW" "$WR" steam game 4; NW="$H/Applications/$NEWNAME"; }
+l1p() { plutil -extract L1Prefix raw -o - "$H/Applications/Cities Skylines II.app/Contents/Info.plist" 2>/dev/null; }
+oldw
+check "WT11 through the real setup: an old-named wrapper, no variable given: renamed and marked, exit 0" \
+  "$(run2 --):$([ -d "$NW" ] && echo renamed):$(plutil -extract L1Role raw -o - "$NW/Contents/Info.plist" 2>/dev/null)" "0:renamed:game-wrapper"
+check "  ...the app's L1Prefix names the renamed wrapper, and no .launcher.lock is left in it" \
+  "$(l1p):$([ -L "$NW/Contents/SharedSupport/prefix/.launcher.lock" ] && echo left || echo none)" "$NW/Contents/SharedSupport/prefix:none"
+oldw
+check "WT11 the variable given by the caller: nothing renamed, and the line says a wrapper was named" \
+  "$(run2 CS2_WRAPPER="$WR" --):$([ -d "$WR" ] && echo kept):$(said 'CS2_WRAPPER names a wrapper')" "0:kept:1"
+oldw
+rc="$(env -u L1_WRAPPER_GIVEN HOME="$H" PATH="$T/wt11bin:$B:$PATH" L1_WMOVE_PROBE="$T/wt11bin/wprobe" CS2_VIA_INSTALLER=1 CS2_WRAPPER="$WR" bash "$S2" > "$H.out" 2>&1 < /dev/null; echo $?)"
+check "WT11 setup alone with CS2_VIA_INSTALLER=1, the variable set and L1_WRAPPER_GIVEN not set: nothing renamed" "$rc:$([ -d "$WR" ] && echo kept)" "0:kept"
+oldw
+check "WT11 a holder reported by the probe: the installer exits 0, one skip line, nothing renamed" \
+  "$(run2 STUB_WHOLDERS=4242 --):$(said '^  skip: something of the wrapper.s Wine is still running'):$([ -d "$WR" ] && echo kept)" "0:1:kept"
 check "no run reached the runaway guard" "$(cat "$T/runaway" 2>/dev/null | wc -l | tr -d ' ')" 0
 # --- the transcript: what the installer printed in every case above, against what it printed when last recorded
 GOLD="$HERE/test-install.golden"

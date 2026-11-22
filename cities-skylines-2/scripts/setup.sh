@@ -167,7 +167,9 @@ wrapper_line() {   # the header's wrapper: lines, from the dry runs; WM_GAME_* k
         if printf '%s\n' "$out" | grep -q '^  would '; then printf '%s\n' "$out" | sed -n 's/^  \(would .*\)$/wrapper: \1/p'
         else
           if [ "$role" = game ]; then echo "wrapper: the game's wrapper cannot be renamed now"; else echo "wrapper: the Windows Steam's wrapper cannot be renamed now"; fi
-          printf '%s\n' "$out" | grep -E '^  (stop|skip): '
+          # the reasons: every one under --check; in a run, a stop (setup ends below) and not a skip, which the
+          # rename step prints when it meets it
+          if [ "$CHECK_ONLY" = 1 ]; then printf '%s\n' "$out" | grep -E '^  (stop|skip): '; else printf '%s\n' "$out" | grep '^  stop: '; fi
         fi ;;
       *) any=1; echo "wrapper: the wrapper mover gave no answer:"; printf '%s\n' "$out" ;;
     esac

@@ -207,7 +207,7 @@ func markedWrapper(_ folder: String, _ names: [String], role: Role, appID want: 
         let path = (folder == "/" ? "" : folder) + "/" + name
         var st = stat()
         guard lstat(path, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR else { continue }
-        guard let data = readPlainFile(path + "/Contents/Info.plist", limit: 1_048_576) else { continue }
+        guard let data = readPlainFile(path + "/Contents/Info.plist", limit: 1 << 20) else { continue }   // a row's limit
         guard let d = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any] else { continue }
         let mark = d["L1Role"] as? String
         if role == .steam, mark == "steam-wrapper" { hits.append(path) }

@@ -41,7 +41,7 @@ S="$G/scripts/setup.sh"
 py() { python3 -I - "$@"; }
 case "$M" in
   0) ;;
-  1) sed -i '' 's|^if ! SM_SCRIPT="\$STATE/launch-relaunched.sh" bash |if ! SM_SCRIPT="$GAME_ROOT/launch-relaunched.sh" bash |' "$S" ;;
+  1) sed -i '' 's|^if ! SM_SCRIPT="\$STATE/launch-relaunched.sh" SM_GAME_EXE=|if ! SM_SCRIPT="$GAME_ROOT/launch-relaunched.sh" SM_GAME_EXE=|' "$S" ;;
   2) sed -i '' '/^put "\$GAME_ROOT\/tools\/frame-fix.exe" /d' "$S" ;;
   3) sed -i '' 's|^  local tmp="\$2.new.\$\$"$|  local tmp="$2.new.$$"; [ -e "$2" ] \&\& return 0|' "$S" ;;
   4) sed -i '' 's|^  if cp "\$1" "\$tmp" \&\& chmod 755 "\$tmp" \&\& mv -f "\$tmp" "\$2"; then return 0; fi$|  if cp "$1" "$2" \&\& chmod 755 "$2"; then return 0; fi|' "$S" ;;

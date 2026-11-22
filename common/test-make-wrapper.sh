@@ -71,7 +71,7 @@ case "${MUTANT:-0}" in
      mutate 's#^xattr -dr com.apple.quarantine "\$TOP".*#: guard#' '^: guard$' ;;
   9) mutate 's#if kill -0 "\$p" 2>/dev/null; then#if false; then#' 'if false; then' ;;
   10) mutate 's#^TEMPLATE_SHA=fbe276bb.*#TEMPLATE_SHA=1111111111111111111111111111111111111111111111111111111111111111#' '^TEMPLATE_SHA=1111' ;;
-  11) mutate 's#^CHECK=0; TARGET=""; ENGINE_URL=""; ENGINE_BYTES=""; ENGINE_SHA=""$#CHECK=0; TARGET=""; ENGINE_URL=x; ENGINE_BYTES=1; ENGINE_SHA=x#' '^CHECK=0; TARGET=""; ENGINE_URL=x' ;;
+  11) mutate 's#^CHECK=0; TARGET=""; ENGINE_URL=""; ENGINE_BYTES=""; ENGINE_SHA=""; MARK_ROLE=""; MARK_ID=""$#CHECK=0; TARGET=""; ENGINE_URL=x; ENGINE_BYTES=1; ENGINE_SHA=x; MARK_ROLE=""; MARK_ID=""#' '^CHECK=0; TARGET=""; ENGINE_URL=x' ;;
   12) mutate 's#^case "\$(sw_vers -productVersion 2>/dev/null)" in 27|27\.\*)$#case 27 in 27|27.*)#' '^case 27 in 27|27\.\*)$' ;;
   13) mutate '/^case "\$(sw_vers -productVersion/,/^esac$/{H;d;};/^# 8\. /{x;p;x;}' '^case "\$(sw_vers -productVersion'   # the block moved to before step 8
       [ "$(grep -n -e '^case "\$(sw_vers -productVersion' -e '^# 8\. ' "$S" | tail -n 1 | cut -d: -f2 | cut -c1-4)" = '# 8.' ] \

@@ -117,7 +117,7 @@ case "${MUTANT:-0}" in
       grep -q '^if true; then$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   39) mutate 's#^  WRAPPER=""; \[ "\$rc" = 0 \] \&\& \[ -d "\$w/Contents/SharedSupport/prefix" \] \&\& WRAPPER="\$w"$#  WRAPPER=""; [ "$rc" = 0 ] \&\& WRAPPER="$w"#' '^  WRAPPER=""; \[ "\$rc" = 0 \] && WRAPPER="\$w"$' ;;
   40) mutate 's#^    if \[ "\${CS2_PATCH_DIR:-}" = "\$OLD_INSTALL" \] \&\& #    if [ "$CHECK_ONLY" = 0 ] \&\& [ "${CS2_PATCH_DIR:-}" = "$OLD_INSTALL" ] \&\& #' '^    if \[ "\$CHECK_ONLY" = 0 \] && \[ "\${CS2_PATCH_DIR:-}" = ' ;;
-  41) mutate 's#^  move_blocks$#  : no blocks here#' '^  : no blocks here$' ;;
+  41) mutate 's#^  move_blocks; rename_blocks$#  : no blocks here; rename_blocks#' '^  : no blocks here; rename_blocks$' ;;
   42) perl -0pi -e 's/    if \[ -e "\$d" \] \|\| \[ -L "\$d" \]; then own_folder "\$d" \|\| reason skip [^\n]*\n/    :\n/' "$R/scripts/move-install.sh"
       grep -q '^    :$' "$R/scripts/move-install.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   44) mutate 's#^  if \[ "\$rc" = 2 \]; then$#  if false; then#' '^  if false; then$' ;;

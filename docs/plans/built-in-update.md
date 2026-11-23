@@ -2,12 +2,13 @@
 
 **Status: check-it'd 2026-11-23 — build-ready-with-fixes (pass 1c, folded).** Pass 1 said needs-rework and the
 plan was reworked the same day; pass 1b, two fitted re-checks of the rework, said build-ready-with-fixes and is
-folded; pass 1c verified that fold. Not started. **Before U1:** James answers section 9, and the plan is checked
+folded; pass 1c verified that fold. Not started. **Before U1:** the plan is checked
 again once `wrapper-names` has merged, because that merge moves the lines this plan cites.
 Written 2026-11-23 on the branch `built-in-update`, cut from `wrapper-names` at `efe176b`; every `file:line`
 below was read at that commit. Pass 1's findings, and where each went, are at the foot ("Review corrections").
-Tracking: no issue yet (opening one is a public post, on James's word). Section 9 holds fifteen decisions
-for James; the design below is built on the recommended answer to each, and none is taken yet.
+Tracking: no issue yet (opening one is a public post, on James's word). James answered the fifteen decisions of section 9 on
+2026-11-23: fourteen as recommended, which is what the design below is built on, and UD9 his own way (the
+release that carries this raises the third number).
 
 James asked on 2026-11-23: "How do we make the app have a built in auto update process? I'd especially like
 this for when we add compatibility with additional games."
@@ -693,7 +694,7 @@ section 6 applied and seen red before the step is called done.
   `wrapper-names` is (that plan's W3b), and **only when James is ready to publish it, or after `release`
   has taken `v0.3.0`**: once `main` holds `common/updates.sh`, `release` cannot take anything from `main`
   without taking this plan (the gate's fifth question then asks for a tagged release of what `main` holds).
-  Its release is the next second-number release after `v0.3.0`. The suites of U1, U3 and U4 are run on the
+  Its release raises the third number (UD9, James's answer): `v0.3.1` if it follows `v0.3.0` directly. The suites of U1, U3 and U4 are run on the
   tagged commit itself before `release` moves, because a release whose check, window or notice is broken
   cannot be repaired by a successor on the Macs that took it (section 10).
 
@@ -847,13 +848,32 @@ delegate, which no text mode builds: UL1); the whole chain from a real offer to 
 | UD6 | Do the games' own launchers say when a version is out, for a player who never opens 14unch3r? | Yes: at most two notifications per version per Mac. They come from Script Editor as every notice of the launchers does, and show only where it may notify. |
 | UD7 | Does an offer for a game that is not set up still open its guide, or start the installer from the window? | The guide, in this plan. Starting an install from the window is a plan of its own: it is the installer's first-run path, with the findings that has. |
 | UD8 | Fix the two defects of step U0 in this plan? | Yes. The update prints the same words and would carry the same wrong sentence. |
-| UD9 | Which number does the release that carries this take? | The second number rises: it asks a player with an install to paste each game's line once more. |
+| UD9 | Which number does the release that carries this take? | The second number rises: it asks a player with an install to paste each game's line once more. **(Not taken: see below.)** |
 | UD10 | The sign in the window: one line at the foot, or a tile in a third group? Measured by the design lens: a tile adds 174 points to the window (172 becomes 346, and 520 with an offer), arrives up to 15 s after open, falls below the fold from five games with an offer (674 over the 600 limit) and is then never seen, and stays at every open for a player who has not updated. The line adds 24 points. | The line, with the menu item as the keyboard's way and the notification as the one loud sign. Past 600 points the line too is reached only by scrolling (from 13 tiles). A tile is a different design, not a bounded change: besides three texts, a second label, a three-block layout and a rule past 600 points, it needs a new role carried through the window's ranking, drawing, starting and listing, an icon, and a rule for Return on it. If you choose it, that section is written and checked as a pass of its own. |
 | UD11 | May `update` be a published word of the root `install.sh`, the one first word that is not an app ID? Once published it can never be withdrawn. | Yes. It keeps one fetch for all games and adds no second address that must never move. |
 | UD12 | May the window run a script outside its own bundle (`_update/updates.sh`) and, through it, ask GitHub? It ends "The window sends nothing anywhere." | Yes, with 3.5's limits: a time limit on every call, and nothing fetched is run. |
 | UD13 | The new places outside the repository: the folder `<data root>/_update`, and a one-line file `update-dir` beside each deployed launcher. | Yes. `CLAUDE.md` gets its line in step U1, before the folder is made. |
 | UD14 | Make the first release after the one that carries this a quiet one, with little or nothing changed for players? | Yes. The first real offer then risks only the mechanism. |
 | UD15 | A player who declined the folder move or the new wrapper names by a variable in front of the pasted line: should an update started from the window never start a move or a rename (it would still finish one that was begun)? Or do the guides only tell that player to keep updating by their own line? | The guides only, in this plan (3.4, section 5). The other way changes how both setups decide a move and a rename, which this plan otherwise leaves alone; if you want it, it is added and checked before U1. |
+
+**Answered by James on 2026-11-23**, each by a tap on a question that stood on its own, with the recommended
+answer marked as such:
+
+- **UD1 to UD8 and UD10 to UD15: as recommended.** Always a yes before anything installs; the update runs in
+  Terminal; `release` moves only to a tagged version; once a day with an off switch; the two rulesets on
+  GitHub; at most two notifications per version; an offer still opens its guide; the two faults fixed in step
+  U0; the line at the foot of the window; `update` as a published word; the window may run the tool and ask
+  GitHub; the new places outside the repository; a quiet first release afterwards; and for a player who
+  declined the folder move or the new wrapper names, the guides warn and setup is left as it is.
+- **UD5, who makes the rules:** Claude sets the two rulesets with the project's GitHub login, **on James's
+  word at that time**, before `release` moves to this version, and shows a read-only check that they are
+  active (exit criterion 5).
+- **UD9: the third number rises**, against the recommendation. The release that carries this is `v0.3.1` if it
+  follows `v0.3.0` directly. `CLAUDE.md` § Releases says the second number rises when a change asks someone
+  with an install to do something, and this release asks for one paste per game; it takes the third number by
+  James's decision, the rule's text is left as it is, and the release notes still tell a player to paste each
+  game's line once. Nothing in the design depends on which number rises: the gate asks only that the version
+  be newer than the one `release` holds.
 
 ## 10. Rollback
 

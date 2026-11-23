@@ -3,12 +3,17 @@
 **Status: check-it'd 2026-11-21 — build-ready-with-fixes (pass 3, the W0 fold re-checked, folded).** W0 is done:
 P0 to P5 are recorded in section 1 (2026-11-18 and 19), James answered section 8 (2026-11-20), and step 8's fold
 and its re-check are at the foot ("W0 fold", 2026-11-21). W1 is built on the branch `wrapper-names` (as-built
-header below); W2 ran on the Studio on 2026-11-23, in part: its three wrappers are renamed, steps 1 to 5 and the index half of step 6 are recorded at the foot ("W2 on the Studio"), every step is recorded, and W2 found that macOS asks about the microphone again after a rename, which stalls the first start; that is folded ("W2 fold" at the foot; James: "Launcher waits, says so") and W2b builds it before W3; the MacBook's reads of W3 step 0 are taken at the first
+header below); W2 ran on the Studio on 2026-11-23 and every step is recorded at the foot ("W2 on the Studio"): its three
+wrappers are renamed and Spotlight offers none of them. It found that macOS asks about the microphone again after
+a rename and Steam's first start waits for the answer; that is folded and checked ("W2 fold"; James: "Launcher
+waits, says so") and built as W2b (`5d23ddf`), whose live step with James at the Studio is next, before W3;
+the MacBook's reads of W3 step 0 are taken at the first
 visit there. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
-> **🔧 As-built (2026-11-21): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
-> `release`); W2 to W4 not started.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
+> **🔧 As-built (2026-11-23): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
+> `release`); W2 run on the Studio and W2b (the sign-in wait) built (`5d23ddf`); W2b's live step, W3 and W4 not
+> started.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
 > `5d8d263` and `6e9a3cf` (1.3 to 1.5: makers, installers, launchers, setups, the other readers, 14unch3r),
 > `78328e1`, `e9f7431`, `0fc680a` (the new cases: WT4b, WT11, WT14 to WT17), `422b183` (the tests that read a
 > real wrapper), `a2f935d` (1.6, the 19 research scripts), `11c1fd1` (1.7, the release gate, and WT12's list), and

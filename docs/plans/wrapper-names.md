@@ -1452,6 +1452,8 @@ three names, each wrapper's `Info.plist`, and both `--check` outputs; the output
 
 **State when W2 stopped:** the three wrappers under the names setup gave them, each marked, each started at least once since its rename with the microphone question answered; nothing of Wine or Steam running; no lock and no crash marker in any of them. The outputs of every start are in `<workspace>/wrapper-names-w2/`, with the two small scripts that followed them.
 
+**A reading for issue #28, asked by James ("does there need to be a shortcut in the actual Applications folder?").** With a copy of the game's app put into `/Applications` (784 KB; indexed there as an application within seconds, beside the one in `~/Applications`), James typed `surviving mars` again: the field still completes to the repo's folder, and the rows are that folder, the folder in Pictures, a Markdown file of the repo and two web results. No app among the five rows. So on this Mac the system folder does not bring the app into the plain window; one reading, taken a minute after the copy was made, with no use of the copy behind it. The copy went to the Trash and was unregistered. An alias was not tried: Spotlight lists an alias as a file, not as an application.
+
 **Also seen:** the macOS Steam's helper `ipcserver` was running throughout (not a client, left alone); the
 Surviving Mars wrapper carries the one-byte `ntdll.dll` of issue #30 since that morning, which a rename does
 not touch.

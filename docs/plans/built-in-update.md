@@ -3,7 +3,10 @@
 **Status: check-it'd 2026-11-23 — build-ready-with-fixes (pass 1c, folded).** Pass 1 said needs-rework and the
 plan was reworked the same day; pass 1b, two fitted re-checks of the rework, said build-ready-with-fixes and is
 folded; pass 1c verified that fold. Not started. **Before U1:** the plan is checked
-again once `wrapper-names` has merged, because that merge moves the lines this plan cites.
+again once `wrapper-names` has merged, because that merge moves the lines this plan cites. One change there is already known (2026-11-23,
+W2b of that plan): `common/test-launcher-parity.sh` now has a rule 10 and mutants up to 24, and the launchers'
+shared block gained `signin_wait`, so this plan's new rule is 11 and its mutants start at 25 (3.6, UT9 and 6.1
+still say 10 and 17), and its notice block sits in launchers that wait ten minutes for Steam's sign-in.
 Written 2026-11-23 on the branch `built-in-update`, cut from `wrapper-names` at `efe176b`; every `file:line`
 below was read at that commit. Pass 1's findings, and where each went, are at the foot ("Review corrections").
 Tracking: no issue yet (opening one is a public post, on James's word). James answered the fifteen decisions of section 9 on

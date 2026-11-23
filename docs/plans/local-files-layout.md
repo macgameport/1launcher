@@ -65,28 +65,38 @@
 >   clone, LT20b passed, and `gh release list` marks `v0.2.0` Latest. `release` still holds no `common/paths.sh`.
 >
 > - **L3, the MacBook (2026-11-17, on `aaea3c4`'s code).** ML5 first (passed, recorded in the Surviving Mars plan).
->   - Inventory: `~/cs2-patch` a folder of 85 entries, 49 G, nine git repos counted by `mac-inventory.sh`; no
+>   - Inventory: `~/cs2-patch` a folder of 87 entries by `mac-inventory.sh`, 49 G, nine git repos counted there (eight `.git` were found after the prune; the ninth was not looked into); no
 >     scheduled task, no launch agent. Of the repos, `dxmt-v080` has 2 commits its remote lacks and
->     `build-1116/wine-11.16-stockcore` has no remote: both moved by the rename, fingerprints equal.
+>     `build-1116/wine-11.16-stockcore` has no remote: both moved by the rename, fingerprints equal. O7's mirrors were not
+>     compared with these copies.
 >   - Step 0, on James's "All, keep the .bak": eleven items to the Trash (`stock-prefix`, `stage1-ab`, `revenv`,
 >     `launch-cs2.sh` and `launch-cs2.sh.bak`, the five named backups, `fakewrap.app`); `launch-cs2-dxmt11.sh.bak`
 >     kept. Left: 74 entries, 48 G. Nothing emptied from the Trash.
 >   - Step 1: no shell or session in the old folder; `move-install.sh --dry-run` exit 0, `state: old`. LT6, the
 >     MacBook's own numbers: `check-experiments.py` 301 cells and exit 1 on 10 drift items, every one a ledger row
->     whose evidence is on the Studio only; `test-update-check.sh` 56 passed; `test-p4-signals.sh` ALL PASS with
+>     whose evidence is not on this Mac; `test-update-check.sh` 56 passed; `test-p4-signals.sh` ALL PASS with
 >     `skip live: no perf-run logs`; `regen-winemac-patches.sh --check` exit 0; the lock test 24 PASS, 0 failures.
 >   - Step 2: `setup.sh --yes`, exit 0: the move, then the install into the runtime folder, 10 of 10 patch scripts,
 >     the app and 14unch3r rebuilt. `~/cs2-patch` is gone. LT7: the names, `patches/` and all eight nested repos'
->     fingerprints equal. LT4: 21 of 21. LT9: the shim names the runtime folder. LT27: the badge marker moved and
+>     fingerprints equal (the before-records were kept in `/tmp` and are gone). LT4: 21 of 21. LT9: the shim names the runtime folder. LT27: the badge marker moved and
 >     the patch stays on. The folders are 755. LT6 reads the same numbers, the same ten drift rows.
 >   - Step 3: `README.txt` in the work root. Step 4: nothing outside the repo names the old path but eight memory
 >     files of the old `~/Documents/github/cs2` Claude project, where no session starts; left as records (no
 >     Claude memory is written on the MacBook).
 >   - LT10: boot-verify PASS, `GRACEFUL: yes` (`20261117-100333`), with the three lines; the launcher's
 >     `WARNING: game update waiting (build 25127643 -> 26404411)` line, which LT10 allows. LT11: one start through
->     `Cities Skylines II.app` by James, "Play anyway", closed by him from the game's menu: the log since the
->     10:07:52 stamp has the three lines, `Game exited (rc=0)`, and `Cities: Skylines II closed.`
->   - Surviving Mars was started from its app at ML5 the same morning. The MacBook's game update is not taken.
+>     `Cities Skylines II.app` by James, asked to choose Play anyway and to quit from the game's menu; he reported that it ran and had quit. The log
+>     cannot tell that click from no answer, or the menu from another close. Since the
+>     10:07:52 stamp it has the three lines, `Game exited (rc=0)`, and `Cities: Skylines II closed.`
+>   - Surviving Mars was started from its app at ML5 the same morning. The MacBook's game
+>     update was taken later that day (26404411).
+>   - **Corrected 2026-11-23.** The record first read as if every check had been run; these had not, and were run that
+>     day on `e53ea38`. The forbidden lines of LT10 and LT11: none in either log. LT12: the counts differ from the
+>     merge commit's in two files, `CLAUDE.md` (2 lines, was 1) and the later plan `wrapper-names.md` (2); the first is
+>     over LT12's allowance and is open. LT13: links, identifiers and T13's six paths as they should be. LT15: 29
+>     names, no mismatch; three are absent here: `stock-prefix`, pruned in step 0; `rollback-build23700737`, not in
+>     the old folder's listing either; `winemac.so.`, a prefix. LT4 again: 21 of 21. Memory files naming the old path: eight, and
+>     no launch agent or scheduled task.
 >
 > L2's record is in `<workspace>/local-files-layout-L2-<stamp>/`.
 > Verify against: `common/paths.sh`, `cities-skylines-2/scripts/move-install.sh`, `cities-skylines-2/scripts/setup.sh`

@@ -3,7 +3,7 @@
 **Status: check-it'd 2026-11-21 — build-ready-with-fixes (pass 3, the W0 fold re-checked, folded).** W0 is done:
 P0 to P5 are recorded in section 1 (2026-11-18 and 19), James answered section 8 (2026-11-20), and step 8's fold
 and its re-check are at the foot ("W0 fold", 2026-11-21). W1 is built on the branch `wrapper-names` (as-built
-header below); W2 ran on the Studio on 2026-11-23, in part: its three wrappers are renamed, steps 1 to 5 and the index half of step 6 are recorded at the foot ("W2 on the Studio"), every step is recorded, and W2 found that macOS asks about the microphone again after a rename, which stalls the first start and must be folded into this plan and checked before W3; the MacBook's reads of W3 step 0 are taken at the first
+header below); W2 ran on the Studio on 2026-11-23, in part: its three wrappers are renamed, steps 1 to 5 and the index half of step 6 are recorded at the foot ("W2 on the Studio"), every step is recorded, and W2 found that macOS asks about the microphone again after a rename, which stalls the first start; that is folded ("W2 fold" at the foot; James: "Launcher waits, says so") and W2b builds it before W3; the MacBook's reads of W3 step 0 are taken at the first
 visit there. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
@@ -822,8 +822,12 @@ The section for `CHANGELOG.md`, to be written at the build from what was built:
 - It is a rename with nothing copied; setup says what it renamed; it stops while the game, a launch or an
   install is using the game's wrapper, and skips when it cannot be done safely, among them while Steam is open
   in the Windows Steam's wrapper.
-- The first start after the rename can take a few seconds longer (P4: 7 to 9 s on the Studio, one start);
-  Steam stays signed in and macOS asks nothing.
+- At the first start after the rename macOS may ask again whether `wine64` may use the microphone: it keeps
+  that answer by the program's path, and a renamed wrapper is a new path (W2, 2026-11-23, five starts of five in
+  wrappers whose Wine came from Porting Kit; P4 saw no question, which is not explained). Steam waits for the
+  answer, whichever it is, and then signs in with its saved login. The launchers say so and wait (W2 fold).
+  With the question answered, a start of Surviving Mars was about 17 s slower than before the rename, each
+  time (window after 44 to 47 s, 26 to 28 s before).
 - What stops working until pointed at the new name: anything of the player's own that names the old path (a
   Dock item made from the wrapper, an alias, a saved command, a Porting Kit entry).
 - To decline: `L1_KEEP_WRAPPER_NAMES=1`, printed as a literal, in a clone and with the pasted line, for that run.
@@ -960,6 +964,20 @@ output.
    `S734M.app` opened, the name put back.
 8. What names the old paths outside the repo: the 9 memory files; anything James finds in Porting Kit.
 
+### W2b — the sign-in wait (the W2 fold; James: "Launcher waits, says so", 2026-11-23)
+
+Built on the branch after the fold is checked, with WT18 and its mutants; then, on James's word and with him at
+the Studio:
+
+1. Both setups run from the branch (they deploy the new launchers; nothing is renamed: `--check` first says so).
+2. The Surviving Mars wrapper is renamed by hand to a name it has not had (so that macOS asks), and the game is
+   started from its app. James leaves the question unanswered for a minute. Pass: within 45 to 50 s of the
+   start the progress window shows "Still signing in. If macOS asks a question, answer it…"; after his answer
+   the game reaches its menu without a second start; the launcher's log holds the line once.
+3. The name is put back; one more start shows no hint line (sign-in comes before 45 s).
+
+At W3 the same line is looked for at the MacBook's first start after its rename.
+
 ### W3 — the MacBook
 
 A visit of its own, after W2, on the branch (`git fetch`, then the branch checked out). P1 ran on the Studio
@@ -1020,7 +1038,7 @@ pass, `common/check-release-move.sh` passes, `git push origin <commit>:release`;
 | New installs | the wrapper is made under the new name and marked before it is moved into place | WT10 |
 | Someone playing one game while the other game's setup runs | nothing: the mover looks only at the named files of the wrapper it was told about | WT8 |
 | A player with a wrapper in `/Applications` | it keeps its old name and is found as before | 3.4; WT9 |
-| Everyone, at the first start after the rename | a first start a few seconds slower (P4: 7 to 9 s on the Studio, one start, not separated from the spread of Steam's sign-in); no new check by macOS and no sign-in prompt | the notes, from P4 (3.8) |
+| Everyone, at the first start after the rename | macOS may ask once more whether `wine64` may use the microphone, and Steam waits for the answer before it signs in (W2: 77 to 116 s while the question stood; two starts failed at the launcher's old 120 s). After 45 s the launcher's step line says "Still signing in. If macOS asks a question, answer it…", and it waits 10 minutes. No sign-in prompt of Steam's. Later starts: Surviving Mars about 17 s slower than before the rename | the notes and the guides (3.8, W2 fold); the launcher's step line |
 | A player who types the game's name into Spotlight | the wrapper is no longer offered. What the window puts first instead is whatever else matches best: on a Mac with a checkout, the repo's folder of the game's name (P1); with the Applications filter the game's app was first while the wrapper was still there (P1, `surviving mars` only). On a Mac with no checkout, which a player who used the pasted line has, not measured: no live step of this plan runs on one | the notes name the game's app and 14unch3r; W2 and W3 step 6 record the rows |
 | Porting Kit, if it lists the wrappers | its entry would name a path that is gone. Not checked (1.5) | W2 step 8 |
 | Claude sessions | memory and both `CLAUDE.md` files name the old paths | 3.7; W2 step 8 |
@@ -1093,6 +1111,12 @@ pasted line renames nothing. So the `CFBundleName` rewrite, and a start of the g
 The risk is small: P5's scratch wrapper, made by the installer with its own name in `CFBundleName`, ran Steam
 and took the game's download; the rewrite only changes that one string.
 
+**Added by the W2 fold (2026-11-23):**
+
+| Test | Subject | What it shows | Mutants |
+|---|---|---|---|
+| WT18 | the sign-in wait | `common/test-launch-feedback.sh`, on `signin_wait` taken from the shared block, with `sleep` stubbed to count and `step` recording: a test that succeeds at once returns 0 with no line; one that succeeds after 30 s prints no hint; one that succeeds after 60 s prints the hint exactly once, at 45 s, with the step number it was given; one that never succeeds returns 1 after 600 s (`L1_SIGNIN_SECS` unset) and after 9 s with `L1_SIGNIN_SECS=9`; a value that is not a number counts as 600. `common/test-launcher-parity.sh`, a new rule 10: each launcher calls `signin_wait` exactly once, outside the block, with the number of its "Starting Steam and signing in…" step and a function it defines; neither launcher still holds a `seq 1 40` loop; the hint in the block is one plain literal of at most 62 characters. Each launcher's `die` after the wait names the question from macOS | the hint dropped; the hint printed at every poll; the limit put back to 120 s; the step number written out as a fixed number in the block; one launcher's call given the wrong step number; the old loop left in one launcher |
+
 ## 7. Exit criteria
 
 1. W0: P0 to P5 are recorded in section 1, each with what it settled: a row of 3.3's table for P1, P2 and P3, a
@@ -1110,7 +1134,8 @@ and took the game's download; the rewrite only changes that one string.
 6. W4: `release` has moved on James's word, the root `CLAUDE.md` records where it stands, and the pasted line run
    on the Studio renamed nothing and exited 0. Until then this plan is built but not published, and its header
    says so.
-7. #26's checkboxes are ticked; anything found and not fixed has an issue of its own. Known at the W0 fold, opened
+7. W2b's three steps passed on the Studio, and the hint line was looked for at W3.
+8. #26's checkboxes are ticked; anything found and not fixed has an issue of its own. Known at the W0 fold, opened
    2026-11-21 on James's word: #27, WD6 (a wrapper opened directly); #28, the game's app not offered in
    Spotlight's window without a filter even when no wrapper is (P1); and #29, what another account can change
    inside a wrapper whose `Contents` is writable by all (P3, 3.1).
@@ -1457,6 +1482,72 @@ three names, each wrapper's `Info.plist`, and both `--check` outputs; the output
 **Also seen:** the macOS Steam's helper `ipcserver` was running throughout (not a client, left alone); the
 Surviving Mars wrapper carries the one-byte `ntdll.dll` of issue #30 since that morning, which a rename does
 not touch.
+
+## W2 fold (2026-11-23): the microphone question after a rename
+
+**Decided by James the same day, between two ways put to him: "Launcher waits, says so."** (The other was to
+keep Steam from asking for the microphone at all; it needs a probe and can follow as work of its own.)
+
+**What is built (W2b).**
+
+1. **One function in the launchers' shared block** (`launch-feedback`, the same bytes in both, as
+   `licence_wait` is):
+
+   ```bash
+   signin_wait() {   # <step> <test>: wait for Steam's sign-in; 0 = signed in, 1 = not within the limit
+     # After 45 s the step line says what may be holding Steam up: a question from macOS (after a rename it
+     # asks again whether wine64 may use the microphone), or its check of a wrapper not opened for a long time.
+     local limit="${L1_SIGNIN_SECS:-600}" t=0 hinted=0
+     case "$limit" in ''|*[!0-9]*) limit=600 ;; esac
+     while [ "$t" -lt "$limit" ]; do
+       "$2" && return 0
+       sleep 3; t=$((t + 3))
+       if [ "$hinted" = 0 ] && [ "$t" -ge 45 ]; then hinted=1; step "$1" "Still signing in. If macOS asks a question, answer it…"; fi
+     done
+     "$2"
+   }
+   ```
+
+2. **Each launcher calls it once**, in place of its loop of forty polls, with its own test of a sign-in:
+   - Cities: Skylines II (`launch-cs2-dxmt11.sh`, the loop at `:286-289`): `signed_in() { fresh_login && webhelper_up; }`
+     and `signin_wait 2 signed_in || die "..."`.
+   - Surviving Mars (`launch-relaunched.sh`, the loop at `:343-346`): `signed_in()` holds its line that reads the
+     connection log and `steam_exe_up`, and `signin_wait 1 signed_in || { stop_steam; die "..."; }`.
+3. **The words after a wait that ran out** name the question, keeping each launcher's first sentence (tests and
+   a probe quote it):
+   - Surviving Mars: "Steam did not sign in by itself. If macOS asked a question (whether wine64 may use the
+     microphone, for one), answer it and start the game again. Otherwise open Steam in the `<name>` wrapper,
+     sign in, then launch again."
+   - Cities: Skylines II: after "Steam did not auto-login (token expired, or it crashed)." comes "If macOS
+     asked a question (whether wine64 may use the microphone, for one), answer it and relaunch."; the rest of
+     its sentence stays.
+4. **Ten minutes, not two.** The progress window stays up while the log grew within 900 s
+   (`common/launch-progress.swift`, `staysUp`), so a wait of 600 s with one line at 45 s keeps it. The 45 s is
+   above every sign-in measured on a start with no question (8 to 30 s after the start).
+5. **The words that were wrong**, corrected in the same commits:
+   - `CHANGELOG.md`, Unreleased: "The first start after the rename can take a few seconds longer (7 to 9 s on
+     the Studio, one start); Steam stays signed in and macOS asks nothing." becomes "**At the first start after
+     the rename macOS may ask once more whether wine64 may use the microphone** (it keeps that answer by the
+     wrapper's path). Answer it, either way: Steam waits for the answer and then signs in as before. The
+     launcher says so if the sign-in takes long, and waits ten minutes."
+   - `cities-skylines-2/INSTALL.md` (`:499`) and `surviving-mars-relaunched/INSTALL.md` (`:148`): "The first
+     start after the rename can take a few seconds longer; Steam stays signed in." becomes "At the first start
+     after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either way:
+     Steam waits for the answer, then signs in as before."
+   - `cities-skylines-2/GOTCHAS.md` gains the entry: macOS keeps Wine's microphone answer by path; the tell in
+     the system log (`/usr/bin/log show ... process == "tccd"`, `AUTHREQ_PROMPTING`); the earlier entry of
+     2026-11-01 ("Verifying ...", the same 120 s misnamed) is pointed at it.
+
+**What it does not do.** It does not answer the question for the player, cannot see whether one is up, and
+does not keep macOS from asking. `S734M.app` has no wait to lengthen: its window simply comes when the question
+is answered. The 17 s by which Surviving Mars's starts are slower since the rename is not touched and not
+explained. Whether a new install's first start is asked too was not measured (no live step of the install
+plans recorded a question).
+
+**Where it landed in this plan:** 3.8 (the note), section 4 (W2b; W3's last line), section 5 (the row
+"everyone, at the first start after the rename"), section 6 (WT18), section 7 (criterion 7), and this section.
+The built-in update plan's parity rule becomes 11 (`docs/plans/built-in-update.md`, 3.6): it is checked again
+before its first step in any case.
 
 ## Review log
 

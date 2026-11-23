@@ -1,9 +1,12 @@
 # A built-in update: 14unch3r says when a new version is out, and one click runs the installer again
 
-**Status: reworked 2026-11-23 after pass 1 (needs-rework); the re-check of the rework is recorded at the foot.**
+**Status: check-it'd 2026-11-23 — build-ready-with-fixes (pass 1c, folded).** Pass 1 said needs-rework and the
+plan was reworked the same day; pass 1b, two fitted re-checks of the rework, said build-ready-with-fixes and is
+folded; pass 1c verified that fold. Not started. **Before U1:** James answers section 9, and the plan is checked
+again once `wrapper-names` has merged, because that merge moves the lines this plan cites.
 Written 2026-11-23 on the branch `built-in-update`, cut from `wrapper-names` at `efe176b`; every `file:line`
 below was read at that commit. Pass 1's findings, and where each went, are at the foot ("Review corrections").
-Tracking: no issue yet (opening one is a public post, on James's word). Section 9 holds fourteen decisions
+Tracking: no issue yet (opening one is a public post, on James's word). Section 9 holds fifteen decisions
 for James; the design below is built on the recommended answer to each, and none is taken yet.
 
 James asked on 2026-11-23: "How do we make the app have a built in auto update process? I'd especially like
@@ -62,8 +65,8 @@ Skylines II's setup for its words only (`cities-skylines-2/scripts/setup.sh:99`,
   `common/make-launcher-app.sh:76` copies at build time. So a game added to the repository shows as an offer
   only after a setup has run again and rebuilt the window.
 - Anything that could stall the window is asked of a child process with a time limit. `runChild` (`:390`)
-  returns the child's output only when it exited 0 within the limit, and sends its standard error nowhere
-  (`:427-430`).
+  returns the child's output only when it exited 0 within the limit (`:427-430`), and sends its standard error
+  nowhere (`:400`).
 - Its one question is an `NSAlert` shown as a sheet, with the safe answer first (`:1441-1448`). The key
   monitor ends a sheet on Escape as the first button and passes Return to it, but only when the delegate's
   `sheet` records that one is up (`:791-798`, `:1315`). The sheets, the launch and the menu live in the app
@@ -166,16 +169,22 @@ place outside the repository (UD13).
   exports as `L1_FETCHED_COMMIT` without the `comment=` in front, or `-`.
 - **Every value read from `_update` is matched whole before it is used.** A version: the pattern above
   without the `## ` and the ` \(`, or `-`. A time: `^[0-9]{1,12}$`, then used as `$((10#...))`. A line:
-  `^[A-Za-z0-9._/-]{1,100}$`. A commit: 40 hex digits or `-`. A count: `1` or `2`. A file that is a link, is
+  `^[A-Za-z0-9._/-]{1,100}$`. A commit: 40 hex digits or `-`. A count: `1` or `2`. A process number: `^[1-9][0-9]{0,9}$` (`updating` is the
+  one link in `_update`: it is read with `readlink`, and its target is matched as a process number). A file that is a link, is
   not a regular file, is over 4,096 bytes, or fails its match is treated as absent; in `installed/` it is
-  passed over. A line is read with `IFS=$'\t' read -r a b c d rest < file || [ -n "$a" ]`, and counts only
-  when every field is non-empty and `rest` is empty. No value reaches `[ -gt ]`, `[[ ]]` or `$(( ))` before
+  passed over. A file is read on one descriptor: its first line with `IFS=$'\t' read -r a b c d rest`, counted also when it
+  has no final newline, and then a second read, which must find nothing. It counts only when every field is
+  non-empty, `rest` is empty and there is no second line. A version is matched with bash's `[[ =~ ]]` and the
+  pattern held in a variable (as a quoted literal it matches nothing under bash 3.2, and `grep -x` matches line
+  by line, so it would pass a value with a second line). No value reaches `[ -gt ]`, an arithmetic test in `[[ ]]` or `$(( ))` before
   its match, and nothing in `_update` is ever read with `.` or `eval`. (Under bash 3.2 a value such as
   `a[$(cmd)]` in an arithmetic place runs `cmd`.)
 - A stamp is written beside its place and renamed over it.
 - A setup writes its stamp when it has finished its work: exit 0, and for Cities: Skylines II exit 5 too
   (finished, a fix not out yet for this game build). With `--check`, `--mac-only` or `--dest` a setup
-  touches nothing of `_update`: no stamp, no copy, no `update-dir`.
+  touches nothing of `_update`: no stamp, no copy, no `update-dir`. A run whose folder is named by
+  `CS2_PATCH_DIR`, `SM_STATE` or a root variable is still the install the apps run, so it does write: a choice,
+  said here.
 - The key is the Steam app ID, the one name of a game that never changes (`CLAUDE.md` § Published addresses).
 
 ### 3.2 `common/updates.sh`: the rule for what is installed and what is on offer
@@ -183,8 +192,8 @@ place outside the repository (UD13).
 One file, in the form of `common/wrappers.sh`: read with `.` it defines functions and exports nothing; run,
 it prints. Read with `.`, it needs `L1_UPDATE_DIR` set by the caller (setup, after `paths.sh`). Run, it uses
 `L1_UPDATE_DIR` if set and otherwise the folder it lies in, which for the deployed copy is `_update` itself.
-It writes only when `_update` and `_update/installed` are folders that belong to the player and that nobody
-else can write to.
+It writes only when `l1u_own` (below) says that `_update` and `_update/installed` are folders that belong to
+the player and that nobody else can write to. (The setups test the folder that holds `_update` as well, because they may have to make it.)
 
 **Its options and its output lines are a contract between versions on one Mac:** a launcher or a window
 built by one version may call the tool of another. A later version may add an option or a field at the end
@@ -192,6 +201,8 @@ of a line, and never changes or removes one.
 
 Functions:
 
+- `l1u_own`: 0 when `_update` and `_update/installed` are folders of the player's own that nobody else can
+  write to. The tool asks it before every write, and the driver in 3.4 step 2.
 - `l1u_version_of <file>`: the version as defined above, read from the first 1 MiB; returns 1 when none.
 - `l1u_newer <x> <y>`: 0 when `x` is a later version than `y`, the three numbers compared as numbers. It
   returns 1 unless both are a version or `-`; `-` is lower than every version.
@@ -219,8 +230,9 @@ Functions:
     with `-q` first (a player's `~/.curlrc` is not read) and no `-f`.
   - The answer is taken only when curl's exit is 0, the code is `200`, the file is at most 1,048,576 bytes
     (its own check: on a curl before 8.4.0 `--max-filesize` does not bound an answer of unknown length) and
-    `l1u_version_of` finds a version in it. Then the file is renamed to `notes.md` and `offer` is written
-    beside and renamed: `fetched`. In every other case the file is removed and `offer` and `notes.md` stay as
+    `l1u_version_of` finds a version in it. Then, if the version found is older than the one `offer` already holds (an answer up to five minutes old
+    must not lower it), the file is removed and `offer` and `notes.md` stay as they were; otherwise the file is
+    renamed to `notes.md` and `offer` is written beside and renamed. Either way: `fetched`. In every other case the file is removed and `offer` and `notes.md` stay as
     they were: `failed`. No rule reads curl's exit code for more than zero or not.
 
 Run as a program. **Every call exits 0 when it could answer and says the outcome in its output**, because
@@ -245,7 +257,9 @@ backticks are removed; (5) every control character but newline and tab is remove
 
 Test variables, in the form of `L1_KILL` and `L1_OWNED_HELPER`: `L1_UPDATE_DIR`; `L1_UPDATE_NOW`, an epoch
 that stands for now (matched as a time); `L1_CURL` (default `/usr/bin/curl`) and `L1_OPEN` (default
-`/usr/bin/open`), the two programs it starts. It never finds a program by `PATH`.
+`/usr/bin/open`), the two programs a test replaces. Every function that runs a program begins
+`local PATH=/usr/bin:/bin:/usr/sbin:/sbin`, because a launcher calls the tool with the Wine engine's `bin`
+first on `PATH`.
 
 **Why the version and not the commit.** The version is what the player is shown, and its section is the text
 of what changed, so one request serves both. It works only if `release` never holds a commit that is not a
@@ -259,20 +273,23 @@ Both `cities-skylines-2/scripts/setup.sh` and `surviving-mars-relaunched/scripts
 `--check`, `--mac-only` or (Cities: Skylines II) `--dest`:
 
 1. read `common/paths.sh` and `common/updates.sh`. Surviving Mars's setup reads `paths.sh` after its own
-   line `:151`, which stays as it is, and takes only `L1_UPDATE_DIR` from it;
-2. test, with the `own_folder` they already have, the data root, `_update` and `_update/installed` (made
-   with `mkdir` and `chmod go-w` if absent); a folder that fails stops setup with exit 1 before any write;
+   line `:151`, which stays as it is, and takes only `L1_UPDATE_DIR` from it (its own state folder stays as `:151` gives it);
+2. test, with the `own_folder` they already have, the folder that holds `_update` (the parent of `L1_UPDATE_DIR`; by default
+   the data root),
+   `_update` and `_update/installed` (made
+   with `mkdir` and `chmod go-w` if absent); a folder that fails stops setup with exit 1 before anything of this plan is written;
 3. copy `common/updates.sh` to `_update/updates.sh`, written beside and renamed. Cities: Skylines II's setup
    copies with plain `cp` today (`:358-367`); it gains a `put` in Surviving Mars's form (`:179-183`) for the
-   files of this plan only;
+   files of this plan only. This copy is made before the window is built, so that a first setup already gives
+   a window with `L1UpdateDir`;
 4. write one line, the absolute path of `_update`, into a file `update-dir` beside the deployed launcher, the
    same way;
 5. call `l1u_stamp` when the work is done: in Cities: Skylines II's setup after the exit for problems
    (`:590-595`) and before the Desktop step, so that it is written for exit 0 and exit 5; in Surviving Mars's
    before the closing words. If it fails, setup prints "  !! This version could not be recorded
    (`~/...`). 14unch3r will not offer updates for this game." and keeps its exit code;
-6. in the closing words, name every other game of `l1w_games` that has a wrapper with the game in it and no
-   stamp: "`<title>` was set up by an older version. Paste its installer line once, so that it gets updates
+6. in the closing words, name every other game of `l1w_games` that has a wrapper with the game in it (looked for with
+   its wrapper variable unset, as in 3.4 step 4) and no stamp: "`<title>` was set up by an older version. Paste its installer line once, so that it gets updates
    too."
 
 **The own-files lists.** A fetched tree can lose files while it is in use (macOS clears old temporary
@@ -290,7 +307,7 @@ question does not look).
 **`common/make-launcher-app.sh`** reads `common/paths.sh` beside it (which keeps an `L1_UPDATE_DIR` already
 set, as UL1 uses) and writes the path into the window's `Info.plist` as `L1UpdateDir`, with `plutil`, when
 `<that folder>/updates.sh` is a regular file. With no such file the key is not written and the window has no
-update parts.
+update parts. With no `paths.sh` beside it (the tests' scratch folders) it writes no key either.
 
 Two setups deploy the same file, and the later one wins. Within one update both come from one tree. A game
 set up again from an older tag puts an older `updates.sh` back, with any defect since fixed in it, until the
@@ -300,21 +317,23 @@ next update replaces it. The contract of 3.2 is what keeps the other callers wor
 
 **The button's file** (`updates.sh --open`). In a folder from
 `mktemp -d "${TMPDIR:-/tmp}/1launcher-update.XXXXXX"` (falling back to `/tmp`, as the installer app does) it
-writes `Update 1launcher.command`, mode 755, holding constants only, and runs `"$L1_OPEN" -a Terminal <file>`.
+writes `Update 1launcher.command`, mode 755, holding constants only but for curl's path (`L1_CURL` when it
+matches `^/[A-Za-z0-9._/-]{1,200}$` whole, else `/usr/bin/curl`, so that a test can serve the fetch), and runs `"$L1_OPEN" -a Terminal <file>`.
 The file:
 
 1. removes itself and its folder when it exits, and begins with `clear` (Terminal prints the user's name and
    the file's path before a script's first line);
 2. says "Fetching the installer from github.com/macgameport/1launcher ...";
 3. fetches `https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/install.sh` into a
-   file in its own folder: `/usr/bin/curl -q --proto '=https' --tlsv1.2 -sSL -o <file> -w '%{http_code}'`,
+   file in its own folder: `<curl's path> -q --proto '=https' --tlsv1.2 -sSL -o <file> -w '%{http_code}'`,
    judged by 3.2's rule (exit 0 and `200`). Never from curl's standard output, where the code would become
    the script's last line (1.5);
 4. on `200` runs `/bin/bash -c "$(cat <file>)" 1launcher-install update`. A download cut short runs
    nothing, as today (`install.sh` is all functions and calls the last of them on its last line);
 5. on `404`: "This version of 1launcher cannot update an install. Paste the installer line from the guide
-   instead." On anything else: "GitHub could not be reached. Check the network, then try the update again.";
-6. ends with one line that says what happened, by the update's exit code (0: "Updated. You can close this
+   instead." On anything else: "GitHub could not be reached. Check the network, then try the update again." On any
+   code but `200` nothing is run: after its sentence the file says "You can close this window." and exits 1;
+6. after step 4 ran, ends with one line that says what happened, by the update's exit code (0: "Updated. You can close this
    window."; 3: "Not everything was updated: see the lines above. You can close this window."; anything
    else: "The update did not finish: see the lines above. You can close this window."), and exits with that
    code.
@@ -330,9 +349,12 @@ The file:
   "This version of 1launcher cannot update an install. Paste the installer line from the guide instead.",
   exit 1), exports `L1_FETCHED_REF` and `L1_FETCHED_COMMIT`, and runs `bash <tree>/common/update-games.sh`
   with no argument, returning its exit code.
-- Its branch is an early return placed before the existing lines for a game, at its own indent, so that the
-  older mutants of `common/test-bootstrap.sh` (2, 5, 7, 8, 11), which are anchored on those lines, still
-  apply.
+- Its branch is a new test placed before the existing test of the first word (`:69`, on which mutant 7 of
+  `common/test-bootstrap.sh` is anchored) and an early return at its own indent, so that the older mutants
+  anchored on the lines for a game (2 and 11 on `:123`, 5 on `:122`, 8 on `:115`) still apply.
+- For the ref `release`, on both paths, the archive is fetched as `archive/refs/heads/release.tar.gz`
+  (measured: the same commit), so that a tag of that name could not be taken for the
+  branch. `L1_FETCHED_REF` stays `release`.
 - The game path also exports `L1_FETCHED_COMMIT`.
 
 So the code that drives an update is always the newest (it comes with the fetch), and the only thing an
@@ -342,15 +364,18 @@ installed Mac holds is the address of the root `install.sh`, which is already ne
 
 1. It refuses unless `L1_FETCHED_REF` is set (exit 2), reads `paths.sh`, `updates.sh` and `wrappers.sh` from
    its own tree, and exports `L1_UPDATE=1`.
-2. It takes the lock `_update/updating` (a link whose target is its process number; a link to a process that
-   is gone is taken over). Held by a live process: "An update is already running in another Terminal
+2. If `_update` or `_update/installed` is not a folder of the player's own (`l1u_own`, 3.2), nothing is run:
+   "This Mac keeps no record of what is installed. Paste each game's installer line once; after that it can
+   update." Exit 3. Else it takes the lock `_update/updating` (a link whose target is its process number; a
+   target that is not a process number by 3.1's rule, or that names a process that is gone, is taken over). A
+   trap removes the lock when the driver exits, only while it still names this process. Held by a live process: "An update is already running in another Terminal
    window." Exit 3.
 3. `T` is the fetched tree's version. If `offer` holds a version newer than `T`: "GitHub sent `<T>`, not yet
    `<offered>`. Try again in a few minutes." Nothing is run. Exit 3.
 4. **The games it looks at are the games set up on this Mac, not the stamps.** For each row of the fetched
    `games.tsv` whose folder passes `install.sh`'s pattern, in the order of the app IDs as numbers, it asks
-   `l1w_find game <ID>` with the game's wrapper variable unset (`l1w_row` names it; a variable left in the
-   environment must not decide what is set up):
+   `l1w_find game <ID>` with the game's wrapper variable unset (`l1w_row` names it; a variable left in the environment must not decide what is set up; it is unset
+   for this look only, and the installers get the environment as it came):
    - exit 2 (two wrappers carry the marker): "`<title>`: two wrappers carry its marker. Left as it is." The
      stamp stays. Counted as failed;
    - no wrapper, or one without a prefix, or one without the game's program (`l1w_program`, with `l1w_row`'s
@@ -371,8 +396,9 @@ installed Mac holds is the address of the root `install.sh`, which is already ne
 5. A closing block: one line per game with what happened, then exactly one of
    - "Everything is up to date: 1launcher `<T>`.", when at least one installer ran, every one that ran
      exited 0 or 5, and no game was left or failed;
-   - "No game is set up on this Mac.", when step 4 found none;
-   - "Not everything was updated. Do what the lines above say, then update again from 14unch3r.", otherwise.
+   - "No game is set up on this Mac.", when step 4 found no game set up and nothing was counted as failed;
+   - "Not everything was updated. Do what the lines above say.", otherwise. (It does not say "update again from
+     14unch3r": with one game recorded and current, the window shows no line and calls the Mac current.)
 6. Exit 1 if anything was counted as failed (an installer's exit other than 0, 3 and 5 is failed: 4 and a
    signal's code among them), else 3 if anything was left or an installer stopped with 3 or step 4 found no
    game, else 0.
@@ -382,9 +408,11 @@ it asks today (1.1), except the Desktop question. An update that needs a new eng
 the same words as a new install.
 
 **What an update can do without asking**, so that it is said and not found: everything a second run of the
-installer does today, among them the rename of the wrappers (`docs/plans/wrapper-names.md`). A player who
-keeps the old names with `L1_KEEP_WRAPPER_NAMES=1` must go on updating by the pasted line with that variable:
-the window's update cannot carry it. The guides say so.
+installer does today, among them the rename of the wrappers (`docs/plans/wrapper-names.md`) and the move of an
+old install folder (`docs/plans/local-files-layout.md`). A player who pasted the line with
+`L1_KEEP_WRAPPER_NAMES=1` or `CS2_PATCH_DIR=~/cs2-patch` in front must go on updating by that line: the
+window's update cannot carry either, and would rename or move. The guides say so (section 5), and UD15 asks
+whether an update should instead never start a move or a rename.
 
 **The free-space caution.** `core_space` says nothing when a wrapper exists (`prefix_known`) and `game_state`
 is `installed` or `update`, tested in that order: with no wrapper `use_wrapper` has not run, and what
@@ -397,38 +425,50 @@ it is measured against this in section 9).
 
 - **When.** With `L1UpdateDir` in its `Info.plist` (or `--update-dir <dir>` on the command line), a value
   that starts with `/`, and `<dir>/updates.sh` a regular file that is not a link: the window asks
-  `/bin/bash <dir>/updates.sh` through `runChild` with a 5 s limit, **off the main thread, with the offers**
-  (`askOffers`, `:1381-1391`), and again at every reload. That call touches no network.
-- Then, once in the window's life and off the main thread, it asks `updates.sh --refresh` (15 s). If the
-  answer's state word differs from the one shown, the list is shown again. The window never waits for the
-  network.
-- An answer is used only if its word is one of the six and both versions match 3.1's pattern or are `-`. Any
-  other answer, and no answer from `runChild`, is as if there were no tool.
+  `/bin/bash <dir>/updates.sh` through `runChild` with a 5 s limit, **off the main thread**: at open with the offers (`askOffers`, `:1381-1391`) and after each
+  `applicationDidBecomeActive`. That call touches no network. `reload()` itself never calls the tool (it runs
+  on the main thread, before a start among other places): it draws the foot from the last answer the delegate
+  holds. An answer replaces what is held and, only when its word or its offered version differs and no sheet
+  is up and no start is under way, shows the list again by a path that asks nothing.
+- Then, chained once after the first answer at open and off the main thread, it asks `updates.sh --refresh`
+  (15 s), and its answer is taken by the same rule. After an answer of `ready` the same background block asks
+  `updates.sh --notes` (5 s) and keeps the result with the state. The window never waits for the network, and
+  no child runs between a click on the foot line and its sheet.
+- An answer is used only if its word is one of the six and both versions match 3.1's pattern or are `-`. Only
+  its first line counts, fields past those this version knows are ignored (3.2's contract), and `ready` needs
+  a version, not `-`, as the offered one. Any
+  other answer, and no answer from `runChild`, is dropped: with nothing held the window draws no foot line, as
+  without the tool. The menu item stays, and row 6 answers it.
 - **State `ready`:** the grid draws one more line, `1launcher <offered> is out. Click to see what changed.`
-  - Drawn by the grid as the label "You also own" is: `Look.labelFont`, white at `Look.labelAlpha`,
-    `Look.labelH` high, one line, centred in the grid's width, no shadow. Wider than the grid less two
-    margins, it is cut at its tail by `cut()`. Measured: 277 points for `v0.4.0` and 287 for `v0.10.12`, in
-    the 396 the least window gives.
+  - Drawn with the look of the label "You also own": `Look.labelFont`, white at `Look.labelAlpha`,
+    `Look.labelH` high, one line, centred in the grid's width, no shadow. Measured: 277 points for
+    `v0.4.0`, 287 for `v0.10.12` and 388 for the widest text a matched version can give, in the 396 the least
+    window gives, so no rule for cutting it is needed. Its rectangle: the width is the text's, rounded up; it
+    is centred; `y` is the last row's bottom plus `Look.labelAbove`; the height is `Look.labelH`.
   - Place: `Look.labelAbove` below the last row of tiles, offers included, then `Look.bottom` as today. The
-    grid grows by 24 points. The line is part of the grid and scrolls with it. With no tile at all, the
-    empty state stays and the line is drawn 8 points below the README address.
+    grid grows by 24 points (measured on a prototype: one game with the line is 444 by 196, the line's
+    contrast 9.6, and 7.6 over the hover fill). The line is a subview of the grid, added after the tiles at
+    every `show`, and scrolls with it; it is not in `tiles`. Past 600 points it is reached by scrolling (from
+    13 tiles, or 9 with an offer row), and with the line a selected tile of the last row is shown down to the
+    grid's end. **With no tile at all there is no foot line:** the grid is hidden in the empty state, which
+    stays as today, and the menu item is the way to the sheet.
   - Its hit area is the text's rectangle grown by 6 at the sides and 4 above and below. Pointing-hand
     cursor; under the pointer, that rectangle filled white at `Look.hoverFill`, radius 4. A press arms it and
     a release on it with a click count of 1 opens the sheet, with `blocked` asked first: the tiles' rule.
   - It is not in the arrows' order and is never selected, so Return still starts the last game. The keyboard
     reaches it through the menu item.
   - VoiceOver: one element after the tiles, role button, label
-    `1launcher <offered> is out, shows what changed`.
+    `1launcher <offered> is out, shows what changed`. Its press action is the click.
   - Every new size and string is a constant in `Look`, as `Look.label` and `Look.noGames` are.
 - **The sheet for `ready`**, an `NSAlert` as the one question the window has today:
   - message: `1launcher <offered> is out.`
   - text: `This Mac has <installed>. Update opens Terminal and runs the installer again for each game set up
     here. It may ask you a question there.` With `-` for the version, the first sentence is left out.
   - an accessory view: a scroll view of 380 by 180 points, set before the alert is shown, bezel border,
-    vertical scroller that hides itself; in it a text view, not editable, selectable, no link or data
-    detection, the text set as a plain string, `NSFont.systemFont(ofSize: 11)`, `textColor = .labelColor`,
-    no background drawn, 4 points of inset, accessibility label `What changed`. It holds what
-    `updates.sh --notes` printed (asked through `runChild`, 5 s). When that is nothing: the one line
+    vertical scroller that hides itself; in it a text view, not editable, selectable (a right-click copies; the app has
+    no Edit menu), no link or data detection, the text set as a plain string, `NSFont.systemFont(ofSize: 11)`, `textColor = .labelColor`,
+    no background drawn, 4 points of inset, accessibility label `What changed`. It holds the notes
+    kept with the state (above). When that is nothing, or there was no answer: the one line
     `What changed: https://github.com/macgameport/1launcher/blob/release/CHANGELOG.md`. No colour comes from
     `Look`: the alert takes the window's dark appearance as the existing sheets do.
   - buttons: "Not Now" first (Return and Escape, as "Don't Start" is today), then "Update". Focus at open is
@@ -436,14 +476,19 @@ it is measured against this in section 9).
   - If a game row is `busy` (read after a `reload()`), the sheet is instead: message `Quit <title> first.`
     (the first busy row in the list's order), text `The update leaves a running game as it is. Quit it, then
     update.`, one button "OK".
-- **"Update"** runs `updates.sh --open` through `runChild` (10 s). `opened`: the window quits, as after a
+- **"Update"**: which button was pressed is decided by one pure function, `sheetAnswer(button)`, which gives
+  `open` only for the second button. Then, with `starting` set as for a start, `updates.sh --open` is asked off
+  the main thread (10 s). `opened`: the window quits, as after a
   start. `failed<TAB><sentence>`: a sheet with the message "The update did not open." and that sentence. No
-  answer: the same sheet with "The update tool did not answer."
-- **The menu** gains "Check for Updates…" with the key Command-U, and a separator, above "Quit 14unch3r". With
-  no `L1UpdateDir` the item is absent. It does nothing while a sheet is up or a start is under way. When the
-  window already shows a version as out, it opens that sheet at once. Otherwise the foot of the grid reads
-  `Checking for a new version…`, the item is disabled, and `updates.sh --refresh --now` is asked (15 s, off
-  the main thread); an answer that arrives while a sheet is up or a start is under way is dropped. The
+  answer: the same sheet with "The update tool did not answer." On `failed` and on no answer, `starting` is
+  cleared before the sheet.
+- **The menu** gains "Check for Updates…" with the key Command-U, and a separator, above "Quit 14unch3r". When
+  `updateTool` gives none at open, the item and its separator are absent. It does nothing while a sheet is up or a start is under way. When the
+  delegate holds the state `ready` (with a foot line or, with no tile, without one), it opens that sheet at once. Otherwise the item is disabled and `updates.sh --refresh --now` is asked (15 s, off
+  the main thread); on an answer of `ready` the same block asks `--notes` before the sheet is shown, as at
+  open; an answer that arrives while a sheet is up or a start is under way is dropped. Nothing else
+  shows while it runs: 0.2 s when GitHub answers, up to 10 s when it does not. The item is enabled again when its
+  answer is shown or dropped. The
   answer shown, decided in this order, each an alert with one button "OK":
 
   | Order | Case | Message | Text |
@@ -453,8 +498,8 @@ it is measured against this in section 9).
   | 3 | `manual`, detail `checkout` | No update is offered on this Mac. | Its games were set up from a checkout. Update with git pull, then run each game's setup. |
   | 4 | `manual`, any other detail | No update is offered on this Mac. | A game here was set up from a named version. Paste its installer line from the guide to follow new versions again. |
   | 5 | `ready` | the sheet above | |
-  | 6 | the fetch `failed`, or `unknown`, or no answer | The list of versions could not be read from GitHub. | Check the network and try again later. |
-  | 7 | `current` | 1launcher `<installed>` is the newest version. | |
+  | 6 | the fetch `failed`, or `unknown`, or no usable answer (none, or one that fails the rule above) | The list of versions could not be read from GitHub. | Check the network and try again later. |
+  | 7 | `current` | 1launcher `<installed>` is the newest version. | A game set up before updates were recorded is not counted until its line is pasted once. |
 
 - **Every sheet sets the delegate's `sheet`** (the `ready` sheet as a question, the others as a failure is
   today). A sheet shown without it would let Escape quit the app and Return start the selected game under
@@ -465,16 +510,57 @@ it is measured against this in section 9).
   | Function | Gives | Text mode |
   |---|---|---|
   | `updateState(line)` | the parsed answer, or none | used by all below |
-  | `footText(state)` | the line's text, or none | `--grid` prints `foot <x> <y> <w> <h> <text>` when there is one; `paint label` covers every label rectangle, this one included |
+  | `footText(state)` | the line's text, or none | `--grid` prints one `foot` line after the tile lines when there is one; `paint label` covers every label rectangle, this one included |
   | `updateSheet(state, notes, busyTitle)` | message, text, notes and the buttons in order | `--update-sheet` |
   | `menuAnswer(state, fetch)` | message and text, or the word `sheet` | `--update-menu <fetch word>` |
   | `afterOpen(output)` | `quit`, or `failure` and a sentence | `--update-open` |
+  | `sheetAnswer(button)` | `open` for the second button; `nothing` for the first and for Escape | `--update-answer` |
+  | `updateTool(dir)` | the tool's path, or none: `dir` starts with `/`, and the file is regular and not a link | `--update-tool`, run by `common/test-make-launcher-app.sh` from inside a built app, as `--folders` is, to show that the builder's key and the window's reader agree |
+  | `askUpdate(tool, arguments, limit)` | the tool's answer, or none. The one place the tool is run, by the window and by every text mode, with `L1_UPDATE_DIR` set for the child to the folder in use | the calls the stub records |
 
-  `--act` gains the step `foot` (a press and release on the line), which prints `sheet update` and never
-  `start`. Every mode takes `[--games <tsv>] [--update-dir <dir>]`, in that order, before its own arguments,
-  and so does the window. The tests give a folder that holds a stub `updates.sh`, which records its
-  arguments and takes its output from a file beside it. One source gate: outside those functions the
-  delegate holds no string of an update alert and no call of `launch` for an update.
+  The forms:
+
+  ```
+  launcher-window [--games <tsv>] [--update-dir <dir>] [<folder>...]
+  launcher-window --grid [--games <tsv>] [--update-dir <dir>] <last id or -> <folder>...
+  launcher-window --act <step,...> [--games <tsv>] [--update-dir <dir>] <last id or -> <folder>...
+  launcher-window --update-sheet --update-dir <dir> <folder>...
+  launcher-window --update-menu --update-dir <dir> <fetched|failed|skipped|->
+  launcher-window --update-open --update-dir <dir>
+  launcher-window --update-answer <first|second|escape>
+  launcher-window --update-tool [--update-dir <dir>]
+
+  ```
+
+  What they print, tab-separated:
+  - `--grid`: `foot`, then x, y, width, height, the text, the role and the label. A test checks `y`, the
+    height, the text and that the line's middle is the grid's middle within 1 point, never an absolute `x` or
+    width (they follow the font).
+  - `--update-sheet`: a `message` line, a `text` line, one `button` line per button in order, and one `note`
+    line per line of notes; `none` when the state is not `ready`.
+  - `--update-menu`: `sheet`, or `alert` with the message and the text or `-`. The state comes from the stub's
+    call with no argument; the word `-` stands for no answer to the refresh.
+  - `--update-open`: `quit`, or `failure` with the message and the sentence. It runs the tool with exactly
+    `--open`.
+  - `--update-answer`: `open` or `nothing`.
+  - `--act`: `press:x:y` in the hit area prints `armed` and `foot`; a `release:x:y` there with one click prints
+    `sheet` and `update`; the step `foot` is both, at the rectangle's centre; `axpress:foot` prints the same.
+    With no foot line, under `block`, after a release elsewhere, on a second click, or with a `reload` in
+    between, each prints `nothing`. None ever prints `start`.
+
+  A text mode looks for a tool only when it is given `--update-dir`; the window and `--update-tool` alone read
+  `L1UpdateDir`, and `--update-dir` wins over it. So every recorded output of today is unchanged (confirmed on the prototype:
+  without the option, `size`, `window`, `empty` and `paint label` are byte for byte today's). The dispatch
+  (`:1231`) and the window's test of its own arguments (`:1289`) both let `--update-dir <dir>` through. The stub `updates.sh`
+  writes one line per call to `args.log` and answers from the files `out`, `out.notes` and `out.open` beside it.
+
+  Three source gates, each a count the test file takes from the source: (1) every line holding
+  `beginSheetModal(` has, just before it, a line that sets `sheet` to a question or a failure; (2) the string
+  `"--open"` occurs once, in one function, and that function is called on exactly two lines: in the
+  `--update-open` text mode, and in the delegate on a line that follows a test of `sheetAnswer` for `open`; (3) the
+  tool is run nowhere but in `askUpdate`, and the delegate calls `askUpdate` only inside a block sent off the
+  main thread. A fourth count: below the window's marker the source holds none of the update's sentences,
+  which are constants of `Look`.
 
 ### 3.6 The launchers
 
@@ -487,14 +573,15 @@ also checks the place):
 # docs/plans/built-in-update.md, 3.6. At most two notices per new version of 1launcher, and a look at GitHub
 # in the background at most once a day. The look cannot delay or stop a start: it is never waited for. The
 # notice is waited for: it reads small local files and touches no network.
-_l1u="$(cat "$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/update-dir" 2>/dev/null)"
+_l1u="$(/bin/cat "$(CDPATH= cd -- "$(/usr/bin/dirname -- "${BASH_SOURCE[0]}")" && pwd)/update-dir" 2>/dev/null)"
 case "$_l1u" in /*) ;; *) _l1u="" ;; esac
 if [ -n "$_l1u" ] && [ -f "$_l1u/updates.sh" ] && [ ! -L "$_l1u/updates.sh" ]; then
   _l1v="$(/bin/bash "$_l1u/updates.sh" --noted 2>/dev/null)"
-  [ -n "$_l1v" ] && note "1launcher $_l1v is out. Open the 14unch3r app to update."
+  _l1p='^v(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$'
+  [[ "$_l1v" =~ $_l1p ]] && note "1launcher $_l1v is out. Open the 14unch3r app to update."
   ( /bin/bash "$_l1u/updates.sh" --refresh < /dev/null > /dev/null 2>&1 & )
 fi
-unset _l1u _l1v
+unset _l1u _l1v _l1p
 # <<< update-notice
 ```
 
@@ -504,6 +591,11 @@ unset _l1u _l1v
 - The notice is said at the first two starts after a version comes out, whichever games they are (`noted`).
   Two, because a notification from `osascript` belongs to Script Editor and may not show at all (1.5), and
   what is written to `noted` is written before anything is shown.
+- The block names `cat` and `dirname` by their full paths (a launcher's `PATH` begins with the Wine engine's
+  `bin`) and matches the tool's answer as a version before it reaches `note`. Run under bash 3.2.57 with
+  `set -u` and stray programs named `cat` and `dirname` first on `PATH`: a version gives one note; no answer,
+  two lines, a text that is not a version and an absent tool give none; a tool that sleeps on `--refresh` does
+  not delay it; the three variables are unset afterwards.
 - Measured by the check's builder: with the real `updates.sh` the block takes 30 to 37 ms.
 
 ### 3.7 The release gate, and the published addresses
@@ -516,7 +608,8 @@ unset _l1u _l1v
    `origin/release:CHANGELOG.md` (no file or no heading there counts as `-`); and
    `git ls-remote --tags origin release` prints nothing.
 
-It takes the version rule from `common/updates.sh` beside it.
+It takes the version rule from `common/updates.sh` beside it. When the question is asked and that file is not
+beside the gate, it fails: "FAIL  the version rule (common/updates.sh) is not in this checkout".
 
 Reason: an installed Mac learns of an update only by a version heading that rises. A move of `release` to a
 commit between two releases would reach new installs and no installed Mac.
@@ -585,10 +678,10 @@ section 6 applied and seen red before the step is called done.
   `core_space` is silent on a finished install. Tests UT1, UT2.
 - **U1. The record and the rule.** `common/paths.sh` and its header; `common/updates.sh`;
   `common/test-updates.sh`; the root `install.sh` exports `L1_FETCHED_COMMIT`; both setups, both installers'
-  own-files loops and `common/make-launcher-app.sh` (3.3); the `CLAUDE.md` line for `_update` and
+  own-files loops and `common/make-launcher-app.sh` (3.3; its key is tested with the window, in UT8); the `CLAUDE.md` line for `_update` and
   `update-dir` (the folder is made in this step, so its line is too). Tests UT3, UT4, UT5.
 - **U2. The update.** `install.sh update`, `common/update-games.sh`, `common/test-update-games.sh`,
-  `updates.sh --open`. Tests UT6, UT7, UT7b.
+  `updates.sh --open`, and the `refs/heads` form of the archive for `release`. Tests UT6, UT7, UT7b.
 - **U3. The window.** The seams, the foot line, the sheets, the menu item, the text modes. Test UT8.
 - **U4. The launchers.** The block, rule 10, the two note lists. Test UT9.
 - **U5. The gate and the words.** `common/check-release-move.sh` question 5 and its header (UT10);
@@ -608,10 +701,10 @@ section 6 applied and seen red before the step is called done.
 
 | Who | What they notice |
 |---|---|
-| A player set up before this version | Nothing, until they paste each game's installer line once more. The release notes of this version say so. With two games, pasting one line stamps one: that setup's closing words name the other, and an update names it too. |
-| A player set up by this version or later | By itself at most one request a day to GitHub. When a version is out: a line at the foot of 14unch3r at every open until they update, and at most two notifications, at the next two starts of a game. Nothing else changes until they click Update. |
-| A player who clicks Update | A Terminal window, the installer's own lines for each game (seconds per game where nothing is new), and its questions if a step needs one. |
-| A player who keeps the old wrapper names | The window's update renames them. To keep them, update by the pasted line with `L1_KEEP_WRAPPER_NAMES=1`. |
+| A player set up before this version | Nothing, until they paste each game's installer line once more. The release notes of this version say so. With two games, pasting one line stamps one: that setup's closing words name the other, and an update names it too. Until its line is pasted, every update ends "Not everything was updated" and names it, and 14unch3r shows no line once the recorded game is current. |
+| A player set up by this version or later | By itself at most one request a day to GitHub. When a version is out: a line at the foot of 14unch3r whenever it is open (reached by scrolling from 13 tiles) until they update, and at most two notifications, at the next two starts of a game. Nothing else changes until they click Update. |
+| A player who clicks Update | A Terminal window, the update's own lines and the installer's for each game, and its questions if a step needs one. |
+| A player who declined the folder move or the new wrapper names | The window's update runs the installer without their variable, so it moves or renames. To keep their choice they update by the line they pasted, with `CS2_PATCH_DIR=~/cs2-patch` or `L1_KEEP_WRAPPER_NAMES=1` in front. |
 | The Studio and the MacBook | No line, no notice, no request: a game there is set up from a checkout, so the state is `manual`. The menu item says why. |
 | James, at a release | `release` moves only to a tagged commit, and each section of the changelog is read by players before they say yes. A move of `release` now reaches installed Macs within a day, not only new installs. |
 
@@ -627,6 +720,9 @@ line again" place:
   as for any page. Nothing about you or your games is sent."
 - "**To switch the check off:** `touch ~/Library/Application\ Support/1launcher/_update/off`. Delete that
   file to switch it on again. With it off, update by pasting the installer line."
+- "**If you pasted the line with a variable in front** (`CS2_PATCH_DIR=...` or `L1_KEEP_WRAPPER_NAMES=1`): do
+  not use Update in 14unch3r. It runs the installer without them, which moves the folder or renames the
+  wrappers. Paste your line again instead."
 - By hand, for a Mac with no 14unch3r: the pasted line with the word `update` where the app ID stands.
 - `CHANGELOG.md`, first lines of this version's section: "**14unch3r says when a new version is out, and one
   click updates.** ... **On a Mac set up before this version, paste each game's installer line once more:**
@@ -650,11 +746,17 @@ output, as curl does. A mutant is applied to the source and must be seen red (ex
 | UT4 | the same file | `l1u_refresh`: within a day of `tried`, curl is not called, **after a failure too**; at exactly 86,400 s and with `--now` it is, with exactly 3.2's options, `-q` first; a `tried` after now: called; curl exit 56, exit 63, a 404, a 2 MiB file served with exit 0, and a file with no heading each leave `offer` and `notes.md` byte for byte as they were, leave no `.fetch.*` behind and print `failed`; in the states `off`, `none` and `manual` curl is never called, with `--now` too; with no `installed/` folder, or a `_update` others can write, nothing is written; two refreshes at once with a slow stub leave a whole `notes.md`; every call exits 0. `--notes`: the newer sections only, newest first, cleaned by each of the five rules (a fixture per rule), cut before the line that passes 200 lines or 12,000 bytes, with the closing line. `--noted`: prints at the first two calls for a version and then nothing; prints again for a newer version; when not `ready`, prints nothing and writes nothing. `--open` when not `ready`: `failed` and the sentence, nothing written, `L1_OPEN` not called | `tried` not written on failure; the script's own size check dropped; the future-time test dropped; the state test before the fetch dropped; the `installed/` test dropped; one fixed name for the new file; `--noted` not writing `noted` |
 | UT5 | both games' `scripts/test-setup.sh`; each scratch `common/` gains `paths.sh` and `updates.sh` | After a setup that finishes: `installed/<app ID>` holds `checkout`, the tree's version, `-` and `L1_UPDATE_NOW`; with `L1_FETCHED_REF=release` and `L1_FETCHED_COMMIT`: `release` and that commit; with `L1_FETCHED_REF=v0.2.0`: that line, and the state is `manual`; `_update/updates.sh` is byte for byte `common/updates.sh`; `update-dir` beside the launcher holds the path; a setup that stops or fails writes no stamp and leaves an older one as it was; `--check`, `--mac-only` and `--dest` touch nothing of `_update`; exit 5 writes one; a `_update` writable by the group: exit 1, nothing written; `common/updates.sh` missing from the tree: the own-files sentence; another game set up with no stamp is named in the closing words; with `L1_UPDATE=1` and a terminal, the Desktop question is not asked | the stamp written before the app is built; the stamp written on failure; the stamp written in place; `updates.sh` not deployed; `update-dir` not written; the own-folder test dropped; the `L1_UPDATE` test dropped |
 | UT6 | `common/test-bootstrap.sh` | `install.sh update`, fetched: the fixture's `common/update-games.sh` is run with `L1_FETCHED_REF` and `L1_FETCHED_COMMIT` and no argument, and its exit code is returned; `update x --yes` and `update --check`: usage, exit 2, nothing fetched; a fixture without the driver: the sentence, exit 1; from a checkout: the sentence, exit 2, curl not called; `Update`, `updates` and a folder's name are still "not a Steam app ID"; the game path also exports `L1_FETCHED_COMMIT` | the word accepted in any case; arguments passed on to the driver; the checkout case made to run the driver; the exit code dropped |
-| UT7 | `common/test-update-games.sh` (new): stub installers that record their arguments and read one line of their input; the driver is given a file as its input; wrappers are the "bare" fixture of `docs/plans/wrapper-names.md` section 6 in the scratch `~/Applications` | Two set-up games stamped `release`: both installers run, in the order of the IDs as numbers, with no argument, **each reading the driver's own input**; a failing installer first: the second still runs, exit 1; 3 then 0: exit 3; 1 then 3: exit 1; an installer's exit 4: failed; 5: done. **A set-up game with no stamp beside a stamped one: not run, named with its pasted line, the closing line is not "Everything is up to date", exit 3.** A stamp on `checkout`: not run, the line says so, exit 3. A stamp newer than the tree: left. A stamp whose wrapper is gone, or whose wrapper has no game in it: the stamp removed, no installer run. Two wrappers marked alike: nothing run, the stamp kept, exit 1. The game's wrapper variable set to a path that does not exist: the set-up game is still found. A row `777` with the folder `../x`: nothing run outside the tree. `offer` newer than the tree: the "not yet" sentence, nothing run, exit 3. A live `updating` lock: the sentence, exit 3; a dead one: taken over. No game set up: its sentence, exit 3. `L1_FETCHED_REF` unset: exit 2. The stubs' recorded arguments hold no `--yes`. `updates.sh --open`: the written file, run with a stub curl, records `$0` as `1launcher-install` and `$1` as `update`, one word; it is mode 755, begins with `clear`, removes itself, exits with the driver's code and says the sentence for it; `L1_OPEN` got `-a Terminal` and its path | the stamps as the list (the look at wrappers dropped); the list read by a loop on standard input; the driver stopping at the first failure; resolver exit 2 treated as "none"; the wrapper variable not unset; `--yes` added; a stamp on another line run anyway; 5 counted as failed; the folder taken without the pattern; the version test dropped; the lock dropped; `release` made `main` in the `.command`'s address |
+| UT7 | `common/test-update-games.sh` (new): stub installers that record their arguments and read one line of their input; the driver is given a file as its input; wrappers are the "bare" fixture of `docs/plans/wrapper-names.md` section 6 in the scratch `~/Applications` | Two set-up games stamped `release`: both installers run, in the order of the IDs as numbers, with no argument, **each reading the driver's own input**; a failing installer first: the second still runs, exit 1; 3 then 0: exit 3; 1 then 3: exit 1; an installer's exit 4: failed; 5: done. **A set-up game with no stamp beside a stamped one: not run, named with its pasted line, the closing line is not "Everything is up to date", exit 3.** A stamp on `checkout`: not run, the line says so, exit 3. A stamp newer than the tree: left. A stamp whose wrapper is gone, or whose wrapper has no game in it: the stamp removed, no installer run. Two wrappers marked alike: nothing run, the stamp kept, exit 1. The game's wrapper variable set to a path that does not exist: the set-up game is still found. The row of a set-up game given the folder `../x`: nothing run outside the tree. `offer` newer than the tree: the "not yet" sentence, nothing run, exit 3. A live `updating` lock: the sentence, exit 3; a dead one: taken over. No game set up: its sentence, exit 3. `L1_FETCHED_REF` unset: exit 2. The stubs' recorded arguments hold no `--yes`. `updates.sh --open`: the written file, run with a stub curl, records `$0` as `1launcher-install` and `$1` as `update`, one word; it is mode 755, begins with `clear`, removes itself, exits with the driver's code and says the sentence for it; `L1_OPEN` got `-a Terminal` and its path | the stamps as the list (the look at wrappers dropped); the list read by a loop on standard input; the driver stopping at the first failure; resolver exit 2 treated as "none"; the wrapper variable not unset; `--yes` added; a stamp on another line run anyway; 5 counted as failed; the folder taken without the pattern; the version test dropped; the lock dropped; `release` made `main` in the `.command`'s address |
 | UT7b | each game's `scripts/test-install.sh`, in the case that keeps the real `setup.sh` | **The parts joined.** From a finished-install fixture with a stamp `release` at `v0.0.9` and an `offer` at the tree's version: `updates.sh` says `ready`; `install.sh update` through the real driver, installer and setup; then the stamp holds the tree's version and `updates.sh` says `current`. With the second game's installer made to stop: its stamp is old and the state stays `ready` | `l1u_stamp` not called by setup; the driver's test of the line inverted |
-| UT8 | `common/test-launcher-window.sh`, through the modes of 3.5; `common/test-make-launcher-app.sh` | The first call of the tool has no argument, and no text mode calls `--refresh`; with a stub saying `ready`: `--grid` holds the `foot` line with 3.5's text, the grid 24 points higher, the row selected at open unchanged, the contrast line for it at 4.5 or more; `--act foot` prints `sheet update` and never `start`, and the tool was not called with `--open`; `--update-sheet`: message, text, notes, and the buttons in the order "Not Now", "Update"; `<installed>` is the lowest; with `-`, the first sentence is absent; with no notes, the one line with the address; with a busy row, the other sheet, naming the first busy row; `--update-open`: `opened` gives `quit`, `failed` and a sentence gives that sentence, no answer gives "The update tool did not answer."; `--update-menu`: each of the seven rows of 3.5's table, among them `current` with a failed fetch giving row 6; under a sheet, `--act` Escape gives `end-sheet` and Return `pass`; every other state, a seventh word, an offered text that is not a version, a tool that hangs past the limit, a tool that is a link, a relative `--update-dir`: no foot line, and the list as without the tool; `--update-dir` with no value: usage; with no tile, the foot line under the empty state; `L1UpdateDir` is in the built `Info.plist` only when the tool exists; the source gate of 3.5 | the foot line sent to `launch` as an offer is; the first call made `--refresh`; "Update" made the first button; a sheet shown without setting `sheet`; the line shown for `current`; the offered text shown unmatched; the limit removed from a call; row 6 placed after row 7 |
-| UT9 | `common/test-launcher-parity.sh` (rule 10); behaviour in a new `common/test-update-notice.sh`, on the block taken from each launcher in turn, with `update-dir` beside the extract | The two blocks are equal byte for byte, and in each launcher the block lies after the `acquire_lock` call and before the first `step 1`; the sentence is in both recorded note lists; the tool printing a version: exactly one `note` with 3.6's sentence; printing nothing: none; a tool that sleeps 30 s on `--refresh`: the block returns within 2 s; the refresh's output goes nowhere; no `update-dir`, a relative path in it, a folder with no `updates.sh`, a tool that is a link: nothing is run | one byte changed in one copy; the block moved above `acquire_lock` in one launcher; the `&` dropped; the `note` made unconditional; the test of the path dropped |
+| UT8 | `common/test-launcher-window.sh`, through the modes of 3.5; `common/test-make-launcher-app.sh` | The first call of the tool has no argument, and no text mode calls `--refresh`; with a stub saying `ready`: `--grid` holds the `foot` line with 3.5's text, the grid 24 points higher, the row selected at open unchanged, the contrast line for it at 4.5 or more; `--act foot` prints `sheet update` and never `start`, and the tool was not called with `--open`; `--update-sheet`: message, text, notes, and the buttons in the order "Not Now", "Update"; the text shows the state line's second field; with `-`, the first sentence is absent; with no notes, the one line with the address; with a busy row, the other sheet, naming the first busy row; `--update-open`: `opened` gives `quit`, `failed` and a sentence gives that sentence, no answer gives "The update tool did not answer."; `--update-menu`: each of the seven rows of 3.5's table, among them `current` with a failed fetch giving row 6; under a sheet, `--act` Escape gives `end-sheet` and Return `pass`; every other state, a seventh word, an offered text that is not a version, a tool that hangs past the limit, a tool that is a link, a relative `--update-dir`: no foot line, and the list as without the tool; `--update-dir` with no value: usage; with no tile, no `foot` line and the size as today; `L1UpdateDir` is in the built `Info.plist` only when the tool exists; the three source gates of 3.5 and its fourth count | the first button of the sheet made to give `open`; the test before the one call of `--open` dropped; the first call made `--refresh`; "Update" made the first button; the line that sets `sheet` dropped before one new sheet (the first source gate); the line shown for `current`; the offered text shown unmatched; the limit removed from a call; row 6 placed after row 7 |
+| UT9 | `common/test-launcher-parity.sh` (rule 10); behaviour in a new `common/test-update-notice.sh`, on the block taken from each launcher in turn, with `update-dir` beside the extract | The two blocks are equal byte for byte, and in each launcher the block lies after the `acquire_lock` call and before the first `step 1`; the sentence is in both recorded note lists; the tool printing a version: exactly one `note` with 3.6's sentence; printing nothing: none; a tool that sleeps 30 s on `--refresh`: the block returns within 2 s; the refresh's output goes nowhere; no `update-dir`, a relative path in it, a folder with no `updates.sh`, a tool that is a link: nothing is run; the tool printing `v0.04.0`, a version with words after it, or two lines: no `note`; with programs named `cat` and `dirname` that fail first on `PATH`: one `note` still, and neither was called; the three variables are unset afterwards | one byte changed in one copy; the block moved above `acquire_lock` in one launcher; the `&` dropped; the `note` made unconditional; the test of the path dropped; the match made `[ -n ]` in both copies; `/bin/cat` made `cat` in both copies |
 | UT10 | `common/test-check-release-move.sh`; the fixture gains `CHANGELOG.md` on the commit and on `origin/release`, and annotated tags | A commit holding `common/updates.sh`: untagged fails; an `installer-1` tag alone fails; tagged `v0.4.0` with the heading `v0.4.1` fails; tagged, heading equal, not newer than `release`'s fails; a tag named `release` on the remote fails; all right passes; `origin/release` with no changelog counts as `-`; a commit without the file, on a `release` without it, is not asked; a commit without the file on a `release` that has it **is** asked | each of the four conditions dropped in turn; the tag compared by its object; the trigger read from the commit alone |
+| UT3, UT4, also | `common/test-updates.sh` | A two-line stamp is passed over; `tried`, `noted`, a stamp's time and `L1_UPDATE_NOW` holding `a[$(touch <file>)]` are each taken as absent and `<file>` is not made; an answer whose version is older than `offer`'s leaves `offer` and `notes.md` byte for byte as they were, leaves no `.fetch.*` and prints `fetched`; stubs named `mktemp`, `stat`, `date` and `mv` first on `PATH` record no call; `--version-of` prints a file's version and nothing for a file without one | a failed fetch made to exit 1; `-q` dropped; the address made the short `release` form; the `local PATH` line dropped; `offer` lowered by an older answer; the second read of a stamp dropped |
+| UT5, also | both games' `scripts/test-setup.sh`, both `scripts/test-install.sh` | The stand-in for the window's builder records that `_update/updates.sh` existed when it was called; with `common/updates.sh` missing, each installer says its own-files sentence with exit 4 before setup runs; a set-up game whose wrapper variable names a path that does not exist is still named in the closing words | the new own-files loop dropped (setup; installer); the copy made after the window is built; item 6's closing words dropped |
+| UT6, also | `common/test-bootstrap.sh` | For the ref `release`, on the game path and the update path, the recorded address is the `refs/heads` form; for any other ref it is as today | the short form put back for `release` |
+| UT7, also | `common/test-update-games.sh` | No `_update` folder: the sentence of step 2, exit 3, nothing run; a lock whose target is `0`: taken over; no `updating` left after a run that finished and after one that failed; the only game with two wrappers: not "No game is set up", exit 1; a wrapper kept with the game's program gone: not run; `L1_CURL` holding a quote, a `$` or a relative path: the file names `/usr/bin/curl`. The `.command`: a 404 gives its sentence, nothing run, exit 1, and no line of step 6; `000` gives the other sentence | the lock not removed; the program test dropped; the per-game version test dropped (apart from step 3's); the fetched file run whatever the code; the folder test of step 2 dropped; the match of the lock's target dropped; "No game is set up" said beside a failure |
+| UT8, also | `common/test-launcher-window.sh`, `common/test-make-launcher-app.sh` | `--update-answer`: `second` gives `open`; `first` and `escape` give `nothing`. The foot's click: a press on the line and a release on a tile, a second click, a `reload` in between and `block,foot` each print `nothing`; the `foot` line carries the button role and 3.5's label, and `axpress:foot` opens the sheet. With 17 games and the last row selected the line's rectangle ends inside the shown part. `--update-tool` from inside a built app prints the tool when the key was written and `-` when not; a relative path and a link, given with `--update-dir`, give `-`; the key is absent when the tool was absent at the build | the foot's release not compared with what was armed; the foot's press action doing nothing; a relative path taken; a link taken; the key written when the tool is absent; the scroll rule left without the line's height |
+| UT10, also | `common/test-check-release-move.sh` | The gate copied alone into a scratch `common/`, on a `release` that holds the file: it fails with the sentence of 3.7 | that case passing |
 | UT11 | the gates | `common/check-links.py`, `common/check-identifiers.sh` at its residual of 9, `bash -n` on every changed script, every other test file of the repository, and every older mutant of each test file touched still red and none REFUSED | none |
 
 ### 6.1 Existing tests that change, by name
@@ -663,8 +765,8 @@ output, as curl does. A mutant is applied to the source and must be seen red (ex
 |---|---|
 | `common/test-paths.sh` | `:62` (six lines become seven), `:72-73` (the exact printed lines); the header of `common/paths.sh` (`:5-7`). Its count of files that spell a root stays, because Surviving Mars's `setup.sh:151` stays |
 | `cities-skylines-2/scripts/test-move-install.sh` | `:54` evals every `L1_*=` line `paths.sh` prints: one more |
-| `common/test-bootstrap.sh` | the stub curl honours `-w`; the `STUB_CURL_EXIT=22` cases (`:189-190`) become UT1's; its header lists mutants to 10 and the file has 11: new ones start at 12 |
-| `common/test-make-installer-app.sh` | the stub curl; the recorded curl line (`:143`) and the `STUB_CURL_EXIT=22` case (`:149-153`); its check that every copy of the pasted address agrees gains `updates.sh`'s |
+| `common/test-bootstrap.sh` | the stub curl honours `-w`; the `STUB_CURL_EXIT=22` cases (`:189-190`) become UT1's; the recorded archive address for `release` becomes the `refs/heads` form; its header lists mutants to 10 and the file has 11: new ones start at 12 |
+| `common/test-make-installer-app.sh` | the stub curl; the recorded curl line (`:143`) and the `STUB_CURL_EXIT=22` case (`:149-153`); its check that every copy of the pasted address agrees gains `updates.sh`'s, compared after `refs/heads/` is taken out |
 | `cities-skylines-2/scripts/test-install.sh` and `test-install.golden` | `:489` ("low space: a CAUTION line, and on") runs on a finished install and inverts; the golden transcript loses that line and is recorded again on purpose, the difference read line by line; the cases that run the real setup need `common/updates.sh` in their fixture |
 | `surviving-mars-relaunched/scripts/test-install.sh` | the same fixture; a `df` stub for UT2 |
 | both games' `scripts/test-setup.sh` | each hand-made `common/` gains `paths.sh` and `updates.sh` (Cities: Skylines II's at four places); the "writes nothing" snapshots; MUTANTs 17, 37 and 38 stay anchored because the new own-files check is a separate loop |
@@ -672,22 +774,29 @@ output, as curl does. A mutant is applied to the source and must be seen red (ex
 | `common/test-check-release-move.sh` | the fixture; the gate's header ("asks four things") |
 | `common/test-mac-inventory.sh` | `common/mac-inventory.sh` lists what lies under both roots, so `_update` appears: the expected lines |
 | `common/check-deploy.sh` | it counts what Cities: Skylines II's setup copies: `_update/updates.sh` and `update-dir` are added to what it compares |
+| `common/test-launcher-window.sh` | the header's list of modes; new mutants from 73; the single lines on which mutants 36, 39 to 41, 51 to 54, 57 to 59, 61, 63 and 64 are anchored (`press`, `release`, `show`, `unblocked` among them) stay whole; no existing case changes, because none gives `--update-dir` |
+| `common/test-make-launcher-app.sh` | new mutants from 9; its three scratch `common/` folders hold no `paths.sh`, and the builder then writes no key (3.3) |
 
 **Not tested, and said so:** what Terminal shows, and whether macOS asks anything when 14unch3r opens a
 `.command` (UL1); the sheet drawn on screen, Return and Escape on a sheet that holds a scrolling text view,
 and the second showing of the list after the background refresh (UL1, by eye; on macOS 27 only, never on 14
 or 15); a real notification, who macOS names as its sender and what a click on it opens (UL1b); GitHub's real
 404 (UL1c) and its answer when it limits requests (not provoked: with no version heading in the answer,
-nothing is offered); the whole chain from a real offer to a real update (UL4).
+nothing is offered); the menu item and the calls of `--refresh` (they live in the app
+delegate, which no text mode builds: UL1); the whole chain from a real offer to a real update (UL4).
 
 ## 7. Live steps (each on James's word)
 
 - **UL1. The check and the sheet, on the Studio, with nothing real changed.** A scratch `_update` holding one
   hand-written stamp on `release` at `v0.0.9` and the branch's `updates.sh`, and a 14unch3r built into a
-  scratch folder with `L1_UPDATE_DIR` at that folder. Pass, each read off the screen or a file: the foot line
+  scratch folder with `L1_UPDATE_DIR` at that folder. It is opened with `open -n <app> --args <a scratch folder
+  that holds one fixture game app>`, so that no real game is listed and none can be started; afterwards the
+  scratch app is deleted and then unregistered with `lsregister -u`, as `common/test-launcher-window.sh` does
+  for its own. Pass, each read off the screen or a file: the foot line
   reads `1launcher <the version release holds> is out. Click to see what changed.`; the sheet's notes begin
   with that version's section; `offer` holds it; a second opening within the day leaves `tried` unchanged;
-  Return and Escape both close the sheet with nothing run. Then press "Update" and let it run: today's
+  Return and Escape both close the sheet with nothing run; the menu holds "Check for Updates…" above "Quit
+  14unch3r", and choosing it, and Command-U, each open the same sheet. Then press "Update" and let it run: today's
   `release` answers "not a Steam app ID: update" and fetches nothing (1.5), which shows the word arrives.
   Record every dialog macOS shows between the click and that line. Capture the window's region only, with
   the system in light and in dark.
@@ -701,7 +810,8 @@ nothing is offered); the whole chain from a real offer to a real update (UL4).
   one stamp for 3215050 on the line `built-in-update` at `v0.0.9`. Fetch **the branch's own** root
   `install.sh` (`.../1launcher/built-in-update/install.sh`; `release`'s has no such word) and run it with
   `update built-in-update`. Pass: the installer's seven steps, setup, the stamp now at the branch's version
-  on the line `built-in-update`, Cities: Skylines II named as set up with no record and not run, the game
+  on the line `built-in-update`, Cities: Skylines II named and not run (as set up with no record; or, if a setup from the checkout
+  has stamped it by then, as set up from `checkout`), the game
   starts from its app afterwards. Record how long the run took, and compare the commit the installer prints
   with the commit pushed. Afterwards the Studio's state is `manual`, as it should be; its Surviving Mars then
   runs the branch's code until it is set up again from what is published.
@@ -738,11 +848,12 @@ nothing is offered); the whole chain from a real offer to a real update (UL4).
 | UD7 | Does an offer for a game that is not set up still open its guide, or start the installer from the window? | The guide, in this plan. Starting an install from the window is a plan of its own: it is the installer's first-run path, with the findings that has. |
 | UD8 | Fix the two defects of step U0 in this plan? | Yes. The update prints the same words and would carry the same wrong sentence. |
 | UD9 | Which number does the release that carries this take? | The second number rises: it asks a player with an install to paste each game's line once more. |
-| UD10 | The sign in the window: one line at the foot, or a tile in a third group? Measured by the design lens: a tile adds 174 points to the window (172 becomes 346, and 520 with an offer), arrives up to 15 s after open, falls below the fold from five games with an offer (674 over the 600 limit) and is then never seen, and stays at every open for a player who has not updated. The line adds 24 points. | The line, with the menu item as the keyboard's way and the notification as the one loud sign. If you choose the tile, 3.5 needs its three texts, a second label, a three-block layout and a rule for more than 600 points, and that section is checked again. |
+| UD10 | The sign in the window: one line at the foot, or a tile in a third group? Measured by the design lens: a tile adds 174 points to the window (172 becomes 346, and 520 with an offer), arrives up to 15 s after open, falls below the fold from five games with an offer (674 over the 600 limit) and is then never seen, and stays at every open for a player who has not updated. The line adds 24 points. | The line, with the menu item as the keyboard's way and the notification as the one loud sign. Past 600 points the line too is reached only by scrolling (from 13 tiles). A tile is a different design, not a bounded change: besides three texts, a second label, a three-block layout and a rule past 600 points, it needs a new role carried through the window's ranking, drawing, starting and listing, an icon, and a rule for Return on it. If you choose it, that section is written and checked as a pass of its own. |
 | UD11 | May `update` be a published word of the root `install.sh`, the one first word that is not an app ID? Once published it can never be withdrawn. | Yes. It keeps one fetch for all games and adds no second address that must never move. |
 | UD12 | May the window run a script outside its own bundle (`_update/updates.sh`) and, through it, ask GitHub? It ends "The window sends nothing anywhere." | Yes, with 3.5's limits: a time limit on every call, and nothing fetched is run. |
 | UD13 | The new places outside the repository: the folder `<data root>/_update`, and a one-line file `update-dir` beside each deployed launcher. | Yes. `CLAUDE.md` gets its line in step U1, before the folder is made. |
 | UD14 | Make the first release after the one that carries this a quiet one, with little or nothing changed for players? | Yes. The first real offer then risks only the mechanism. |
+| UD15 | A player who declined the folder move or the new wrapper names by a variable in front of the pasted line: should an update started from the window never start a move or a rename (it would still finish one that was begun)? Or do the guides only tell that player to keep updating by their own line? | The guides only, in this plan (3.4, section 5). The other way changes how both setups decide a move and a rename, which this plan otherwise leaves alone; if you want it, it is added and checked before U1. |
 
 ## 10. Rollback
 
@@ -819,11 +930,65 @@ the same credential it is meant to keep out. 3.8 says what the rules do and do n
 account to measure a first notification (platform): making an account is a system setting and James's; UL1b
 records what the Studio shows, and UD6 says the limit.
 
+### Second pass: fitted re-check of the rework (2026-11-23, pass 1b): build-ready-with-fixes, folded
+
+Two agents read the rework (`ba7daad`): one checked every row of the table above against the plan and the
+code and ran the plan's own code (the block of 3.6, the read rule of 3.1, the version pattern); one traced
+section 3.5 as a builder and measured a 20-line prototype of the foot line in the window's text modes. Both:
+build-ready-with-fixes, no design rework. Where each finding went:
+
+| # | Finding | Where it went |
+|---|---|---|
+| F1 | The folder move has a published decline too (`CS2_PATCH_DIR`); the guide words did not say it | 3.4 ("What an update can do without asking"); section 5; UD15 |
+| F2, W-B2 | The mutant "a sheet shown without setting `sheet`" could not go red; which button runs `--open` was outside the seams; the source gate named `launch`, which an update never uses | 3.5 (`sheetAnswer`, the three source gates); UT8 |
+| F3 | "Update again from 14unch3r" told the player to do what the window will not offer | 3.4 step 5; section 5 row 1; 3.5 row 7 |
+| F4 | The `.command` after a failed fetch had no exit code and no test | 3.4 (file steps 5 and 6); UT7, also |
+| F5, W-S1, W-S2 | "Again at every reload" would stall the main thread or loop; the notes call sat between the click and the sheet | 3.5 ("When", the refresh, the notes kept with the state); source gate 3 |
+| F6 | The lock: no folder on an older Mac, nobody removed it, its target unmatched | 3.1; 3.4 step 2; UT7, also |
+| F7 | The archive was still fetched by the short name | 3.4 (the root `install.sh`); U2; UT6, also; 6.1 |
+| F8 | "Never finds a program by `PATH`" was untrue of the tool and of the block | 3.2 (`local PATH`); 3.6 (full paths, run again); UT3, UT4, also |
+| F9 | The gate's widened trigger had no rule when the file is gone | 3.7; UT10, also |
+| W-B1 | In the empty state the grid is hidden, so nothing could draw the line | 3.5 (no foot line with no tile); UT8 |
+| W-S3 | `Checking for a new version…` had no state to live in | dropped: the item is disabled, and 3.5 says what shows |
+| W-S4, W-S5 | The VoiceOver element and the click rule were unspecified and untested | 3.5 (a subview, its role and press action; the `--act` words); UT8, also |
+| W-S6, W-S7 | `cut()` cannot cut at that width and the case cannot occur; past 600 points the line is below the fold and was cut by 2 points | 3.5 (the measurement, the rectangle, the scroll rule); UD10 |
+| W-S8, W-S9, W-S10 | The text modes had no forms or outputs; the call of the tool was not a seam; nothing tested that the window reads the key | 3.5 (the forms, the outputs, `askUpdate`, `updateTool`, `--update-tool`); 3.3 (the copy before the build); UT5 and UT8, also |
+| W-S11 | 6.1 had no row for either window test file | 6.1 |
+| W-S12 | UL1's app would list and could start the real games | UL1 |
+| M | The cite for standard error; a two-line stamp; the vacuous `777` case; cases without mutants; "No game is set up" beside a failure; the own-folder rule said two ways; an unmeasured "seconds per game"; the block passing an unmatched answer to `note`; `offer` lowered by an old answer; which runs write to `_update`; UL2's dependence on the checkout's stamp | corrected in place: 1.3, 3.1, 3.2, 3.3, 3.4, 3.6, section 5, UT7, the "also" rows, UL2 |
+
+### Third pass: the second fold verified (2026-11-23, pass 1c): build-ready-with-fixes, folded
+
+One agent read exactly what the second fold changed (the working tree over `ba7daad`): each row of the table
+above against the normative text, new text against the old text left standing, the test table, and every
+fact the fold had taken from the re-check agents, read in the source. It ran the block of 3.6 as it stands in
+this file. No blocker and no design rework; nine should-fixes and eleven minor points, all words and test
+rows, each folded in place:
+
+- source gate 2 could not be green beside the `--update-open` mode (3.5);
+- an answer older than `offer` would still have replaced `notes.md` (3.2; UT3 and UT4, also);
+- the block's new match and full paths had no clause and no mutant in UT9;
+- the driver's folder test cited a function it does not have (`l1u_own`, 3.2 and 3.4 step 2);
+- `--update-tool` reads the key, against "only the window reads it" (3.5);
+- the menu's way to the sheet: the notes, the no-tile case, "no answer" against "no tool" (3.5, row 6);
+- UL1 had no step for the menu item;
+- curl's path in the `.command` (3.4); the line "drawn by the grid" beside "a subview" (3.5); clauses
+  without mutants; the stub's unused file; smaller points in 3.1, 3.3, section 5 and 6.1.
+
+This last fold was audited inline, both ways, and has not been read by an agent. The plan is checked again
+before U1 in any case (the status line says why).
+
+A reference build of U0, U1, U2, U4 and U5 **from the first draft**, with its test logs, is kept in
+`<workspace>/built-in-update-p0/` (`builder-first-draft.patch`; the game's `CLAUDE.md` says where the workspace
+is). It predates the rework: it shows what breaks and where, and is not the design.
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |
 |---|---|---|---|---|---|---|
 | 2026-11-23 | 1 | architecture and rollout; security and privacy; correctness; builder simulation; test plan; design and words; platform facts | seven agents, none editing the repository; the builder in a scratch clone with U0, U1, U2, U4 and U5 built and the test files run; measurements against GitHub and of curl, bash and `mktemp` on this Mac; each blocker read against the source inline | Fable 5.2 | `built-in-update` at `13966b6` (`wrapper-names` at `efe176b` and the plan) | needs-rework; reworked the same day |
+| 2026-11-23 | 1b | the rework: every correction against the plan and the code; section 3.5 with UT8 traced as a build | two agents, none editing the repository; the plan's own code run under bash 3.2.57; a prototype of the foot line built in a scratch folder and measured in the text modes | Fable 5.2 | `built-in-update` at `ba7daad` | build-ready-with-fixes, folded |
+| 2026-11-23 | 1c | the fold of pass 1b: each row against the normative text, new text against old, the test table, the facts taken from the re-check agents | one agent, not editing the repository; the cited lines read in the source; the block of 3.6 run under bash 3.2.57 with stubs | Fable 5.2 | the working tree over `ba7daad` | build-ready-with-fixes, folded |
 
 Key paths: `install.sh`, `common/install-core.sh`, `common/paths.sh`, `common/wrappers.sh`,
 `common/games.tsv`, `common/launcher-window.swift`, `common/make-launcher-app.sh`,

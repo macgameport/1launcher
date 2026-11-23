@@ -6,13 +6,14 @@ and its re-check are at the foot ("W0 fold", 2026-11-21). W1 is built on the bra
 header below); W2 ran on the Studio on 2026-11-23 and every step is recorded at the foot ("W2 on the Studio"): its three
 wrappers are renamed and Spotlight offers none of them. It found that macOS asks about the microphone again after
 a rename and Steam's first start waits for the answer; that is folded and checked ("W2 fold"; James: "Launcher
-waits, says so") and built as W2b (`5d23ddf`), whose live step with James at the Studio is next, before W3;
+waits, says so") and built as W2b (`5d23ddf`), whose live step passed on the Studio the same day ("W2b on the Studio"); W3, the
+MacBook, is next;
 the MacBook's reads of W3 step 0 are taken at the first
 visit there. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
 > **🔧 As-built (2026-11-23): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
-> `release`); W2 run on the Studio and W2b (the sign-in wait) built (`5d23ddf`); W2b's live step, W3 and W4 not
+> `release`); W2 run on the Studio; W2b (the sign-in wait) built (`5d23ddf`) and its live step passed there; W3 and W4 not
 > started.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
 > `5d8d263` and `6e9a3cf` (1.3 to 1.5: makers, installers, launchers, setups, the other readers, 14unch3r),
 > `78328e1`, `e9f7431`, `0fc680a` (the new cases: WT4b, WT11, WT14 to WT17), `422b183` (the tests that read a
@@ -1578,6 +1579,20 @@ plans recorded a question).
 The built-in update plan (on the branch `built-in-update`, `docs/plans/built-in-update.md`, 3.6 and 6.1)
 speaks of "a new rule 10" and "new mutants from 17" in `common/test-launcher-parity.sh`: after this build its
 rule is 11 and its mutants start at 25. It is checked again before its first step in any case.
+
+### W2b on the Studio (2026-11-23): passed
+
+On James's word, with him at the Studio, from the branch at `5b06307`. Outputs in `<workspace>/wrapper-names-w2/`.
+
+| Step | What ran | Result |
+|---|---|---|
+| 1 | `--check` for each game, then both setups | **Pass.** No rename named or made; Cities: Skylines II's setup exit 0 in 9 s (10 of 10 patch scripts), Surviving Mars's exit 0 in 5 s; both installed launchers are byte for byte the branch's and hold `signin_wait` |
+| 2 | Surviving Mars's wrapper renamed by hand to `one-more-name.app`; the game started from its app (17:36:38); James left the question for a minute | **Pass.** macOS asked about the microphone at 17:36:47. The launcher's log read "[1/5] Still signing in. If macOS asks a question, answer it…" 46 s after the start, about 45 s after its "Starting Steam and signing in…" line, once. James answered at 17:37:55 (allowed), 68 s after the question. The same start went on: logon 100 s after the start, window after 117 s, menu reached, closed by a window-close message, saves uploaded, Steam down, no lock and no crash marker. Before W2b this start would have ended at 120 s with "Steam did not sign in by itself" only if the answer had come later; here the line told the player what to do, which is what was to be shown |
+| 3 | the name put back to `wrapper-3215050.app`; one more start (17:39:38) | **Pass.** No question from macOS and no hint line; logon 27 s after the start, window after 44 s, menu reached, saves uploaded |
+
+Afterwards: the three wrappers under the names setup gave them, each marked; nothing of Wine or Steam running.
+Not shown here: a wait that runs past ten minutes, and the early end for a Steam that is gone (WT19 covers both
+with stubs).
 
 ### Check of the W2 fold (2026-11-23): build-ready-with-fixes, folded
 

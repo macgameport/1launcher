@@ -966,17 +966,16 @@ output.
 
 ### W2b — the sign-in wait (the W2 fold; James: "Launcher waits, says so", 2026-11-23)
 
-Built on the branch after the fold is checked, with WT18 and its mutants; then, on James's word and with him at
+Built on the branch after the fold is checked, with WT19 and its mutants; then, on James's word and with him at
 the Studio:
 
 1. Both setups run from the branch (they deploy the new launchers; nothing is renamed: `--check` first says so).
 2. The Surviving Mars wrapper is renamed by hand to a name it has not had (so that macOS asks), and the game is
-   started from its app. James leaves the question unanswered for a minute. Pass: within 45 to 50 s of the
-   start the progress window shows "Still signing in. If macOS asks a question, answer it…"; after his answer
+   started from its app. James leaves the question unanswered for a minute. Pass: about 45 s after the launcher's "Starting Steam and signing in…" line the progress window shows "Still signing in. If macOS asks a question, answer it…"; after his answer
    the game reaches its menu without a second start; the launcher's log holds the line once.
 3. The name is put back; one more start shows no hint line (sign-in comes before 45 s).
 
-At W3 the same line is looked for at the MacBook's first start after its rename.
+
 
 ### W3 — the MacBook
 
@@ -995,7 +994,7 @@ A visit of its own, after W2, on the branch (`git fetch`, then the branch checke
    Surviving Mars wrapper and back (WD10 covers it) is offered at that visit too, because it is the one reading
    that can select branch B before the build instead of after it.
 
-Then steps 1 to 7 of W2 there; its step 3 is Surviving Mars's installer too, and its wrapper there "was made the
+Then steps 1 to 7 of W2 there, with the hint line of W2b looked for at each first start after a rename (step 2's boot-verify keeps a two-minute sign-in wait and reports the launcher's `ERROR:` line if a question from macOS is left unanswered: answer it and run it again); its step 3 is Surviving Mars's installer too, and its wrapper there "was made the
 old way". Its store wrapper is renamed only if step 0 found it a candidate. Step 6 is the one that matters most:
 it is the Mac where the fault was seen, and the only one with a wrapper Spotlight has learned (WD2). Pass for
 it: as W2 step 6, set against step 0's "before". If the window still offers the renamed wrapper, nothing is
@@ -1115,7 +1114,7 @@ and took the game's download; the rewrite only changes that one string.
 
 | Test | Subject | What it shows | Mutants |
 |---|---|---|---|
-| WT18 | the sign-in wait | `common/test-launch-feedback.sh`, on `signin_wait` taken from the shared block, with `sleep` stubbed to count and `step` recording: a test that succeeds at once returns 0 with no line; one that succeeds after 30 s prints no hint; one that succeeds after 60 s prints the hint exactly once, at 45 s, with the step number it was given; one that never succeeds returns 1 after 600 s (`L1_SIGNIN_SECS` unset) and after 9 s with `L1_SIGNIN_SECS=9`; a value that is not a number counts as 600. `common/test-launcher-parity.sh`, a new rule 10: each launcher calls `signin_wait` exactly once, outside the block, with the number of its "Starting Steam and signing in…" step and a function it defines; neither launcher still holds a `seq 1 40` loop; the hint in the block is one plain literal of at most 62 characters. Each launcher's `die` after the wait names the question from macOS | the hint dropped; the hint printed at every poll; the limit put back to 120 s; the step number written out as a fixed number in the block; one launcher's call given the wrong step number; the old loop left in one launcher |
+| WT19 | the sign-in wait | `common/test-launch-feedback.sh`, on `signin_wait` taken from the shared block, with `sleep` recording: a test that succeeds at once returns 0 with no line; one that succeeds after 30 s prints no hint; one that succeeds after 60 s prints the hint exactly once, at 45 s, with the step number it was given; one that never succeeds returns 1 after 600 s (`L1_SIGNIN_SECS` unset) and after 9 s with `L1_SIGNIN_SECS=9`; a value that is not a number, is empty, or has twenty digits counts as 600, with nothing on standard error; a test that returns 2 gives 1. With the third word: a Steam seen and then gone for 15 s ends the wait at once with 1; a Steam never seen is waited for until the limit; gone 9 s, back, gone 6 s is waited for; gone 6 s, back, then signed in gives 0. The hint is a step: one notification with no progress window, none with it. `common/test-launcher-parity.sh`, a new rule 10: each launcher calls `signin_wait` exactly once, outside the block, as `signin_wait <number> <function> steam_exe_up || ...`, with the number of its "Starting Steam and signing in…" step and a function it defines once; a `die` behind the call names the question from macOS; neither launcher holds a `seq 1 40` loop; the hint in the block is one plain literal of at most 62 characters, sent with the caller's step number | feedback 10 to 18: the hint dropped; the hint at every poll; the limit put back to 120 s; the step number written out in the block; Steam counted as gone before it was seen; never ending early; the count not started again when Steam is back; a limit of four digits taken as it is; the test's own code returned. Parity 17 to 24: the wrong step number in one call; the old loop left in one launcher; the hint made 63 characters; one launcher's words no longer naming the question; one launcher's test not defined; a second call; the step number written out in the block; one call without `steam_exe_up` |
 
 ## 7. Exit criteria
 
@@ -1123,7 +1122,7 @@ and took the game's download; the rewrite only changes that one string.
    row of 3.4's for P5, the "before" for P0, and P4's three readings against its thresholds. The plan has
    passed a re-check after them. Recorded 2026-11-21: P1 and P2 row A, P3 no row (the bundle folder passes),
    P5 "as written", P0's "before" in 1.2, P4 inside every threshold; the re-check is in the Review log.
-2. WT1 to WT18 pass on the branch, every mutant seen red on the fixture section 6 names for it (pass 2 found
+2. WT1 to WT19 pass on the branch, every mutant seen red on the fixture section 6 names for it (pass 2 found
    three that are equivalent on any other: WT4b's in Cities: Skylines II's setup, WT7d's, WT9b's), every row of
    section 6's second table done, and every test file that exits 0 at `d50cf33` still exits 0.
 3. W2 and W3 pass on both Macs, with each step's pass condition, the boot-verify verdict and the Spotlight
@@ -1180,6 +1179,9 @@ rename nor a `.noindex` folder clears what Spotlight learned, which W3 step 6 no
   needed after a rename back.
 - **A Mac that was moved, to stay moved on an older version:** nothing to do for Cities: Skylines II. Surviving
   Mars at `v0.1.0` or `v0.2.0` needs its wrapper renamed back, as above (3.8's last row).
+- **W2b, the sign-in wait:** its commits are reverted; the launchers go back to their loop of 120 s. Nothing
+  on a Mac needs undoing. A rename back to an old name is a path macOS has answered before, and W2's start after
+  the name was put back was not asked again.
 - **A rename that was skipped** (a decline, a holder under an installer, a store wrapper with Steam open):
   nothing to undo. The wrapper is under its old name and every script finds it there, by the old name when it
   is not marked and by its marker when the skipped run was finishing a part-way rename; the next run that is
@@ -1488,55 +1490,77 @@ not touch.
 **Decided by James the same day, between two ways put to him: "Launcher waits, says so."** (The other was to
 keep Steam from asking for the microphone at all; it needs a probe and can follow as work of its own.)
 
-**What is built (W2b).**
+**What is built (W2b), as it stands after the check below.**
 
 1. **One function in the launchers' shared block** (`launch-feedback`, the same bytes in both, as
    `licence_wait` is):
 
    ```bash
-   signin_wait() {   # <step> <test>: wait for Steam's sign-in; 0 = signed in, 1 = not within the limit
-     # After 45 s the step line says what may be holding Steam up: a question from macOS (after a rename it
-     # asks again whether wine64 may use the microphone), or its check of a wrapper not opened for a long time.
-     local limit="${L1_SIGNIN_SECS:-600}" t=0 hinted=0
-     case "$limit" in ''|*[!0-9]*) limit=600 ;; esac
+   signin_wait() {   # <step> <test> [<alive>]: wait for Steam's sign-in; 0 = signed in, 1 = not
+     local limit="${L1_SIGNIN_SECS:-600}" t=0 hinted=0 seen=0 gone=0
+     case "$limit" in ''|*[!0-9]*|????*) limit=600 ;; esac
      while [ "$t" -lt "$limit" ]; do
        "$2" && return 0
-       sleep 3; t=$((t + 3))
        if [ "$hinted" = 0 ] && [ "$t" -ge 45 ]; then hinted=1; step "$1" "Still signing in. If macOS asks a question, answer it…"; fi
+       if [ -n "${3:-}" ]; then
+         if "$3"; then seen=1; gone=0
+         elif [ "$seen" = 1 ]; then gone=$((gone + 3)); [ "$gone" -ge 15 ] && return 1; fi
+       fi
+       sleep 3; t=$((t + 3))
      done
-     "$2"
+     "$2" && return 0
+     return 1
    }
    ```
 
-2. **Each launcher calls it once**, in place of its loop of forty polls, with its own test of a sign-in:
-   - Cities: Skylines II (`launch-cs2-dxmt11.sh`, the loop at `:286-289`): `signed_in() { fresh_login && webhelper_up; }`
-     and `signin_wait 2 signed_in || die "..."`.
-   - Surviving Mars (`launch-relaunched.sh`, the loop at `:343-346`): `signed_in()` holds its line that reads the
-     connection log and `steam_exe_up`, and `signin_wait 1 signed_in || { stop_steam; die "..."; }`.
+   The hint comes after the look at 45 s has failed. A limit that is not one to three digits counts as 600.
+   **It ends early only for a Steam that was seen and has then been gone for 15 s in a row** (the installer's
+   own measure of "gone": Steam is away for a few seconds when its updater replaces it). A Steam not seen yet
+   is waited for, because macOS can hold its first process for minutes (the "Verifying ..." sheet of
+   2026-11-01, `cities-skylines-2/GOTCHAS.md`). So a Steam that dies before it is ever seen still costs the
+   ten minutes: a choice, since no test tells that case from the sheet.
+2. **Each launcher calls it once**, in place of its loop of forty polls, with its own test of a sign-in and
+   `steam_exe_up` as the third word:
+   - Cities: Skylines II: `signed_in() { fresh_login && webhelper_up; }`, defined after `fresh_login`, and
+     `signin_wait 2 signed_in steam_exe_up || die "..."`.
+   - Surviving Mars: `signed_in()` holds its line that reads the connection log and `steam_exe_up`, defined
+     before `STARTED=0`, and `signin_wait 1 signed_in steam_exe_up || { stop_steam; die "..."; }`.
 3. **The words after a wait that ran out** name the question, keeping each launcher's first sentence (tests and
    a probe quote it):
    - Surviving Mars: "Steam did not sign in by itself. If macOS asked a question (whether wine64 may use the
      microphone, for one), answer it and start the game again. Otherwise open Steam in the `<name>` wrapper,
      sign in, then launch again."
    - Cities: Skylines II: after "Steam did not auto-login (token expired, or it crashed)." comes "If macOS
-     asked a question (whether wine64 may use the microphone, for one), answer it and relaunch."; the rest of
-     its sentence stays.
+     asked a question (whether wine64 may use the microphone, for one), answer it and relaunch. Otherwise
+     open Steam inside the wrapper, ..."; the rest of its sentence stays.
 4. **Ten minutes, not two.** The progress window stays up while the log grew within 900 s
-   (`common/launch-progress.swift`, `staysUp`), so a wait of 600 s with one line at 45 s keeps it. The 45 s is
-   above every sign-in measured on a start with no question (8 to 30 s after the start).
-5. **The words that were wrong**, corrected in the same commits:
-   - `CHANGELOG.md`, Unreleased: "The first start after the rename can take a few seconds longer (7 to 9 s on
-     the Studio, one start); Steam stays signed in and macOS asks nothing." becomes "**At the first start after
-     the rename macOS may ask once more whether wine64 may use the microphone** (it keeps that answer by the
-     wrapper's path). Answer it, either way: Steam waits for the answer and then signs in as before. The
-     launcher says so if the sign-in takes long, and waits ten minutes."
-   - `cities-skylines-2/INSTALL.md` (`:499`) and `surviving-mars-relaunched/INSTALL.md` (`:148`): "The first
+   (`common/launch-progress.swift`, `staysUp`, whose comment now names this wait as the longest silence), so
+   a wait of 600 s with one line at 45 s keeps it. The 45 s is above every sign-in measured on a start with
+   no question (8 to 30 s after the start). `L1_SIGNIN_SECS` is named in both launchers' headers and in
+   Surviving Mars's `README.md`.
+5. **The instruments that start a launcher keep two minutes.** `cities-skylines-2/scripts/boot-verify.sh`
+   waits 240 s for a game process and the Surviving Mars `tools/licence-wait-probe.sh` 300 s, each counting
+   on a launcher that gives up at 120 s; with ten minutes they would report "launcher still running" and
+   leave it holding the wrapper. Each now starts its launcher with `L1_SIGNIN_SECS=120`. (Cities: Skylines
+   II's licence probe runs boot-verify.) So at W3 step 2 a question nobody answers shows as the launcher's own
+   `ERROR:` line in boot-verify's output, as before.
+6. **The words that were wrong**, corrected in the same commits:
+   - `CHANGELOG.md`, Unreleased (`:22-24`): the sentence about "a few seconds longer ... macOS asks nothing"
+     becomes "**At the first start after the rename macOS may ask once more whether wine64 may use the
+     microphone** (it keeps that answer by the program's path, which changes with the wrapper's name). Answer
+     it, either way: Steam waits for the answer and then signs in with its saved login. The launcher says so if
+     the sign-in takes long, and waits ten minutes where it used to give up after two. On the one Mac measured,
+     Surviving Mars then took about 17 s longer to start than before the rename, each time (44 to 47 s to its
+     window, 26 to 28 s before); why is not known."
+   - `cities-skylines-2/INSTALL.md` (`:499`) and `surviving-mars-relaunched/INSTALL.md` (`:148-149`): "The first
      start after the rename can take a few seconds longer; Steam stays signed in." becomes "At the first start
      after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either way:
-     Steam waits for the answer, then signs in as before."
-   - `cities-skylines-2/GOTCHAS.md` gains the entry: macOS keeps Wine's microphone answer by path; the tell in
-     the system log (`/usr/bin/log show ... process == "tccd"`, `AUTHREQ_PROMPTING`); the earlier entry of
-     2026-11-01 ("Verifying ...", the same 120 s misnamed) is pointed at it.
+     Steam waits for the answer, then signs in as before." The 17 s is in the release notes only: one Mac's
+     measure does not belong in a guide.
+   - `cities-skylines-2/INSTALL.md`, the Troubleshooting row "Steam did not auto-login" (`:533`), names the
+     question before the expired token.
+   - `cities-skylines-2/GOTCHAS.md` gains the entry (macOS keeps Wine's microphone answer by path; the tell in
+     the system log), and the entry of 2026-11-01 points at it.
 
 **What it does not do.** It does not answer the question for the player, cannot see whether one is up, and
 does not keep macOS from asking. `S734M.app` has no wait to lengthen: its window simply comes when the question
@@ -1545,9 +1569,28 @@ explained. Whether a new install's first start is asked too was not measured (no
 plans recorded a question).
 
 **Where it landed in this plan:** 3.8 (the note), section 4 (W2b; W3's last line), section 5 (the row
-"everyone, at the first start after the rename"), section 6 (WT18), section 7 (criterion 7), and this section.
-The built-in update plan's parity rule becomes 11 (`docs/plans/built-in-update.md`, 3.6): it is checked again
-before its first step in any case.
+"everyone, at the first start after the rename"), section 6 (WT19), section 7 (criterion 7), section 9 (a bullet), and this section.
+The built-in update plan (on the branch `built-in-update`, `docs/plans/built-in-update.md`, 3.6 and 6.1)
+speaks of "a new rule 10" and "new mutants from 17" in `common/test-launcher-parity.sh`: after this build its
+rule is 11 and its mutants start at 25. It is checked again before its first step in any case.
+
+### Check of the W2 fold (2026-11-23): build-ready-with-fixes, folded
+
+One agent built the fold in a scratch clone and ran the tests: the function and both calls work as first
+written, every test green, every mutant red, the two blocks equal byte for byte, and nothing else in the tree
+parses the old loops or loses a sentence it quotes. Its findings, and where each went:
+
+| # | Finding | Where it went |
+|---|---|---|
+| 1 | `boot-verify.sh` (240 s) and Surviving Mars's `licence-wait-probe.sh` (300 s) count on a launcher that gives up at 120 s | item 5; W3's first sentence |
+| 2 | The ten minutes are paid when Steam is not running at all | item 1: the third word and the 15 s rule, with the case it does not cover said; WT19 |
+| 3 | A limit of twenty digits printed an error and did not wait; a test returning 2 was passed on; the hint came before the look at 45 s | item 1; WT19 |
+| 4 | "WT18" was taken by the inventory's test | WT19 here, in W2b and in criterion 2 |
+| 5 | The 17 s was promised to the notes and written nowhere | item 6: in the release notes, not in the guides, and why |
+| 6 | "W3's last line" was not in W3 | W3 |
+| 7 | Section 9 untouched | section 9 |
+| 8 | The Troubleshooting row for "Steam did not auto-login" knew only the expired token; `L1_SIGNIN_SECS` had no home; the progress window's comment named another longest silence | item 6; item 4 |
+| 9 | Four things the test row asserted had no mutant | WT19 (parity 19 to 22) |
 
 ## Review log
 
@@ -1557,6 +1600,7 @@ before its first step in any case.
 | 2026-11-18 | 2 (fitted re-check of the rework) | fold verification · builder re-check | 2 agents; the builder built the installer's path, the mover's states and the least of the resolver in a scratch worktree and ran the tests and mutants; findings folded by one agent the same day, each cited line opened again, audited two-sided | Fable 5.2 (fold verification), Opus 5.5 (builder) | `ea4de42` | build-ready-with-fixes (folded) |
 | 2026-11-18 | fitted check of the pass-2 fold | fold verification | 1 agent; eight items folded the same day, audited two-sided | Fable 5.2 | `c5201a2` | build-ready-with-fixes, folded |
 | 2026-11-21 | 3 (W0 fold: P0 to P5 and WD1 to WD11 folded, then re-checked) | fold verification against section 1 and the code | the fold by the session; 1 read-only agent re-checked it; six should-fix and eleven minor folded the same day, audited two-sided | Opus 5.5 (fold), Fable 5.2 (re-check) | `d6f3afe` (code unchanged since `c5201a2`) | build-ready-with-fixes, folded |
+| 2026-11-23 | W2 fold (the sign-in wait, after W2's finding) | a builder's check of the fold | 1 agent built it in a scratch clone and ran the launchers' tests and every mutant; nine findings folded, and the build made again by the session with the third word and the instruments | Fable 5.2 | `b757471` | build-ready-with-fixes, folded |
 
 Key paths: `common/paths.sh` · `common/install-core.sh` · `common/make-wrapper.sh` · `common/mac-inventory.sh` ·
 `common/launcher-window.swift` · `common/check-release-move.sh` · `common/check-deploy.sh` · `common/games.tsv` ·

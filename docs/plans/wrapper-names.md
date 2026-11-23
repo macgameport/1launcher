@@ -3,7 +3,7 @@
 **Status: check-it'd 2026-11-21 — build-ready-with-fixes (pass 3, the W0 fold re-checked, folded).** W0 is done:
 P0 to P5 are recorded in section 1 (2026-11-18 and 19), James answered section 8 (2026-11-20), and step 8's fold
 and its re-check are at the foot ("W0 fold", 2026-11-21). W1 is built on the branch `wrapper-names` (as-built
-header below); W2 ran on the Studio on 2026-11-23, in part: its three wrappers are renamed, steps 1 to 5 and the index half of step 6 are recorded at the foot ("W2 on the Studio"), one start failed on the way, and the typed half of step 6 and step 7 are still to come, on James's word; the MacBook's reads of W3 step 0 are taken at the first
+header below); W2 ran on the Studio on 2026-11-23, in part: its three wrappers are renamed, steps 1 to 5 and the index half of step 6 are recorded at the foot ("W2 on the Studio"), the typed half of step 6 is still to come, and W2 found that macOS asks about the microphone again after a rename, which stalls the first start and must be folded into this plan before W3; the MacBook's reads of W3 step 0 are taken at the first
 visit there. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
@@ -1387,7 +1387,7 @@ before folding M3 and S5. None rejected.
 The issues exit criterion 7 names were opened on James's word the same day, #27 to #29, and the verdict was posted
 on #26.
 
-## W2 on the Studio (2026-11-23): renamed; steps 1 to 5 and the index half of 6 recorded; step 6's typed half and step 7 open
+## W2 on the Studio (2026-11-23): renamed; steps 1 to 5, the index half of 6 and step 7 recorded; step 6's typed half open; one finding to fold before W3
 
 On James's word ("W2 on the Studio"), from the branch at `efe176b`. He confirmed before the first start that
 Steam was closed everywhere else on the account. Recorded before step 2, in `<workspace>/wrapper-names-w2/`: the
@@ -1403,23 +1403,44 @@ three names, each wrapper's `Info.plist`, and both `--check` outputs; the output
 | 4 | `S734M.app` opened | **Pass by the logs; the window was not looked at.** Steam in `wrapper-0.app` logged on `OK` with the saved login and no prompt, but 2 min after its start: its connectivity test took 99 s. Shut down with `steam.exe -shutdown`; nothing left holding the wrapper; no crash marker |
 | 5 | `wrappers.sh list`; 14unch3r `--list`; `lsregister -dump` | **Pass.** Three marked wrappers, no `L1RenamePending`; two games and one Steam app, all `ready`. Launch Services: 0 path lines for each old name and 1 for each new; records with the Surviving Mars app's identifier 2, with 14unch3r's 3, with `S734M.app`'s 1 (a record, not a condition) |
 | 6 | `mdimport` of each wrapper, then `mdfind` | **Index half: pass.** The old names were gone at the first look. `surviving`, `mars`, `smr`: `Surviving Mars Relaunched.app` alone. `cities`, `skylines`: `Cities Skylines II.app` alone. `cs2`: that app and `S734M.app`. `steam`, `store`, `s734m`: `S734M.app`. `launcher`, `1launcher`, `14`: `14unch3r.app`. No wrapper for any of the twelve words; `wrapper` returns the three. **Typed half: not done** (James was not at the Studio) |
-| 7 | the hand renames and the starts after them | **Not done** |
+| 3, again | a third start, from the game's app (15:42:26), to see whether only the first is slow | Steam's connectivity test 1 s, logon 27 s after the start, window after 44 s, menu reached, saves uploaded |
+| 4, again | `S734M.app` a second time (15:44:54) | connectivity test 1 s, logon 19 s after the open, shut down clean |
+| 7 | Surviving Mars's wrapper renamed by hand to `anything-at-all.app`; the resolver and 14unch3r's row (`ready`) found it at once | **The rule holds; the first start after the rename failed as in step 3.** From the game's app (15:46:03): Steam's connectivity test took 116 s and the launcher gave up with "Steam did not sign in by itself". From 14unch3r (15:49:06): logon after 27 s, window after 44 s, menu reached, saves uploaded. The name put back to `wrapper-3215050.app` (what `wrappers.sh name` prints); the start after that (15:50:56): connectivity test 0 s, window after 44 s, menu reached |
+| 7 | the Windows Steam's wrapper renamed by hand to `some-other-name.app`; `S734M.app` opened (15:54:20) | **Pass, slowly.** `S734M.app` found the wrapper by its mark; Steam logged on with the saved login 104 s after the open (connectivity test 77 s); shut down clean; the name put back to `wrapper-0.app`. Afterwards: three marked wrappers, the window's three rows `ready`, and `mdfind` returns no app for `anything` or `some-other` |
 | 8 | what names the old paths outside the repo | the memory notes were given a line with the new names; Porting Kit not looked at |
 
 **Two things W2 found that the plan did not expect.**
 
-1. **A first start of Steam after the rename can be far slower than P4's 7 to 9 s, and one failed.** Three
-   starts of Steam in a renamed wrapper that came from Porting Kit's Wine: no connectivity result in two
-   minutes (Surviving Mars, first try), 5 s and a logon after 30 s (its second try), 99 s (the Windows Steam's
-   first). The same test took 1 s at 15:17 in the Surviving Mars wrapper under its old name. Cities: Skylines
-   II's wrapper, whose engine is the self-built one, started as always right after its rename (step 2). **Not
-   established:** whether this is the rename, the mark written into `Info.plist`, or something of that
-   afternoon. Read and ruled out: the Mac's own network (the same address answered `curl` in 0.15 to 0.19 s
-   three times, no VPN, the default route unchanged) and a long check by macOS (`syspolicyd` logged 261, 185 and
-   352 lines in the first minute of each start and 0 to 39 in the minutes of the stall). A confound that cannot
-   be taken out: item 2. **What it needs:** a second start of each, to see whether only the first is slow; it
-   bears on section 5's row "a first start a few seconds slower" and on the notes of `v0.3.0`, and on a player
-   whose first start after the update would say "Steam did not sign in by itself".
+1. **After a rename macOS asks again whether Wine may use the microphone, and Steam's start waits for the
+   answer.** Established from the system log, five times out of five. One second after Steam starts in a
+   wrapper under a path it has not run from before, `tccd` logs a prompt for the microphone
+   (`AUTHREQ_PROMPTING: service=kTCCServiceMicrophone`) whose subject is the **path** of the wrapper's
+   `wine64`; Steam logs nothing more until the question is answered.
+
+   | Start | Asked | Answered | What Steam's log shows |
+   |---|---|---|---|
+   | Surviving Mars, first after setup's rename | 15:22:13 | not within the launcher's 120 s | no connectivity result; the launcher's "Steam did not sign in by itself" |
+   | the Windows Steam, first after setup's rename | 15:31:57 | 15:33:35, allowed | connectivity test 99 s |
+   | Surviving Mars as `anything-at-all.app` | 15:46:12 | 15:48:07, allowed | connectivity test 116 s; the launcher gave up |
+   | the Windows Steam as `some-other-name.app` | 15:54:34 | 15:55:49, allowed | connectivity test 77 s |
+   | Cities: Skylines II after setup's rename (boot-verify) | never asked | | game up at +45 s as always |
+
+   Every later start from a path that has been answered is quick again (connectivity test 0 to 1 s), and so is
+   a start after a rename back to a path answered earlier that day. So the stall is as long as a person takes
+   to answer, and a launcher that waits 120 s for the sign-in fails when nobody answers in time. The answers
+   above were James's, at the Studio. **Not explained:** why P4 (2026-11-18, the same hand rename) saw no
+   question, and why the wrapper with the self-built engine is never asked. **Besides that**, with the
+   question out of the way, a start of Surviving Mars is about 17 s slower than before the rename, every
+   time: logon 27 to 30 s after the start (8 to 12 s before), window after 44 to 47 s (26 to 28 s before);
+   inside W0's 30 s, and not explained.
+
+   **What it changes in this plan, to be folded and checked before W3:** section 5's row "a first start a few
+   seconds slower" and the notes of `v0.3.0` are wrong for these wrappers: the first start after the update
+   shows a question from macOS about the microphone and waits for it. A player who does not see it (it can be
+   behind the progress window) gets "Steam did not sign in by itself". The choices are James's: say it in
+   the notes and in the launcher's step line; let the launcher wait for as long as the question is up; or keep
+   Steam from asking for the microphone at all. Section 9's rollback is touched too: a rename back to an old
+   name is a path answered before, so it does not ask again.
 2. **Somebody at the Studio started Surviving Mars during step 2.** At 15:17:36, four seconds after
    boot-verify began, Finder opened 14unch3r, and 2.5 s later 14unch3r started the game's app (read in the
    system log: Finder's action, the launch of 14unch3r, its `open`, the launch of the game's app). No
@@ -1428,6 +1449,8 @@ three names, each wrapper's `Info.plist`, and both `--check` outputs; the output
    Replaced" at 15:18:00), so that session's saves were not uploaded then (the second try of step 3 uploaded
    afterwards). Step 2's verdict stands: the two Steams were in different wrappers and boot-verify judges the
    game's own log. James, asked the same day: "Yes, that was us." So it was a person at the Studio, and W2's later starts wait until he says the Studio is free.
+
+**State when W2 stopped:** the three wrappers under the names setup gave them, each marked, each started at least once since its rename with the microphone question answered; nothing of Wine or Steam running; no lock and no crash marker in any of them. The outputs of every start are in `<workspace>/wrapper-names-w2/`, with the two small scripts that followed them.
 
 **Also seen:** the macOS Steam's helper `ipcserver` was running throughout (not a client, left alone); the
 Surviving Mars wrapper carries the one-byte `ntdll.dll` of issue #30 since that morning, which a rename does

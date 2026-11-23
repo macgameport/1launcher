@@ -145,8 +145,8 @@ app, and a wrapper opened directly starts Steam outside the launcher. Setup now 
 **What setup does.** At its next run (the installer opened again, or setup in a checkout) it writes the mark and
 renames the wrapper: nothing is copied. It says what it renamed. It stops, and changes nothing, while the game or
 another launch or install is using the wrapper; when the rename cannot be made safely for another reason, it skips
-it, says why, and tries again at its next run. The first start after the rename can take a few seconds longer;
-Steam stays signed in.
+it, says why, and tries again at its next run. At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
+way: Steam waits for the answer, then signs in as before.
 
 **What stops working until you point it at the new name:** anything of yours that names the old path: a Dock
 item made from the wrapper, an alias, a saved command. The game's app and 14unch3r find the wrapper whatever its

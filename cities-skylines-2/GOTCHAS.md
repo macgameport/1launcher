@@ -2605,7 +2605,29 @@ is cosmetic. Never point a dyld search path into a wrapper bundle for a throwawa
   120 s sign-in wait expired first and reported *"Steam did not sign in"*, which misnames it. Wine
   carried on by itself once the sheet closed; the next launch was not re-verified. **Tell:**
   `osascript -e 'tell application "System Events" to get value of every static text of every window of process "CoreServicesUIAgent"'`.
-  Don't click Cancel; wait, then relaunch.
+  Don't click Cancel; wait, then relaunch. (Since 2026-11-23 the launchers wait ten minutes and say what
+  may be holding Steam up: the next entry.)
+
+## After a wrapper is renamed, macOS asks about the microphone again and Steam waits for the answer (2026-11-23)
+
+**macOS keeps Wine's answer to "may it use the microphone" by the PATH of `wine64`, not by anything inside the
+wrapper.** So the first Steam start from a path it has not run from asks again, one second after `steam.exe`
+starts, and Steam logs nothing more (no connectivity result, no logon) until someone answers. Measured on the
+Studio at wrapper-names' W2, five starts of five in wrappers whose Wine came from Porting Kit: stalls of 77 to
+116 s while a person answered, and twice the launcher's 120 s sign-in wait ran out first and said "Steam did not
+sign in by itself", which again misnames it. The wrapper with the self-built engine was never asked, and a hand
+rename on 2026-11-18 (P4) raised no question either: neither is explained.
+
+- **Tell:** `/usr/bin/log show --start '<time>' --style compact --predicate 'process == "tccd" AND eventMessage
+  CONTAINS "AUTHREQ_PROMPTING"'` shows `service=kTCCServiceMicrophone, subject=<the wrapper>/.../wine64`; the
+  `AUTHREQ_RESULT` with `authReason=2` that follows is the person's answer. In the tool's zsh, write
+  `/usr/bin/log`: `log` alone is a shell builtin and prints nothing.
+- **What was done:** the launchers' shared `signin_wait` waits 600 s (`L1_SIGNIN_SECS`), says after 45 s
+  "Still signing in. If macOS asks a question, answer it…", and ends early only for a Steam that was up and
+  is gone. The instruments that start a launcher (`scripts/boot-verify.sh`, Surviving Mars's
+  `tools/licence-wait-probe.sh`) set 120. Plan: `docs/plans/wrapper-names.md`, "W2 fold".
+- **Not done:** keeping Steam from asking for the microphone at all (neither game needs it). It needs a probe.
+- A path that has been answered is not asked again, a rename back to it included.
 
 ## Wine's per-directory Makefile is a stub: `gmake -C dlls/win32u win32u.so` is always "up to date" (2026-10-10)
 

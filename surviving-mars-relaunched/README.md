@@ -97,7 +97,7 @@ Overrides, all optional: `SM_STATE` (where backups and run logs go, default
 `~/Library/Application Support/1launcher/surviving-mars-relaunched`), `SM_WORK` (where `make-engine.sh` builds a standalone
 engine, default `~/Library/Developer/1launcher/surviving-mars-relaunched`), `SM_QUIET=1` (alerts, and the progress window or notifications, instead of terminal output), `SM_PANEL=1` (set by the app when its progress window is up),
 `SM_UPDATE=ask|apply|skip` (a waiting game update; default asks), `SM_LICENCE_WAIT` (seconds after
-sign-in, default 15), `SM_WRAPPER`, `SM_ENGINE`, `SM_STEAM_ENGINE` (launcher); `ENGINE_SRC`,
+sign-in, default 15), `L1_SIGNIN_SECS` (how long the launcher waits for Steam's sign-in, default 600), `SM_WRAPPER`, `SM_ENGINE`, `SM_STEAM_ENGINE` (launcher); `ENGINE_SRC`,
 `CX_GPTK` (make-engine.sh); `SPLIT_*` (split-wrapper.sh, for its test).
 
 On a Mac whose D3DMetal came from CrossOver, after CrossOver updates it: `bash tools/make-engine.sh --install "$(bash ../common/wrappers.sh find game 3215050)" --rebuild`.

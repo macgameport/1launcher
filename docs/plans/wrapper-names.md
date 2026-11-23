@@ -1420,14 +1420,14 @@ three names, each wrapper's `Info.plist`, and both `--check` outputs; the output
    be taken out: item 2. **What it needs:** a second start of each, to see whether only the first is slow; it
    bears on section 5's row "a first start a few seconds slower" and on the notes of `v0.3.0`, and on a player
    whose first start after the update would say "Steam did not sign in by itself".
-2. **Somebody started Surviving Mars on the Studio during step 2.** At 15:17:36, four seconds after
+2. **Somebody at the Studio started Surviving Mars during step 2.** At 15:17:36, four seconds after
    boot-verify began, Finder opened 14unch3r, and 2.5 s later 14unch3r started the game's app (read in the
    system log: Finder's action, the launch of 14unch3r, its `open`, the launch of the game's app). No
    screen-sharing or remote login was logged, and it was not a command of this session. The game ran from the
    old-named wrapper for 67 s and was closed; its Steam had been pushed offline by step 2's ("Session
    Replaced" at 15:18:00), so that session's saves were not uploaded then (the second try of step 3 uploaded
    afterwards). Step 2's verdict stands: the two Steams were in different wrappers and boot-verify judges the
-   game's own log. Who it was is James's to say; until then no further start is made on the Studio.
+   game's own log. James, asked the same day: "Yes, that was us." So it was a person at the Studio, and W2's later starts wait until he says the Studio is free.
 
 **Also seen:** the macOS Steam's helper `ipcserver` was running throughout (not a client, left alone); the
 Surviving Mars wrapper carries the one-byte `ntdll.dll` of issue #30 since that morning, which a rename does

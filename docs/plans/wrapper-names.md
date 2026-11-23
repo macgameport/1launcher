@@ -3,7 +3,7 @@
 **Status: check-it'd 2026-11-21 — build-ready-with-fixes (pass 3, the W0 fold re-checked, folded).** W0 is done:
 P0 to P5 are recorded in section 1 (2026-11-18 and 19), James answered section 8 (2026-11-20), and step 8's fold
 and its re-check are at the foot ("W0 fold", 2026-11-21). W1 is built on the branch `wrapper-names` (as-built
-header below); W2, the Studio, is next, on James's word; the MacBook's reads of W3 step 0 are taken at the first
+header below); W2 ran on the Studio on 2026-11-23, in part: its three wrappers are renamed, steps 1 to 5 and the index half of step 6 are recorded at the foot ("W2 on the Studio"), one start failed on the way, and the typed half of step 6 and step 7 are still to come, on James's word; the MacBook's reads of W3 step 0 are taken at the first
 visit there. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
@@ -1386,6 +1386,52 @@ before folding M3 and S5. None rejected.
 
 The issues exit criterion 7 names were opened on James's word the same day, #27 to #29, and the verdict was posted
 on #26.
+
+## W2 on the Studio (2026-11-23): renamed; steps 1 to 5 and the index half of 6 recorded; step 6's typed half and step 7 open
+
+On James's word ("W2 on the Studio"), from the branch at `efe176b`. He confirmed before the first start that
+Steam was closed everywhere else on the account. Recorded before step 2, in `<workspace>/wrapper-names-w2/`: the
+three names, each wrapper's `Info.plist`, and both `--check` outputs; the outputs of every step are there too.
+
+| Step | What ran | Result |
+|---|---|---|
+| 1 | `setup.sh --check` for each game | **Pass.** Cities: Skylines II's names two renames (the game's wrapper and the Windows Steam's), Surviving Mars's one, neither anything else |
+| 2 | Cities: Skylines II's setup; then `boot-verify.sh`, detached | **Pass.** Setup exit 0 in 10 s: `CS2dxmt11.app` to `wrapper-949230.app`, `CS2dxmt11-pk110.app` to `wrapper-0.app`, 10 of 10 patch scripts, the game's app, 14unch3r and `S734M.app` rebuilt. Boot-verify `20261123-151732`: game up at +45 s, menu reached, graceful exit, `VERDICT: PASS`, Steam down, no crash marker |
+| 3 | Surviving Mars's installer | **Pass.** Exit 0 in 5 s, steps 1 to 6 `OK`, `SurvivingMars.app` to `wrapper-3215050.app`, no `.launcher.lock` left |
+| 3 | the game started from 14unch3r, first try (15:22:10) | **Failed.** "Steam did not sign in by itself." Steam's logs stop one second after its start: its connectivity test was started and never reported, and no logon was tried in the two minutes the launcher waits. The launcher stopped Steam and showed its alert; nothing was left running and no crash marker |
+| 3 | the same, second try (15:27:22) | **Pass.** Window 47 s after the start (P4's "before": 26, 26, 28 s; so 19 to 21 s slower, inside the 30 s). Steam's connectivity test took 5 s and the logon came 30 s after the start, `OK` with the saved login and no prompt. Menu reached (the game's log judged PASS after it closed); closed by a window-close message; "Steam Cloud: saves uploaded."; Steam down; no lock, no crash marker |
+| 4 | `S734M.app` opened | **Pass by the logs; the window was not looked at.** Steam in `wrapper-0.app` logged on `OK` with the saved login and no prompt, but 2 min after its start: its connectivity test took 99 s. Shut down with `steam.exe -shutdown`; nothing left holding the wrapper; no crash marker |
+| 5 | `wrappers.sh list`; 14unch3r `--list`; `lsregister -dump` | **Pass.** Three marked wrappers, no `L1RenamePending`; two games and one Steam app, all `ready`. Launch Services: 0 path lines for each old name and 1 for each new; records with the Surviving Mars app's identifier 2, with 14unch3r's 3, with `S734M.app`'s 1 (a record, not a condition) |
+| 6 | `mdimport` of each wrapper, then `mdfind` | **Index half: pass.** The old names were gone at the first look. `surviving`, `mars`, `smr`: `Surviving Mars Relaunched.app` alone. `cities`, `skylines`: `Cities Skylines II.app` alone. `cs2`: that app and `S734M.app`. `steam`, `store`, `s734m`: `S734M.app`. `launcher`, `1launcher`, `14`: `14unch3r.app`. No wrapper for any of the twelve words; `wrapper` returns the three. **Typed half: not done** (James was not at the Studio) |
+| 7 | the hand renames and the starts after them | **Not done** |
+| 8 | what names the old paths outside the repo | the memory notes were given a line with the new names; Porting Kit not looked at |
+
+**Two things W2 found that the plan did not expect.**
+
+1. **A first start of Steam after the rename can be far slower than P4's 7 to 9 s, and one failed.** Three
+   starts of Steam in a renamed wrapper that came from Porting Kit's Wine: no connectivity result in two
+   minutes (Surviving Mars, first try), 5 s and a logon after 30 s (its second try), 99 s (the Windows Steam's
+   first). The same test took 1 s at 15:17 in the Surviving Mars wrapper under its old name. Cities: Skylines
+   II's wrapper, whose engine is the self-built one, started as always right after its rename (step 2). **Not
+   established:** whether this is the rename, the mark written into `Info.plist`, or something of that
+   afternoon. Read and ruled out: the Mac's own network (the same address answered `curl` in 0.15 to 0.19 s
+   three times, no VPN, the default route unchanged) and a long check by macOS (`syspolicyd` logged 261, 185 and
+   352 lines in the first minute of each start and 0 to 39 in the minutes of the stall). A confound that cannot
+   be taken out: item 2. **What it needs:** a second start of each, to see whether only the first is slow; it
+   bears on section 5's row "a first start a few seconds slower" and on the notes of `v0.3.0`, and on a player
+   whose first start after the update would say "Steam did not sign in by itself".
+2. **Somebody started Surviving Mars on the Studio during step 2.** At 15:17:36, four seconds after
+   boot-verify began, Finder opened 14unch3r, and 2.5 s later 14unch3r started the game's app (read in the
+   system log: Finder's action, the launch of 14unch3r, its `open`, the launch of the game's app). No
+   screen-sharing or remote login was logged, and it was not a command of this session. The game ran from the
+   old-named wrapper for 67 s and was closed; its Steam had been pushed offline by step 2's ("Session
+   Replaced" at 15:18:00), so that session's saves were not uploaded then (the second try of step 3 uploaded
+   afterwards). Step 2's verdict stands: the two Steams were in different wrappers and boot-verify judges the
+   game's own log. Who it was is James's to say; until then no further start is made on the Studio.
+
+**Also seen:** the macOS Steam's helper `ipcserver` was running throughout (not a client, left alone); the
+Surviving Mars wrapper carries the one-byte `ntdll.dll` of issue #30 since that morning, which a rename does
+not touch.
 
 ## Review log
 

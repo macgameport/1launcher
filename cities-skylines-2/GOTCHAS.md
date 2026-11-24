@@ -3274,6 +3274,13 @@ else. Measured on copies, at build 26404411 (`docs/plans/errno-by-name.md`, sect
 - **`patch_fshandle.py` is still a byte search** (a 13-byte fingerprint, the same for its search and its
   "already patched" test since #24), and the other four byte-search scripts count their sites.
 
+## A test file started under `nohup` can fail for the runner's reason (2026-11-24)
+
+`nohup` leaves the hang-up signal ignored in everything it starts. `cities-skylines-2/scripts/test-install.sh`
+sends a hang-up to an installer and expects exit 129; under `nohup` the signal does nothing, the test's own
+guard ends the run with a TERM (143), and three checks fail. Run the test files directly, or detached with
+`( bash run.sh > log 2>&1 & )`; never with `nohup`. (Found while running all 43 files for `v0.3.0`.)
+
 ## A race test that suspends a thread can be blind on one build and sharp on another (2026-11-24)
 
 **"No fault in 600 s" cleared nothing, because the test could not stop the thread where the fault is.** Issue #30's

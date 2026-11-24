@@ -9,12 +9,12 @@ a rename and Steam's first start waits for the answer; that is folded and checke
 waits, says so") and built as W2b (`5d23ddf`), whose live step passed on the Studio the same day ("W2b on the Studio"); W3, the
 MacBook, is next;
 the read-only half of W3 step 0 was taken on the MacBook on 2026-11-23 ("W3 on the MacBook": its three wrappers
-pass every test of a candidate), and so was the typed half (the window puts a wrapper first for `surviving mars` and for `cs2`); P1's hand rename there cleared the fault for `surviving mars`, so branch B is not needed; W3's steps 1 to 7 ran there on 2026-11-23 and 2026-11-24 and James called W3 passed on 2026-11-24, with findings (#28, #32), so W3b, the merge and `v0.3.0`, is next. The
+pass every test of a candidate), and so was the typed half (the window puts a wrapper first for `surviving mars` and for `cs2`); P1's hand rename there cleared the fault for `surviving mars`, so branch B is not needed; W3's steps 1 to 7 ran there on 2026-11-23 and 2026-11-24 and James called W3 passed on 2026-11-24, with findings (#28, #32); W3b is done: the branch was merged into `main` as `35f0eb8` on 2026-11-24 and `v0.3.0` cut on it, with its page; W4, `release`, is on James's word. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
 > **🔧 As-built (2026-11-24): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
-> `release`); W2 run on the Studio; W2b (the sign-in wait) built (`5d23ddf`) and its live step passed there; W3 passed on the MacBook on 2026-11-24 with findings (#28, #32); W3b and W4 not
-> started.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
+> `release`); W2 run on the Studio; W2b (the sign-in wait) built (`5d23ddf`) and its live step passed there; W3 passed on the MacBook on 2026-11-24 with findings (#28, #32); W3b done the same day (merged into `main` as
+> `35f0eb8`, `v0.3.0` cut on it); W4 not started.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
 > `5d8d263` and `6e9a3cf` (1.3 to 1.5: makers, installers, launchers, setups, the other readers, 14unch3r),
 > `78328e1`, `e9f7431`, `0fc680a` (the new cases: WT4b, WT11, WT14 to WT17), `422b183` (the tests that read a
 > real wrapper), `a2f935d` (1.6, the 19 research scripts), `11c1fd1` (1.7, the release gate, and WT12's list), and
@@ -1763,6 +1763,19 @@ were found, and the wording is corrected in the same commit as this paragraph:
 Not changed: step 7 does not say which start was from the game's app and which from 14unch3r (James's to say),
 and it does not say how the Steam that the launcher's `-shutdown` started at 00:51:50 ended.
 
+
+### W3b (2026-11-24, on James's word: "Go ahead we can return to this other snag later"): merged, `v0.3.0` published
+
+The snag is issue #32's (Steam gives up after three minutes with the microphone question open; the launcher fix
+is not built), left for later by that word. `CHANGELOG.md`'s Unreleased text, read against what was built and
+corrected the same night, became the section `v0.3.0 (2026-11-24)` (`311368a`). All 43 test files exit 0 on the
+branch tip `311368a` and again on the merge commit: 42 in one run and `cities-skylines-2/scripts/test-install.sh`
+run by itself, because the first run was started under `nohup`, which leaves a hang-up signal ignored, and that
+file sends one (its three failures were the runner's; run directly it passes, 163 cases; the run on the merge
+was started without `nohup` and all 43 passed in it). Merged with `--no-ff` as `35f0eb8`, which differs from the
+branch tip only in `docs/plans/local-files-layout.md` (`main`'s `210117a`); pushed; `v0.3.0` tagged on it and
+its page made from the section by the commands of the root `CLAUDE.md`. `release` is not moved: W4. The branch
+`wrapper-names` is kept, because posted comments link to files on it.
 
 ## Review log
 

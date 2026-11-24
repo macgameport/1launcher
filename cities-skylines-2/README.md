@@ -33,7 +33,9 @@ Own the game on Steam, on an Apple Silicon Mac? Paste one line into Terminal:
 The installer makes the Wine wrapper, puts Steam for Windows in it, waits while you sign in and the game
 downloads (about 100 GB), applies the patches, and builds a double-clickable app with the game's own
 icon. **[INSTALL.md](INSTALL.md) walks through it step by step**, including the one in-game setting worth
-changing (Display Mode → Fullscreen Window), and has the same steps by hand.
+changing (Display Mode → Fullscreen Window), and has the same steps by hand. From v0.3.1, 14unch3r says when a
+new version of 1launcher is out, and one click runs the installer again
+([Updates, in INSTALL.md](INSTALL.md#the-quick-way)).
 
 With git, and a wrapper you made yourself:
 

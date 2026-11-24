@@ -138,6 +138,8 @@ button (parent as-built deviation 8).
 
 ### 2.1 The grid
 
+> Extended by `docs/plans/built-in-update.md`, 3.5 (the update's line at the foot of the window): the grid is 24 points higher when a line stands at its foot, and the scroll rule counts that line's height.
+
 Tiles replace rows. The rows, their order, their states and their titles are the parent's, unchanged.
 
 | Constant | Points |
@@ -216,6 +218,8 @@ Every colour, alpha and size of 2.1 to 2.5 is a named constant in one `enum Look
 (`:562-563`); they move above it, so that a text mode can build the grid.
 
 ### 2.4 Text, selection, hover and grey tiles
+
+> Extended by `docs/plans/built-in-update.md`, 3.5 (the update's line at the foot of the window): the foot line's text, with its own contrast line of 4.5 or more.
 
 - **Title:** 12 points semibold, white, centred, word-wrapped, at most 2 lines, the second cut at its tail
   with an ellipsis. Under it a shadow: black at alpha 0.75, blur 3, offset 1 down. No shadow on the
@@ -298,6 +302,8 @@ The drawing moves into `iconBitmap(small:)`, which `--icon` writes and `--icon-a
 `clear` when its alpha is under 0.5, `ink` when its red is over 0.9, and `body` otherwise.
 
 ### 2.7 Interaction and VoiceOver
+
+> Extended by `docs/plans/built-in-update.md`, 3.5 (the update's line at the foot of the window): the foot line is a button to VoiceOver, a click on it opens a sheet and never starts a game, and a menu item "Check for Updates…" stands above "Quit 14unch3r".
 
 A `GridView` holds one `TileView` per row and is the window's only key view and first responder. It is
 made in one function, `makeGrid`, and filled by one, `show(rows:offers:last:)`, which the window, `--grid`

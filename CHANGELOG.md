@@ -7,6 +7,30 @@ the pasted line installs it.
 
 ## Unreleased
 
+**14unch3r says when a new version is out, and one click updates** (docs/plans/built-in-update.md). At the foot
+of its window 14unch3r shows a line when a newer version of 1launcher is out. A click shows what changed, and
+Update opens Terminal and runs the installer again for every game set up on this Mac. A game's app says so too,
+in a notification, at the next two starts. Nothing is installed until you click Update. **On a Mac set up
+before this version, paste each game's installer line once more:** nothing can reach it before that. With two
+games, paste both lines: a game whose line was not pasted is named, and left as it is, at every update.
+
+**What the check sends.** By itself at most once a day, when you open 14unch3r or start a game, this Mac asks
+GitHub for one public file, the list of changes. GitHub sees this Mac's network address and the time, as for
+any page. Nothing about you or your games is sent. To switch the check off:
+`touch ~/Library/Application\ Support/1launcher/_update/off`; delete that file to switch it on again. A Mac
+where a game was set up from a checkout or from a named version never asks, and is never offered an update.
+
+**If you pasted the line with a variable in front** (`CS2_PATCH_DIR=...` or `L1_KEEP_WRAPPER_NAMES=1`): do not
+use Update in 14unch3r. It runs the installer without them, which moves the folder or renames the wrappers.
+Paste your line again instead.
+
+**By hand,** on a Mac with no 14unch3r: paste the installer line with the word `update` where the game's ID
+stands.
+
+**Two installer messages are fixed.** A version that does not exist was reported as "GitHub could not be
+reached"; the installer now says that GitHub has no such version. And a finished install is no longer warned
+that the disk is short of the space a new install needs.
+
 ## v0.3.0 (2026-11-24)
 
 **Setup renames the Wine wrappers in `~/Applications`** (docs/plans/wrapper-names.md). Spotlight offered them

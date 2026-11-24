@@ -68,6 +68,19 @@ Good to know:
 - **Stopped part way?** Paste the line again. It carries on from the step it stopped at. Closing the
   window or pressing Control-C stops the installer only: Steam stays open. Pasting the line again on a
   finished install is also how to update.
+- **Updates (from v0.3.1).** When a new version of 1launcher is out, 14unch3r says so at the foot of its
+  window, and the game's app says so in a notification. Click the line, read what changed, and click Update:
+  Terminal opens and runs the installer again for every game set up on this Mac. Nothing is installed until
+  you click Update. Pasting the installer line again does the same. On a Mac with no 14unch3r, paste the line
+  with the word `update` where the game's ID stands.
+- **What the check sends.** By itself at most once a day, when you open 14unch3r or start a game, this Mac
+  asks GitHub for one public file, the list of changes. GitHub sees this Mac's network address and the time,
+  as for any page. Nothing about you or your games is sent.
+- **To switch the check off:** `touch ~/Library/Application\ Support/1launcher/_update/off`. Delete that
+  file to switch it on again. With it off, update by pasting the installer line.
+- **If you pasted the line with a variable in front** (`CS2_PATCH_DIR=...` or `L1_KEEP_WRAPPER_NAMES=1`): do
+  not use Update in 14unch3r. It runs the installer without them, which moves the folder or renames the
+  wrappers. Paste your line again instead.
 - **If you use mods from Paradox Mods.** A new install starts with them switched off, and through Steam
   Cloud they are then switched off on your other install too. At its first start the game asks again for
   its two agreements and for your Paradox account, and warns that the mods could not be loaded. Log in,

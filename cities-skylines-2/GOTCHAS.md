@@ -3258,3 +3258,26 @@ else. Measured on copies, at build 26404411 (`docs/plans/errno-by-name.md`, sect
   "already patched".
 - **`patch_fshandle.py` is still a byte search** (a 13-byte fingerprint, the same for its search and its
   "already patched" test since #24), and the other four byte-search scripts count their sites.
+
+## A race test that suspends a thread can be blind on one build and sharp on another (2026-11-24)
+
+**"No fault in 600 s" cleared nothing, because the test could not stop the thread where the fault is.** Issue #30's
+test (`common/wine-wait-race.sh`) suspends a waker at random moments to hold it inside a gap of two or three
+instructions. Under the Surviving Mars wrapper's Wine 10.0 it faults within 5 s. Under the Cities: Skylines II
+engine (Wine 11.16) it ran 60 s and 600 s with no fault, although that engine's compiled `RtlWakeAddressAll`
+has the same order (the address cleared at `+0xbb`, the entry's next read again at `+0xc7`).
+
+- **Measured:** a scratch variant called `GetThreadContext` after each `SuspendThread` and counted the
+  instruction pointers. A suspended waker is reported at some instructions and never at others, in both builds.
+  Wine 10.0: 316 of 96,043 suspensions in the function were inside the gap. Wine 11.16: none of 53,649 was at
+  either instruction of the gap (`+0xc3`, `+0xc7`); the nearest were just before the clear and just after the
+  second read.
+- **Inferred, not measured:** the processor can still leave the thread between any two instructions when the
+  scheduler takes it away, so the 11.16 engine is not cleared. Why a suspension stops only at some instructions
+  was not looked into (these are x86_64 programs on an Apple silicon Mac).
+- **The scheduler alone did not open the gap in a test:** with no suspending, 300 threads on 18 processors ran
+  300 s on the Wine 10.0 file with no fault. So there is no test here that can clear a build; reading the
+  compiled code is what decides.
+- **Rule:** before a clean run of a test that works by stopping a thread is taken as a result, show that the
+  thread can be stopped at the place that matters on that build. The scratch variant and its outputs are in the
+  workspace, `probe-issue30/` (`rip/`, `rip-*.txt`, `run-1116-*.txt`).

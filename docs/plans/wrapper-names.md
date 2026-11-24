@@ -1016,6 +1016,8 @@ W3.
 After W2 and W3 are green: the branch is merged into `main` with `--no-ff`, pushed, and `v0.3.0` is cut on the
 merge by the commands of the root `CLAUDE.md` (WD7). `CHANGELOG.md`'s section is read against what was built
 before the tag.
+Its sentence about Surviving Mars starting about 17 s slower is corrected or removed first, as issue #33
+decides (added 2026-11-23: the readings do not tell the rename from the `ntdll.dll` change of #30).
 
 ### W4 — `release`
 
@@ -1484,6 +1486,8 @@ three names, each wrapper's `Info.plist`, and both `--check` outputs; the output
    game's own log. James, asked the same day: "Yes, that was us." So it was a person at the Studio, and W2's later starts wait until he says the Studio is free.
 
 **State when W2 stopped:** the three wrappers under the names setup gave them, each marked, each started at least once since its rename with the microphone question answered; nothing of Wine or Steam running; no lock and no crash marker in any of them. The outputs of every start are in `<workspace>/wrapper-names-w2/`, with the two small scripts that followed them.
+
+**Issues filed from W2's findings (2026-11-23, on James's word).** #32: keep Steam from asking for the microphone at all, a probe first, with what is not explained (the self-built engine never asked; P4 saw no question; a new install's first start; a denied answer). #33: the 17 s. **A correction to finding 1's last sentence, found while filing it:** the Surviving Mars wrapper got the one-byte `ntdll.dll` of issue #30 that morning and its rename that afternoon, P4's "before" times are from 2026-11-18 with the original file, and the one start between the two changes was not timed. So "slower than before the rename" is the order of events and not a cause; #33's first step is one timed start with the original file put back. The two readings for #28 below are on that issue as a comment.
 
 **A reading for issue #28, asked by James ("does there need to be a shortcut in the actual Applications folder?").** With a copy of the game's app put into `/Applications` (784 KB; indexed there as an application within seconds, beside the one in `~/Applications`), James typed `surviving mars` again: the field still completes to the repo's folder, and the rows are that folder, the folder in Pictures, a Markdown file of the repo and two web results. No app among the five rows. So on this Mac the system folder does not bring the app into the plain window; one reading, taken a minute after the copy was made, with no use of the copy behind it. The copy went to the Trash and was unregistered. An alias was not tried: Spotlight lists an alias as a file, not as an application.
 

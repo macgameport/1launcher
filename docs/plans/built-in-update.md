@@ -1224,6 +1224,32 @@ from the cloud's, was replaced by the cloud's newer copy** (changed on the other
 that only the cloud had were added. The copy made before holds the replaced one. This is the case the guide
 called not measured, and the guide now says it.
 
+## UL2 on the Studio (2026-11-24, on James's word: "Yes, run UL2"): passed
+
+The branch pushed at `a31d0a3`, `L1_UPDATE_DIR` not set. Before: no `_update` folder on this Mac; the installed
+Surviving Mars launcher was `v0.3.0`'s; 14unch3r had no `L1UpdateDir`; nothing of Steam or Wine running. By hand,
+in the real `_update` (made with its `installed/`, both mode 700): one stamp `installed/3215050` on the line
+`built-in-update` at `v0.0.9`. Then the branch's own root `install.sh` was fetched from
+`raw.githubusercontent.com/.../built-in-update/install.sh` and run as
+`/bin/bash -c "<it>" 1launcher-install update built-in-update`, with its standard input closed.
+
+| What | Result |
+|---|---|
+| The fetch | "Fetching 1launcher (built-in-update) ...", then "1launcher at commit `a31d0a357a4c0ea45b9f7439df368fa5201b6565`": the commit pushed |
+| Surviving Mars's installer | **Pass.** Its seven steps, every one `OK` (the wrapper, D3DMetal 3.0, Steam and the game as they were), then setup: the launcher and its helper deployed, the game's app, the progress panel and 14unch3r built. No question was asked |
+| Setup's closing words | "Cities: Skylines II was set up by an older version. Paste its installer line once, so that it gets updates too." |
+| The update's closing block | "Cities: Skylines II: set up by a version that keeps no record. Paste its installer line once: `<the pasted line with 949230>`", then "Surviving Mars: Relaunched: updated.", then "Not everything was updated. Do what the lines above say." Exit 3. Cities: Skylines II's installer was not run |
+| How long | 8 s from the start of the update to its exit |
+| The stamp | `built-in-update`, `v0.3.0`, the commit above, the time: the branch's version on the line `built-in-update` |
+| The state afterwards | `manual`, installed `v0.3.0`, detail `built-in-update`. `_update` holds `installed/` and `updates.sh` (the branch's, byte for byte) and nothing else |
+| What setup deployed | the branch's launcher (with the notice block) and `update-dir` beside it, naming `_update`; 14unch3r rebuilt with `L1UpdateDir` at `_update`, and `--update-tool` from inside it prints the tool. The wrapper's own files are untouched (its `ntdll.dll` has the hash it had before) |
+| The game from its app afterwards | **Pass.** Started at 16:28:23: logon 28 s and window 44 s after the start, the menu reached, closed there, `rc=0`, "saves uploaded"; no notice in the launcher's log, as the state `manual` has it |
+| Exit criterion 3 on this Mac | **Pass.** After that game start, after 14unch3r was opened (three tiles, no line at the foot, 444 by 204) and after "Check for Updates…" was chosen in it: `_update/offer`, `_update/tried` and `_update/notes.md` do not exist. The menu's answer: "No update is offered on this Mac." and "A game here was set up from a named version. Paste its installer line from the guide to follow new versions again." |
+
+**How the Studio stands afterwards.** Its Surviving Mars and its 14unch3r run the branch's code, and stay so
+until a setup from another tree is run; its state is `manual`, so it asks GitHub nothing and is offered nothing.
+Cities: Skylines II is as it was (`v0.3.0`'s files, no stamp). Exit criterion 2 still wants UL3, the MacBook.
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |

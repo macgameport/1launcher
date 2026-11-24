@@ -9,7 +9,7 @@ shared block gained `signin_wait`, so this plan's new rule is 11 and its mutants
 still say 10 and 17), and its notice block sits in launchers that wait ten minutes for Steam's sign-in.
 Written 2026-11-23 on the branch `built-in-update`, cut from `wrapper-names` at `efe176b`; every `file:line`
 below was read at that commit. Pass 1's findings, and where each went, are at the foot ("Review corrections").
-Tracking: no issue yet (opening one is a public post, on James's word). James answered the fifteen decisions of section 9 on
+Tracking: issue #34 (opened 2026-11-23); the two defects of step U0 are on record as issue #31. James answered the fifteen decisions of section 9 on
 2026-11-23: fourteen as recommended, which is what the design below is built on, and UD9 his own way (the
 release that carries this raises the third number).
 

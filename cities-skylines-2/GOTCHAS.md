@@ -2629,6 +2629,30 @@ rename on 2026-11-18 (P4) raised no question either: neither is explained.
 - **Not done:** keeping Steam from asking for the microphone at all (neither game needs it). It needs a probe.
 - A path that has been answered is not asked again, a rename back to it included.
 
+
+## Steam waits 20 s before it logs on when DNS gives IPv6 addresses that cannot be reached (2026-11-23)
+
+**A start that is about 20 s slower than yesterday's is the network before it is anything of ours.** At its start
+Steam tests IPv6 against two hosts of its own. When this Mac's DNS returns IPv6 addresses for them and IPv6 does
+not get through, both tests time out and Steam calls its logon 20 s later; when DNS returns none, it logs on 3 to
+6 s after its start. Measured in the Surviving Mars wrapper's log on the Studio: of 38 starts from 2026-11-11 to
+2026-11-23, the 13 with two timeouts took 23 to 27 s to the logon call (one 90 s, a microphone question) and the
+25 others 3 to 6 s. It cost a wrong finding: on 2026-11-23 the DNS answers changed three minutes before a wrapper
+was renamed, and the slower starts were first put down to the rename, then suspected of issue #30's `ntdll.dll`
+(issue #33; one start with each file settled it: 27 s to logon and 44 s to the window with both).
+
+- **Tell:** in `<prefix>/drive_c/Program Files (x86)/Steam/logs/connection_log.txt`, a slow start has
+  `IPv6 HTTP connectivity test (...) - TIMEOUT` and `IPv6 UDP connectivity test (... / <an IPv6 address>) -
+  TIMEOUT`, and `LogOn() called` 20 s after the second. A quick one has `IPv6 UDP connectivity test (...) -
+  FAILED, no addresses resolved`. The file holds account numbers: quote times from it, never lines.
+- **The Mac's side:** `dscacheutil -q host -a name ipv6check-udp.steamserver.net` lists `ipv6_address` lines in
+  the slow state; `/usr/bin/log show --predicate 'process == "configd" AND eventMessage CONTAINS "network
+  changed"'` shows when DNS changed.
+- **Before comparing two starts' times, compare their IPv6 lines.** A "before" and an "after" taken on different
+  days are not a pair until both are in the same state.
+- **Not explained:** what changes the DNS answers on the Studio (not looked at: the VPN), and seven starts on
+  2026-11-10 that took 24 s with no IPv6 address resolved.
+
 ## Wine's per-directory Makefile is a stub: `gmake -C dlls/win32u win32u.so` is always "up to date" (2026-10-10)
 
 The build tree's `dlls/<x>/Makefile` forwards to the top-level Makefile, and the forwarded target

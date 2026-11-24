@@ -23,8 +23,7 @@ run. `--check` says what a run would do. A new install makes its wrapper under t
 after the rename macOS may ask once more whether wine64 may use the microphone** (it keeps that answer by the
 program's path, which changes with the wrapper's name). Answer it, either way: Steam waits for the answer and then
 signs in with its saved login. The launcher says so if the sign-in takes long, and waits ten minutes where it used
-to give up after two. On the one Mac measured, Surviving Mars then took about 17 s longer to start than before the
-rename, each time (44 to 47 s to its window, 26 to 28 s before); why is not known.
+to give up after two.
 
 **What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
 made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find a

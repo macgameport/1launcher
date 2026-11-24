@@ -239,6 +239,20 @@ acquire_lock() {   # <tries, 2 s apart> -- 0 = this launcher holds the lock; nee
 release_lock() { [ "$(lock_holder)" = "$$" ] && rm -f "$LOCK"; return 0; }
 acquire_lock 90 || die "Another launch in this wrapper is still running (pid $(lock_holder)). Wait for it to finish, then try again."
 trap release_lock EXIT
+# >>> update-notice (the same in both launchers: common/test-launcher-parity.sh compares the copies)
+# docs/plans/built-in-update.md, 3.6. At most two notices per new version of 1launcher, and a look at GitHub
+# in the background at most once a day. The look cannot delay or stop a start: it is never waited for. The
+# notice is waited for: it reads small local files and touches no network.
+_l1u="$(/bin/cat "$(CDPATH= cd -- "$(/usr/bin/dirname -- "${BASH_SOURCE[0]}")" && pwd)/update-dir" 2>/dev/null)"
+case "$_l1u" in /*) ;; *) _l1u="" ;; esac
+if [ -n "$_l1u" ] && [ -f "$_l1u/updates.sh" ] && [ ! -L "$_l1u/updates.sh" ]; then
+  _l1v="$(/bin/bash "$_l1u/updates.sh" --noted 2>/dev/null)"
+  _l1p='^v(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$'
+  [[ "$_l1v" =~ $_l1p ]] && note "1launcher $_l1v is out. Open the 14unch3r app to update."
+  ( /bin/bash "$_l1u/updates.sh" --refresh < /dev/null > /dev/null 2>&1 & )
+fi
+unset _l1u _l1v _l1p
+# <<< update-notice
 
 # 0) Ensure the binary patches are applied — a game update reverts them. All are idempotent and
 #    refuse to write if the pattern moved, so re-running is always safe. Step 2b calls this again

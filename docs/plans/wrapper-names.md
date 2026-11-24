@@ -8,8 +8,8 @@ wrappers are renamed and Spotlight offers none of them. It found that macOS asks
 a rename and Steam's first start waits for the answer; that is folded and checked ("W2 fold"; James: "Launcher
 waits, says so") and built as W2b (`5d23ddf`), whose live step passed on the Studio the same day ("W2b on the Studio"); W3, the
 MacBook, is next;
-the MacBook's reads of W3 step 0 are taken at the first
-visit there. The
+the read-only half of W3 step 0 was taken on the MacBook on 2026-11-23 ("W3 on the MacBook": its three wrappers
+pass every test of a candidate), and the typed half is open. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
 > **🔧 As-built (2026-11-23): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
@@ -1611,6 +1611,69 @@ parses the old loops or loses a sentence it quotes. Its findings, and where each
 | 7 | Section 9 untouched | section 9 |
 | 8 | The Troubleshooting row for "Steam did not auto-login" knew only the expired token; `L1_SIGNIN_SECS` had no home; the progress window's comment named another longest silence | item 6; item 4 |
 | 9 | Four things the test row asserted had no mutant | WT19 (parity 19 to 22) |
+
+## W3 on the MacBook (2026-11-23): step 0, the read-only half taken; the typed half is James's and is open
+
+Taken at 20:05 EST from `main` at `210117a`, before the branch was checked out; the branch was then checked out
+for this record only, and nothing of it has run. Nothing of Wine or Steam was running. Outputs in
+`<workspace>/wrapper-names-w3/` (`inventory.txt`, `index.txt`, `candidates.txt`). Setup has not run, and no
+wrapper is renamed or marked.
+
+**The candidates (3.2 and 3.4): all three pass, so setup may run here.**
+
+| Wrapper | Folder, owner, mode | Attributes on the bundle | Prefix, `wine64` | Holds | Marker |
+|---|---|---|---|---|---|
+| `CS2dxmt11.app` | a real folder, this user's, `drwxr-xr-x` | `com.apple.FinderInfo`, `com.apple.provenance`; no quarantine | yes, executable | `steam.exe`, `Cities2.exe` | none |
+| `SurvivingMars.app` | the same | the same | yes, executable | `steam.exe`, `Project Spark/Mars.exe` | none |
+| `CS2dxmt11-pk110.app` | the same | the same | yes, executable | `steam.exe`; neither game's program | none |
+
+`Contents` and the prefix folder are `drwxr-xr-x` in each (these are Porting Kit clones, not installer-made).
+The store candidate's other tests: `S734M.app`'s `L1Prefix` names `CS2dxmt11-pk110.app`'s prefix, and the two
+game apps' `L1Prefix` name the other two, so it is the wrapper of no game. No old-named app is in
+`/Applications`. `common/mac-inventory.sh`: exit 0; layout new, `~/cs2-patch` absent, Cities: Skylines II build
+26404411 in its wrapper, Surviving Mars build 25579348 in its own.
+
+**The "before": `mdls`.**
+
+| App | `kMDItemAlternateNames` | `kMDItemLastUsedDate` (UTC) | `kMDItemUseCount` |
+|---|---|---|---|
+| `CS2dxmt11.app` | the file name only | null | null |
+| `CS2dxmt11-pk110.app` | the file name only | null | null |
+| `SurvivingMars.app` | the file name only | 2026-11-17 15:20:07 | 1 |
+| `Cities Skylines II.app` | as on the Studio | 2026-11-17 15:13:12 | 4 |
+| `Surviving Mars Relaunched.app` | as on the Studio | 2026-11-23 06:52:10 | 62 |
+| `S734M.app` | as on the Studio | 2026-11-19 08:17:22 | 2 |
+| `14unch3r.app` | as on the Studio | 2026-11-23 09:15:06 | 70 |
+
+So the learned pick of #26 is one use of the Surviving Mars wrapper, on the day the fault was reported, against
+62 of the game's app since.
+
+**The "before": `mdfind -onlyin ~/Applications`, top-level apps.**
+
+| Word | Apps returned |
+|---|---|
+| `surviving`, `mars` | `Surviving Mars Relaunched.app`, **`SurvivingMars.app`**, `Surviving Mars.app` |
+| `smr` | `Surviving Mars Relaunched.app` |
+| `cities`, `skylines` | `Cities Skylines II.app` |
+| `cs2` | `Cities Skylines II.app`, `S734M.app`, **`CS2dxmt11.app`**, **`CS2dxmt11-pk110.app`** |
+| `steam`, `store`, `s734m` | `S734M.app` |
+| `launcher`, `1launcher`, `14`, `1L` | `14unch3r.app` |
+| `Steambuild`, `wineskin`, `949230`, `3215050`, `wrapper` | none |
+| `PortingKit`, `Paul The Tall` | the three wrappers |
+
+**One thing the Studio does not have: `~/Applications/Surviving Mars.app`.** It is not a wrapper and not this
+project's: a shortcut the macOS Steam made on 2026-10-30, whose program is `open steam://run/464920`, the
+original Surviving Mars. It answers to `surviving` and `mars`, it has never been used (use count null), and no
+step of this plan touches it, so it will still be in the index after the rename. Step 6's pass condition ("no
+wrapper among the rows") can be met with it there; whether the window offers it for `surviving mars` is part of
+the typed "before" below. Removing it is James's choice, not a step of this plan.
+
+**Open, before setup runs here:**
+
+- The typed half, by James at the MacBook: what Spotlight's window shows for `surviving mars`, `cs2` and
+  `steam`, without and with the Applications filter, nothing opened.
+- W0 step 2's hand rename of the Surviving Mars wrapper and back (WD10 covers it), offered at this visit: the
+  one reading that can select branch B before steps 1 to 7.
 
 ## Review log
 

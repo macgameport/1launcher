@@ -208,8 +208,11 @@ To clear one, with the game and this wrapper's Steam closed:
 
 Measured on 2026-11-07 with one save deleted and the rest equal to the cloud's: Steam fetched all ten
 cloud files in 22 seconds, with no conflict, and the deleted save came back byte for byte. What Steam
-does with a file that differs from the cloud's when its record is gone has not been measured, which is
-why step 2 deletes those files as well.
+does with a file that differs from the cloud's when its record is gone was not measured then, which is
+why step 2 deletes those files as well. Measured on 2026-11-24, with a conflict on two files cleared this
+way: Steam fetched the cloud's copy of both with no conflict, added two saves that only the cloud had, and
+**replaced one save that differed from the cloud's with the cloud's newer copy.** So a save changed on
+this Mac and never uploaded can be lost at step 3: the copy made in step 1 is what keeps it.
 
 ## Uninstall
 

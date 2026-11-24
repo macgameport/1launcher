@@ -1172,7 +1172,7 @@ temporary folder. Asked by hand with the same options, `/usr/bin/curl` 8.7.1 exi
 a body of 14 bytes: without `-f` the code is all there is to go by, which is what U0 made the script read.
 Before U0 this run said "GitHub could not be reached (curl exit 56)" (issue #31).
 
-## UL1b on the Studio (2026-11-24, on James's word: "Yes, run UL1b"): the first start only; stopped by a Steam Cloud conflict that is not this plan's
+## UL1b on the Studio (2026-11-24, on James's word: "Yes, run UL1b"): the notice at the first and second start and none at the third; what macOS showed is James's to say
 
 **What the step needed and the plan did not say.** The Studio's installed Surviving Mars launcher was
 `v0.3.0`'s, which has no notice block, so an `update-dir` beside it would have done nothing. For the step the
@@ -1185,13 +1185,30 @@ was put back and is byte for byte `main`'s again (sha256 `a73ceab28f5b4888`, as 
 | Start | Result |
 |---|---|
 | 1, from the game's app at 08:15:52 | **The notice: as 3.6 has it.** The launcher's log has, as the session's first line, "1launcher v0.1.0 is out. Open the 14unch3r app to update.", before "[1/5] Starting Steam and signing in…"; `noted` then held `v0.1.0` and 1; `tried` was unchanged, so the look in the background asked GitHub nothing (it had been asked that morning). Whether macOS showed the notification, and whom it named as the sender, is James's to say. **Then the start stopped at step 3:** Steam logged on 28 s after the start, and the launcher's own check found a Steam Cloud conflict on `account.dat` and `account.dat.bak`, said so in its alert, shut Steam down, and ended when James answered. No game was started |
-| 2 and 3 | **Not run.** The session's script was stopped at the alert, before a second start. They wait for the conflict to be cleared |
+| 2, at 08:22:09, after the conflict was cleared (below) and the branch's launcher put in place again | **The notice again.** One line of it in the launcher's log; `noted` then `v0.1.0` and 2; `tried` unchanged. The game ran and was closed 15 s after its window: exit `rc=0`, saves uploaded |
+| 3, at 08:23:23 | **No notice.** No such line in the log; `noted` unchanged at 2; `tried` unchanged. The game ran: `rc=0` |
+
+So the launcher gives the notice at the first two starts and not at the third, and its look in the background
+asked GitHub nothing in any of the three (it had been asked that morning). The watcher's own verdict on starts 2
+and 3 reads "no menu": it closed the game 15 s after the window, before the menu, which is the watcher's dwell
+and not the game's fault (the start after the clearing, with 25 s, reached it). After start 3 the original
+launcher was put back again, byte for byte `main`'s.
 
 **The conflict is the session's doing, of the evening before, and not the update's.** On 2026-11-23 at 20:16 a
 start made for issue #33 lost its Steam session to the MacBook's Steam and exited offline, so this Mac's
 `account.dat` changed and was not uploaded; the MacBook's sessions of that night then uploaded theirs. The
 launcher found it at the next start, as `surviving-mars-relaunched/INSTALL.md` § "A Steam Cloud conflict" says
-it does, and that section says how to clear it. Clearing it deletes files in the wrapper, so it is James's word.
+it does, and that section says how to clear it.
+
+**Cleared the same morning, on James's word ("Yes, clear it"), the guide's way.** With nothing of Steam running:
+the saves folder and Steam's record folder for the game were copied whole into the game's backup folder
+(`backup/conflict-20261124-081934/`, compared: no difference), and `account.dat`, `account.dat.bak` and the
+record's `remotecache.vdf` were moved there, not deleted. The next start (08:19:42) said "Steam Cloud: saves up
+to date.", the game reached its menu, exited `rc=0`, and "saves uploaded". Afterwards: `account.dat` and its
+`.bak` are back, the cloud's; seven of the eight savegames are byte for byte as before; **one, which differed
+from the cloud's, was replaced by the cloud's newer copy** (changed on the other Mac that morning), and two
+that only the cloud had were added. The copy made before holds the replaced one. This is the case the guide
+called not measured, and the guide now says it.
 
 ## Review log
 

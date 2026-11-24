@@ -9,7 +9,7 @@ a rename and Steam's first start waits for the answer; that is folded and checke
 waits, says so") and built as W2b (`5d23ddf`), whose live step passed on the Studio the same day ("W2b on the Studio"); W3, the
 MacBook, is next;
 the read-only half of W3 step 0 was taken on the MacBook on 2026-11-23 ("W3 on the MacBook": its three wrappers
-pass every test of a candidate), and so was the typed half (the window puts a wrapper first for `surviving mars` and for `cs2`). The
+pass every test of a candidate), and so was the typed half (the window puts a wrapper first for `surviving mars` and for `cs2`); P1's hand rename there cleared the fault for `surviving mars`, so branch B is not needed. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
 > **🔧 As-built (2026-11-23): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
@@ -1685,10 +1685,24 @@ a wrapper first, and completes to it, for `surviving mars` and `cs2`. `steam` is
 rename (P0). An "Applications" filter is offered for `surviving mars`; none is among the filters visible in the
 other two screenshots. With that filter on, `surviving mars` (typed by James, a fourth screenshot): `Surviving Mars Relaunched.app`, then **`SurvivingMars.app`**, then the macOS Steam's shortcut `Surviving Mars.app`, which shows the same icon as the game's app. So the game's app is first there, as on the Studio before its rename, and after the rename two rows with one icon remain. The filter was not read for `cs2` or `steam`.
 
-**Open, before setup runs here:**
+**P1's MacBook half, the hand rename (W0 step 2, on James's word, 2026-11-23): the rename clears the fault here. Row A of 3.3 stands; branch B is not needed.**
 
-- W0 step 2's hand rename of the Surviving Mars wrapper and back (WD10 covers it, on James's word), offered at
-  this visit: the one reading that can select branch B before steps 1 to 7.
+With nothing of Wine or Steam running and no process holding the wrapper's `wine64` or `wineserver`:
+`SurvivingMars.app` was renamed by `mv` to `wrapper-3215050.app` at 20:09:55 and `mdimport`ed. By 20:10:01 its
+display name in the index was the new one, and `surviving` and `mars` returned `Surviving Mars Relaunched.app`
+and `Surviving Mars.app` only; `wrapper` returned the wrapper. Its use count (1) and last-used date came with it
+under the new name. James then typed `surviving mars`, opening nothing (two screenshots):
+
+| Window | The field completes to | Rows, top first |
+|---|---|---|
+| plain | "surviving-mars-relaunched", the repo's folder | that folder (Top Hit); the folder "Surviving Mars Relaunched" in Pictures; `surviving-mars-install.md`; two rows from the web. **No wrapper, and no completion to one.** No app among the rows, as on the Studio (#28) |
+| Applications filter | | `Surviving Mars Relaunched.app`; the macOS Steam's shortcut `Surviving Mars.app`. **No wrapper** |
+
+So what Spotlight learned from one use of the wrapper did not follow the file to its new name. The name was
+put back at 20:11:39 (`SurvivingMars.app`, use count 1 again in the index) and 14unch3r's `--list` was read
+afterwards. Setup has not run.
+
+**Open:** steps 1 to 7 of W2 here, on James's word.
 
 ## Review log
 

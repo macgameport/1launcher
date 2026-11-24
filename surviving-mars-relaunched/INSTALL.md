@@ -151,8 +151,8 @@ renames the wrapper: nothing is copied. It says what it renamed. It stops, and c
 another launch or install is using the wrapper; when the rename cannot be made safely for another reason, it skips
 it, says why, and tries again at its next run. At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
 way. Answered within about a minute, Steam signs in as before and the game starts. If the start ends with "Steam
-did not sign in by itself", start the game again once the question is answered (one start ended so after three and
-a half minutes with the question still open; the next one ran).
+did not sign in by itself", start the game again once the question is answered: with the question left open, Steam
+itself gives up after about three minutes, and the message comes some minutes after that.
 
 **What stops working until you point it at the new name:** anything of yours that names the old path: a Dock
 item made from the wrapper, an alias, a saved command. The game's app and 14unch3r find the wrapper whatever its

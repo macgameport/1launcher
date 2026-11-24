@@ -1738,9 +1738,19 @@ were found, and the wording is corrected in the same commit as this paragraph:
    said that Steam waits for the answer and that the launcher waits ten minutes. They now say what was seen: an
    answer within about a minute and the same start goes on (the Studio at W2b after 68 s, the MacBook at step 3); a
    question left open for more than three minutes and that start ended, the next one ran. W2b's live step never
-   had the question open for longer than 68 s, so the ten minutes were never seen. **Open, issue #32, and to be
-   settled or kept worded so before `v0.3.0`:** why that Steam went away, and whether the launcher should start
-   it again.
+   had the question open for longer than 68 s, so the ten minutes were never seen. **Why that Steam went away,
+   measured on the Studio the same night (2026-11-24, 01:16, James away, the question never answered; the
+   wrapper renamed by hand to `mic-probe-1124.app` and back):** Steam itself gives up. The first `steam.exe`
+   was gone 3 min 2 s after its connectivity test began (no result line; the processes were listed every
+   3 s, and none was left, so it is not the launcher's attribution). The launcher then counted 15 s and ran
+   `stop_steam`, whose `steam.exe -shutdown` came up as a client of its own (Steam's bootstrap log names it),
+   sat in the same wait for 3 min 1 s, and held the launcher, so the launcher's message came 6 min 30 s after
+   the start. macOS's privacy log has the question put at 01:16:16 and no answer. Afterwards: no Steam left, no
+   lock, no crash marker, the name back, three marked wrappers. The notes and guides now say that Steam gives
+   up after about three minutes. **Not built, and James's to decide before or after `v0.3.0` (issue #32):**
+   the launcher starts Steam again while its wait lasts, so that an answer within ten minutes still brings
+   the game up; and `stop_steam` sends no `-shutdown` when no Steam of the prefix is up. Output:
+   `probe-issue32/run-1.log` in the Surviving Mars workspace.
 2. **"Type `14`" rested on one reading**, on the MacBook, where 14unch3r's use count was 70 (step 0's table); #26
    was about what Spotlight learns from use. The README, the changelog and both install guides now say it was
    seen on one Mac that had opened 14unch3r often. Not read: the Studio (use count 2) and an account that has

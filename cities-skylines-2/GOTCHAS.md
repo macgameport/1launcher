@@ -2632,6 +2632,16 @@ rename on 2026-11-18 (P4) raised no question either: neither is explained.
   its `steam.exe -shutdown` at 00:51:50 and said "Steam did not sign in by itself". `signin_wait` ends early
   only for a Steam seen and then gone 15 s, so that Steam left, or was no longer attributed to the prefix,
   about three minutes into the question: which of the two was not seen. The start after the answer ran. Issue #32.
+- **Measured on the Studio the same night (01:16, the question never answered): Steam itself gives up.** Its
+  connectivity test started 10 s after the start and the question was put at the same second; the first
+  `steam.exe` was gone 3 min 2 s after that test began, with no result line (the MacBook's: about 3 min too).
+  The launcher counted it gone for 15 s and ran `stop_steam`, whose `steam.exe -shutdown`, with no Steam
+  running, **came up as a Steam client of its own** and sat in the same wait for 3 min 1 s; the launcher
+  waited on it in the foreground, so its "Steam did not sign in by itself" came 6 min 30 s after the start.
+  So no length of `L1_SIGNIN_SECS` helps while the question is open, and the Surviving Mars launcher's
+  shutdown call costs three minutes more (Cities: Skylines II's launcher makes no such call there). Not
+  built: start Steam again while the wait lasts, and never send `-shutdown` when no Steam of the prefix is
+  up. The watch and its output: the Surviving Mars workspace, `probe-issue32/`.
 - A path that has been answered is not asked again, a rename back to it included.
 
 

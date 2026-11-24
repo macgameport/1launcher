@@ -23,10 +23,10 @@ run. `--check` says what a run would do. A new install makes its wrapper under t
 after the rename macOS may ask once more whether wine64 may use the microphone** (it keeps that answer by the
 program's path, which changes with the wrapper's name). Answer it, either way. Answered within about a minute, Steam signed in with its saved login and the game started
 (seen on both Macs). If the start ends with "Steam did not sign in by itself" (Cities: Skylines II: "Steam did not
-auto-login"), start the game again once the question is answered: on one Mac a start ended that way after three
-and a half minutes with the question still open, and the next start ran. The launcher says so if the sign-in
-takes long, and can wait ten minutes where it used to give up after two; why it stopped sooner that once is not
-known yet.
+auto-login"), start the game again once the question is answered: with the question left open, Steam itself gives up
+after about three minutes (measured on both Macs), and the start ends with that message some minutes later; the
+next start, after the answer, ran. The launcher says after 45 seconds what may be holding the sign-in up, and
+waits up to ten minutes for a Steam that is still running, where it used to give up after two.
 
 **What the rename does not do:** it takes the wrappers out of what Spotlight offers for a game's name; it does not
 put the game's app first, and files and web pages may still come before it. Typing `14` offered 14unch3r first on

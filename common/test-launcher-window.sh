@@ -5,13 +5,17 @@
 # package cache says the account owns (--owned) and the offers made of it (--list --games), and a start
 # (--start); the icon's pixels (--icon-at), the grid's layout, text, accessibility and colours (--grid) and what
 # keys, clicks and VoiceOver do to it (--act), both on the real views with no window; the SVG (--svg) and the
-# Desktop alias (--alias). Every one of those modes returns before any window is made, and the window itself is
-# never started here: the program is only ever run with a mode. No game, no Steam, no Wine, no real Steam file, and
-# nothing of the preferences domain local.1launcher.window. The only apps started are this test's own fixture
-# apps under /tmp (LSUIElement, a shim that appends its process number to a file and sleeps 30 s); they are
-# stopped, and taken out of LaunchServices' list, at exit. The packageinfo.vdf files are written here from fixed
-# bytes (python3 -I). Plans: docs/plans/launcher-window.md, W1 W2 W3 W7 W9; docs/plans/launcher-window-look.md,
-# W13 to W17.
+# Desktop alias (--alias); and the update parts (docs/plans/built-in-update.md, 3.5, UT8): the foot line in --grid
+# and --act with --update-dir, the update's sheet (--update-sheet), what the menu item answers (--update-menu),
+# the one call of --open (--update-open), which button runs it (--update-answer) and where the tool is found
+# (--update-tool), all against a stub updates.sh in the scratch folder that records its calls: no network, no
+# Terminal, and nothing of the real update folder. Every one of those modes returns before any window is made,
+# and the window itself is never started here: the program is only ever run with a mode. No game, no Steam, no
+# Wine, no real Steam file, and nothing of the preferences domain local.1launcher.window. The only apps started
+# are this test's own fixture apps under /tmp (LSUIElement, a shim that appends its process number to a file and
+# sleeps 30 s); they are stopped, and taken out of LaunchServices' list, at exit. The packageinfo.vdf files are
+# written here from fixed bytes (python3 -I). Plans: docs/plans/launcher-window.md, W1 W2 W3 W7 W9;
+# docs/plans/launcher-window-look.md, W13 to W17; docs/plans/built-in-update.md, UT8.
 #   bash common/test-launcher-window.sh     exit 0 = every case passed; exit 2 = not a pass: swiftc is missing,
 #                                           a mutant did not apply, or open cannot start an app here (over ssh)
 #   MUTANT=1 ...    the role test dropped; must exit 1
@@ -86,6 +90,20 @@
 #   MUTANT=70 ...   exit 0 on a failed write; must exit 1
 #   MUTANT=71 ...   the role guard widened to any role that starts game or steam (WT6, wrapper-names); must exit 1
 #   MUTANT=72 ...   the lookup of the marked wrapper removed (WT6b); must exit 1
+#   MUTANT=73 ...   the first button of the update's sheet made to give open (UT8); must exit 1
+#   MUTANT=74 ...   the test of the sheet's answer dropped before the one call of --open (source gate 2); must exit 1
+#   MUTANT=75 ...   the first call of the tool made --refresh; must exit 1
+#   MUTANT=76 ...   "Update" made the first button; must exit 1
+#   MUTANT=77 ...   the line that sets `sheet` dropped before the update's sheet (source gate 1); must exit 1
+#   MUTANT=78 ...   the foot line shown for current; must exit 1
+#   MUTANT=79 ...   the offered text shown unmatched; must exit 1
+#   MUTANT=80 ...   the limit removed from the calls of the tool; must exit 1
+#   MUTANT=81 ...   row 6 of the menu's answers placed after row 7; must exit 1
+#   MUTANT=82 ...   the foot line's release not compared with what was armed; must exit 1
+#   MUTANT=83 ...   the foot line's press action doing nothing; must exit 1
+#   MUTANT=84 ...   a relative --update-dir taken; must exit 1
+#   MUTANT=85 ...   a tool that is a link taken; must exit 1
+#   MUTANT=86 ...   the scroll rule left without the foot line's height; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SRC="$HERE/launcher-window.swift"
@@ -198,6 +216,20 @@ case "${MUTANT:-0}" in
   71) swap 'guard roleText == "game" || roleText == "steam" else { return nil }' 'guard let rt = roleText, rt.hasPrefix("game") || rt.hasPrefix("steam") else { return nil }'
       swap 'let role: Role = roleText == "steam" ? .steam : .game' 'let role: Role = (roleText ?? "").hasPrefix("steam") ? .steam : .game' ;;
   72) swap 'if let p = r.prefix, !fm.fileExists(atPath: p), let w = markedWrapper(f, names, role: r.role, appID: r.appID) {' 'if let p = r.prefix, !fm.fileExists(atPath: p), false, let w = markedWrapper(f, names, role: r.role, appID: r.appID) {' ;;
+  73) swap 'button == .alertSecondButtonReturn ? "open" : "nothing"' 'button == .alertFirstButtonReturn ? "open" : "nothing"' ;;
+  74) drop 'guard sheetAnswer(answer) == "open" else { return }' ;;
+  75) swap 'static let state: ([String], Double) = ([], 5)' 'static let state: ([String], Double) = (["--refresh"], 5)' ;;
+  76) swap 'buttons: [Look.notNow, Look.update], notes:' 'buttons: [Look.update, Look.notNow], notes: lines.isEmpty ? [Look.notesAddress] : lines)' ;;
+  77) drop "sheet = .question(a.window)   // the update's question" ;;
+  78) swap 'no line in any other state' 'guard let s = s, s.word == "ready" || s.word == "current" else { return nil }' ;;
+  79) swap 'guard f[1] == "-" || isVersion(f[1]), f[2] == "-" || isVersion(f[2]) else { return nil }' 'guard f[1] == "-" || isVersion(f[1]) else { return nil }' ;;
+  80) swap 'runChild("/bin/bash", [tool] + arguments, limit: limit,' 'runChild("/bin/bash", [tool] + arguments, limit: 86_400, adding: ["L1_UPDATE_DIR": (tool as NSString).deletingLastPathComponent])' ;;
+  81) swap 'if fetch == "failed" || s.word != "current" {' 'if s.word != "current" { return .alert(Look.unreadMessage, Look.unreadText) }' ;;
+  82) swap 'guard unblocked(), clicks == 1, onFootLine(p), footArmed else { return false }' 'guard unblocked(), clicks == 1, onFootLine(p) else { return false }' ;;
+  83) drop 'onFoot()   // the press action is the click' ;;
+  84) drop 'guard dir.hasPrefix("/") else { return nil }' ;;
+  85) swap 'guard lstat(tool, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }' 'guard stat(tool, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }' ;;
+  86) drop 'if let line = footRect, tiles[i].cell.0 == tiles.last?.cell.0 {' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 P="$T/launcher-window"
@@ -749,6 +781,210 @@ check "WT6b ...with two marked alike: absent, as today" "$(list "$F" | grep '^ga
 F="$T/wt6c"; wrap "$F/wrapper-949230.app" game-wrapper 949230; manifest "$F/wrapper-949230.app/Contents/SharedSupport/prefix" 949230
 game "$F/Cities.app" Cities 949230 "$(prefix wt6c-real)"
 check "WT6b ...a prefix that exists is used as it is, whatever is beside it" "$(list "$F" | grep '^game' | cut -f3)" absent
+
+# --- UT8 (docs/plans/built-in-update.md, 3.5): the update parts. The tool is a stub updates.sh in a scratch
+# folder: it writes one line per call to args.log, its arguments in brackets and then L1_UPDATE_DIR as it got it,
+# and answers from the files beside it: out (no argument), out.notes (--notes), out.open (--open), out.other
+# (anything else, which no text mode asks). Nothing here reaches a network, Terminal or the real update folder.
+U="$T/ut8"
+tool() {   # <name> [<state line>] [<notes>] [<answer to --open>]: makes the stub's folder and prints its path
+  local d="$U/$1"
+  mkdir -p "$d"
+  cat > "$d/updates.sh" <<'STUB'
+#!/bin/bash
+d="${0%/*}"
+printf '[%s] %s\n' "$*" "${L1_UPDATE_DIR:-unset}" >> "$d/args.log"
+case "${1:-}" in
+  '') f=out ;;
+  --notes) f=out.notes ;;
+  --open) f=out.open ;;
+  *) f=out.other ;;
+esac
+[ -f "$d/$f" ] && cat "$d/$f"
+exit 0
+STUB
+  [ -n "${2:-}" ] && printf '%s\n' "$2" > "$d/out"
+  [ -n "${3:-}" ] && printf '%s\n' "$3" > "$d/out.notes"
+  [ -n "${4:-}" ] && printf '%s\n' "$4" > "$d/out.open"
+  printf '%s' "$d"
+}
+calls() { [ -f "$1/args.log" ] && paste -sd'|' "$1/args.log" || echo none; }
+FOOT="1launcher v0.4.0 is out. Click to see what changed."
+RDY=$(tool ready "ready${TAB}v0.3.0${TAB}v0.4.0${TAB}-" "v0.4.0 (2026-12-01)
+
+- One thing.
+- Another.")
+plainout="$(grid - "$Gd/1-0")"; out="$(grid --update-dir "$RDY" - "$Gd/1-0")"
+check "UT8 the first call of the tool has no argument, and L1_UPDATE_DIR is the folder in use" "$(calls "$RDY")" "[] $RDY"
+ft() { printf '%s\n' "$out" | awk -F'\t' -v c="$1" '$1 == "foot" { print $c }'; }
+check "UT8 ready: --grid holds one foot line with the plan's text, after the tile lines" \
+  "$(printf '%s\n' "$out" | grep -c '^foot')|$(ft 6)|$(printf '%s\n' "$out" | awk -F'\t' '$1 == "tile" { t = NR } $1 == "foot" { f = NR } END { print (f == t + 1) ? "after" : "elsewhere" }')" "1|$FOOT|after"
+check "UT8 ...the grid is 24 points higher, and the window with it" \
+  "$(printf '%s\n' "$plainout" | sed -n '1,2p' | tr '\t\n' ' |')$(printf '%s\n' "$out" | sed -n '1,2p' | tr '\t\n' ' |')" "size 444 172|window 444 172|size 444 196|window 444 196|"
+check "UT8 ...the line is 8 below the last row and 16 high, and its middle is the grid's within 1 point" \
+  "$(ft 3) $(ft 5) $(awk -v x="$(ft 2)" -v w="$(ft 4)" 'BEGIN { d = x + w / 2 - 222; print (d <= 1 && d >= -1) ? "centred" : "off by " d }')" "158 16 centred"
+check "UT8 ...it is a button for VoiceOver, with the plan's label" "$(ft 7)|$(ft 8)" "AXButton|1launcher v0.4.0 is out, shows what changed"
+check "UT8 ...the tiles, the row selected at open, the group and the mark are as without the tool" \
+  "$(printf '%s\n' "$out" | grep '^tile\|^group\|^first-click\|^mark')" "$(printf '%s\n' "$plainout" | grep '^tile\|^group\|^first-click\|^mark')"
+plabel() { awk -F'\t' '$1 == "paint" && $2 == "label" { print $3 }'; }
+check "UT8 ...paint label, which is this line alone here, is at least 4.5 (and - without the line)" \
+  "$(atleast "$(printf '%s\n' "$out" | plabel)" 4.5)|$(printf '%s\n' "$plainout" | plabel)" "ok|-"
+out="$(grid --games "$T/games.tsv" --update-dir "$RDY" - "$O/two")"
+check "UT8 with an offer row the line is under it, and the grid is 444 by 370" "$(printf '%s\n' "$out" | awk -F'\t' '$1 == "size" { printf "%s by %s", $2, $3 }') $(ft 3) $(ft 6)" "444 by 370 332 $FOOT"
+check "UT8 ...paint label, over both labels, is at least 4.5" "$(atleast "$(printf '%s\n' "$out" | plabel)" 4.5)" ok
+# the click: in the system font the foot line of $Gd/1-0 is at 83,158 and 278 by 16; the points are taken from the line
+out="$(grid --update-dir "$RDY" - "$Gd/1-0")"
+fx=$(awk -v x="$(ft 2)" -v w="$(ft 4)" 'BEGIN { print x + w / 2 }'); fy=$(awk -v y="$(ft 3)" -v h="$(ft 5)" 'BEGIN { print y + h / 2 }')
+fl=$(ft 2); ftop=$(ft 3)
+: > "$RDY/args.log"; : > "$T/ut8.acts"
+uact() { act "$@" | tee -a "$T/ut8.acts"; }
+check "UT8 act: foot prints sheet update" "$(uact foot --update-dir "$RDY" - "$Gd/1-0")" "sheet update"
+check "UT8 ...and the tool was called once, with no argument: not with --open" "$(calls "$RDY")" "[] $RDY"
+check "UT8 act: a press on the line arms it, and a release there with one click opens the sheet" \
+  "$(uact "press:$fx:$fy,release:$fx:$fy" --update-dir "$RDY" - "$Gd/1-0")" "armed foot|sheet update"
+check "UT8 act: the hit area is the text's rectangle grown by 6 at the sides and 4 above and below" \
+  "$(uact "press:$((fl - 5)):$((ftop - 3)),press:$((fl - 7)):$fy,press:$fx:$((ftop - 5)),press:$fx:$((ftop + 19)),press:$fx:$((ftop + 21))" --update-dir "$RDY" - "$Gd/1-0")" \
+  "armed foot|nothing|nothing|armed foot|nothing"
+check "UT8 act: a press on the line and a release on a tile, and the reverse: nothing" \
+  "$(uact "press:$fx:$fy,release:200:40,press:200:40,release:$fx:$fy" --update-dir "$RDY" - "$Gd/1-0")" "armed foot|nothing|selected Game 01|nothing"
+check "UT8 act: after a release elsewhere a release on the line does nothing; nor does a second click" \
+  "$(uact "press:$fx:$fy,release:10:10,release:$fx:$fy,press:$fx:$fy,release2:$fx:$fy" --update-dir "$RDY" - "$Gd/1-0")" "armed foot|nothing|nothing|armed foot|nothing"
+check "UT8 act: a reload between press and release: nothing" "$(uact "press:$fx:$fy,reload,release:$fx:$fy" --update-dir "$RDY" - "$Gd/1-0")" "armed foot|selected Game 01|nothing"
+check "UT8 act: while blocked, the click and the press action do nothing; unblocked, axpress:foot opens the sheet" \
+  "$(uact "block,foot,press:$fx:$fy,release:$fx:$fy,axpress:foot,unblock,axpress:foot" --update-dir "$RDY" - "$Gd/1-0")" \
+  "selected Game 01|nothing|nothing|nothing|nothing|selected Game 01|sheet update"
+check "UT8 act: with no foot line, foot and axpress:foot and a click where it would be: nothing" \
+  "$(uact "foot,axpress:foot,press:$fx:$fy,release:$fx:$fy" - "$Gd/1-0")" "nothing|nothing|nothing|nothing"
+check "UT8 act: the line is not in the arrows' order: down and right stay on the one game" "$(uact down,right --update-dir "$RDY" - "$Gd/1-0")" "selected Game 01|selected Game 01"
+check "UT8 act: none of those steps on the line printed start" "$(grep -c start "$T/ut8.acts")" 0
+check "UT8 act: under the sheet, Escape ends it and Return passes to it; with the line shown, Return still starts the game" \
+  "$(act foot,sheet:escape,sheet:return,return --update-dir "$RDY" - "$Gd/1-0")" "sheet update|end-sheet|pass|start $Gd/1-0/g01.app"
+# 17 games: the last row's tile is at y 620, so the line is at 774 and ends at 790, past what 600 points show
+out="$(grid --update-dir "$RDY" - "$Gd/17-0")"
+check "UT8 17 games: the grid is 552 by 812, shown 600 high, the line at 774" "$(printf '%s\n' "$out" | sed -n '1,2p' | tr '\t\n' ' |')$(ft 3)" "size 552 812|window 552 600|774"
+last=$(offset down,down,down,down --update-dir "$RDY" - "$Gd/17-0" | awk '{ print $NF }')
+check "UT8 ...with the last row selected the line's rectangle ends inside the shown part (offset 212)" \
+  "$last $([ $(( $(ft 3) + $(ft 5) )) -le $((last + 600)) ] && echo shown || echo cut)" "212 shown"
+check "UT8 ...and the rows above scroll as without the line" "$(offset down,down,down,up,up,up --update-dir "$RDY" - "$Gd/17-0")" "0 0 34 34 34 0"
+
+# the sheet
+sheet() { "$P" --update-sheet --update-dir "$@" 2>&1; }
+: > "$RDY/args.log"
+check "UT8 sheet: message, text with the installed version, the buttons Not Now then Update, and the notes line by line" "$(sheet "$RDY" "$Gd/1-0")" \
+"message${TAB}1launcher v0.4.0 is out.
+text${TAB}This Mac has v0.3.0. Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there.
+button${TAB}Not Now
+button${TAB}Update
+note${TAB}v0.4.0 (2026-12-01)
+note${TAB}
+note${TAB}- One thing.
+note${TAB}- Another."
+check "UT8 ...the tool was asked for the state and then for --notes, and nothing else" "$(calls "$RDY")" "[] $RDY|[--notes] $RDY"
+NOV=$(tool nov "ready${TAB}-${TAB}v0.4.0${TAB}-")
+check "UT8 sheet: with - as the installed version the first sentence is absent; with no notes, the one line with the address" \
+  "$(sheet "$NOV" "$Gd/1-0" | grep '^text\|^note')" \
+"text${TAB}Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there.
+note${TAB}What changed: https://github.com/macgameport/1launcher/blob/release/CHANGELOG.md"
+sleep 300 & LIVE8=$!; disown; KEEP="$KEEP $LIVE8"
+pz=$(prefix ut8-zulu); pa=$(prefix ut8-alpha); pq=$(prefix ut8-quiet)
+ln -s "$LIVE8" "$pz/.launcher.lock"; ln -s "$LIVE8" "$pa/.launcher.lock"
+game "$U/busy/z.app" Alpha 11 "$pa"; game "$U/busy/a.app" Zulu 12 "$pz"; game "$U/busy/q.app" Quiet 13 "$pq"
+check "UT8 sheet: with a game in use, the other sheet: it names the first busy row of the list, one button, no notes" "$(sheet "$RDY" "$U/busy")" \
+"message${TAB}Quit Alpha first.
+text${TAB}The update leaves a running game as it is. Quit it, then update.
+button${TAB}OK"
+CUR=$(tool current "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-")
+check "UT8 sheet: none when the state is not ready, with a game in use too; --notes is not asked" "$(sheet "$CUR" "$Gd/1-0")|$(sheet "$CUR" "$U/busy")|$(calls "$CUR")" "none|none|[] $CUR|[] $CUR"
+
+# --update-open: the one call of --open, and what its answer does
+uopen() { "$P" --update-open --update-dir "$1" 2>&1; }
+NOANSWER="failure${TAB}The update did not open.${TAB}The update tool did not answer."
+OPN=$(tool opened "" "" opened)
+check "UT8 open: opened gives quit, and the tool was run with exactly --open" "$(uopen "$OPN")|$(calls "$OPN")" "quit|[--open] $OPN"
+FLD=$(tool failed "" "" "failed${TAB}No update is waiting.")
+check "UT8 open: failed and a sentence gives the message and that sentence" "$(uopen "$FLD")" "failure${TAB}The update did not open.${TAB}No update is waiting."
+SIL=$(tool silent)
+check "UT8 open: no answer gives The update tool did not answer." "$(uopen "$SIL")" "$NOANSWER"
+EX1=$(tool exits1 "ready${TAB}v0.3.0${TAB}v0.4.0${TAB}-" "" opened); sed -i '' 's/^exit 0$/exit 1/' "$EX1/updates.sh"
+grep -q '^exit 1$' "$EX1/updates.sh" || { echo "REFUSED: the stub that exits 1 was not made"; exit 2; }
+check "UT8 open: a tool that says opened and exits 1, a word that is neither, and a folder with no tool: the same" \
+  "$(uopen "$EX1")|$(uopen "$(tool odd "" "" "started")")|$(uopen "$U/absent")" "$NOANSWER|$NOANSWER|$NOANSWER"
+
+# --update-answer: which button runs the update
+check "UT8 answer: second gives open; first and escape give nothing" "$("$P" --update-answer second)|$("$P" --update-answer first)|$("$P" --update-answer escape)" "open|nothing|nothing"
+
+# --update-menu: the seven rows of the plan's table, in its order
+umenu() { "$P" --update-menu --update-dir "$1" "$2" 2>&1; }
+UNREAD="alert${TAB}The list of versions could not be read from GitHub.${TAB}Check the network and try again later."
+check "UT8 menu row 1: off" "$(umenu "$(tool off "off${TAB}-${TAB}-${TAB}-")" skipped)" "alert${TAB}Checking for updates is switched off on this Mac.${TAB}The install guide says how to switch it on."
+check "UT8 menu row 2: none" "$(umenu "$(tool none "none${TAB}-${TAB}v0.4.0${TAB}-")" skipped)" \
+  "alert${TAB}This Mac is not yet set up for updates.${TAB}Paste each game's installer line once more. After that, 14unch3r says when a new version is out."
+check "UT8 menu row 3: manual, from a checkout" "$(umenu "$(tool checkout "manual${TAB}v0.3.0${TAB}-${TAB}checkout")" skipped)" \
+  "alert${TAB}No update is offered on this Mac.${TAB}Its games were set up from a checkout. Update with git pull, then run each game's setup."
+check "UT8 menu row 4: manual, any other line" "$(umenu "$(tool named "manual${TAB}v0.2.0${TAB}v0.4.0${TAB}v0.2.0")" skipped)" \
+  "alert${TAB}No update is offered on this Mac.${TAB}A game here was set up from a named version. Paste its installer line from the guide to follow new versions again."
+check "UT8 menu row 5: ready gives the sheet, after a failed fetch too" "$(umenu "$RDY" fetched)|$(umenu "$RDY" failed)" "sheet|sheet"
+UNK=$(tool unknown "unknown${TAB}v0.4.0${TAB}-${TAB}-")
+check "UT8 menu row 6: current with a failed fetch; unknown; no answer to the refresh; an answer that is no state" \
+  "$(umenu "$CUR" failed)|$(umenu "$UNK" fetched)|$(umenu "$CUR" -)|$(umenu "$(tool seventh "later${TAB}v0.3.0${TAB}v0.4.0${TAB}-")" fetched)" "$UNREAD|$UNREAD|$UNREAD|$UNREAD"
+NEWEST="alert${TAB}1launcher v0.4.0 is the newest version.${TAB}A game set up before updates were recorded is not counted until its line is pasted once."
+check "UT8 menu row 7: current, fetched or skipped" "$(umenu "$CUR" fetched)|$(umenu "$CUR" skipped)" "$NEWEST|$NEWEST"
+
+# no foot line, and the list as without the tool: every other state, and every answer that is not usable
+same() { check "UT8 no foot line, the list as without the tool: $1" "$(grid --update-dir "$2" - "$Gd/1-0")" "$plainout"; }
+same "off" "$U/off"; same "none" "$U/none"; same "manual" "$U/checkout"; same "unknown" "$UNK"; same "current" "$CUR"
+same "a seventh word" "$U/seventh"
+same "an offered text that is not a version (v0.04.0)" "$(tool lead0 "ready${TAB}v0.3.0${TAB}v0.04.0${TAB}-")"
+same "an offered text with a word after the version" "$(tool word "ready${TAB}v0.3.0${TAB}v0.4.0 now${TAB}-")"
+same "ready with - on offer" "$(tool dash "ready${TAB}v0.3.0${TAB}-${TAB}-")"
+same "an installed text that is not a version" "$(tool inst "ready${TAB}soon${TAB}v0.4.0${TAB}-")"
+same "a tool that answers ready and exits 1" "$EX1"
+same "a tool that says nothing" "$SIL"
+same "a folder with no tool" "$U/absent"
+LNK="$U/link"; mkdir -p "$LNK"; ln -s "$RDY/updates.sh" "$LNK/updates.sh"; cp "$RDY/out" "$LNK/out"
+same "a tool that is a link" "$LNK"
+check "UT8 no foot line, the list as without the tool: a relative --update-dir" "$(cd "$U" && "$P" --grid --update-dir ready - "$Gd/1-0" 2>&1)" "$plainout"
+SLOW=$(tool slow "ready${TAB}v0.3.0${TAB}v0.4.0${TAB}-"); sed -i '' 's/^d="\${0%\/\*}"$/sleep 8; &/' "$SLOW/updates.sh"
+grep -q '^sleep 8; d=' "$SLOW/updates.sh" || { echo "REFUSED: the slow stub was not made"; exit 2; }
+t0=$(date +%s); out="$(grid --update-dir "$SLOW" - "$Gd/1-0")"; t1=$(date +%s)
+check "UT8 a tool that hangs past the 5 s limit: the list within 7 s, as without the tool" \
+  "$([ $((t1 - t0)) -lt 7 ] && echo in-time || echo "after $((t1 - t0)) s") $([ "$out" = "$plainout" ] && echo same || echo differs)" "in-time same"
+check "UT8 only the first line counts, and fields past the fifth are ignored" \
+  "$(grid --update-dir "$(tool more "ready${TAB}v0.3.0${TAB}v0.10.12${TAB}-${TAB}fetched${TAB}later
+off${TAB}-${TAB}-${TAB}-")" - "$Gd/1-0" | awk -F'\t' '$1 == "foot" { print $6 }')" "1launcher v0.10.12 is out. Click to see what changed."
+check "UT8 with no tile there is no foot line, and the size is as today" "$(grid --update-dir "$RDY" - "$Gd/none")" "$(grid - "$Gd/none")"
+usage "--grid --update-dir with no value" --grid --update-dir
+usage "--act <steps> --games <tsv> --update-dir with no value" --act foot --games "$T/games.tsv" --update-dir
+usage "--update-sheet with no --update-dir" --update-sheet "$Gd/1-0"
+usage "--update-sheet --update-dir <dir> and no folder" --update-sheet --update-dir "$RDY"
+usage "--update-menu with a word that is no fetch word" --update-menu --update-dir "$RDY" sometimes
+usage "--update-open --update-dir <dir> <folder>" --update-open --update-dir "$RDY" "$Gd/1-0"
+usage "--update-answer third" --update-answer third
+usage "--update-tool <folder>" --update-tool "$Gd/1-0"
+
+# --update-tool: where the tool is found (the key L1UpdateDir is read in common/test-make-launcher-app.sh)
+utool() { "$P" --update-tool "$@" 2>&1; }
+check "UT8 tool: an absolute folder with a regular updates.sh gives its path" "$(utool --update-dir "$RDY")" "$RDY/updates.sh"
+mkdir -p "$U/dir/updates.sh"
+check "UT8 tool: a relative folder, a link, a folder with none, and a folder named updates.sh give -" \
+  "$(cd "$U" && utool --update-dir ready)|$(utool --update-dir "$LNK")|$(utool --update-dir "$U/absent")|$(utool --update-dir "$U/dir")" "-|-|-|-"
+check "UT8 tool: outside an app and with no --update-dir: -" "$(utool)" "-"
+
+check "UT8 no text mode asked the tool to --refresh" "$(cat "$U"/*/args.log | grep -c -- '--refresh')" 0
+
+# The source gates of 3.5, each a count taken from the source this run compiled (a mutant's, under MUTANT).
+WS="$T/w.swift"
+below() { awk '/- the window$/ { p = 1 } p' "$WS"; }
+code() { sed -E 's,(^|[[:space:]])//.*$,,'; }   # without the comments
+check "UT8 source gate 1: each of the 5 lines that show a sheet has, just before it, a line that sets sheet to a question or a failure" \
+  "$(awk '/beginSheetModal\(/ { n++; if (prev ~ /sheet = \.(question|failure)\(/) ok++ } { prev = $0 } END { print n + 0 ":" ok + 0 }' "$WS")" "5:5"
+check "UT8 source gate 2: \"--open\" occurs once, in openUpdate, which is called on two lines: in --update-open, and in the window after a test of sheetAnswer for open" \
+  "$(grep -c '"--open"' "$WS"):$(awk '/^func openUpdate\(/ { p = 1 } p && /"--open"/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS"):$(code < "$WS" | grep 'openUpdate(' | grep -vc '^func openUpdate('):$(awk '/^    case "/ { p = /"--update-open"/ } p && /openUpdate\(/ { n++ } END { print n + 0 }' "$WS"):$(below | code | awk '/^    (@objc )?func / { g = 0 } /guard sheetAnswer\(answer\) == "open" else \{ return \}/ { g = 1 } /openUpdate\(/ { n++; if (g) ok++ } END { print n + 0 ":" ok + 0 }')" "1:1:2:1:1:1"
+check "UT8 source gate 3: /bin/bash is run once, in askUpdate; the window reaches the tool on 2 lines, each in a block sent off the main thread" \
+  "$(grep -c '"/bin/bash"' "$WS"):$(awk '/^func askUpdate\(/ { p = 1 } p && /"\/bin\/bash"/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS"):$(below | code | awk '/^    (@objc )?func / { off = 0 } /DispatchQueue\.global\(/ { off = 1 } /ask(Update|State)\(|openUpdate\(/ { n++; if (off) ok++ } /DispatchQueue\.main\.async/ { off = 0 } END { print n + 0 ":" ok + 0 }')" "1:1:2:2"
+SENT='is out|Not Now|"Update"|What changed|Quit .* first\.|leaves a running game|update did not open|did not answer|Check for Updates|switched off|not yet set up|No update is offered|could not be read|newest version|opens Terminal'
+check "UT8 the fourth count: the update's sentences are constants of Look (18 lines), and no other code holds one, below the window's marker or above it" \
+  "$(awk '/^enum Look \{/ { p = 1 } p { print } p && /^}/ { exit }' "$WS" | code | grep -cE "$SENT"):$(awk '/^enum Look \{/ { p = 1 } !p { print } p && /^}/ { p = 0 }' "$WS" | code | grep -cE "$SENT"):$(below | code | grep -cE "$SENT")" "18:0:0"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

@@ -3,9 +3,11 @@
 // whose Info.plist carries L1Role: each game's own app and the Steam app, as their builders write them. A
 // start opens that app with /usr/bin/open, as a double-click does, and the window quits: the app keeps its
 // own process tree, consent records and progress window. Plans: docs/plans/launcher-window.md, 2.2 and 2.5, and
-// docs/plans/launcher-window-look.md (the tiles, the mark, the icon, the SVG and the Desktop alias).
+// docs/plans/launcher-window-look.md (the tiles, the mark, the icon, the SVG and the Desktop alias), and
+// docs/plans/built-in-update.md, 3.5 (the update parts: a line at the foot of the grid when a newer version of
+// 1launcher is out, its sheet, and the menu item; all of it only when the update tool is deployed).
 //
-//   launcher-window [--games <tsv>] [<folder>...]           the window; with no folder, those of --folders
+//   launcher-window [--games <tsv>] [--update-dir <dir>] [<folder>...]   the window; with no folder, those of --folders
 //   launcher-window --list [--games <tsv>] <folder>...      one line per row: role, app id or -, state,
 //                                                           title, path; tab-separated, no headings. With
 //                                                           --games, offers too, asked as the window asks
@@ -18,10 +20,20 @@
 //   launcher-window --icon-at [small] <x,y>...              ink, body or clear, per pixel of that icon
 //   launcher-window --svg <out.svg>                         the icon form as SVG, for the README
 //   launcher-window --alias <app> <alias path> [make]       have, other or none; with make, made or failed<TAB>...
-//   launcher-window --grid [--games <tsv>] <last id or -> <folder>...   the grid's layout, text, AX and colours
-//   launcher-window --act <step,...> [--games <tsv>] <last id or -> <folder>...   what keys and clicks do to it
+//   launcher-window --grid [--games <tsv>] [--update-dir <dir>] <last id or -> <folder>...   the grid's layout, text, AX and colours
+//   launcher-window --act <step,...> [--games <tsv>] [--update-dir <dir>] <last id or -> <folder>...   what keys and clicks do to it
+//   launcher-window --update-sheet --update-dir <dir> <folder>...   the update's sheet: message, text, buttons, notes; or none
+//   launcher-window --update-menu --update-dir <dir> <fetched|failed|skipped|->   what "Check for Updates…" answers
+//   launcher-window --update-open --update-dir <dir>        runs the tool with --open: quit, or failure<TAB>message<TAB>sentence
+//   launcher-window --update-answer <first|second|escape>   open or nothing: what a button of the update's sheet does
+//   launcher-window --update-tool [--update-dir <dir>]      the update tool's path, or -; with no option, from L1UpdateDir
 // Every mode but the window prints and returns before any window is made; --grid and --act build the window's
 // own grid, with no window. Any other use prints a usage line and exits 2. Tests: common/test-launcher-window.sh.
+//
+// The update tool is <dir>/updates.sh (common/updates.sh, deployed by each setup), where <dir> is L1UpdateDir of
+// this program's own Info.plist or --update-dir, which wins. Only the window and --update-tool read the key: every
+// other text mode looks for the tool only when it is given --update-dir. The tool is run in one place, askUpdate,
+// as a child with a time limit; the window never runs it on the main thread, and nothing it fetches is run.
 //
 // The list is not a boundary of trust: whoever can put an app into ~/Applications can also edit the
 // unsigned shims already there, and a start goes through LaunchServices as a double-click does.
@@ -386,8 +398,8 @@ func ownership(of id: Int, in files: [String]) -> String {
 
 // A child in its own process group, its output read as it comes: nil unless it exited 0 within `limit`
 // seconds. At the limit the whole group is killed, so a helper's own children go too, and nothing left
-// holding the pipe can hold up the caller.
-func runChild(_ exe: String, _ argv: [String], limit: Double) -> String? {
+// holding the pipe can hold up the caller. `adding` sets variables for the child over this program's own.
+func runChild(_ exe: String, _ argv: [String], limit: Double, adding: [String: String] = [:]) -> String? {
     var fds: [Int32] = [-1, -1]
     guard pipe(&fds) == 0 else { return nil }
     var actions: posix_spawn_file_actions_t? = nil
@@ -401,7 +413,8 @@ func runChild(_ exe: String, _ argv: [String], limit: Double) -> String? {
     posix_spawnattr_setflags(&attr, Int16(POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_CLOEXEC_DEFAULT))
     posix_spawnattr_setpgroup(&attr, 0)
     let cargs: [UnsafeMutablePointer<CChar>?] = ([exe] + argv).map { strdup($0) } + [nil]
-    let cenv: [UnsafeMutablePointer<CChar>?] = ProcessInfo.processInfo.environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
+    let env = ProcessInfo.processInfo.environment.merging(adding) { _, new in new }
+    let cenv: [UnsafeMutablePointer<CChar>?] = env.map { strdup("\($0.key)=\($0.value)") } + [nil]
     defer { (cargs + cenv).forEach { free($0) } }
     var pid: pid_t = 0
     let spawned = posix_spawn(&pid, exe, &actions, &attr, cargs, cenv)
@@ -495,7 +508,7 @@ func offerRows(_ table: String, _ rows: [Row]) -> [Row] {
 
 func usage() -> Never {
     FileHandle.standardError.write(Data("""
-    usage: launcher-window [--games <tsv>] [<folder>...]          the window
+    usage: launcher-window [--games <tsv>] [--update-dir <dir>] [<folder>...]   the window
            launcher-window --list [--games <tsv>] <folder>...
            launcher-window --default <last app id or -> <folder>...
            launcher-window --second <app path> <folder>...
@@ -506,8 +519,13 @@ func usage() -> Never {
            launcher-window --icon-at [small] <x,y>...
            launcher-window --svg <out.svg>
            launcher-window --alias <app> <alias path> [make]
-           launcher-window --grid [--games <tsv>] <last app id or -> <folder>...
-           launcher-window --act <step,...> [--games <tsv>] <last app id or -> <folder>...
+           launcher-window --grid [--games <tsv>] [--update-dir <dir>] <last app id or -> <folder>...
+           launcher-window --act <step,...> [--games <tsv>] [--update-dir <dir>] <last app id or -> <folder>...
+           launcher-window --update-sheet --update-dir <dir> <folder>...
+           launcher-window --update-menu --update-dir <dir> <fetched|failed|skipped|->
+           launcher-window --update-open --update-dir <dir>
+           launcher-window --update-answer <first|second|escape>
+           launcher-window --update-tool [--update-dir <dir>]
 
     """.utf8))
     exit(2)
@@ -618,6 +636,136 @@ func makeAlias(_ app: String, _ path: String) -> String? {   // nil when written
     } catch { return oneLine(error.localizedDescription) }
 }
 
+// ------------------------------------------------------------------------------------------------ the update
+// docs/plans/built-in-update.md, 3.5. The tool is common/updates.sh as a setup deployed it (3.2): every call of
+// it exits 0 and says the outcome in its output, and its options and lines are a contract between versions. The
+// window takes its decisions and builds its sheets only from the pure functions here, and each has a text mode.
+struct UpdateState {
+    let word: String        // off, none, manual, unknown, ready or current
+    let installed: String   // the lowest installed version, or -
+    let offered: String     // the version on offer, or -
+    let detail: String      // for manual: the line a game follows
+    let fetch: String?      // after --refresh: fetched, failed or skipped
+}
+
+// The calls of the tool and their limits in seconds: the window and the text modes use the same ones. The
+// fifth call, --open, is openUpdate's alone.
+enum Call {
+    static let state: ([String], Double) = ([], 5)                             // touches no network
+    static let refresh: ([String], Double) = (["--refresh"], 15)               // at most one fetch a day
+    static let refreshNow: ([String], Double) = (["--refresh", "--now"], 15)   // the menu item
+    static let notes: ([String], Double) = (["--notes"], 5)
+}
+
+// A version as the tool writes one (3.1): v, then three numbers of one to six digits with no leading zero.
+func isVersion(_ s: String) -> Bool {
+    guard s.hasPrefix("v") else { return false }
+    let parts = s.dropFirst().split(separator: ".", omittingEmptySubsequences: false)
+    return parts.count == 3 && parts.allSatisfy { p in
+        !p.isEmpty && p.count <= 6 && p.utf8.allSatisfy({ $0 >= 0x30 && $0 <= 0x39 }) && (p == "0" || !p.hasPrefix("0"))
+    }
+}
+
+// The tool's answer, parsed: only its first line counts, and fields past those known here are ignored. None
+// unless the word is one of the six and both versions are a version or -; ready needs a version on offer.
+func updateState(_ answer: String) -> UpdateState? {
+    let line = answer.split(separator: "\n", omittingEmptySubsequences: false).first.map(String.init) ?? ""
+    let f = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+    guard f.count >= 3, ["off", "none", "manual", "unknown", "ready", "current"].contains(f[0]) else { return nil }
+    guard f[1] == "-" || isVersion(f[1]), f[2] == "-" || isVersion(f[2]) else { return nil }
+    if f[0] == "ready" && f[2] == "-" { return nil }
+    let fetch = f.count > 4 && ["fetched", "failed", "skipped"].contains(f[4]) ? f[4] : nil
+    return UpdateState(word: f[0], installed: f[1], offered: f[2], detail: f.count > 3 ? f[3] : "-", fetch: fetch)
+}
+
+// The line at the foot of the grid: only when a newer version is out.
+func footText(_ s: UpdateState?) -> String? {
+    guard let s = s, s.word == "ready" else { return nil }   // no line in any other state
+    return Look.foot(s.offered)
+}
+
+// The sheet of a version that is out, or none when the state is not ready. With a game in use it is the other
+// sheet: one button, no notes, and nothing to answer. `notes` is what --notes printed; nothing, or no answer,
+// gives the one line with the address.
+struct SheetWords { let message: String; let text: String; let buttons: [String]; let notes: [String]? }
+func updateSheet(_ s: UpdateState?, _ notes: String?, _ busyTitle: String?) -> SheetWords? {
+    guard let s = s, s.word == "ready" else { return nil }
+    if let t = busyTitle { return SheetWords(message: Look.quitFirst(t), text: Look.quitFirstText, buttons: [Look.ok], notes: nil) }
+    var lines = (notes ?? "").split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    while let last = lines.last, last.trimmingCharacters(in: .whitespaces).isEmpty { lines.removeLast() }
+    return SheetWords(message: Look.out(s.offered), text: (s.installed == "-" ? "" : Look.has(s.installed) + " ") + Look.updateText,
+                      buttons: [Look.notNow, Look.update], notes: lines.isEmpty ? [Look.notesAddress] : lines)
+}
+
+// What "Check for Updates…" answers, in the order of the plan's table: the sheet, or an alert's message and
+// text. `fetch` is the fifth field of the refresh's answer; no usable answer is row 6.
+enum MenuAnswer { case sheet, alert(String, String) }
+func menuAnswer(_ s: UpdateState?, _ fetch: String?) -> MenuAnswer {
+    guard let s = s else { return .alert(Look.unreadMessage, Look.unreadText) }
+    switch s.word {
+    case "off": return .alert(Look.offMessage, Look.offText)
+    case "none": return .alert(Look.noneMessage, Look.noneText)
+    case "manual": return .alert(Look.manualMessage, s.detail == "checkout" ? Look.checkoutText : Look.namedText)
+    case "ready": return .sheet
+    default:
+        if fetch == "failed" || s.word != "current" { return .alert(Look.unreadMessage, Look.unreadText) }   // row 6, before row 7
+        return .alert(Look.newest(s.installed), Look.newestText)
+    }
+}
+
+// After --open: opened, and the window quits as after a start; failed<TAB><sentence>, and that sentence is shown;
+// anything else, or no answer, and the tool is said not to have answered.
+enum AfterOpen { case quit, failure(String) }
+func afterOpen(_ output: String?) -> AfterOpen {
+    let line = (output ?? "").split(separator: "\n", omittingEmptySubsequences: false).first.map(String.init) ?? ""
+    let f = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+    if f.first == "opened" { return .quit }
+    if f.first == "failed", f.count >= 2, !f[1].isEmpty { return .failure(f[1]) }
+    return .failure(Look.noAnswer)
+}
+
+// Which button of the update's sheet runs the update: the second, "Update", and nothing else. The first, "Not
+// Now", is also what Escape gives (the key monitor ends a sheet as its first button).
+func sheetAnswer(_ button: NSApplication.ModalResponse) -> String {
+    button == .alertSecondButtonReturn ? "open" : "nothing"
+}
+
+// The tool in a folder, or none: the folder is an absolute path, and updates.sh in it is a regular file and not
+// a link. None means no update parts at all.
+func updateTool(_ dir: String) -> String? {
+    guard dir.hasPrefix("/") else { return nil }
+    let tool = dir + "/updates.sh"
+    var st = stat()
+    guard lstat(tool, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }
+    return tool
+}
+
+// L1UpdateDir, as common/make-launcher-app.sh wrote it into this program's own app (3.3), or none.
+func updateKey() -> String? {
+    guard let app = ownBundle(), let data = readPlainFile(app + "/Contents/Info.plist", limit: 1 << 20),   // a row's limit
+          let d = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any] else { return nil }
+    return text(d["L1UpdateDir"])
+}
+
+// The one place the tool is run, by the window and by every text mode: /bin/bash <tool>, as a child with a time
+// limit, with L1_UPDATE_DIR set for it to the folder in use. None when it did not exit 0 within the limit.
+func askUpdate(_ tool: String, _ arguments: [String], limit: Double) -> String? {
+    runChild("/bin/bash", [tool] + arguments, limit: limit, adding: ["L1_UPDATE_DIR": (tool as NSString).deletingLastPathComponent])
+}
+
+// One call's answer as a state, and for ready the notes with it, so that no child runs between a click on the
+// foot line and its sheet.
+func askState(_ tool: String, _ call: ([String], Double)) -> (UpdateState?, String?) {
+    let state = askUpdate(tool, call.0, limit: call.1).flatMap(updateState)
+    return (state, state?.word == "ready" ? askUpdate(tool, Call.notes.0, limit: Call.notes.1) : nil)
+}
+
+// The update itself: the tool writes the file Terminal runs and hands it over. Called on two lines only: by
+// --update-open, and by the window after sheetAnswer said open.
+func openUpdate(_ tool: String) -> AfterOpen {
+    afterOpen(askUpdate(tool, ["--open"], limit: 10))
+}
+
 // ------------------------------------------------------------------------------------------------ the grid
 // Plan 2.1 to 2.4: every size, colour and alpha of the window, read by the drawing and by --grid's paint lines.
 // Statics, so that the text modes above the window can use them.
@@ -651,6 +799,39 @@ enum Look {
     static let noGames = "No games are set up on this Mac yet."
     static let readme = "https://github.com/macgameport/1launcher/blob/main/README.md"
     static let label = "You also own"
+
+    // The update parts (docs/plans/built-in-update.md, 3.5). The foot line has the label's look: labelFont, white
+    // at labelAlpha, labelH high, labelAbove below the last row; so the grid grows by 24 points with it. Its hit
+    // area is its text's rectangle grown by footGrowX at the sides and footGrowY above and below; under the
+    // pointer that area is filled white at hoverFill, with the radius footRadius. Every sentence of the update is
+    // here: the window's own code holds none.
+    static let footGrowX: CGFloat = 6, footGrowY: CGFloat = 4, footRadius: CGFloat = 4
+    static let notesW: CGFloat = 380, notesH: CGFloat = 180, notesInset: CGFloat = 4
+    static let notesFont = NSFont.systemFont(ofSize: 11)
+    static func foot(_ version: String) -> String { "1launcher \(version) is out. Click to see what changed." }
+    static func footSpoken(_ version: String) -> String { "1launcher \(version) is out, shows what changed" }
+    static func out(_ version: String) -> String { "1launcher \(version) is out." }
+    static func has(_ version: String) -> String { "This Mac has \(version)." }
+    static let updateText = "Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there."
+    static let notNow = "Not Now", update = "Update", ok = "OK"
+    static let notesLabel = "What changed"
+    static let notesAddress = "What changed: https://github.com/macgameport/1launcher/blob/release/CHANGELOG.md"
+    static func quitFirst(_ title: String) -> String { "Quit \(title) first." }
+    static let quitFirstText = "The update leaves a running game as it is. Quit it, then update."
+    static let notOpened = "The update did not open."
+    static let noAnswer = "The update tool did not answer."
+    static let checkItem = "Check for Updates\u{2026}", checkKey = "u"
+    static let offMessage = "Checking for updates is switched off on this Mac."
+    static let offText = "The install guide says how to switch it on."
+    static let noneMessage = "This Mac is not yet set up for updates."
+    static let noneText = "Paste each game's installer line once more. After that, 14unch3r says when a new version is out."
+    static let manualMessage = "No update is offered on this Mac."
+    static let checkoutText = "Its games were set up from a checkout. Update with git pull, then run each game's setup."
+    static let namedText = "A game here was set up from a named version. Paste its installer line from the guide to follow new versions again."
+    static let unreadMessage = "The list of versions could not be read from GitHub."
+    static let unreadText = "Check the network and try again later."
+    static func newest(_ version: String) -> String { "1launcher \(version) is the newest version." }
+    static let newestText = "A game set up before updates were recorded is not counted until its line is pasted once."
 }
 
 // The title bar's height, from a plain titled window: 32 on macOS 27, 28 before. With .fullSizeContentView,
@@ -664,11 +845,14 @@ struct Layout {
     var frames: [NSRect] = []
     var cells: [(Int, Int)] = []   // row and column, from 1
     var label: NSPoint? = nil
+    var foot: NSRect? = nil   // the foot line's text (docs/plans/built-in-update.md, 3.5)
 }
 
 // Plan 2.1: games and Steam apps are one block, offers another; within a block the rows share one left edge, and
 // each block is centred, so a game does not move when the offers arrive and the window widens about its middle.
-func gridLayout(_ apps: [Row], _ offers: [Row]) -> Layout {
+// The foot line, when there is one and a tile to stand under: its text's width rounded up, centred, labelAbove
+// below the last row, offers included, and labelH high; then the bottom margin as without it.
+func gridLayout(_ apps: [Row], _ offers: [Row], foot: String? = nil) -> Layout {
     var out = Layout(), blocks: [[(y: CGFloat, xs: [CGFloat], w: CGFloat)]] = [[], []]
     var y = Look.top, rows = 0, labelY: CGFloat? = nil
     for (bi, group) in [apps, offers].enumerated() {
@@ -703,6 +887,11 @@ func gridLayout(_ apps: [Row], _ offers: [Row]) -> Layout {
             }
         }
         if bi == 1, let ly = labelY { out.label = NSPoint(x: left, y: ly) }
+    }
+    if let line = foot, rows > 0 {
+        let w = plain(line, Look.labelFont).size().width.rounded(.up)
+        out.foot = NSRect(x: ((width - w) / 2).rounded(), y: y + Look.labelAbove, width: w, height: Look.labelH)
+        y += Look.labelAbove + Look.labelH
     }
     out.size = NSSize(width: width, height: (rows == 0 ? Look.top + Look.tileH : y) + Look.bottom)
     return out
@@ -907,16 +1096,50 @@ final class TileView: NSView {
     }
 }
 
+// The foot line (docs/plans/built-in-update.md, 3.5): a subview of the grid, added after the tiles, so VoiceOver
+// reaches it after them. It is no tile: the arrows pass it by and it is never selected. Its frame is its hit
+// area; the grid takes its clicks, as it takes the tiles'.
+final class FootView: NSView {
+    let line: String
+    weak var grid: GridView?
+    var hovered = false { didSet { if hovered != oldValue { needsDisplay = true } } }
+
+    init(_ line: String, spoken: String, frame: NSRect) {
+        self.line = line
+        super.init(frame: frame)
+        setAccessibilityElement(true)
+        setAccessibilityRole(NSAccessibility.Role.button)
+        setAccessibilityLabel(spoken)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+    override var isFlipped: Bool { true }
+    override func accessibilityPerformPress() -> Bool { grid?.footPressed() ?? false }
+
+    var textRect: NSRect { bounds.insetBy(dx: Look.footGrowX, dy: Look.footGrowY) }
+    override func draw(_ dirty: NSRect) {
+        if hovered {
+            NSColor(white: 1, alpha: Look.hoverFill).setFill()
+            NSBezierPath(roundedRect: bounds, xRadius: Look.footRadius, yRadius: Look.footRadius).fill()
+        }
+        NSAttributedString(string: line, attributes: [.font: Look.labelFont, .foregroundColor: NSColor(white: 1, alpha: Look.labelAlpha)])
+            .draw(with: textRect, options: [.usesLineFragmentOrigin])
+    }
+}
+
 // The tiles, plan 2.7: the window's only key view. Hit testing is its own function over the tile frames.
 final class GridView: NSView {
     var tiles: [TileView] = []
     var selection: Int? = nil
     var armed: String? = nil   // the key of the tile a press armed
+    var footState: UpdateState? = nil   // what the foot line is drawn from at the next show: the caller sets it
+    var foot: FootView? = nil
+    var footArmed = false      // a press armed the foot line
     var labelAt: NSPoint? = nil
     var offset: CGFloat = 0
     var lastArrow = false
     var onStart: (Row) -> Void = { _ in }
     var onQuit: () -> Void = {}
+    var onFoot: () -> Void = {}   // a click on the foot line: the window shows the update's sheet
     var blocked: () -> Bool = { false }
     var hoverArea: NSTrackingArea?
 
@@ -939,10 +1162,20 @@ final class GridView: NSView {
     // Fills the grid, at open and at every reload. The selection stays on the same app, else defaultRow's.
     func show(rows apps: [Row], offers: [Row], last: Int?) {
         let keep = chosen?.key
-        let l = gridLayout(apps, offers)
+        let line = footText(footState)
+        let l = gridLayout(apps, offers, foot: line)
         tiles.forEach { $0.removeFromSuperview() }
         tiles = (apps + offers).enumerated().map { TileView($1, frame: l.frames[$0], cell: l.cells[$0]) }
         for t in tiles { t.grid = self; addSubview(t) }
+        foot?.removeFromSuperview()
+        foot = nil
+        if let text = line, let r = l.foot, let s = footState {   // after the tiles, at every show
+            let f = FootView(text, spoken: Look.footSpoken(s.offered), frame: r.insetBy(dx: -Look.footGrowX, dy: -Look.footGrowY))
+            f.grid = self
+            addSubview(f)
+            foot = f
+        }
+        footArmed = false
         labelAt = l.label
         setFrameSize(l.size)
         armed = nil   // a reload disarms
@@ -959,6 +1192,8 @@ final class GridView: NSView {
         for (k, t) in tiles.enumerated() { t.selected = k == i }
         let before = enclosingScrollView?.contentView.bounds.minY ?? offset
         offset = scrollOffset(for: tiles[i].frame, from: before, shown: shown)
+        // With the foot line, a tile of the last row is shown down to the grid's end.
+        if let line = footRect, tiles[i].cell.0 == tiles.last?.cell.0 { offset = scrollOffset(for: tiles[i].frame.union(line), from: offset, shown: shown) }
         if let sv = enclosingScrollView {
             sv.contentView.scroll(to: NSPoint(x: 0, y: offset))
             sv.reflectScrolledClipView(sv.contentView)
@@ -990,6 +1225,27 @@ final class GridView: NSView {
     }
     func focus(_ t: TileView) {
         if let i = tiles.firstIndex(where: { $0 === t }) { select(i) }
+    }
+
+    // The foot line, by the tiles' rule: a press arms it, and a release on it with a click count of 1 is its
+    // click, with blocked asked first. It selects nothing and starts nothing.
+    var footRect: NSRect? { foot.map { $0.frame.insetBy(dx: Look.footGrowX, dy: Look.footGrowY) } }
+    func onFootLine(_ p: NSPoint) -> Bool { foot.map { NSPointInRect(p, $0.frame) } ?? false }
+    func pressFoot(at p: NSPoint) -> Bool {
+        footArmed = false
+        guard unblocked(), onFootLine(p) else { return false }
+        footArmed = true
+        return true
+    }
+    func releaseFoot(at p: NSPoint, clicks: Int) -> Bool {
+        defer { footArmed = false }
+        guard unblocked(), clicks == 1, onFootLine(p), footArmed else { return false }
+        return true
+    }
+    func footPressed() -> Bool {   // VoiceOver's press
+        guard unblocked(), foot != nil else { return false }
+        onFoot()   // the press action is the click
+        return true
     }
 
     // Return, Enter and Space start the selection (through blocked); Escape quits.
@@ -1027,9 +1283,11 @@ final class GridView: NSView {
         if !lastArrow { super.keyDown(with: e) }
     }
     override func mouseDown(with e: NSEvent) {
+        _ = pressFoot(at: convert(e.locationInWindow, from: nil))
         if let r = press(at: convert(e.locationInWindow, from: nil)) { onStart(r) }
     }
     override func mouseUp(with e: NSEvent) {
+        if releaseFoot(at: convert(e.locationInWindow, from: nil), clicks: e.clickCount) { onFoot() }
         if let r = release(at: convert(e.locationInWindow, from: nil), clicks: e.clickCount) { onStart(r) }
     }
 
@@ -1044,10 +1302,14 @@ final class GridView: NSView {
     func hover(at p: NSPoint?) {
         let i = p.flatMap { tile(at: $0) }
         for (k, t) in tiles.enumerated() { t.hovered = k == i }
+        foot?.hovered = p.map(onFootLine) ?? false
     }
     override func mouseMoved(with e: NSEvent) { hover(at: convert(e.locationInWindow, from: nil)) }
     override func mouseExited(with e: NSEvent) { hover(at: nil) }
-    override func resetCursorRects() { for t in tiles { addCursorRect(t.frame, cursor: .pointingHand) } }
+    override func resetCursorRects() {
+        for t in tiles { addCursorRect(t.frame, cursor: .pointingHand) }
+        if let f = foot { addCursorRect(f.frame, cursor: .pointingHand) }
+    }
 
     var labelRect: NSRect? {
         labelAt.map { NSRect(x: $0.x, y: $0.y, width: plain(Look.label, Look.labelFont).size().width.rounded(.up), height: Look.labelH) }
@@ -1123,7 +1385,7 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
                   String(format: "%.2f", ratio((1, 1, 1), pill))].joined(separator: "\t")]
     lines.append(["paint", "title", lowest(grid.tiles.map { inGrid($0, $0.titleRect) }, 1)].joined(separator: "\t"))
     lines.append(["paint", "second", lowest(grid.tiles.filter { !$0.second.isEmpty }.map { inGrid($0, $0.secondRect) }, Look.secondAlpha)].joined(separator: "\t"))
-    lines.append(["paint", "label", lowest(grid.labelRect.map { [$0] } ?? [], Look.labelAlpha)].joined(separator: "\t"))
+    lines.append(["paint", "label", lowest([grid.labelRect, grid.footRect].compactMap { $0 }, Look.labelAlpha)].joined(separator: "\t"))
     if Look.outlineWidth > 0, let i = grid.selection {
         let px = under([inGrid(grid.tiles[i], grid.tiles[i].plateRect)])
         let onBack = px.map { ratio(white(Look.outlineAlpha, over: $0), $0) }.min() ?? 0
@@ -1143,12 +1405,15 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
         steps = s.split(separator: ",").map(String.init)
         rest.removeFirst()
     }
-    let (table, more) = gamesOption(rest)
+    let (table, afterTable) = gamesOption(rest)
+    let (updateDir, more) = updateOption(afterTable)
     guard more.count >= 2 else { usage() }
     let found = rows(in: Array(more.dropFirst()))
     let offers = table.map { offerRows($0, found) } ?? []
     let last = lastID(more[0])
     let grid = makeGrid()
+    // The foot line, as the window draws it from the tool's first answer: asked only when --update-dir is given.
+    grid.footState = updateDir.flatMap(updateTool).flatMap { askUpdate($0, Call.state.0, limit: Call.state.1) }.flatMap(updateState)
     grid.show(rows: found, offers: offers, last: last)
     func out(_ f: [String]) { print(f.joined(separator: "\t")) }
     if mode == "--grid" {
@@ -1164,15 +1429,19 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
                  t.accessibilityLabel() ?? "-", t.accessibilityHelp().flatMap { $0.isEmpty ? nil : $0 }.map(oneLine) ?? "-",
                  String(t.title.count), t.title.joined(separator: " | "), t.second.isEmpty ? "-" : t.second.joined(separator: " ")])
         }
+        if let f = grid.foot, let r = grid.footRect {
+            out(["foot", num(r.minX), num(r.minY), num(r.width), num(r.height), f.line, f.accessibilityRole()?.rawValue ?? "-", f.accessibilityLabel() ?? "-"])
+        }
         if grid.tiles.isEmpty { out(["empty", Look.noGames, Look.readme]) }
         let first = grid.acceptsFirstMouse(for: nil) || grid.tiles.contains { $0.acceptsFirstMouse(for: nil) }
         out(["first-click", first ? "starts" : "activates"])
         paintLines(grid).forEach { print($0) }
         return
     }
-    var started: Row? = nil, quit = false, blocked = false
+    var started: Row? = nil, quit = false, blocked = false, footed = false
     grid.onStart = { started = $0 }
     grid.onQuit = { quit = true }
+    grid.onFoot = { footed = true }
     grid.blocked = { blocked }
     let codes: [String: UInt16] = ["left": 123, "right": 124, "down": 125, "up": 126, "return": 36, "enter": 76, "space": 49, "escape": 53]
     func point(_ s: String) -> NSPoint? {
@@ -1186,6 +1455,7 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
     for s in steps {
         started = nil
         quit = false
+        footed = false
         var word = ["nothing"]
         let selected = { ["selected", grid.chosen?.title ?? "-"] }
         if let code = codes[s], code >= 123 {
@@ -1197,9 +1467,16 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
             let a = keyAction(code, sheetUp: s.hasPrefix("sheet:"))
             if a == .pass || a == .endSheet { word = [a.rawValue] } else { _ = grid.perform(a) }
         } else if s.hasPrefix("press:"), let p = point(s) {
-            if let r = grid.press(at: p) { started = r } else if grid.armed != nil { word = selected() }
+            let onFoot = grid.pressFoot(at: p)
+            if let r = grid.press(at: p) { started = r } else if grid.armed != nil { word = selected() } else if onFoot { word = ["armed", "foot"] }
         } else if s.hasPrefix("release:") || s.hasPrefix("release2:"), let p = point(s) {
+            if grid.releaseFoot(at: p, clicks: s.hasPrefix("release2:") ? 2 : 1) { grid.onFoot() }
             started = grid.release(at: p, clicks: s.hasPrefix("release2:") ? 2 : 1)
+        } else if s == "foot" {   // a press and a release at the middle of the foot line
+            let c = grid.footRect.map { NSPoint(x: $0.midX, y: $0.midY) }
+            if let c = c, grid.pressFoot(at: c), grid.releaseFoot(at: c, clicks: 1) { grid.onFoot() }
+        } else if s == "axpress:foot" {
+            _ = grid.foot?.accessibilityPerformPress()
         } else if s.hasPrefix("axpress:"), let t = tileNumber(s) {
             _ = t.accessibilityPerformPress()
         } else if s.hasPrefix("axfocus:"), let t = tileNumber(s) {
@@ -1212,7 +1489,7 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
             grid.show(rows: found, offers: offers, last: last)
             word = selected()
         } else { usage() }
-        if let r = started { word = ["start", r.path] } else if quit { word = ["quit"] }
+        if let r = started { word = ["start", r.path] } else if quit { word = ["quit"] } else if footed { word = ["sheet", "update"] }
         let focus = grid.tiles.firstIndex { $0.isAccessibilityFocused() }.map { String($0 + 1) } ?? "-"
         out([s] + word + ["focus", focus, "offset", num(grid.offset)])
     }
@@ -1228,7 +1505,14 @@ func gamesOption(_ a: [String]) -> (String?, [String]) {
     return (a[1], Array(a.dropFirst(2)))
 }
 
-if let mode = args.first, mode.hasPrefix("-"), mode != "--games" {
+// `[--update-dir <dir>] rest`: the folder that holds the update tool, and what follows it
+func updateOption(_ a: [String]) -> (String?, [String]) {
+    guard a.first == "--update-dir" else { return (nil, a) }
+    guard a.count >= 2 else { usage() }
+    return (a[1], Array(a.dropFirst(2)))
+}
+
+if let mode = args.first, mode.hasPrefix("-"), mode != "--games", mode != "--update-dir" {
     let rest = Array(args.dropFirst())
     switch mode {
     case "--list":
@@ -1279,6 +1563,40 @@ if let mode = args.first, mode.hasPrefix("-"), mode != "--games" {
         print("made")
     case "--grid", "--act":
         MainActor.assumeIsolated { gridMode(mode, rest) }
+    case "--update-sheet":
+        let (dir, folders) = updateOption(rest)
+        guard let d = dir, !folders.isEmpty else { usage() }
+        let (state, notes) = updateTool(d).map { askState($0, Call.state) } ?? (nil, nil)
+        let inUse = rows(in: folders).first(where: { $0.role == .game && $0.state == .busy })
+        guard let words = updateSheet(state, notes, inUse?.title) else { print("none"); break }
+        print("message\t\(words.message)")
+        print("text\t\(words.text)")
+        for b in words.buttons { print("button\t\(b)") }
+        for n in words.notes ?? [] { print("note\t\(n)") }
+    case "--update-menu":
+        let (dir, more) = updateOption(rest)
+        guard let d = dir, more.count == 1, ["fetched", "failed", "skipped", "-"].contains(more[0]) else { usage() }
+        let state = updateTool(d).flatMap { askUpdate($0, Call.state.0, limit: Call.state.1) }.flatMap(updateState)
+        switch more[0] == "-" ? menuAnswer(nil, nil) : menuAnswer(state, more[0]) {   // -: no answer to the refresh
+        case .sheet: print("sheet")
+        case .alert(let message, let text): print("alert\t\(message)\t\(text.isEmpty ? "-" : text)")
+        }
+    case "--update-open":
+        let (dir, more) = updateOption(rest)
+        guard let d = dir, more.isEmpty else { usage() }
+        switch updateTool(d).map({ openUpdate($0) }) ?? afterOpen(nil) {
+        case .quit: print("quit")
+        case .failure(let why): print("failure\t\(Look.notOpened)\t\(why)")
+        }
+    case "--update-answer":
+        let buttons: [String: NSApplication.ModalResponse] = ["first": .alertFirstButtonReturn, "second": .alertSecondButtonReturn,
+                                                              "escape": .alertFirstButtonReturn]   // Escape: as the key monitor ends a sheet
+        guard rest.count == 1, let b = buttons[rest[0]] else { usage() }
+        print(sheetAnswer(b))
+    case "--update-tool":
+        let (dir, more) = updateOption(rest)
+        guard more.isEmpty else { usage() }
+        print((dir ?? updateKey()).flatMap(updateTool) ?? "-")
     default:
         usage()
     }
@@ -1286,23 +1604,30 @@ if let mode = args.first, mode.hasPrefix("-"), mode != "--games" {
 }
 
 // ---------------------------------------------------------------------------------------------- the window
-let (gamesGiven, foldersGiven) = gamesOption(Array(args))
+let (gamesGiven, afterGames) = gamesOption(Array(args))
+let (updateGiven, foldersGiven) = updateOption(afterGames)
 guard !foldersGiven.contains(where: { $0.hasPrefix("-") }) else { usage() }
 let readFrom = foldersGiven.isEmpty ? windowFolders() : foldersGiven
 let gamesTable = gamesGiven ?? ownBundle().map { $0 + "/Contents/Resources/games.tsv" }
+let updateFolder = updateGiven ?? updateKey()   // --update-dir wins over L1UpdateDir
 
 final class LauncherWindow: NSWindow {
     override func cancelOperation(_ sender: Any?) { NSApp.terminate(nil) }
 }
 
 @MainActor
-final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation {
     enum Sheet { case none, question(NSWindow), failure(NSWindow) }
     var appRows: [Row] = []
     var offers: [Row] = []
     var sheet = Sheet.none
     var starting = false
     var opened = false
+    // The update parts (docs/plans/built-in-update.md, 3.5). With no tool there are none: no foot line, no menu item.
+    let tool = updateFolder.flatMap(updateTool)
+    var held: UpdateState? = nil   // the tool's last usable answer: reload() draws the foot line from it and asks nothing
+    var notes: String? = nil       // kept with a state of ready, so that no child runs between a click and the sheet
+    var checking = false           // the menu item's question is out: the item is disabled until its answer
     let window = LauncherWindow(contentRect: NSRect(x: 0, y: 0, width: Look.least, height: 204),
                                 styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
     let back = BackgroundView()
@@ -1316,6 +1641,10 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ n: Notification) {
         let menu = NSMenu(), item = NSMenuItem(), appMenu = NSMenu()
+        if tool != nil {
+            appMenu.addItem(withTitle: Look.checkItem, action: #selector(checkForUpdates(_:)), keyEquivalent: Look.checkKey).target = self
+            appMenu.addItem(.separator())
+        }
         appMenu.addItem(withTitle: "Quit 14unch3r", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.submenu = appMenu
         menu.addItem(item)
@@ -1334,6 +1663,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         grid.onStart = { [unowned self] _ in self.startChosen(nil) }
         grid.onQuit = { NSApp.terminate(nil) }
+        grid.onFoot = { [unowned self] in self.showUpdate() }
         grid.blocked = { [unowned self] in self.starting || self.sheetUp }
         scroll.documentView = grid
         scroll.drawsBackground = false
@@ -1376,6 +1706,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if #available(macOS 14, *) { NSApp.activate() } else { NSApp.activate(ignoringOtherApps: true) }
         opened = true
         askOffers()
+        askUpdates()
     }
 
     func askOffers() {
@@ -1390,7 +1721,10 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    func applicationDidBecomeActive(_ n: Notification) { if opened && !starting { reload() } }
+    func applicationDidBecomeActive(_ n: Notification) {
+        if opened && !starting { reload() }
+        if opened { ask(Call.state) { state, notes in self.take(state, notes) } }
+    }
     func applicationShouldTerminateAfterLastWindowClosed(_ s: NSApplication) -> Bool { true }
     func applicationShouldHandleReopen(_ s: NSApplication, hasVisibleWindows: Bool) -> Bool {
         window.makeKeyAndOrderFront(nil)
@@ -1404,6 +1738,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func reload() {
         appRows = rows(in: readFrom)
         let have = Set(appRows.compactMap { $0.role == .game ? $0.appID : nil })
+        grid.footState = held
         grid.show(rows: appRows, offers: offers.filter { !have.contains($0.appID ?? 0) }, last: appID(UserDefaults.standard.object(forKey: "lastAppID")))
         empty.isHidden = !grid.tiles.isEmpty
         scroll.isHidden = grid.tiles.isEmpty
@@ -1480,6 +1815,147 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate {
         sheet = .failure(a.window)
         a.beginSheetModal(for: window) { _ in self.sheet = .none }
     }
+
+    // ---- the update parts (docs/plans/built-in-update.md, 3.5)
+    // The one way to the tool from here: asked off the main thread, the answer handed back on it. The window
+    // never waits for it, and reload() never comes here.
+    func ask(_ call: ([String], Double), then: @escaping @MainActor (UpdateState?, String?) -> Void) {
+        guard let tool = tool else { return }
+        DispatchQueue.global(qos: .utility).async {
+            let (state, notes) = askState(tool, call)
+            DispatchQueue.main.async { then(state, notes) }
+        }
+    }
+
+    // At open, with the offers: the state, which touches no network; then, chained once after its answer, the
+    // refresh, which fetches at most once a day.
+    func askUpdates() {
+        ask(Call.state) { state, notes in
+            self.take(state, notes)
+            self.ask(Call.refresh) { state, notes in self.take(state, notes) }
+        }
+    }
+
+    // An answer replaces what is held; no answer, or one that is not usable, is dropped. The list is shown again
+    // only when the word or the offered version differs, and not under a sheet or a start: reload() asks nothing.
+    func take(_ state: UpdateState?, _ notes: String?) {
+        guard let s = state else { return }
+        let differs = s.word != held?.word || s.offered != held?.offered
+        held = s
+        self.notes = notes
+        if differs && !starting && !sheetUp { reload() }
+    }
+
+    // The foot line's click and the menu item both come here, with the state and the notes that are held. A game
+    // in use, read now, gives the other sheet instead: an update leaves a running game as it is.
+    func showUpdate() {
+        guard !starting, !sheetUp, let tool = tool else { return }
+        reload()
+        let inUse = appRows.first(where: { $0.role == .game && $0.state == .busy })
+        guard let words = updateSheet(held, notes, inUse?.title) else { return }
+        let a = NSAlert()
+        a.alertStyle = .informational
+        a.messageText = words.message
+        a.informativeText = words.text
+        for b in words.buttons { a.addButton(withTitle: b) }   // the first button is the default: Return, and Escape too (the monitor)
+        guard let lines = words.notes else {
+            sheet = .failure(a.window)   // a game is in use: one button, and nothing to answer
+            a.beginSheetModal(for: window) { _ in self.sheet = .none }
+            return
+        }
+        let box = notesView(lines.joined(separator: "\n"))
+        a.accessoryView = box   // set before the alert is shown
+        a.layout()
+        if let first = a.buttons.first, let second = a.buttons.last, let view = box.documentView {
+            a.window.initialFirstResponder = first   // focus at open is "Not Now", not the notes
+            first.nextKeyView = second               // the key loop: the buttons, then the notes
+            second.nextKeyView = view
+            view.nextKeyView = first
+        }
+        sheet = .question(a.window)   // the update's question
+        a.beginSheetModal(for: window) { answer in
+            self.sheet = .none
+            self.answered(answer, tool)
+        }
+    }
+
+    // What changed, under the sheet's text: a scroll view with a plain text view in it, read-only, selectable (a
+    // right-click copies; the app has no Edit menu), nothing detected in it. No colour comes from Look: the alert
+    // takes the window's dark appearance, as the other sheets do.
+    func notesView(_ notes: String) -> NSScrollView {
+        let box = NSScrollView(frame: NSRect(x: 0, y: 0, width: Look.notesW, height: Look.notesH))
+        box.borderType = .bezelBorder
+        box.hasVerticalScroller = true
+        box.autohidesScrollers = true
+        box.drawsBackground = false
+        let view = NSTextView(frame: NSRect(origin: .zero, size: box.contentSize))
+        view.isEditable = false
+        view.isSelectable = true
+        view.isRichText = false
+        view.isAutomaticLinkDetectionEnabled = false
+        view.isAutomaticDataDetectionEnabled = false
+        view.drawsBackground = false
+        view.textContainerInset = NSSize(width: Look.notesInset, height: Look.notesInset)
+        view.isVerticallyResizable = true
+        view.isHorizontallyResizable = false
+        view.autoresizingMask = [.width]
+        view.textContainer?.widthTracksTextView = true
+        view.string = notes
+        view.font = Look.notesFont
+        view.textColor = .labelColor
+        view.setAccessibilityLabel(Look.notesLabel)
+        box.documentView = view
+        return box
+    }
+
+    // Only the second button, "Update", runs anything: the tool writes the update's file and hands it to
+    // Terminal, asked off the main thread with `starting` set as for a start. Opened: the window quits, as after
+    // a start. Else `starting` is cleared and a sheet says why.
+    func answered(_ answer: NSApplication.ModalResponse, _ tool: String) {
+        guard sheetAnswer(answer) == "open" else { return }
+        starting = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let after = openUpdate(tool)
+            DispatchQueue.main.async {
+                if case .failure(let why) = after {
+                    self.starting = false
+                    self.tell(Look.notOpened, why)
+                    return
+                }
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
+    // An alert with one button, as a sheet.
+    func tell(_ message: String, _ text: String) {
+        let a = NSAlert()
+        a.alertStyle = .informational
+        a.messageText = message
+        a.informativeText = text
+        a.addButton(withTitle: Look.ok)
+        sheet = .failure(a.window)   // one button: Return and Escape both end it
+        a.beginSheetModal(for: window) { _ in self.sheet = .none }
+    }
+
+    // "Check for Updates…": nothing while a sheet is up or a start is under way. With a version held as out, its
+    // sheet at once. Otherwise the tool is asked to fetch now, the item is disabled meanwhile, and the answer is
+    // shown; one that arrives under a sheet or a start is dropped.
+    @objc func checkForUpdates(_ sender: Any?) {
+        guard !starting, !sheetUp, !checking else { return }
+        if held?.word == "ready" { showUpdate(); return }
+        checking = true
+        ask(Call.refreshNow) { state, notes in
+            self.checking = false
+            guard !self.starting, !self.sheetUp else { return }
+            self.take(state, notes)
+            switch menuAnswer(state, state?.fetch) {
+            case .sheet: self.showUpdate()
+            case .alert(let message, let text): self.tell(message, text)
+            }
+        }
+    }
+    func validateMenuItem(_ item: NSMenuItem) -> Bool { !checking }
 }
 
 MainActor.assumeIsolated {

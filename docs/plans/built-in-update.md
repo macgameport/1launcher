@@ -1153,7 +1153,24 @@ test passes on the changed source (245 cases) and all 96 mutants of its two test
 to the Trash and unregistered with `lsregister -u` (a move into the Trash registers an app again, so the
 unregistering is done after the move: a first try before it left both copies registered). `lsregister -dump`
 then names one 14unch3r, the installed one. The scratch `_update`, the captures and the build outputs stay in
-the workspace's `built-in-update-ul1/`. Exit criterion 2 still wants UL1b, UL1c, UL2 and UL3.
+the workspace's `built-in-update-ul1/`. Exit criterion 2 still wants UL1b, UL2 and UL3.
+
+## UL1c on the Studio (2026-11-24, on James's word: "Yes, run UL1c"): passed
+
+The branch's root `install.sh` (at `574c347`) copied alone into a new folder under `/tmp`, outside any
+checkout, and run with the ref `no-such-version-ul1c`, which GitHub does not have. Three forms, each with its
+standard input closed:
+
+| Run | Printed | Exit |
+|---|---|---|
+| as a file, `949230` and the ref | "Fetching 1launcher (no-such-version-ul1c) from github.com/macgameport/1launcher ...", then "GitHub has no \"no-such-version-ul1c\" of 1launcher. The current way in is at:" and the front page's address | 1 |
+| the pasted form (`/bin/bash -c "$(cat install.sh)" 1launcher-install 3215050 <ref>`) | the same three lines | 1 |
+| `update` and the ref | the same three lines | 1 |
+
+Nothing was fetched beyond GitHub's answer, no installer ran, and no `1launcher-fetch.*` folder was left in the
+temporary folder. Asked by hand with the same options, `/usr/bin/curl` 8.7.1 exits 0 with the answer `404` and
+a body of 14 bytes: without `-f` the code is all there is to go by, which is what U0 made the script read.
+Before U0 this run said "GitHub could not be reached (curl exit 56)" (issue #31).
 
 ## Review log
 

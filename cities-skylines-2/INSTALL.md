@@ -491,9 +491,9 @@ names them `wrapper-949230.app` and `wrapper-0.app`, names nobody types, and eve
 mark setup writes into its `Info.plist`, whatever its name. `bash common/wrappers.sh list` prints the wrappers
 on this Mac.
 
-The quickest way to a game from Spotlight is to type `14`, which offers 14unch3r first. Typing the game's name no
-longer offers the wrapper, but Spotlight may still list files and web pages before the game's app; that order is
-Spotlight's own.
+A quick way to a game from Spotlight may be to type `14`: on the one Mac where it was tried, which had opened
+14unch3r often, that offered 14unch3r first. Typing the game's name no longer offers the wrapper, but Spotlight
+may still list files and web pages before the game's app; that order is Spotlight's own.
 
 **What setup does.** At its next run it writes the mark and renames each wrapper: nothing is copied. It says what
 it renamed. It stops, before it changes anything, while the game, its launcher or an install is using the game's
@@ -501,7 +501,9 @@ wrapper. When a rename cannot be made safely for another reason (Steam open in t
 you buy something, say), it skips that one, says why, and tries again at its next run. A wrapper in
 `/Applications` is used where it is and never renamed. `bash scripts/setup.sh --check` says what a run would do.
 At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
-way: Steam waits for the answer, then signs in as before.
+way. Answered within about a minute, Steam signs in as before and the game starts. If the start ends with "Steam
+did not auto-login", start the game again once the question is answered (a start of Surviving Mars ended so after
+three and a half minutes with the question still open; the next one ran).
 
 **What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
 made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find
@@ -535,7 +537,7 @@ back first, as above.
 
 | Symptom | What's happening |
 |---|---|
-| "Steam did not auto-login" | Either macOS asked a question and nobody answered it within ten minutes (after a wrapper is renamed it asks again whether wine64 may use the microphone): answer it and relaunch. Or the saved token expired: open Steam inside the wrapper, sign in until the library loads, then relaunch. |
+| "Steam did not auto-login" | Either macOS asked a question and it was not answered in time (after a wrapper is renamed it asks again whether wine64 may use the microphone; the launcher can wait ten minutes for the answer, and has once stopped after three and a half): answer it and relaunch. Or the saved token expired: open Steam inside the wrapper, sign in until the library loads, then relaunch. |
 | No main menu after a fresh start, and `platform service integration failed` in the game's `SceneFlow.log` | The game started before Steam had confirmed your licence. Start it once from Terminal with a longer wait, `CS2_LICENCE_WAIT=45 bash "$HOME/Library/Application Support/1launcher/cities-skylines-2"/launch-cs2-dxmt11.sh`, and please open an issue: the default of 15 seconds rests on two Macs. |
 | Game exits immediately, launch fails with code 1 | A stale `.crash` marker from a force-kill. The launcher clears it automatically now; if it persists, delete `.../Steam/.crash` inside the prefix. |
 | Black screen with a working cursor | The Coherent Gameface UI fix didn't apply. Re-run `bash scripts/setup.sh` and check its patch output, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |

@@ -21,12 +21,16 @@ changes anything, while the game, a launch or an install is using the game's wra
 make safely, among them while Steam is open in the Windows Steam's wrapper, says why, and tries again at its next
 run. `--check` says what a run would do. A new install makes its wrapper under the new name, marked. **At the first start
 after the rename macOS may ask once more whether wine64 may use the microphone** (it keeps that answer by the
-program's path, which changes with the wrapper's name). Answer it, either way: Steam waits for the answer and then
-signs in with its saved login. The launcher says so if the sign-in takes long, and waits ten minutes where it used
-to give up after two.
+program's path, which changes with the wrapper's name). Answer it, either way. Answered within about a minute, Steam signed in with its saved login and the game started
+(seen on both Macs). If the start ends with "Steam did not sign in by itself" (Cities: Skylines II: "Steam did not
+auto-login"), start the game again once the question is answered: on one Mac a start ended that way after three
+and a half minutes with the question still open, and the next start ran. The launcher says so if the sign-in
+takes long, and can wait ten minutes where it used to give up after two; why it stopped sooner that once is not
+known yet.
 
 **What the rename does not do:** it takes the wrappers out of what Spotlight offers for a game's name; it does not
-put the game's app first, and files and web pages may still come before it. Typing `14` offers 14unch3r first.
+put the game's app first, and files and web pages may still come before it. Typing `14` offered 14unch3r first on
+the one Mac where it was tried, a Mac that had opened 14unch3r often.
 
 **What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
 made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find a

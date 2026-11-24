@@ -1250,6 +1250,71 @@ in the real `_update` (made with its `installed/`, both mode 700): one stamp `in
 until a setup from another tree is run; its state is `manual`, so it asks GitHub nothing and is offered nothing.
 Cities: Skylines II is as it was (`v0.3.0`'s files, no stamp). Exit criterion 2 still wants UL3, the MacBook.
 
+## UL3 on the MacBook: the brief for that Mac's session (handed over 2026-11-24, on James's word: "Yes, hand it over")
+
+Not run yet. This is UL2 again, on the MacBook, for both games. It is a live step: the session there asks James
+before it starts, and runs it with him at that Mac. The Studio starts no Steam until this step is recorded as
+done or put off.
+
+**Before.** `git fetch`, and note the pushed tip of `built-in-update` (the commit the update must print).
+Nothing of Wine, Steam or either game running, and no launch lock in either wrapper. Write down, for the
+record: `bash common/wrappers.sh list`; whether `~/Library/Application Support/1launcher/_update` exists (it
+should not); the sha256 of each game's deployed launcher; and whether 14unch3r's `Info.plist` has `L1UpdateDir`
+(it should not).
+
+**The stamps, by hand.** Make `~/Library/Application Support/1launcher/_update` and `installed/` in it, both
+mode 700. Write two files, each one line of four fields separated by tabs:
+`installed/949230` and `installed/3215050`, each holding `built-in-update`, `v0.0.9`, `-` and the time in
+epoch seconds. (`printf 'built-in-update\tv0.0.9\t-\t%s\n' "$(date +%s)"`.)
+
+**The update.** With `L1_UPDATE_DIR`, `L1_FETCHED_REF`, `L1_FETCHED_COMMIT` and `L1_UPDATE` not set, from a
+folder that is no checkout, fetch the branch's own installer and run it with the word `update` and the branch:
+
+```bash
+/bin/bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/macgameport/1launcher/built-in-update/install.sh)" 1launcher-install update built-in-update
+```
+
+Run it in Terminal, so that an installer can ask what it asks; on the Studio nothing was asked. Keep its whole
+output. Never start it under `nohup`.
+
+**Pass, each read off the output or a file:**
+
+- the commit it prints is the pushed tip;
+- both installers run, Cities: Skylines II's first (the order of the app IDs), each through its steps and its
+  setup; Cities: Skylines II's setup does not ask about a Desktop shortcut;
+- the closing block has one line for each game and then "Everything is up to date: 1launcher v0.3.0."; exit 0.
+  (A patch script that has no fix for the game build makes Cities: Skylines II's installer exit 5, which still
+  counts as updated; say so if it happens);
+- each stamp then holds `built-in-update`, `v0.3.0`, the commit and a time; `bash <_update>/updates.sh` prints
+  `manual`, `v0.3.0`, `-`, `built-in-update`;
+- `_update/updates.sh` is byte for byte the branch's `common/updates.sh`; `update-dir` stands beside each
+  deployed launcher and names `_update`; each deployed launcher is the branch's; 14unch3r has `L1UpdateDir`;
+- how long the update took, from its start to its exit;
+- each game starts from its app afterwards: Cities: Skylines II by `scripts/boot-verify.sh`, detached with a
+  log (`VERDICT: PASS`); Surviving Mars from its app to its menu, closed there, with a clean exit. Neither
+  launcher's log has a notice line, as the state `manual` has it;
+- after those starts, and after 14unch3r was opened and "Check for Updates…" chosen in it: `_update/offer`,
+  `_update/tried` and `_update/notes.md` do not exist; the window has no line at its foot; the menu's answer
+  is "No update is offered on this Mac." with the sentence about a named version.
+
+**What the Studio met, so that it is not met twice.**
+
+- A start of Surviving Mars stops at step 3 if Steam Cloud has a conflict; the launcher's alert names the
+  files, and `surviving-mars-relaunched/INSTALL.md` § "A Steam Cloud conflict" says how to clear one. Clearing
+  is James's word.
+- One Steam on the account at a time. A start on one Mac while the other is signed in logs the other off, and
+  a game that exits offline leaves exactly such a conflict.
+- After the game's window, give it 25 seconds before closing it: closed after 15, the game had not reached
+  its menu.
+- A launcher's notification is shown by macOS as Script Editor's. In the state `manual` there is none.
+- The MacBook's Surviving Mars wrapper holds the original `ntdll.dll` (issue #30). The update does not touch a
+  wrapper's Wine; check the file's hash before and after all the same.
+
+**Afterwards.** Both games and 14unch3r on the MacBook run the branch's code until a setup from another tree is
+run (`bash <game>/scripts/setup.sh` from a checkout on `main`, with the game and Steam closed, puts a game
+back). Record the step in this file under a heading "UL3 on the MacBook", in the form of "UL2 on the Studio"
+above, with what was measured; `git pull --rebase` first, commit with `refs #34`, and push to this branch.
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |

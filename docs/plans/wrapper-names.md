@@ -1683,7 +1683,7 @@ the typed "before" below. Removing it is James's choice, not a step of this plan
 So the fault is here as #26 reported it, and for `cs2` as well, where no wrapper has a use count: the window puts
 a wrapper first, and completes to it, for `surviving mars` and `cs2`. `steam` is as on the Studio before its
 rename (P0). An "Applications" filter is offered for `surviving mars`; none is among the filters visible in the
-other two screenshots. The rows with that filter on were not read: this "before" is the plain window only.
+other two screenshots. With that filter on, `surviving mars` (typed by James, a fourth screenshot): `Surviving Mars Relaunched.app`, then **`SurvivingMars.app`**, then the macOS Steam's shortcut `Surviving Mars.app`, which shows the same icon as the game's app. So the game's app is first there, as on the Studio before its rename, and after the rename two rows with one icon remain. The filter was not read for `cs2` or `steam`.
 
 **Open, before setup runs here:**
 

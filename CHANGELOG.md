@@ -7,6 +7,8 @@ the pasted line installs it.
 
 ## Unreleased
 
+## v0.3.0 (2026-11-24)
+
 **Setup renames the Wine wrappers in `~/Applications`** (docs/plans/wrapper-names.md). Spotlight offered them
 beside the game's app, and a wrapper opened directly starts Steam outside the launcher and its lock. The new
 names are ones nobody types:

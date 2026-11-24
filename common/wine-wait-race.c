@@ -18,6 +18,15 @@
  *       defaults 60, 2 x processors, processors / 4, 200; hold 0 = no suspending, the scheduler alone
  *   exit 0 = no fault in that time, 3 = an access violation (one line "FAULT: ..."), 2 = refused
  *
+ * A run with no fault clears a build only if the suspensions can land inside the gap of that build, and that
+ * must be read, not assumed. Measured 2026-11-24 with GetThreadContext after each SuspendThread (x86_64 Wine on
+ * an Apple silicon Mac): a suspended waker is reported at some instructions of RtlWakeAddressAll and never at
+ * others. In the Wine 10.0 ntdll above, 316 of 96,043 suspensions in that function were inside the gap, and the
+ * program faults in seconds. In the project's Wine 11.16 ntdll (4,915,127 bytes) the code has the same order
+ * (addr cleared at RtlWakeAddressAll+0xbb, the entry's next read again at +0xc7), none of 53,649 suspensions
+ * was at +0xc3 or +0xc7, and the program ran 600 s with no fault. That build is not cleared by it. Without the
+ * suspending threads (hold 0), 300 threads on 18 processors ran 300 s on the Wine 10.0 file with no fault.
+ *
  * Build: x86_64-w64-mingw32-gcc -O2 -o wine-wait-race.exe wine-wait-race.c
  * Run it with common/wine-wait-race.sh, which uses a scratch prefix. */
 #include <windows.h>

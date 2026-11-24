@@ -3,12 +3,18 @@
 **Status: check-it'd 2026-11-21 — build-ready-with-fixes (pass 3, the W0 fold re-checked, folded).** W0 is done:
 P0 to P5 are recorded in section 1 (2026-11-18 and 19), James answered section 8 (2026-11-20), and step 8's fold
 and its re-check are at the foot ("W0 fold", 2026-11-21). W1 is built on the branch `wrapper-names` (as-built
-header below); W2, the Studio, is next, on James's word; the MacBook's reads of W3 step 0 are taken at the first
-visit there. The
+header below); W2 ran on the Studio on 2026-11-23 and every step is recorded at the foot ("W2 on the Studio"): its three
+wrappers are renamed and Spotlight offers none of them. It found that macOS asks about the microphone again after
+a rename and Steam's first start waits for the answer; that is folded and checked ("W2 fold"; James: "Launcher
+waits, says so") and built as W2b (`5d23ddf`), whose live step passed on the Studio the same day ("W2b on the Studio"); W3, the
+MacBook, is next;
+the read-only half of W3 step 0 was taken on the MacBook on 2026-11-23 ("W3 on the MacBook": its three wrappers
+pass every test of a candidate), and so was the typed half (the window puts a wrapper first for `surviving mars` and for `cs2`); P1's hand rename there cleared the fault for `surviving mars`, so branch B is not needed; W3's steps 1 to 7 ran there on 2026-11-23 and 2026-11-24 and James called W3 passed on 2026-11-24, with findings (#28, #32), so W3b, the merge and `v0.3.0`, is next. The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
-> **🔧 As-built (2026-11-21): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
-> `release`); W2 to W4 not started.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
+> **🔧 As-built (2026-11-24): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
+> `release`); W2 run on the Studio; W2b (the sign-in wait) built (`5d23ddf`) and its live step passed there; W3 passed on the MacBook on 2026-11-24 with findings (#28, #32); W3b and W4 not
+> started.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
 > `5d8d263` and `6e9a3cf` (1.3 to 1.5: makers, installers, launchers, setups, the other readers, 14unch3r),
 > `78328e1`, `e9f7431`, `0fc680a` (the new cases: WT4b, WT11, WT14 to WT17), `422b183` (the tests that read a
 > real wrapper), `a2f935d` (1.6, the 19 research scripts), `11c1fd1` (1.7, the release gate, and WT12's list), and
@@ -822,8 +828,12 @@ The section for `CHANGELOG.md`, to be written at the build from what was built:
 - It is a rename with nothing copied; setup says what it renamed; it stops while the game, a launch or an
   install is using the game's wrapper, and skips when it cannot be done safely, among them while Steam is open
   in the Windows Steam's wrapper.
-- The first start after the rename can take a few seconds longer (P4: 7 to 9 s on the Studio, one start);
-  Steam stays signed in and macOS asks nothing.
+- At the first start after the rename macOS may ask again whether `wine64` may use the microphone: it keeps
+  that answer by the program's path, and a renamed wrapper is a new path (W2, 2026-11-23, five starts of five in
+  wrappers whose Wine came from Porting Kit; P4 saw no question, which is not explained). Steam waits for the
+  answer, whichever it is, and then signs in with its saved login. The launchers say so and wait (W2 fold).
+  With the question answered, a start of Surviving Mars was about 17 s slower than before the rename, each
+  time (window after 44 to 47 s, 26 to 28 s before).
 - What stops working until pointed at the new name: anything of the player's own that names the old path (a
   Dock item made from the wrapper, an alias, a saved command, a Porting Kit entry).
 - To decline: `L1_KEEP_WRAPPER_NAMES=1`, printed as a literal, in a clone and with the pasted line, for that run.
@@ -960,6 +970,19 @@ output.
    `S734M.app` opened, the name put back.
 8. What names the old paths outside the repo: the 9 memory files; anything James finds in Porting Kit.
 
+### W2b — the sign-in wait (the W2 fold; James: "Launcher waits, says so", 2026-11-23)
+
+Built on the branch after the fold is checked, with WT19 and its mutants; then, on James's word and with him at
+the Studio:
+
+1. Both setups run from the branch (they deploy the new launchers; nothing is renamed: `--check` first says so).
+2. The Surviving Mars wrapper is renamed by hand to a name it has not had (so that macOS asks), and the game is
+   started from its app. James leaves the question unanswered for a minute. Pass: about 45 s after the launcher's "Starting Steam and signing in…" line the progress window shows "Still signing in. If macOS asks a question, answer it…"; after his answer
+   the game reaches its menu without a second start; the launcher's log holds the line once.
+3. The name is put back; one more start shows no hint line (sign-in comes before 45 s).
+
+
+
 ### W3 — the MacBook
 
 A visit of its own, after W2, on the branch (`git fetch`, then the branch checked out). P1 ran on the Studio
@@ -977,7 +1000,7 @@ A visit of its own, after W2, on the branch (`git fetch`, then the branch checke
    Surviving Mars wrapper and back (WD10 covers it) is offered at that visit too, because it is the one reading
    that can select branch B before the build instead of after it.
 
-Then steps 1 to 7 of W2 there; its step 3 is Surviving Mars's installer too, and its wrapper there "was made the
+Then steps 1 to 7 of W2 there, with the hint line of W2b looked for at each first start after a rename (step 2's boot-verify keeps a two-minute sign-in wait and reports the launcher's `ERROR:` line if a question from macOS is left unanswered: answer it and run it again); its step 3 is Surviving Mars's installer too, and its wrapper there "was made the
 old way". Its store wrapper is renamed only if step 0 found it a candidate. Step 6 is the one that matters most:
 it is the Mac where the fault was seen, and the only one with a wrapper Spotlight has learned (WD2). Pass for
 it: as W2 step 6, set against step 0's "before". If the window still offers the renamed wrapper, nothing is
@@ -993,6 +1016,9 @@ W3.
 After W2 and W3 are green: the branch is merged into `main` with `--no-ff`, pushed, and `v0.3.0` is cut on the
 merge by the commands of the root `CLAUDE.md` (WD7). `CHANGELOG.md`'s section is read against what was built
 before the tag.
+(Its sentence about Surviving Mars starting about 17 s slower was removed on 2026-11-23: issue #33 measured
+that the wait is Steam's own, on a network whose DNS gives IPv6 addresses that cannot be reached, and comes
+neither from the rename nor from the `ntdll.dll` change of #30.)
 
 ### W4 — `release`
 
@@ -1020,7 +1046,7 @@ pass, `common/check-release-move.sh` passes, `git push origin <commit>:release`;
 | New installs | the wrapper is made under the new name and marked before it is moved into place | WT10 |
 | Someone playing one game while the other game's setup runs | nothing: the mover looks only at the named files of the wrapper it was told about | WT8 |
 | A player with a wrapper in `/Applications` | it keeps its old name and is found as before | 3.4; WT9 |
-| Everyone, at the first start after the rename | a first start a few seconds slower (P4: 7 to 9 s on the Studio, one start, not separated from the spread of Steam's sign-in); no new check by macOS and no sign-in prompt | the notes, from P4 (3.8) |
+| Everyone, at the first start after the rename | macOS may ask once more whether `wine64` may use the microphone, and Steam waits for the answer before it signs in (W2: 77 to 116 s while the question stood; two starts failed at the launcher's old 120 s). After 45 s the launcher's step line says "Still signing in. If macOS asks a question, answer it…", and it waits 10 minutes. No sign-in prompt of Steam's. Later starts: Surviving Mars about 17 s slower than before the rename | the notes and the guides (3.8, W2 fold); the launcher's step line |
 | A player who types the game's name into Spotlight | the wrapper is no longer offered. What the window puts first instead is whatever else matches best: on a Mac with a checkout, the repo's folder of the game's name (P1); with the Applications filter the game's app was first while the wrapper was still there (P1, `surviving mars` only). On a Mac with no checkout, which a player who used the pasted line has, not measured: no live step of this plan runs on one | the notes name the game's app and 14unch3r; W2 and W3 step 6 record the rows |
 | Porting Kit, if it lists the wrappers | its entry would name a path that is gone. Not checked (1.5) | W2 step 8 |
 | Claude sessions | memory and both `CLAUDE.md` files name the old paths | 3.7; W2 step 8 |
@@ -1093,13 +1119,19 @@ pasted line renames nothing. So the `CFBundleName` rewrite, and a start of the g
 The risk is small: P5's scratch wrapper, made by the installer with its own name in `CFBundleName`, ran Steam
 and took the game's download; the rewrite only changes that one string.
 
+**Added by the W2 fold (2026-11-23):**
+
+| Test | Subject | What it shows | Mutants |
+|---|---|---|---|
+| WT19 | the sign-in wait | `common/test-launch-feedback.sh`, on `signin_wait` taken from the shared block, with `sleep` recording: a test that succeeds at once returns 0 with no line; one that succeeds after 30 s prints no hint; one that succeeds after 60 s prints the hint exactly once, at 45 s, with the step number it was given; one that never succeeds returns 1 after 600 s (`L1_SIGNIN_SECS` unset) and after 9 s with `L1_SIGNIN_SECS=9`; a value that is not a number, is empty, or has twenty digits counts as 600, with nothing on standard error; a test that returns 2 gives 1. With the third word: a Steam seen and then gone for 15 s ends the wait at once with 1; a Steam never seen is waited for until the limit; gone 9 s, back, gone 6 s is waited for; gone 6 s, back, then signed in gives 0. The hint is a step: one notification with no progress window, none with it. `common/test-launcher-parity.sh`, a new rule 10: each launcher calls `signin_wait` exactly once, outside the block, as `signin_wait <number> <function> steam_exe_up || ...`, with the number of its "Starting Steam and signing in…" step and a function it defines once; a `die` behind the call names the question from macOS; neither launcher holds a `seq 1 40` loop; the hint in the block is one plain literal of at most 62 characters, sent with the caller's step number | feedback 10 to 18: the hint dropped; the hint at every poll; the limit put back to 120 s; the step number written out in the block; Steam counted as gone before it was seen; never ending early; the count not started again when Steam is back; a limit of four digits taken as it is; the test's own code returned. Parity 17 to 24: the wrong step number in one call; the old loop left in one launcher; the hint made 63 characters; one launcher's words no longer naming the question; one launcher's test not defined; a second call; the step number written out in the block; one call without `steam_exe_up` |
+
 ## 7. Exit criteria
 
 1. W0: P0 to P5 are recorded in section 1, each with what it settled: a row of 3.3's table for P1, P2 and P3, a
    row of 3.4's for P5, the "before" for P0, and P4's three readings against its thresholds. The plan has
    passed a re-check after them. Recorded 2026-11-21: P1 and P2 row A, P3 no row (the bundle folder passes),
    P5 "as written", P0's "before" in 1.2, P4 inside every threshold; the re-check is in the Review log.
-2. WT1 to WT18 pass on the branch, every mutant seen red on the fixture section 6 names for it (pass 2 found
+2. WT1 to WT19 pass on the branch, every mutant seen red on the fixture section 6 names for it (pass 2 found
    three that are equivalent on any other: WT4b's in Cities: Skylines II's setup, WT7d's, WT9b's), every row of
    section 6's second table done, and every test file that exits 0 at `d50cf33` still exits 0.
 3. W2 and W3 pass on both Macs, with each step's pass condition, the boot-verify verdict and the Spotlight
@@ -1110,7 +1142,8 @@ and took the game's download; the rewrite only changes that one string.
 6. W4: `release` has moved on James's word, the root `CLAUDE.md` records where it stands, and the pasted line run
    on the Studio renamed nothing and exited 0. Until then this plan is built but not published, and its header
    says so.
-7. #26's checkboxes are ticked; anything found and not fixed has an issue of its own. Known at the W0 fold, opened
+7. W2b's three steps passed on the Studio, and the hint line was looked for at W3.
+8. #26's checkboxes are ticked; anything found and not fixed has an issue of its own. Known at the W0 fold, opened
    2026-11-21 on James's word: #27, WD6 (a wrapper opened directly); #28, the game's app not offered in
    Spotlight's window without a filter even when no wrapper is (P1); and #29, what another account can change
    inside a wrapper whose `Contents` is writable by all (P3, 3.1).
@@ -1155,6 +1188,9 @@ rename nor a `.noindex` folder clears what Spotlight learned, which W3 step 6 no
   needed after a rename back.
 - **A Mac that was moved, to stay moved on an older version:** nothing to do for Cities: Skylines II. Surviving
   Mars at `v0.1.0` or `v0.2.0` needs its wrapper renamed back, as above (3.8's last row).
+- **W2b, the sign-in wait:** its commits are reverted; the launchers go back to their loop of 120 s. Nothing
+  on a Mac needs undoing. A rename back to an old name is a path macOS has answered before, and W2's start after
+  the name was put back was not asked again.
 - **A rename that was skipped** (a decline, a holder under an installer, a store wrapper with Steam open):
   nothing to undo. The wrapper is under its old name and every script finds it there, by the old name when it
   is not marked and by its marker when the skipped run was finishing a part-way rename; the next run that is
@@ -1387,6 +1423,347 @@ before folding M3 and S5. None rejected.
 The issues exit criterion 7 names were opened on James's word the same day, #27 to #29, and the verdict was posted
 on #26.
 
+## W2 on the Studio (2026-11-23): done; every step recorded; one finding to fold and check before W3
+
+On James's word ("W2 on the Studio"), from the branch at `efe176b`. He confirmed before the first start that
+Steam was closed everywhere else on the account. Recorded before step 2, in `<workspace>/wrapper-names-w2/`: the
+three names, each wrapper's `Info.plist`, and both `--check` outputs; the outputs of every step are there too.
+
+| Step | What ran | Result |
+|---|---|---|
+| 1 | `setup.sh --check` for each game | **Pass.** Cities: Skylines II's names two renames (the game's wrapper and the Windows Steam's), Surviving Mars's one, neither anything else |
+| 2 | Cities: Skylines II's setup; then `boot-verify.sh`, detached | **Pass.** Setup exit 0 in 10 s: `CS2dxmt11.app` to `wrapper-949230.app`, `CS2dxmt11-pk110.app` to `wrapper-0.app`, 10 of 10 patch scripts, the game's app, 14unch3r and `S734M.app` rebuilt. Boot-verify `20261123-151732`: game up at +45 s, menu reached, graceful exit, `VERDICT: PASS`, Steam down, no crash marker |
+| 3 | Surviving Mars's installer | **Pass.** Exit 0 in 5 s, steps 1 to 6 `OK`, `SurvivingMars.app` to `wrapper-3215050.app`, no `.launcher.lock` left |
+| 3 | the game started from 14unch3r, first try (15:22:10) | **Failed.** "Steam did not sign in by itself." Steam's logs stop one second after its start: its connectivity test was started and never reported, and no logon was tried in the two minutes the launcher waits. The launcher stopped Steam and showed its alert; nothing was left running and no crash marker |
+| 3 | the same, second try (15:27:22) | **Pass.** Window 47 s after the start (P4's "before": 26, 26, 28 s; so 19 to 21 s slower, inside the 30 s). Steam's connectivity test took 5 s and the logon came 30 s after the start, `OK` with the saved login and no prompt. Menu reached (the game's log judged PASS after it closed); closed by a window-close message; "Steam Cloud: saves uploaded."; Steam down; no lock, no crash marker |
+| 4 | `S734M.app` opened | **Pass by the logs; the window was not looked at.** Steam in `wrapper-0.app` logged on `OK` with the saved login and no prompt, but 2 min after its start: its connectivity test took 99 s. Shut down with `steam.exe -shutdown`; nothing left holding the wrapper; no crash marker |
+| 5 | `wrappers.sh list`; 14unch3r `--list`; `lsregister -dump` | **Pass.** Three marked wrappers, no `L1RenamePending`; two games and one Steam app, all `ready`. Launch Services: 0 path lines for each old name and 1 for each new; records with the Surviving Mars app's identifier 2, with 14unch3r's 3, with `S734M.app`'s 1 (a record, not a condition) |
+| 6 | `mdimport` of each wrapper, then `mdfind` | **Index half: pass.** The old names were gone at the first look. `surviving`, `mars`, `smr`: `Surviving Mars Relaunched.app` alone. `cities`, `skylines`: `Cities Skylines II.app` alone. `cs2`: that app and `S734M.app`. `steam`, `store`, `s734m`: `S734M.app`. `launcher`, `1launcher`, `14`: `14unch3r.app`. No wrapper for any of the twelve words; `wrapper` returns the three. **Typed half, by James at the Studio the same day:** `surviving mars`: **pass.** The field completes to "surviving-mars-relaunched", the repo's folder, which is the Top Hit; then the folder "Surviving Mars Relaunched" in Pictures; then a Markdown file. No wrapper among the rows and no completion to one; no app among them either. James: the right thing "flashes up while typing but then settles on this" (as at P1, and what issue #28 is about). With the Applications filter on, the game's app is identified correctly. `steam`: **pass.** The field completes to "Steam.app", the macOS Steam, which is the Top Hit; then the two CrossOver Steam apps and their two Support Center apps. No wrapper among the five rows and no completion to one; `S734M.app` is not among them (as at P0). `cs2`: **pass.** The field shows "cs2 — Ask Siri" and completes to nothing; the rows are a music album named "Cs2" and two images of the repo (`cs2-on-macos.png`, `cs2-paradox-mods.jpg`). No wrapper among the three rows shown, where before the rename the field completed to the game's wrapper and both wrappers came first (P0); neither `Cities Skylines II.app` nor `S734M.app` is among them. With the Applications filter on, `surviving mars`: **pass.** One row, `Surviving Mars Relaunched.app`, and no wrapper (before the rename the wrapper came second). For `cs2` the window offers **no Applications filter at all** (James): it has no application to show for the word, so no wrapper, and not the game's app or `S734M.app` either, although `mdfind` returns both through their alternate names. Recorded for issue #28: the window does not offer an app by an alternate name alone |
+| 3, again | a third start, from the game's app (15:42:26), to see whether only the first is slow | Steam's connectivity test 1 s, logon 27 s after the start, window after 44 s, menu reached, saves uploaded |
+| 4, again | `S734M.app` a second time (15:44:54) | connectivity test 1 s, logon 19 s after the open, shut down clean |
+| 7 | Surviving Mars's wrapper renamed by hand to `anything-at-all.app`; the resolver and 14unch3r's row (`ready`) found it at once | **The rule holds; the first start after the rename failed as in step 3.** From the game's app (15:46:03): Steam's connectivity test took 116 s and the launcher gave up with "Steam did not sign in by itself". From 14unch3r (15:49:06): logon after 27 s, window after 44 s, menu reached, saves uploaded. The name put back to `wrapper-3215050.app` (what `wrappers.sh name` prints); the start after that (15:50:56): connectivity test 0 s, window after 44 s, menu reached |
+| 7 | the Windows Steam's wrapper renamed by hand to `some-other-name.app`; `S734M.app` opened (15:54:20) | **Pass, slowly.** `S734M.app` found the wrapper by its mark; Steam logged on with the saved login 104 s after the open (connectivity test 77 s); shut down clean; the name put back to `wrapper-0.app`. Afterwards: three marked wrappers, the window's three rows `ready`, and `mdfind` returns no app for `anything` or `some-other` |
+| 8 | what names the old paths outside the repo | the memory notes were given a line with the new names; Porting Kit not looked at |
+
+**Two things W2 found that the plan did not expect.**
+
+1. **After a rename macOS asks again whether Wine may use the microphone, and Steam's start waits for the
+   answer.** Established from the system log, five times out of five. One second after Steam starts in a
+   wrapper under a path it has not run from before, `tccd` logs a prompt for the microphone
+   (`AUTHREQ_PROMPTING: service=kTCCServiceMicrophone`) whose subject is the **path** of the wrapper's
+   `wine64`; Steam logs nothing more until the question is answered.
+
+   | Start | Asked | Answered | What Steam's log shows |
+   |---|---|---|---|
+   | Surviving Mars, first after setup's rename | 15:22:13 | not within the launcher's 120 s | no connectivity result; the launcher's "Steam did not sign in by itself" |
+   | the Windows Steam, first after setup's rename | 15:31:57 | 15:33:35, allowed | connectivity test 99 s |
+   | Surviving Mars as `anything-at-all.app` | 15:46:12 | 15:48:07, allowed | connectivity test 116 s; the launcher gave up |
+   | the Windows Steam as `some-other-name.app` | 15:54:34 | 15:55:49, allowed | connectivity test 77 s |
+   | Cities: Skylines II after setup's rename (boot-verify) | never asked | | game up at +45 s as always |
+
+   Every later start from a path that has been answered is quick again (connectivity test 0 to 1 s), and so is
+   a start after a rename back to a path answered earlier that day. So the stall is as long as a person takes
+   to answer, and a launcher that waits 120 s for the sign-in fails when nobody answers in time. The answers
+   above were James's, at the Studio. **Not explained:** why P4 (2026-11-18, the same hand rename) saw no
+   question, and why the wrapper with the self-built engine is never asked. **Besides that**, with the
+   question out of the way, a start of Surviving Mars is about 17 s slower than before the rename, every
+   time: logon 27 to 30 s after the start (8 to 12 s before), window after 44 to 47 s (26 to 28 s before);
+   inside W0's 30 s, and not explained.
+
+   **What it changes in this plan, to be folded and checked before W3:** section 5's row "a first start a few
+   seconds slower" and the notes of `v0.3.0` are wrong for these wrappers: the first start after the update
+   shows a question from macOS about the microphone and waits for it. A player who does not see it (it can be
+   behind the progress window) gets "Steam did not sign in by itself". The choices are James's: say it in
+   the notes and in the launcher's step line; let the launcher wait for as long as the question is up; or keep
+   Steam from asking for the microphone at all. Section 9's rollback is touched too: a rename back to an old
+   name is a path answered before, so it does not ask again.
+2. **Somebody at the Studio started Surviving Mars during step 2.** At 15:17:36, four seconds after
+   boot-verify began, Finder opened 14unch3r, and 2.5 s later 14unch3r started the game's app (read in the
+   system log: Finder's action, the launch of 14unch3r, its `open`, the launch of the game's app). No
+   screen-sharing or remote login was logged, and it was not a command of this session. The game ran from the
+   old-named wrapper for 67 s and was closed; its Steam had been pushed offline by step 2's ("Session
+   Replaced" at 15:18:00), so that session's saves were not uploaded then (the second try of step 3 uploaded
+   afterwards). Step 2's verdict stands: the two Steams were in different wrappers and boot-verify judges the
+   game's own log. James, asked the same day: "Yes, that was us." So it was a person at the Studio, and W2's later starts wait until he says the Studio is free.
+
+**State when W2 stopped:** the three wrappers under the names setup gave them, each marked, each started at least once since its rename with the microphone question answered; nothing of Wine or Steam running; no lock and no crash marker in any of them. The outputs of every start are in `<workspace>/wrapper-names-w2/`, with the two small scripts that followed them.
+
+**Issues filed from W2's findings (2026-11-23, on James's word).** #32: keep Steam from asking for the microphone at all, a probe first, with what is not explained (the self-built engine never asked; P4 saw no question; a new install's first start; a denied answer). #33: the 17 s. **A correction to finding 1's last sentence, found while filing it:** the Surviving Mars wrapper got the one-byte `ntdll.dll` of issue #30 that morning and its rename that afternoon, P4's "before" times are from 2026-11-18 with the original file, and the one start between the two changes was not timed. So "slower than before the rename" is the order of events and not a cause; #33's first step is one timed start with the original file put back. The two readings for #28 below are on that issue as a comment.
+
+**#33 measured the same evening (2026-11-23, 20:14, on James's word): the 17 s is neither the rename nor the `ntdll.dll` change. It is Steam waiting about 20 s on its IPv6 check.** Two timed starts, the wrapper under its new name: with the original `ntdll.dll` put back, logon 27 s and window 44 s after the start; with the changed file, 27 s and 44 s. And the start between the two changes, which had not been timed, is in Steam's own log: at 06:58 that morning, with the changed file and the old name, Steam called its logon 4 s after it started. What the slow starts share is in `connection_log.txt`: Steam's two IPv6 check hosts resolve to IPv6 addresses, both tests end `TIMEOUT`, and `LogOn() called` comes 20 s after the second. In a quick start the second test reads `FAILED, no addresses resolved` and the logon call comes 3 to 6 s after Steam's start. Of the 38 starts in that log from 2026-11-11 on, the 13 with two timeouts took 23 to 27 s to the logon call (one took 90 s, the microphone question of W2b) and the 25 others 3 to 6 s; the slow kind is there on 2026-11-11, twice on 11-13 and on 11-19, under the old name. On 2026-11-23 macOS logged a network change that touched DNS at 15:18:33, between the last quick start (15:17:41) and the first slow one (15:27:22); setup renamed the wrapper at about 15:21, so the two fell together. That evening both check hosts resolved to IPv6 addresses on the Studio and a connection to one failed at once. **Not explained:** what changed the DNS answers (the VPN is the first thing to look at, and it is James's), and seven starts on 2026-11-10 that took 24 s with no IPv6 address resolved. Finding 1's "about 17 s slower than before the rename", the fold's item on the notes and the sentence in `CHANGELOG.md` are withdrawn by this; the sentence is removed. The runs' outputs are in the Surviving Mars workspace, `probe-issue30/issue33-20261123/`. Two more starts were planned and not made: at 20:16:30 Steam in the Studio's wrapper was logged off as "Logged In Elsewhere", which was the MacBook's Steam at W3, so the Studio starts no Steam again until W3 is done. The wrapper holds the changed `ntdll.dll`, as before the runs.
+
+**Posted the same night (2026-11-23, on James's word).** On #33, the result as a comment, with the title corrected and the list ticked. On #28, an inventory of the names on the Studio that carry the typed words (for `surviving mars`: eight, of which the repo's folder and a plan file exist only with a checkout, and an empty folder `Surviving Mars Relaunched` in `~/Pictures`, very likely made by the game through the prefix's link to Pictures, is the one a player gets too), and three probes, none run: the two competitors put on Spotlight's Search Privacy list by James's hand and the words typed again; a display name carrying the typed word on a scratch copy of an app; a reading on an account with no checkout (NL4, ML6). On #30, the upstream commit (`81e52628`, first in `wine-11.20`), the test and its results, and that the change does not slow the start. The test, `common/wine-wait-race.c` and `.sh`, is on `main` (`9975611`) and on this branch with the same bytes (`6240701`).
+
+**A reading for issue #28, asked by James ("does there need to be a shortcut in the actual Applications folder?").** With a copy of the game's app put into `/Applications` (784 KB; indexed there as an application within seconds, beside the one in `~/Applications`), James typed `surviving mars` again: the field still completes to the repo's folder, and the rows are that folder, the folder in Pictures, a Markdown file of the repo and two web results. No app among the five rows. So on this Mac the system folder does not bring the app into the plain window; one reading, taken a minute after the copy was made, with no use of the copy behind it. The copy went to the Trash and was unregistered. An alias was not tried: Spotlight lists an alias as a file, not as an application.
+
+**Also seen:** the macOS Steam's helper `ipcserver` was running throughout (not a client, left alone); the
+Surviving Mars wrapper carries the one-byte `ntdll.dll` of issue #30 since that morning, which a rename does
+not touch.
+
+## W2 fold (2026-11-23): the microphone question after a rename
+
+**Decided by James the same day, between two ways put to him: "Launcher waits, says so."** (The other was to
+keep Steam from asking for the microphone at all; it needs a probe and can follow as work of its own.)
+
+**What is built (W2b), as it stands after the check below.**
+
+1. **One function in the launchers' shared block** (`launch-feedback`, the same bytes in both, as
+   `licence_wait` is):
+
+   ```bash
+   signin_wait() {   # <step> <test> [<alive>]: wait for Steam's sign-in; 0 = signed in, 1 = not
+     local limit="${L1_SIGNIN_SECS:-600}" t=0 hinted=0 seen=0 gone=0
+     case "$limit" in ''|*[!0-9]*|????*) limit=600 ;; esac
+     while [ "$t" -lt "$limit" ]; do
+       "$2" && return 0
+       if [ "$hinted" = 0 ] && [ "$t" -ge 45 ]; then hinted=1; step "$1" "Still signing in. If macOS asks a question, answer it…"; fi
+       if [ -n "${3:-}" ]; then
+         if "$3"; then seen=1; gone=0
+         elif [ "$seen" = 1 ]; then gone=$((gone + 3)); [ "$gone" -ge 15 ] && return 1; fi
+       fi
+       sleep 3; t=$((t + 3))
+     done
+     "$2" && return 0
+     return 1
+   }
+   ```
+
+   The hint comes after the look at 45 s has failed. A limit that is not one to three digits counts as 600.
+   **It ends early only for a Steam that was seen and has then been gone for 15 s in a row** (the installer's
+   own measure of "gone": Steam is away for a few seconds when its updater replaces it). A Steam not seen yet
+   is waited for, because macOS can hold its first process for minutes (the "Verifying ..." sheet of
+   2026-11-01, `cities-skylines-2/GOTCHAS.md`). So a Steam that dies before it is ever seen still costs the
+   ten minutes: a choice, since no test tells that case from the sheet.
+2. **Each launcher calls it once**, in place of its loop of forty polls, with its own test of a sign-in and
+   `steam_exe_up` as the third word:
+   - Cities: Skylines II: `signed_in() { fresh_login && webhelper_up; }`, defined after `fresh_login`, and
+     `signin_wait 2 signed_in steam_exe_up || die "..."`.
+   - Surviving Mars: `signed_in()` holds its line that reads the connection log and `steam_exe_up`, defined
+     before `STARTED=0`, and `signin_wait 1 signed_in steam_exe_up || { stop_steam; die "..."; }`.
+3. **The words after a wait that ran out** name the question, keeping each launcher's first sentence (tests and
+   a probe quote it):
+   - Surviving Mars: "Steam did not sign in by itself. If macOS asked a question (whether wine64 may use the
+     microphone, for one), answer it and start the game again. Otherwise open Steam in the `<name>` wrapper,
+     sign in, then launch again."
+   - Cities: Skylines II: after "Steam did not auto-login (token expired, or it crashed)." comes "If macOS
+     asked a question (whether wine64 may use the microphone, for one), answer it and relaunch. Otherwise
+     open Steam inside the wrapper, ..."; the rest of its sentence stays.
+4. **Ten minutes, not two.** The progress window stays up while the log grew within 900 s
+   (`common/launch-progress.swift`, `staysUp`, whose comment now names this wait as the longest silence), so
+   a wait of 600 s with one line at 45 s keeps it. The 45 s is above every sign-in measured on a start with
+   no question (8 to 30 s after the start). `L1_SIGNIN_SECS` is named in both launchers' headers and in
+   Surviving Mars's `README.md`.
+5. **The instruments that start a launcher keep two minutes.** `cities-skylines-2/scripts/boot-verify.sh`
+   waits 240 s for a game process and the Surviving Mars `tools/licence-wait-probe.sh` 300 s, each counting
+   on a launcher that gives up at 120 s; with ten minutes they would report "launcher still running" and
+   leave it holding the wrapper. Each now starts its launcher with `L1_SIGNIN_SECS=120`. (Cities: Skylines
+   II's licence probe runs boot-verify.) So at W3 step 2 a question nobody answers shows as the launcher's own
+   `ERROR:` line in boot-verify's output, as before.
+6. **The words that were wrong**, corrected in the same commits:
+   - `CHANGELOG.md`, Unreleased (`:22-24`): the sentence about "a few seconds longer ... macOS asks nothing"
+     becomes "**At the first start after the rename macOS may ask once more whether wine64 may use the
+     microphone** (it keeps that answer by the program's path, which changes with the wrapper's name). Answer
+     it, either way: Steam waits for the answer and then signs in with its saved login. The launcher says so if
+     the sign-in takes long, and waits ten minutes where it used to give up after two. On the one Mac measured,
+     Surviving Mars then took about 17 s longer to start than before the rename, each time (44 to 47 s to its
+     window, 26 to 28 s before); why is not known."
+   - `cities-skylines-2/INSTALL.md` (`:499`) and `surviving-mars-relaunched/INSTALL.md` (`:148-149`): "The first
+     start after the rename can take a few seconds longer; Steam stays signed in." becomes "At the first start
+     after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either way:
+     Steam waits for the answer, then signs in as before." The 17 s is in the release notes only: one Mac's
+     measure does not belong in a guide.
+   - `cities-skylines-2/INSTALL.md`, the Troubleshooting row "Steam did not auto-login" (`:533`), names the
+     question before the expired token.
+   - `cities-skylines-2/GOTCHAS.md` gains the entry (macOS keeps Wine's microphone answer by path; the tell in
+     the system log), and the entry of 2026-11-01 points at it.
+
+**What it does not do.** It does not answer the question for the player, cannot see whether one is up, and
+does not keep macOS from asking. `S734M.app` has no wait to lengthen: its window simply comes when the question
+is answered. The 17 s by which Surviving Mars's starts are slower since the rename is not touched and not
+explained. Whether a new install's first start is asked too was not measured (no live step of the install
+plans recorded a question).
+
+**Where it landed in this plan:** 3.8 (the note), section 4 (W2b; W3's last line), section 5 (the row
+"everyone, at the first start after the rename"), section 6 (WT19), section 7 (criterion 7), section 9 (a bullet), and this section.
+The built-in update plan (on the branch `built-in-update`, `docs/plans/built-in-update.md`, 3.6 and 6.1)
+speaks of "a new rule 10" and "new mutants from 17" in `common/test-launcher-parity.sh`: after this build its
+rule is 11 and its mutants start at 25. It is checked again before its first step in any case.
+
+### W2b on the Studio (2026-11-23): passed
+
+On James's word, with him at the Studio, from the branch at `5b06307`. Outputs in `<workspace>/wrapper-names-w2/`.
+
+| Step | What ran | Result |
+|---|---|---|
+| 1 | `--check` for each game, then both setups | **Pass.** No rename named or made; Cities: Skylines II's setup exit 0 in 9 s (10 of 10 patch scripts), Surviving Mars's exit 0 in 5 s; both installed launchers are byte for byte the branch's and hold `signin_wait` |
+| 2 | Surviving Mars's wrapper renamed by hand to `one-more-name.app`; the game started from its app (17:36:38); James left the question for a minute | **Pass.** macOS asked about the microphone at 17:36:47. The launcher's log read "[1/5] Still signing in. If macOS asks a question, answer it…" 46 s after the start, about 45 s after its "Starting Steam and signing in…" line, once. James answered at 17:37:55 (allowed), 68 s after the question. The same start went on: logon 100 s after the start, window after 117 s, menu reached, closed by a window-close message, saves uploaded, Steam down, no lock and no crash marker. Before W2b this start would have ended at 120 s with "Steam did not sign in by itself" only if the answer had come later; here the line told the player what to do, which is what was to be shown |
+| 3 | the name put back to `wrapper-3215050.app`; one more start (17:39:38) | **Pass.** No question from macOS and no hint line; logon 27 s after the start, window after 44 s, menu reached, saves uploaded |
+
+Afterwards: the three wrappers under the names setup gave them, each marked; nothing of Wine or Steam running.
+Not shown here: a wait that runs past ten minutes, and the early end for a Steam that is gone (WT19 covers both
+with stubs).
+
+### Check of the W2 fold (2026-11-23): build-ready-with-fixes, folded
+
+One agent built the fold in a scratch clone and ran the tests: the function and both calls work as first
+written, every test green, every mutant red, the two blocks equal byte for byte, and nothing else in the tree
+parses the old loops or loses a sentence it quotes. Its findings, and where each went:
+
+| # | Finding | Where it went |
+|---|---|---|
+| 1 | `boot-verify.sh` (240 s) and Surviving Mars's `licence-wait-probe.sh` (300 s) count on a launcher that gives up at 120 s | item 5; W3's first sentence |
+| 2 | The ten minutes are paid when Steam is not running at all | item 1: the third word and the 15 s rule, with the case it does not cover said; WT19 |
+| 3 | A limit of twenty digits printed an error and did not wait; a test returning 2 was passed on; the hint came before the look at 45 s | item 1; WT19 |
+| 4 | "WT18" was taken by the inventory's test | WT19 here, in W2b and in criterion 2 |
+| 5 | The 17 s was promised to the notes and written nowhere | item 6: in the release notes, not in the guides, and why |
+| 6 | "W3's last line" was not in W3 | W3 |
+| 7 | Section 9 untouched | section 9 |
+| 8 | The Troubleshooting row for "Steam did not auto-login" knew only the expired token; `L1_SIGNIN_SECS` had no home; the progress window's comment named another longest silence | item 6; item 4 |
+| 9 | Four things the test row asserted had no mutant | WT19 (parity 19 to 22) |
+
+## W3 on the MacBook (2026-11-23): step 0, taken before setup ran (steps 1 to 7 follow below)
+
+Taken at 20:05 EST from `main` at `210117a`, before the branch was checked out; the branch was then checked out
+for this record only, and nothing of it has run. Nothing of Wine or Steam was running. Outputs in
+`<workspace>/wrapper-names-w3/` (`inventory.txt`, `index.txt`, `candidates.txt`). Setup has not run, and no
+wrapper is renamed or marked.
+
+**The candidates (3.2 and 3.4): all three pass, so setup may run here.**
+
+| Wrapper | Folder, owner, mode | Attributes on the bundle | Prefix, `wine64` | Holds | Marker |
+|---|---|---|---|---|---|
+| `CS2dxmt11.app` | a real folder, this user's, `drwxr-xr-x` | `com.apple.FinderInfo`, `com.apple.provenance`; no quarantine | yes, executable | `steam.exe`, `Cities2.exe` | none |
+| `SurvivingMars.app` | the same | the same | yes, executable | `steam.exe`, `Project Spark/Mars.exe` | none |
+| `CS2dxmt11-pk110.app` | the same | the same | yes, executable | `steam.exe`; neither game's program | none |
+
+`Contents` and the prefix folder are `drwxr-xr-x` in each (these are Porting Kit clones, not installer-made).
+The store candidate's other tests: `S734M.app`'s `L1Prefix` names `CS2dxmt11-pk110.app`'s prefix, and the two
+game apps' `L1Prefix` name the other two, so it is the wrapper of no game. No old-named app is in
+`/Applications`. `common/mac-inventory.sh`: exit 0; layout new, `~/cs2-patch` absent, Cities: Skylines II build
+26404411 in its wrapper, Surviving Mars build 25579348 in its own.
+
+**The "before": `mdls`.**
+
+| App | `kMDItemAlternateNames` | `kMDItemLastUsedDate` (UTC) | `kMDItemUseCount` |
+|---|---|---|---|
+| `CS2dxmt11.app` | the file name only | null | null |
+| `CS2dxmt11-pk110.app` | the file name only | null | null |
+| `SurvivingMars.app` | the file name only | 2026-11-17 15:20:07 | 1 |
+| `Cities Skylines II.app` | as on the Studio | 2026-11-17 15:13:12 | 4 |
+| `Surviving Mars Relaunched.app` | as on the Studio | 2026-11-23 06:52:10 | 62 |
+| `S734M.app` | as on the Studio | 2026-11-19 08:17:22 | 2 |
+| `14unch3r.app` | as on the Studio | 2026-11-23 09:15:06 | 70 |
+
+So the learned pick of #26 is one use of the Surviving Mars wrapper, on the day the fault was reported, against
+62 of the game's app since.
+
+**The "before": `mdfind -onlyin ~/Applications`, top-level apps.**
+
+| Word | Apps returned |
+|---|---|
+| `surviving`, `mars` | `Surviving Mars Relaunched.app`, **`SurvivingMars.app`**, `Surviving Mars.app` |
+| `smr` | `Surviving Mars Relaunched.app` |
+| `cities`, `skylines` | `Cities Skylines II.app` |
+| `cs2` | `Cities Skylines II.app`, `S734M.app`, **`CS2dxmt11.app`**, **`CS2dxmt11-pk110.app`** |
+| `steam`, `store`, `s734m` | `S734M.app` |
+| `launcher`, `1launcher`, `14`, `1L` | `14unch3r.app` |
+| `Steambuild`, `wineskin`, `949230`, `3215050`, `wrapper` | none |
+| `PortingKit`, `Paul The Tall` | the three wrappers |
+
+**One thing the Studio does not have: `~/Applications/Surviving Mars.app`.** It is not a wrapper and not this
+project's: a shortcut the macOS Steam made on 2026-10-30, whose program is `open steam://run/464920`, the
+original Surviving Mars. It answers to `surviving` and `mars`, it has never been used (use count null), and no
+step of this plan touches it, so it will still be in the index after the rename. Step 6's pass condition ("no
+wrapper among the rows") can be met with it there; whether the window offers it for `surviving mars` is part of
+the typed "before" below. Removing it is James's choice, not a step of this plan.
+
+**The "before": Spotlight's window, typed by James the same evening, nothing opened (three screenshots).**
+
+| Typed | The field completes to | Rows, top first |
+|---|---|---|
+| `surviving mars` | "SurvivingMars.app", **the wrapper** | **`SurvivingMars.app`** (Top Hit); the folder `surviving-mars-relaunched` of the repo; the folder "Surviving Mars Relaunched" in Pictures; `surviving-mars-install.md`; `p5-run2.txt`. Neither the game's app nor the macOS Steam's shortcut `Surviving Mars.app` is among the five |
+| `cs2` | "cs2dxmt11.app — Open", **the game's wrapper** | **`CS2dxmt11.app`** (Top Hit); **`CS2dxmt11-pk110.app`**; `cs2-on-macos.png`; `cs2-paradox-mods.jpg`. Neither `Cities Skylines II.app` nor `S734M.app` is among the four shown |
+| `steam` | "steam.app — Open", the macOS Steam | `Steam.app` (Top Hit); the two CrossOver Steam apps; their two Support Center apps. No wrapper, and `S734M.app` is not among the five |
+
+So the fault is here as #26 reported it, and for `cs2` as well, where no wrapper has a use count: the window puts
+a wrapper first, and completes to it, for `surviving mars` and `cs2`. `steam` is as on the Studio before its
+rename (P0). An "Applications" filter is offered for `surviving mars`; none is among the filters visible in the
+other two screenshots. With that filter on, `surviving mars` (typed by James, a fourth screenshot): `Surviving Mars Relaunched.app`, then **`SurvivingMars.app`**, then the macOS Steam's shortcut `Surviving Mars.app`, which shows the same icon as the game's app. So the game's app is first there, as on the Studio before its rename, and after the rename two rows with one icon remain. The filter was not read for `cs2` or `steam`.
+
+**P1's MacBook half, the hand rename (W0 step 2, on James's word, 2026-11-23): the rename clears the fault here. Row A of 3.3 stands; branch B is not needed.**
+
+With nothing of Wine or Steam running and no process holding the wrapper's `wine64` or `wineserver`:
+`SurvivingMars.app` was renamed by `mv` to `wrapper-3215050.app` at 20:09:55 and `mdimport`ed. By 20:10:01 its
+display name in the index was the new one, and `surviving` and `mars` returned `Surviving Mars Relaunched.app`
+and `Surviving Mars.app` only; `wrapper` returned the wrapper. Its use count (1) and last-used date came with it
+under the new name. James then typed `surviving mars`, opening nothing (two screenshots):
+
+| Window | The field completes to | Rows, top first |
+|---|---|---|
+| plain | "surviving-mars-relaunched", the repo's folder | that folder (Top Hit); the folder "Surviving Mars Relaunched" in Pictures; `surviving-mars-install.md`; two rows from the web. **No wrapper, and no completion to one.** No app among the rows, as on the Studio (#28) |
+| Applications filter | | `Surviving Mars Relaunched.app`; the macOS Steam's shortcut `Surviving Mars.app`. **No wrapper** |
+
+So what Spotlight learned from one use of the wrapper did not follow the file to its new name. The name was
+put back at 20:11:39 (`SurvivingMars.app`, use count 1 again in the index) and 14unch3r's `--list` was read
+afterwards. Setup has not run.
+
+### W3 steps 1 to 7 on the MacBook (2026-11-23 and 2026-11-24, on James's word): passed, with findings
+
+**James, 2026-11-24: W3 passed.** Every step ran. Three things did not go as the text above has them and are findings, not failures of the rename: step 3's first start was 40 s slower (the microphone question); step 6 typed shows no wrapper, and the game's app is still not Spotlight's first row (#28); step 7's first Surviving Mars start after a hand rename failed after about three and a half minutes with the question on screen, and the next two ran (#32). Step 6's two readings with the Applications filter were not taken after the rename.
+
+The Studio started Surviving Mars twice on the same account at 20:13:58 and 20:15:47 (for #33) while step 2's
+boot-verify ran here; its Steam was logged off as "Logged In Elsewhere" at 20:16:30. Boot-verify passed all the
+same, and the Studio starts no Steam again until W3 is recorded as done.
+
+From the branch at `0990d7f`. Recorded first: the three names and each wrapper's `Info.plist`
+(`before-*.Info.plist`). Outputs in `<workspace>/wrapper-names-w3/`.
+
+| Step | What ran | Result |
+|---|---|---|
+| 1 | `setup.sh --check` for each game | **Pass.** Cities: Skylines II's names two renames (the game's wrapper to `wrapper-949230.app`, the Windows Steam's to `wrapper-0.app`), Surviving Mars's names one (`wrapper-3215050.app`); neither names anything else; both exit 0 |
+| 2 | Cities: Skylines II's setup, then `boot-verify.sh` detached | **Pass.** Setup exit 0 in 14 s, 10 of 10 patch scripts, both renames made, the game's app, `S734M.app` and 14unch3r rebuilt. Boot-verify `20261123-201442`: `VERDICT: PASS`, `GRACEFUL: yes`; the game up 50 s after the start, menu reached, exit `rc=0`, Steam down after, no crash marker. The launcher's log names `wrapper-949230.app` and holds no hint line: the first start after the rename did not wait for a question |
+| 3 | Surviving Mars's `scripts/install.sh` from the branch | **The installer's half: pass.** Exit 0 in 8 s, every step OK, the wrapper renamed in step 7, no `.launcher.lock` left in it. **The start, by James from 14unch3r (reopened after setup) at 20:27:00: the game ran and quit, `rc=0`, saves uploaded; 68 s from the launcher's start to the game's start, 40 s more than before, so outside the 30 s of the pass condition, and the place of the wait is the one W2 found.** The hint line "Still signing in. If macOS asks a question, answer it" was printed. Steam's connection log: the connectivity test started at 20:27:13 and ended at 20:27:47 (34 s; 1 s in the starts of 2026-11-22 23:34 and 2026-11-23 01:52), logon at 20:27:51, the game at 20:28:08. The IPv6 lines are the same in all three starts (HTTP `TIMEOUT`, UDP `FAILED, no addresses resolved`), so this is not #33's IPv6 wait. James: macOS asked about the microphone during this start, and he answered it. **The second start, at 20:30:07: pass.** 25 s to the game's start, no hint line, the connectivity test 1 s, logon at 20:30:16, `rc=0`, saves uploaded. At its start the game showed its own "Bug Report" window for the crash of that morning (#30: `@8c23 (Render Task)`, read from `0x102`); no new dump or crash file was written. This Mac's "before", from its launcher log and run logs with the original `ntdll.dll`: 27 s, 28 s and 28 s from the launcher's start to the game's start on 2026-11-22 and 23 |
+| 4 | `S734M.app`, opened by James (20:31) | **Pass.** `S734M.app` found `wrapper-0.app`; the connectivity test took 4 s and Steam logged on with the saved login at 20:31:33; James quit it at 20:36:28; nothing left running, no crash marker. Whether macOS asked a question at this start was not asked of James |
+| 5 | `wrappers.sh list`; 14unch3r `--list`; `lsregister -dump` | **Pass.** Three marked wrappers (`steam-wrapper`, `game-wrapper 949230`, `game-wrapper 3215050`), no `L1RenamePending`; two games and one Steam app, all `ready`. `lsregister`: 0 lines for each old path, 1 for each new one |
+| 6 | `mdimport` of each wrapper, then `mdfind` | **Index half: pass.** The old names were gone at the first look. `surviving`, `mars`: `Surviving Mars Relaunched.app` and the macOS Steam's shortcut `Surviving Mars.app`. `smr`: the game's app alone. `cities`, `skylines`: `Cities Skylines II.app`. `cs2`: that app and `S734M.app`. `steam`, `store`, `s734m`: `S734M.app`. `launcher`, `1launcher`, `14`: `14unch3r.app`. No wrapper for any of the twelve words; `wrapper` returns the three. **Typed half, `surviving mars`: the fault is gone, and the game's app is still not first** (James, four captures, 2026-11-23 evening). No wrapper in any row. Before James changed a setting: the completion and first row were the repo's folder `surviving-mars-relaunched`, then a folder `Surviving Mars Relaunched` in Pictures, the repo's `surviving-mars-install.md`, a Wikipedia row and a shop's page; the two apps (`Surviving Mars Relaunched.app`, then the macOS Steam's shortcut `Surviving Mars.app`) came far down, after two of the repo's scripts and Photos. James then added a folder `1launcher` to Spotlight's list of places it does not search (after it, `mdfind -onlyin` the repo returns 0, so it is the repo's folder). After that: the completion is `Surviving Mars Relaunched — Open` with Finder's icon, which is the Pictures folder and not the app, and web rows follow; the app was not in the rows captured. **`cs2`:** no wrapper either; the completion is `Ask Siri`, the first row a music album named Cs2, then documents from other folders; no app of the project in the rows captured. James, of both words: the right result flashes up first and is then replaced by this list. So the rename removes the wrapper from what is offered and does not make the game's app the first row: that order is Spotlight's own. **`steam`:** the macOS `Steam.app` is the completion and first row, as before the rename, then CrossOver's four Steam entries; no wrapper, and `S734M.app` not in the rows captured. **Picking the app:** James picked it from the list three times, and the order did not change. Read the same evening with `mdls`: the index holds nothing odd about `Surviving Mars Relaunched.app` (an application bundle, use count 14, used on both days), so no cause was found on the app's side; the generated apps carry no version and no `LSApplicationCategoryType`, and whether Spotlight ranks on either was not tested. **`14`:** `14unch3r.app` is the completion (`14unch3r.app — Open`) and the first row (James, one capture), so the window that lists both games is two keys away. The two readings with the Applications filter were not taken after setup's rename (for `surviving mars`, step 0's hand rename to the same name gave one: no wrapper among the rows; for `cs2` there is none) |
+| 7 | the Windows Steam's wrapper renamed by hand to `some-other-name.app`; `S734M.app` opened (20:37:02) | **The store's half: pass.** `S734M.app` found the wrapper by its mark; the connectivity test ran from 20:37:19 to 20:37:41 and Steam logged on with the saved login at 20:37:46, 44 s after the open; shut down with `steam.exe -shutdown`, down by 20:38:16, no crash marker; the name put back to `wrapper-0.app`. Afterwards: three marked wrappers, the window's three rows `ready`, and `mdfind` returns no app for `anything` or `some-other`. The Surviving Mars half (a hand rename, a start from the game's app and one from 14unch3r) is to come |
+| 7 | Surviving Mars's wrapper renamed by hand to `anything-at-all.app` (2026-11-24, 00:45:15, nothing of Wine running); the resolver found it at once | **The rule holds; the first start after the rename failed, as at the Studio, and the launcher gave up after about three and a half minutes, not ten.** Three starts by James. First (00:48:23): Steam started at 00:48:29 and began its connectivity test at 00:48:36; the test has no result line. The launcher printed the 45 s hint, and at 00:51:50 Steam's own log shows the launcher's `steam.exe -shutdown`, which came up as a client of its own (update check, a second connectivity test at 00:51:53, no result either); the launcher ended with "Steam did not sign in by itself", naming the `anything-at-all` wrapper. Second (00:55:31): logon at 00:56:00, 29 s; the game ran and exited `rc=0`. Third (00:56:58): logon at 00:57:26, 28 s; `rc=0`. No crash marker. The name put back to `wrapper-3215050.app` at 00:58:43; three marked wrappers. *Inferred, not seen:* `signin_wait` ends before its ten minutes only when Steam was seen and then gone for 15 s in a row, so the first Steam left, or stopped being attributed to the prefix, about three minutes in; that a `-shutdown` then started a client fits a Steam that was gone. Which start was from the game's app and which from 14unch3r, is James's to say. **James: macOS asked about the microphone at the first of the three.** So the question was on screen during the start that failed; **Read from macOS's privacy log afterwards:** the question was put at 00:48:36.4 and answered at 00:55:04.7, so it was still open when the launcher gave up at 00:51:50, six and a half minutes of question against three and a half of waiting. The wait built at W2b did not last its ten minutes here |
+
+
+**Read again from the Studio (2026-11-24, James: "review work from macbook"; then "Yes, fix wording").** The
+eighteen commits of this record change documents only; the identifier, link and ledger checks pass. Four things
+were found, and the wording is corrected in the same commit as this paragraph:
+
+1. **Step 7's early end contradicted what a player was told.** `CHANGELOG.md` (Unreleased) and both `INSTALL.md`
+   said that Steam waits for the answer and that the launcher waits ten minutes. They now say what was seen: an
+   answer within about a minute and the same start goes on (the Studio at W2b after 68 s, the MacBook at step 3); a
+   question left open for more than three minutes and that start ended, the next one ran. W2b's live step never
+   had the question open for longer than 68 s, so the ten minutes were never seen. **Why that Steam went away,
+   measured on the Studio the same night (2026-11-24, 01:16, James away, the question never answered; the
+   wrapper renamed by hand to `mic-probe-1124.app` and back):** Steam itself gives up. The first `steam.exe`
+   was gone 3 min 2 s after its connectivity test began (no result line; the processes were listed every
+   3 s, and none was left, so it is not the launcher's attribution). The launcher then counted 15 s and ran
+   `stop_steam`, whose `steam.exe -shutdown` came up as a client of its own (Steam's bootstrap log names it),
+   sat in the same wait for 3 min 1 s, and held the launcher, so the launcher's message came 6 min 30 s after
+   the start. macOS's privacy log has the question put at 01:16:16 and no answer. Afterwards: no Steam left, no
+   lock, no crash marker, the name back, three marked wrappers. The notes and guides now say that Steam gives
+   up after about three minutes. **Not built, and James's to decide before or after `v0.3.0` (issue #32):**
+   the launcher starts Steam again while its wait lasts, so that an answer within ten minutes still brings
+   the game up; and `stop_steam` sends no `-shutdown` when no Steam of the prefix is up. Output:
+   `probe-issue32/run-1.log` in the Surviving Mars workspace.
+2. **"Type `14`" rested on one reading**, on the MacBook, where 14unch3r's use count was 70 (step 0's table); #26
+   was about what Spotlight learns from use. The README, the changelog and both install guides now say it was
+   seen on one Mac that had opened 14unch3r often. Not read: the Studio (use count 2) and an account that has
+   never opened it (NL4, ML6).
+3. **Step 6's two readings with the Applications filter were not taken after setup's rename**; the row now says
+   so, with the one reading that stands in for `surviving mars`.
+4. **The folder `1launcher` on the MacBook's Search Privacy list** (step 6): no line says it was taken off. While
+   it is there, Spotlight readings on that Mac are not comparable with the earlier ones.
+
+Not changed: step 7 does not say which start was from the game's app and which from 14unch3r (James's to say),
+and it does not say how the Steam that the launcher's `-shutdown` started at 00:51:50 ended.
+
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |
@@ -1395,6 +1772,7 @@ on #26.
 | 2026-11-18 | 2 (fitted re-check of the rework) | fold verification · builder re-check | 2 agents; the builder built the installer's path, the mover's states and the least of the resolver in a scratch worktree and ran the tests and mutants; findings folded by one agent the same day, each cited line opened again, audited two-sided | Fable 5.2 (fold verification), Opus 5.5 (builder) | `ea4de42` | build-ready-with-fixes (folded) |
 | 2026-11-18 | fitted check of the pass-2 fold | fold verification | 1 agent; eight items folded the same day, audited two-sided | Fable 5.2 | `c5201a2` | build-ready-with-fixes, folded |
 | 2026-11-21 | 3 (W0 fold: P0 to P5 and WD1 to WD11 folded, then re-checked) | fold verification against section 1 and the code | the fold by the session; 1 read-only agent re-checked it; six should-fix and eleven minor folded the same day, audited two-sided | Opus 5.5 (fold), Fable 5.2 (re-check) | `d6f3afe` (code unchanged since `c5201a2`) | build-ready-with-fixes, folded |
+| 2026-11-23 | W2 fold (the sign-in wait, after W2's finding) | a builder's check of the fold | 1 agent built it in a scratch clone and ran the launchers' tests and every mutant; nine findings folded, and the build made again by the session with the third word and the instruments | Fable 5.2 | `b757471` | build-ready-with-fixes, folded |
 
 Key paths: `common/paths.sh` · `common/install-core.sh` · `common/make-wrapper.sh` · `common/mac-inventory.sh` ·
 `common/launcher-window.swift` · `common/check-release-move.sh` · `common/check-deploy.sh` · `common/games.tsv` ·

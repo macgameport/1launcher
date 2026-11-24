@@ -1,5 +1,5 @@
 #!/bin/bash
-# test-launch-feedback.sh -- what each launcher tells the player, and how: step, note, licence_wait, _alert
+# test-launch-feedback.sh -- what each launcher tells the player, and how: step, note, licence_wait, signin_wait, _alert
 # and die. From each launcher it takes the `QUIET=` line, the launch-feedback-config lines, the launch-feedback
 # block and die, and runs them in a fresh bash under `set -u`, driven by the settings the app's shim passes
 # (CS2_QUIET and CS2_PANEL, SM_QUIET and SM_PANEL). A recording osascript and a recording sleep come first on
@@ -15,6 +15,15 @@
 #   MUTANT=7 ...   licence_wait drops the remainder below 15 s; must exit 1
 #   MUTANT=8 ...   licence_wait takes the setting as it is, with no validation; must exit 1
 #   MUTANT=9 ...   the alert's text is pasted into the AppleScript source again; must exit 1
+#   MUTANT=10 ...  signin_wait says nothing while it waits (the hint dropped); must exit 1
+#   MUTANT=11 ...  signin_wait prints the hint at every poll from 45 s on; must exit 1
+#   MUTANT=12 ...  signin_wait's limit put back to 120 s; must exit 1
+#   MUTANT=13 ...  the hint's step number written out in the block, not the caller's; must exit 1
+#   MUTANT=14 ...  signin_wait counts Steam as gone before it was ever seen; must exit 1
+#   MUTANT=15 ...  signin_wait never ends early for a Steam that is gone; must exit 1
+#   MUTANT=16 ...  signin_wait does not start its count again when Steam is back; must exit 1
+#   MUTANT=17 ...  signin_wait takes a limit of four digits or more as it is; must exit 1
+#   MUTANT=18 ...  signin_wait returns the test's own code after the limit; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/launch-feedback-test.XXXX)"
@@ -42,6 +51,15 @@ for g in "${GAMES[@]}"; do
     7) mutate "$L" 's/else sleep "\$w"; w=0; fi$/else w=0; fi/' 'sleep 15; w=$((w - 15)); else w=0; fi' ;;
     8) mutate "$L" 's/^  case "\$2" in .*) w=\$((10#\$2)) ;; esac$/  w=${2:-$3}/' '  w=${2:-$3}' ;;
     9) mutate "$L" 's/^  else osascript .* as critical. .*; fi$/  else osascript -e "display alert \\"$TITLE\\" message \\"$1\\" as critical" >\/dev\/null 2>\&1; fi/' '  else osascript -e "display alert \"$TITLE\" message \"$1\" as critical" >/dev/null 2>&1; fi' ;;
+    10) sed -i '' '/^    if \[ "\$hinted" = 0 \] .* step "\$1" "Still signing in\./d' "$L"; grep -q 'Still signing in' "$L" && mutated ;;
+    11) mutate "$L" 's/^    if \[ "\$hinted" = 0 \] && \[ "\$t" -ge 45 \]; then /    if [ "$t" -ge 45 ]; then /' '    if [ "$t" -ge 45 ]; then hinted=1; step "$1" "Still signing in.' ;;
+    12) mutate "$L" 's/^  local limit="\${L1_SIGNIN_SECS:-600}" t=0 /  local limit="${L1_SIGNIN_SECS:-120}" t=0 /' '  local limit="${L1_SIGNIN_SECS:-120}" t=0 ' ;;
+    13) mutate "$L" 's/; step "\$1" "Still signing in\./; step 2 "Still signing in./' '; step 2 "Still signing in.' ;;
+    14) mutate "$L" 's/^      elif \[ "\$seen" = 1 \]; then gone=/      else gone=/' '      else gone=$((gone + 3)); [ "$gone" -ge 15 ] && return 1; fi' ;;
+    15) mutate "$L" 's/; \[ "\$gone" -ge 15 \] && return 1; fi$/; fi/' '      elif [ "$seen" = 1 ]; then gone=$((gone + 3)); fi' ;;
+    16) mutate "$L" 's/^      if "\$3"; then seen=1; gone=0$/      if "$3"; then seen=1/' '      if "$3"; then seen=1' ;;
+    17) mutate "$L" "s/^  case \"\$limit\" in ''|\*\[!0-9\]\*|????\*) limit=600 ;; esac$/  case \"\$limit\" in ''|*[!0-9]*) limit=600 ;; esac/" "  case \"\$limit\" in ''|*[!0-9]*) limit=600 ;; esac" ;;
+    18) awk '/^  "\$2" && return 0$/ { print "  \"$2\""; getline; next } { print }' "$L" > "$L.new" && mv "$L.new" "$L"; grep -q '^  "\$2"$' "$L" || mutated ;;
     *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
   esac
   {
@@ -63,7 +81,7 @@ printf 'set -u\n. "$1"\neval "$2"\n' > "$T/harness.sh"
 drive() {   # <pieces> <shell text> [NAME=value ...]: the text runs after the pieces; output in $T/out, calls in $T/osa and $T/sleeps
   local pc="$1" code="$2"; shift 2
   : > "$T/osa"; : > "$T/sleeps"
-  env -u CS2_QUIET -u CS2_PANEL -u SM_QUIET -u SM_PANEL "$@" PATH="$T/bin:$PATH" OSA_CALLS="$T/osa" SLEEP_CALLS="$T/sleeps" \
+  env -u CS2_QUIET -u CS2_PANEL -u SM_QUIET -u SM_PANEL -u L1_SIGNIN_SECS "$@" PATH="$T/bin:$PATH" OSA_CALLS="$T/osa" SLEEP_CALLS="$T/sleeps" \
     /bin/bash "$T/harness.sh" "$pc" "$code" > "$T/out" 2> "$T/err" < /dev/null
 }
 posts() { grep -c '^CALL ' "$T/osa"; }
@@ -138,6 +156,44 @@ for g in "${GAMES[@]}"; do
   drive "$B" 'licence_wait 3 "" 45' "${P}_QUIET=1"; a=$(posts)
   drive "$B" 'licence_wait 3 "" 45' "${P}_QUIET=1" "${P}_PANEL=1"
   check "$tag licence wait: its countdown lines are steps (3 pop-ups with no window, 0 with it)" "$a:$(posts)" "3:0"
+  # --- the sign-in wait: <step> <test>. The test given here fails N times and then succeeds, and prints a line
+  #     at each poll; a poll follows every 3 s of sleep, so the polls before the hint say when it came. The step
+  #     number, 4, is neither launcher's own.
+  SW='c=0; polled() { c=$((c + 1)); echo "poll $c"; [ "$c" -gt "$N" ]; }; signin_wait 4 polled; echo "rc:$? polls:$c"'
+  HINT='[4/5] Still signing in. If macOS asks a question, answer it…'
+  signcase() {   # <name> <polls that fail first> <rc> <polls> <seconds slept> <hint lines> <seconds before the hint, - for none> [NAME=value ...]
+    local name="$1" nfail="$2" want="rc:$3 polls:$4 slept:$5 each:$([ "$5" = 0 ] || echo 3) hints:$6 at:$7 other:0 stderr:0"; shift 7
+    drive "$B" "$SW" "N=$nfail" "$@"
+    check "$tag sign-in wait, $name" \
+      "$(tail -1 "$T/out") slept:$(awk '{ s += $1 } END { print s + 0 }' "$T/sleeps") each:$(sort -u "$T/sleeps" | tr '\n' ' ' | sed 's/ $//') hints:$(grep -cxF -- "$HINT" "$T/out") at:$(awk -v h="$HINT" '$0 == h { print (p - 1) * 3; f = 1; exit } /^poll / { p = $2 } END { if (!f) print "-" }' "$T/out") other:$(grep -v -e '^poll ' -e '^rc:' "$T/out" | grep -vcxF -- "$HINT") stderr:$(wc -c < "$T/err" | tr -d ' ')" \
+      "$want"
+  }
+  signcase "signed in at the first look: no wait, no line"            0      0 1   0   0 -
+  signcase "signed in after 30 s: no hint"                            10     0 11  30  0 -
+  signcase "signed in after 42 s: no hint"                            14     0 15  42  0 -
+  signcase "signed in after 60 s: the hint once, at 45 s, as step 4"  20     0 21  60  1 45
+  signcase "never, nothing set: 1 after 600 s, the hint once"         100000 1 201 600 1 45
+  signcase "never, L1_SIGNIN_SECS=9: 1 after 9 s"                     100000 1 4   9   0 - L1_SIGNIN_SECS=9
+  signcase "never, L1_SIGNIN_SECS=abc: counts as 600"                 100000 1 201 600 1 45 L1_SIGNIN_SECS=abc
+  signcase "never, L1_SIGNIN_SECS empty: counts as 600"               100000 1 201 600 1 45 L1_SIGNIN_SECS=
+  signcase "L1_SIGNIN_SECS=0: one look, no wait"                      100000 1 1   0   0 - L1_SIGNIN_SECS=0
+  drive "$B" "$SW" N=20 "${P}_QUIET=1"; a=$(posts)
+  drive "$B" "$SW" N=20 "${P}_QUIET=1" "${P}_PANEL=1"
+  check "$tag sign-in wait: its hint is a step (1 pop-up with no window, 0 with it)" "$a:$(posts)" "1:0"
+  signcase "never, L1_SIGNIN_SECS of twenty digits: counts as 600"     100000 1 201 600 1 45 L1_SIGNIN_SECS=99999999999999999999
+  drive "$B" 'bad() { return 2; }; signin_wait 4 bad; echo "rc:$?"' L1_SIGNIN_SECS=6
+  check "$tag sign-in wait: a test that returns 2 gives 1 after the limit" "$(tail -1 "$T/out")" "rc:1"
+  # --- the third word: is Steam there? GONE lists the looks at which it is not.
+  SA='c=0; polled() { c=$((c + 1)); [ "$c" -gt "$N" ]; }; up() { case " $GONE " in *" $c "*) return 1 ;; esac; return 0; }; signin_wait 4 polled up; echo "rc:$? polls:$c"'
+  alivecase() {   # <name> <polls that fail first> <looks at which Steam is gone> <rc> <polls> <seconds slept> [NAME=value ...]
+    local name="$1" nfail="$2" gone="$3" want="rc:$4 polls:$5 slept:$6 stderr:0"; shift 6
+    drive "$B" "$SA" "N=$nfail" "GONE=$gone" "$@"
+    check "$tag sign-in wait, $name" "$(tail -1 "$T/out") slept:$(awk '{ s += $1 } END { print s + 0 }' "$T/sleeps") stderr:$(wc -c < "$T/err" | tr -d ' ')" "$want"
+  }
+  alivecase "Steam seen, then gone for 15 s: 1 at once"                 100000 "5 6 7 8 9"                 1 9  24
+  alivecase "Steam never seen: waited for until the limit"             100000 "1 2 3 4 5 6 7 8 9 10 11"   1 11 30 L1_SIGNIN_SECS=30
+  alivecase "Steam gone 9 s, back, gone 6 s: waited for until the limit" 100000 "3 4 5 8 9"               1 11 30 L1_SIGNIN_SECS=30
+  alivecase "Steam gone 6 s, back, then signed in: 0"                   6      "3 4"                       0 7  18
 done
 
 echo "$fails failure(s)"

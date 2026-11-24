@@ -142,11 +142,17 @@ app, and a wrapper opened directly starts Steam outside the launcher. Setup now 
 `~/Applications/wrapper-3215050.app`, a name nobody types, and finds it by a mark it writes into the wrapper's
 `Info.plist`, whatever its name.
 
+A quick way to a game from Spotlight may be to type `14`: on the one Mac where it was tried, which had opened
+14unch3r often, that offered 14unch3r first. Typing the game's name no longer offers the wrapper, but Spotlight
+may still list files and web pages before the game's app; that order is Spotlight's own.
+
 **What setup does.** At its next run (the installer opened again, or setup in a checkout) it writes the mark and
 renames the wrapper: nothing is copied. It says what it renamed. It stops, and changes nothing, while the game or
 another launch or install is using the wrapper; when the rename cannot be made safely for another reason, it skips
-it, says why, and tries again at its next run. The first start after the rename can take a few seconds longer;
-Steam stays signed in.
+it, says why, and tries again at its next run. At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
+way. Answered within about a minute, Steam signs in as before and the game starts. If the start ends with "Steam
+did not sign in by itself", start the game again once the question is answered: with the question left open, Steam
+itself gives up after about three minutes, and the message comes some minutes after that.
 
 **What stops working until you point it at the new name:** anything of yours that names the old path: a Dock
 item made from the wrapper, an alias, a saved command. The game's app and 14unch3r find the wrapper whatever its

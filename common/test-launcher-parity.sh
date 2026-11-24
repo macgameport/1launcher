@@ -17,7 +17,11 @@
 #      defined outside the block;
 #   8. a probe's test for the `Licence wait:` line does not find the line the block prints;
 #   9. the find-wrapper blocks (how each launcher finds common/wrappers.sh, docs/plans/wrapper-names.md 3.2) differ
-#      by a byte, or a launcher does not set the three values the block reads just above it.
+#      by a byte, or a launcher does not set the three values the block reads just above it;
+#  10. a launcher does not call signin_wait exactly once, outside the block, with the number of its
+#      "Starting Steam and signing in…" step, a function it defines and steam_exe_up, with a die behind it that names the
+#      question from macOS; a launcher still holds a `seq 1 40` loop; or the hint in the block is not one
+#      plain literal of at most 62 characters (docs/plans/wrapper-names.md, W2 fold).
 # The lock functions are compared in common/test-launch-lock.sh.
 #   bash common/test-launcher-parity.sh            exit 0 = every rule holds; exit 2 = a file is missing
 #   MUTANT=1 ...    one byte changed in one copy of the launch-feedback block; must exit 1
@@ -36,6 +40,14 @@
 #   MUTANT=14 ...   step 0 used outside acquire_lock; must exit 1
 #   MUTANT=15 ...   a step text of 63 characters; must exit 1
 #   MUTANT=16 ...   one launcher's find-wrapper block looks one more place; must exit 1
+#   MUTANT=17 ...   one launcher's signin_wait call given another step's number; must exit 1
+#   MUTANT=18 ...   the old loop of forty polls left in one launcher, before its call; must exit 1
+#   MUTANT=19 ...   the hint in the block made 63 characters, in both launchers; must exit 1
+#   MUTANT=20 ...   one launcher's words after the wait no longer name the question from macOS; must exit 1
+#   MUTANT=21 ...   one launcher's test of a sign-in no longer defined; must exit 1
+#   MUTANT=22 ...   a second signin_wait call in one launcher; must exit 1
+#   MUTANT=23 ...   the hint's step number written out in the block, in both launchers; must exit 1
+#   MUTANT=24 ...   one launcher's call no longer says how to tell that Steam is gone; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/launcher-parity-test.XXXX)"
@@ -78,6 +90,15 @@ case "${MUTANT:-0}" in
   14) mutate "$CS2" 's/^step 4 "Checking for a game update…"$/step 0 "Checking for a game update…"/' 'step 0 "Checking for a game update…"' ;;
   15) mutate "$SM" "s/^step 4 \"Checking for a game update…\"\$/step 4 \"$X63\"/" "step 4 \"$X63\"" ;;
   16) mutate "$CS2" 's|^APP=""; WRAPPER_RC=3$|APP=""; WRAPPER_RC=3; [ -f "$HOME/wrappers.sh" ] \&\& _l1w="$HOME"|' '[ -f "$HOME/wrappers.sh" ] && _l1w="$HOME"' ;;
+  17) mutate "$SM" 's/^  signin_wait 1 signed_in steam_exe_up || /  signin_wait 2 signed_in steam_exe_up || /' '  signin_wait 2 signed_in steam_exe_up || ' ;;
+  18) awk '/^  signin_wait 2 signed_in steam_exe_up \|\| / { print "  ok=0"; print "  for i in $(seq 1 40); do"; print "    if fresh_login && webhelper_up; then ok=1; break; fi"; print "    sleep 3"; print "  done" } { print }' "$CS2" > "$CS2.new" && mv "$CS2.new" "$CS2"
+      grep -q '^  for i in \$(seq 1 40); do$' "$CS2" || mutated ;;
+  19) for f in "$CS2" "$SM"; do mutate "$f" "s/; step \"\\\$1\" \"Still signing in\\. [^\"]*\"; fi\$/; step \"\$1\" \"$X63\"; fi/" "; step \"\$1\" \"$X63\"; fi"; done ;;
+  20) mutate "$SM" 's/ If macOS asked a question (whether wine64 may use the microphone, for one), answer it and start the game again\. Otherwise open Steam / Open Steam /' 'by itself. Open Steam in the ' ;;
+  21) sed -i '' '/^signed_in() { /d' "$CS2"; grep -q '^signed_in() ' "$CS2" && mutated ;;
+  22) printf '%s\n' 'signin_wait 2 signed_in steam_exe_up || die "Steam did not auto-login. If macOS asked a question (whether wine64 may use the microphone, for one), answer it and relaunch."' >> "$CS2"; [ "$(grep -c '^ *signin_wait 2 signed_in steam_exe_up ' "$CS2")" = 2 ] || mutated ;;
+  23) for f in "$CS2" "$SM"; do mutate "$f" 's/; step "\$1" "Still signing in\./; step 2 "Still signing in./' '; step 2 "Still signing in.'; done ;;
+  24) mutate "$SM" 's/^  signin_wait 1 signed_in steam_exe_up || /  signin_wait 1 signed_in || /' '  signin_wait 1 signed_in || ' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 fails=0
@@ -248,6 +269,27 @@ check "9. the two copies are the same, byte for byte" "$(cmp -s "$T/fw.cs2" "$T/
 vals() { grep -B1 '^# >>> find-wrapper (' "$1" | head -n 1 | sed 's/   #.*//'; }
 check "9. each sets its own game, variable and folder on the line above it" "$(vals "$CS2")|$(vals "$SM")" \
   "WRAPPER_APPID=949230; WRAPPER_VAR=CS2_WRAPPER; WRAPPER_GAMEDIR=..|WRAPPER_APPID=3215050; WRAPPER_VAR=SM_WRAPPER; WRAPPER_GAMEDIR=."
+
+# --- 10. the sign-in wait (docs/plans/wrapper-names.md, W2 fold): one call per launcher, with its own step and
+#         its own test of a sign-in; the hint is in the block, so rule 1 keeps it the same in both
+ASKED='If macOS asked a question (whether wine64 may use the microphone, for one), answer it and '
+for L in "$CS2" "$SM"; do
+  tag="${L##*/}"
+  outside "$L" | grep -v '^[[:space:]]*#' | grep -E '(^|[^A-Za-z0-9_])signin_wait([^A-Za-z0-9_(]|$)' > "$T/sw"
+  check "10. $tag calls signin_wait once, outside the block" "$(wc -l < "$T/sw" | tr -d ' ')" 1
+  sn="$(sed -n 's/^ *signin_wait \([0-9][0-9]*\) \([A-Za-z_][A-Za-z0-9_]*\) steam_exe_up || .*/\1/p' "$T/sw")"
+  fn="$(sed -n 's/^ *signin_wait \([0-9][0-9]*\) \([A-Za-z_][A-Za-z0-9_]*\) steam_exe_up || .*/\2/p' "$T/sw")"
+  check "10. $tag: the call is signin_wait <number> <function> steam_exe_up || ..." "$(printf '%s\n' "$sn" | grep -c '^[0-9][0-9]*$'):$(printf '%s\n' "$fn" | grep -c .)" "1:1"
+  check "10. $tag: the number is that of its one \"Starting Steam and signing in…\" step" \
+    "$(calls "$L" | awk -F'\t' '$1 == "step" && $5 == "Starting Steam and signing in…" { print $3 }' | list)" "$sn"
+  check "10. $tag defines that function once, outside the block" "$(outside "$L" | grep -c "^[[:space:]]*${fn:-?}() {")" 1
+  check "10. $tag: a die behind the call names the question from macOS" "$(grep -F -- "$ASKED" "$T/sw" | grep -c '|| .*die "Steam did not ')" 1
+  check "10. $tag holds no loop of forty polls" "$(grep -c 'seq 1 40' "$L")" 0
+  check "10. $tag: the block holds signin_wait" "$(block "$L" | grep -c '^signin_wait() {')" 1
+  hint="$(block "$L" | sed -n 's/^    if .*; then hinted=1; step "\$1" "\([^"\\]*\)"; fi$/\1/p')"
+  check "10. $tag: the hint in the block is one plain literal, sent with the caller's step number" "$(printf '%s\n' "$hint" | grep -c .):$(block "$L" | grep -c 'Still signing in')" "1:1"
+  check "10. $tag: the hint is no longer than 62 characters" "$([ "$(chars "$hint")" -le 62 ] && echo yes || echo "$(chars "$hint")")" yes
+done
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

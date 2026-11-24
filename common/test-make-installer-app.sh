@@ -192,6 +192,13 @@ for f in $DOCS; do
   check "  ...any link to the installer's release names installer-1 and the ZIP" "$rel" 0
 done
 check "the app built with the default ref fetches that address" "$(grep -cF "\"$ADDR\"" "$P")" 1
+# the update's copies of it (docs/plans/built-in-update.md, 3.4 and 6.1): the file `updates.sh --open` writes fetches
+# the same file by the branch's full name, and the driver's pasted line is the documents'
+for f in common/updates.sh common/update-games.sh; do
+  n="$(grep -o 'raw\.githubusercontent\.com/macgameport/1launcher/[^ )"`]*install\.sh' "$REPO/$f" | wc -l | tr -d ' ')"
+  same="$(grep -o 'raw\.githubusercontent\.com/macgameport/1launcher/[^ )"`]*install\.sh' "$REPO/$f" | sed 's#/refs/heads/#/#' | grep -cx 'raw.githubusercontent.com/macgameport/1launcher/release/install.sh')"
+  check "the address in $f: there, and the same once refs/heads/ is taken out" "$([ "$n" -ge 1 ] && echo some):$((n - same))" "some:0"
+done
 
 # --- published by Steam app ID (docs/plans/shared-installer.md, 2.2 and ST6): nothing given out names a folder
 folders="$(cut -f2 "$T/common/games.tsv" | grep -c .)"

@@ -33,6 +33,8 @@
 #    34 setup's unset of SM_WRAPPER removed (WT11 (b))       35 --holders-skip not passed by setup (WT11 (g))
 #    (36 to 38: docs/plans/built-in-update.md, U0, UT2: the free-space caution.)
 #    39 the own-files loop for common/paths.sh, updates.sh and games.tsv dropped (built-in-update 3.3; UT5, also)
+#    The update, its parts joined (built-in-update 3.4; UT7b):
+#    40 l1u_stamp not called by setup            41 the driver's test of a stamp's line turned round
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -120,7 +122,7 @@ PY
   31) sed -i '' 's|W="\$(l1w_incomplete game "\$GAME_APPID")" \|\| W=|W=|' "$S" ;;
   32) sed -i '' 's| --mark game "\$GAME_APPID"||g' "$CORE" ;;
   33) sed -i '' 's|^core_after_setup \$?$|(exit $?)|' "$S" ;;
-  34|35) ;;   # applied below, to the real setup.sh of the WT11 copy
+  34|35|40|41) ;;   # applied below, to the real setup.sh of the WT11 copy (41: to the driver beside it)
   # UT2 (docs/plans/built-in-update.md, U0): 36 silent for a finished install only; 37 silent for a game that is
   # only partly there too; 38 the wrapper not asked for first
   36) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed) return 0 ;; esac; fi#' "$CORE" ;;
@@ -130,7 +132,7 @@ PY
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
-  case "$M" in 34|35) ;; *) cmp -s "$HERE/scripts/install.sh" "$S" && cmp -s "$REPO/common/install-core.sh" "$CORE" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;; esac
+  case "$M" in 34|35|40|41) ;; *) cmp -s "$HERE/scripts/install.sh" "$S" && cmp -s "$REPO/common/install-core.sh" "$CORE" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;; esac
   bash -n "$S" && bash -n "$CORE" || { echo "REFUSED: mutant $M does not parse"; exit 2; }
 fi
 
@@ -449,6 +451,8 @@ case "$M" in
       grep -q '^: no unset$' "$S2" || { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
   35) sed -i '' 's|a+=(--holders-skip --held-by "\$PPID")|a+=(--held-by "$PPID")|' "$S2"
       grep -q -- '--holders-skip --held-by' "$S2" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+  40) sed -i '' 's|^  l1u_stamp 3215050 "\$REPO" \&\& return 0$|  return 0   # no stamp|' "$S2"
+      grep -q '^  return 0   # no stamp$' "$S2" || { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
 esac
 stub xcrun 'exit 1'
 stub wprobe '[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"; exit 0'
@@ -469,6 +473,47 @@ check "UT5 through the installer and the real setup: the stamp holds the line, n
   "$rc:$(cat "$(HOME="$HOME" bash "$R2/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')/installed/3215050" 2>/dev/null)" "0:release${TAB}-${TAB}0123456789abcdef0123456789abcdef01234567${TAB}1800000000"
 oldw; rc=$(run2 STUB_WHOLDERS=4242)
 check "WT11 a holder reported by the probe: exit 0, one skip line, nothing renamed" "$rc:$(o 'skip: something of the wrapper'):$([ -d "$OLDW" ] && echo kept)" "0:1:kept"
+rm -rf "$HOME/Applications"/*.app "$HOME/Library"
+
+# --- UT7b (docs/plans/built-in-update.md, 3.4 and section 6): the parts joined. The root install.sh, pasted with
+#     the word update, fetches an archive of the WT11 copy (a stub curl serves it) and goes through the real
+#     driver, this installer and the real setup. The table's other game has a stub installer that keeps no record.
+cp "$REPO/common/update-games.sh" "$R2/common/"; printf '%s\n' '# Changelog' '' '## Unreleased' '' '## v0.1.0 (2026-01-01)' '' 'One.' > "$R2/CHANGELOG.md"
+if [ "$M" = 41 ]; then
+  sed -i '' 's|^  if \[ "\$line" != "\$L1_FETCHED_REF" \]; then$|  if [ "$line" = "$L1_FETCHED_REF" ]; then|' "$R2/common/update-games.sh"
+  grep -q '^  if \[ "\$line" = "\$L1_FETCHED_REF" \]; then$' "$R2/common/update-games.sh" || { echo "REFUSED: mutant $M did not apply"; exit 2; }
+fi
+OTHER="$(awk -F'\t' '$1 == 949230 { print $2 }' "$R2/common/games.tsv")"; mkdir -p "$R2/$OTHER/scripts" "$T/bin3"
+printf '#!/bin/bash\necho "SECOND args=$* update=${L1_UPDATE:-}" >> "$CALLS"\necho "  the other game.s installer (a stub) stops here"\nexit "${STUB_SECOND_EXIT:-0}"\n' > "$R2/$OTHER/scripts/install.sh"
+( cd "$T" && tar -czf "$T/ut7b.tar.gz" repo2 )
+# a curl that serves that archive as curl would (the body to the file, the answer's code to standard output)
+printf '#!/bin/bash\necho "ARCHIVE $*" >> "$CALLS"\nwhile [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done\ncp "%s" "$out"; printf 200\n' "$T/ut7b.tar.gz" > "$T/bin3/curl"; chmod +x "$T/bin3/curl"
+UD="$(bash "$R2/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"   # the record's folder under the scratch home
+recorded() {   # a finished install whose record says release at v0.0.9, with the tree's version on offer
+  rm -rf "$HOME/Applications"/*.app "$HOME/Library"; world; mkwrap "$NEWW" 3.0 steam game mark
+  mkdir -p "$UD/installed"; printf 'release\tv0.0.9\t-\t100\n' > "$UD/installed/3215050"; printf 'v0.1.0\t200\n' > "$UD/offer"
+}
+state() { L1_UPDATE_DIR="$UD" bash "$R2/common/updates.sh" | cut -f1-3; }   # the tree's tool on this home's record
+upd() {   # [VAR=value ...]: install.sh update, pasted; output in $T/out; echoes the exit code
+  : > "$CALLS"
+  env -u SM_WRAPPER -u L1_WRAPPER_GIVEN PATH="$T/bin3:$T/bin2:$PATH" L1_WMOVE_PROBE="$T/bin/wprobe" L1_UPDATE_NOW=1800000000 "$@" \
+    /bin/bash -c "$(cat "$REPO/install.sh")" 1launcher-install update < /dev/null > "$T/out" 2>&1; echo $?
+}
+recorded
+check "UT7b a finished install recorded at v0.0.9, v0.1.0 on offer: the state is ready" "$(state)" "ready${TAB}v0.0.9${TAB}v0.1.0"
+rc=$(upd)
+check "UT7b install.sh update through the real driver, installer and setup: exit 0, the stamp holds the tree's version, and the deployed tool says current" \
+  "$rc:$(c '^ARCHIVE .*/archive/refs/heads/release\.tar\.gz$'):$(cat "$UD/installed/3215050" 2>/dev/null):$(bash "$UD/updates.sh" 2>/dev/null | cut -f1-3):$(tmpleft)" \
+  "0:1:release${TAB}v0.1.0${TAB}-${TAB}1800000000:current${TAB}v0.1.0${TAB}v0.1.0:0"
+check "  ...the driver's heading and closing lines are there" "$(o '^=== Surviving Mars: Relaunched ===$'):$(o '^Surviving Mars: Relaunched: updated\.$'):$(o '^Everything is up to date: 1launcher v0\.1\.0\.$')" "1:1:1"
+recorded; W2="$HOME/Applications/$(bash "$REPO/common/wrappers.sh" name game 949230)"; mkwrap "$W2" 2.1
+plutil -replace L1Role -string game-wrapper "$W2/Contents/Info.plist"; plutil -replace L1SteamAppID -integer 949230 "$W2/Contents/Info.plist"
+mkdir -p "$W2/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II"; : > "$W2/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2.exe"
+printf 'release\tv0.0.9\t-\t100\n' > "$UD/installed/949230"
+rc=$(upd STUB_SECOND_EXIT=3)
+check "UT7b with the second game's installer made to stop: exit 3, this game's stamp is new, the other's is old, and the state stays ready" \
+  "$rc:$(c '^SECOND args= update=1$'):$(cut -f2 "$UD/installed/3215050" 2>/dev/null):$(cut -f2 "$UD/installed/949230" 2>/dev/null):$(state)" \
+  "3:1:v0.1.0:v0.0.9:ready${TAB}v0.0.9${TAB}v0.1.0"
 rm -rf "$HOME/Applications"/*.app "$HOME/Library"
 
 echo "$fails failure(s)"

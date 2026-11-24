@@ -15,9 +15,11 @@
 #   bash updates.sh --refresh [--now]  the state line with a fifth field: fetched, failed or skipped
 #   bash updates.sh --notes            the fetched notes of every version newer than the installed one, cleaned
 #   bash updates.sh --noted            the offered version, at most twice for one version (for a launcher)
+#   bash updates.sh --open             opened, after it wrote the update's file and handed it to Terminal; or
+#                                      failed TAB <one sentence>. It refuses unless the state is ready
 #   bash updates.sh --version-of <f>   that file's version, or nothing
 # Sourced, the functions a caller uses: l1u_own, l1u_stamp <app ID> <tree root>, l1u_stamp_of <app ID>,
-# l1u_state, l1u_version_of <file>, l1u_newer <x> <y>, l1u_refresh [--now], l1u_notes, l1u_noted.
+# l1u_state, l1u_version_of <file>, l1u_newer <x> <y>, l1u_refresh [--now], l1u_notes, l1u_noted, l1u_open.
 # Run, it uses L1_UPDATE_DIR if set and otherwise the folder it lies in, which for the deployed copy is the
 # folder itself. Every call exits 0 when it could answer and says the outcome in its output. The options and
 # the output lines are a contract between versions on one Mac: a later version may add an option or a field
@@ -30,7 +32,12 @@
 # Every value read from the folder is matched whole before it is used, and nothing in it is ever read with
 # `.` or eval: under bash 3.2 a value such as a[$(cmd)] in an arithmetic place runs cmd. A file that is a
 # link, is not a regular file, is over 4,096 bytes or fails its match counts as absent.
-# Test variables: L1_UPDATE_DIR; L1_UPDATE_NOW, an epoch that stands for now; L1_CURL (default /usr/bin/curl).
+# The update's file (--open; plan 3.4) is "Update 1launcher.command" in a new temporary folder. It holds
+# constants only, but for curl's path; it fetches the root install.sh of `release` into a file beside itself,
+# runs it with the one word update, says in one line what happened, and removes itself and its folder.
+# Test variables: L1_UPDATE_DIR; L1_UPDATE_NOW, an epoch that stands for now; L1_CURL (default /usr/bin/curl)
+# and L1_OPEN (default /usr/bin/open), the two programs a test replaces. L1_CURL is written into the update's
+# file only when it is a plain absolute path, and /usr/bin/curl otherwise.
 # Every function that runs a program sets PATH itself: a launcher calls this with Wine's bin first on PATH.
 
 _L1U_VER='^v(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$'
@@ -42,6 +49,7 @@ _L1U_ID='^[1-9][0-9]{0,9}$'
 _L1U_SIZE='^[0-9]{1,15}$'
 _L1U_URL='https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/CHANGELOG.md'
 _L1U_MORE='More: https://github.com/macgameport/1launcher/blob/release/CHANGELOG.md'
+_L1U_PROG='^/[A-Za-z0-9._/-]{1,200}$'
 
 _l1u_is_version() { [ "$1" = - ] || [[ "$1" =~ $_L1U_VER ]]; }
 
@@ -291,6 +299,55 @@ l1u_noted() {
   printf '%s\n' "$L1U_OFFERED"
 }
 
+# The button's file (plan 3.4): prints `opened` after it wrote "Update 1launcher.command" into a new temporary
+# folder and handed it to Terminal, or `failed` TAB one sentence. It refuses unless the state is ready. The
+# file holds constants only, but for curl's path: L1_CURL when that is a plain absolute path (so that a test
+# can serve the fetch), else /usr/bin/curl. The installer is fetched into a file and never taken from curl's
+# standard output, where the answer's code (-w) would become the script's last line.
+l1u_open() {
+  local PATH=/usr/bin:/bin:/usr/sbin:/sbin d f curl=/usr/bin/curl
+  _l1u_state
+  if [ "$L1U_WORD" != ready ]; then printf 'failed\t%s\n' "No update is waiting."; return 0; fi
+  [[ "${L1_CURL:-}" =~ $_L1U_PROG ]] && curl="$L1_CURL"
+  d="$(mktemp -d "${TMPDIR:-/tmp}/1launcher-update.XXXXXX" 2>/dev/null)" \
+    || d="$(mktemp -d /tmp/1launcher-update.XXXXXX 2>/dev/null)" \
+    || { printf 'failed\t%s\n' "A temporary folder could not be made. Restart the Mac, then try the update again."; return 0; }
+  f="$d/Update 1launcher.command"
+  if ! { printf '%s\n' '#!/bin/bash' "CURL='$curl'"; cat << 'EOS'
+# Written by 1launcher (updates.sh --open): the update. It removes itself and its folder when it exits.
+F="$(dirname "$0")/.1launcher-fetch.$$"
+trap 'rm -f "$0" "$F"; rmdir "$(dirname "$0")" 2>/dev/null' EXIT
+clear
+echo "Fetching the installer from github.com/macgameport/1launcher ..."
+code="$("$CURL" -q --proto '=https' --tlsv1.2 -sSL -o "$F" -w '%{http_code}' https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/install.sh)"; rc=$?
+S="$(cat "$F" 2>/dev/null)"; rm -f "$F"
+if [ "$rc" = 0 ] && [ "$code" = 200 ]; then
+  /bin/bash -c "$S" 1launcher-install update; rc=$?
+  echo
+  case "$rc" in
+    0) echo "Updated. You can close this window." ;;
+    3) echo "Not everything was updated: see the lines above. You can close this window." ;;
+    *) echo "The update did not finish: see the lines above. You can close this window." ;;
+  esac
+  exit "$rc"
+fi
+echo
+if [ "$code" = 404 ]; then echo "This version of 1launcher cannot update an install. Paste the installer line from the guide instead."
+else echo "GitHub could not be reached. Check the network, then try the update again."; fi
+echo "You can close this window."
+exit 1
+EOS
+  } > "$f" 2>/dev/null || ! chmod 755 "$f" 2>/dev/null; then
+    rm -f "$f"; rmdir "$d" 2>/dev/null
+    printf 'failed\t%s\n' "The update's file could not be written. Restart the Mac, then try the update again."; return 0
+  fi
+  if ! "${L1_OPEN:-/usr/bin/open}" -a Terminal "$f" > /dev/null 2>&1; then
+    rm -f "$f"; rmdir "$d" 2>/dev/null
+    printf 'failed\t%s\n' "Terminal could not be opened for the update."; return 0
+  fi
+  echo opened
+}
+
 if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
   if [ -z "${L1_UPDATE_DIR:-}" ]; then L1_UPDATE_DIR="$(cd "$(/usr/bin/dirname "$0")" && pwd)"; fi
   case "${1:-}" in
@@ -301,11 +358,8 @@ if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
     --notes) l1u_notes ;;
     --noted) l1u_noted ;;
     --version-of) l1u_version_of "${2:-}" || true ;;
-    --open)   # the button's file is written by a later step of the plan (3.4); until then nothing is opened
-      _l1u_state
-      if [ "$L1U_WORD" = ready ]; then printf 'failed\t%s\n' "This version of 1launcher cannot open an update yet."
-      else printf 'failed\t%s\n' "No update is waiting."; fi ;;
-    *) echo "usage: updates.sh [--refresh [--now] | --notes | --noted | --version-of <file>]" >&2; exit 2 ;;
+    --open) l1u_open ;;
+    *) echo "usage: updates.sh [--refresh [--now] | --notes | --noted | --open | --version-of <file>]" >&2; exit 2 ;;
   esac
   exit 0
 fi

@@ -1,7 +1,9 @@
 #!/bin/bash
 # test-updates.sh -- common/updates.sh (docs/plans/built-in-update.md, 3.1 and 3.2; tests UT3 and UT4), with
 # its folder at a scratch place, L1_UPDATE_NOW as the clock and L1_CURL a stub that honours -o and -w as curl
-# does: the body goes to the file and the answer's code to standard output. No network, nothing of Wine.
+# does: the body goes to the file and the answer's code to standard output. For --open (3.4), L1_OPEN is a
+# stub that records its arguments and TMPDIR a scratch folder; what the written file does when it is run is
+# common/test-update-games.sh's. No network, nothing of Wine, no Terminal.
 #   bash common/test-updates.sh            exit 0 = every case passed
 #   MUTANT=1 ...  versions compared as text; must exit 1
 #   MUTANT=2 ...  ready when the offer is different, not when it is newer; must exit 1
@@ -23,6 +25,9 @@
 #   MUTANT=18 ..  the offer lowered by an older answer; must exit 1
 #   MUTANT=19 ..  the second read of a file dropped; must exit 1
 #   MUTANT=20 ..  a commit left in the environment recorded for a checkout; must exit 1
+#   MUTANT=21 ..  --open not asking the state first (a file written and opened when no update waits); must exit 1
+#   MUTANT=22 ..  `opened` said when Terminal could not be opened; must exit 1
+#   MUTANT=23 ..  L1_CURL written into the update's file unmatched; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 T="$(mktemp -d /tmp/updates-test.XXXX)"
@@ -54,6 +59,9 @@ case "${MUTANT:-0}" in
   18) mutate 's#^    if l1u_newer "\$have" "\$ver"; then$#    if false; then#' '^    if false; then$' ;;
   19) mutate 's#IFS= read -r more || r2=1; }#r2=1; }#' 'rest || true; r2=1; }' ;;
   20) mutate 's#^  \[ "\$line" != checkout \] && \[\[ "\${L1_FETCHED_COMMIT:-}"#  [[ "${L1_FETCHED_COMMIT:-}"#' '^  \[\[ "\${L1_FETCHED_COMMIT:-}" =~ \$_L1U_COMMIT \]\] && commit=' ;;
+  21) mutate 's#^  if \[ "\$L1U_WORD" != ready \]; then printf .failed.t%s.n. "No update is waiting\."; return 0; fi$#  :#' '^  :$' ;;
+  22) mutate 's#^  if ! "\${L1_OPEN:-/usr/bin/open}" -a Terminal "\$f" > /dev/null 2>&1; then$#  "${L1_OPEN:-/usr/bin/open}" -a Terminal "$f" > /dev/null 2>\&1; if false; then#' '-a Terminal "\$f" > /dev/null 2>&1; if false; then$' ;;
+  23) mutate 's#^  \[\[ "\${L1_CURL:-}" =~ \$_L1U_PROG \]\] && curl="\$L1_CURL"$#  [ -n "${L1_CURL:-}" ] \&\& curl="$L1_CURL"#' '^  \[ -n "\${L1_CURL:-}" \] && curl="\$L1_CURL"$' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 bash -n "$S" || { echo "REFUSED: the mutant does not parse"; exit 2; }
@@ -280,9 +288,49 @@ check "  ...not ready: nothing printed, nothing written" "$(tool --noted):$([ -e
 fresh; stamp 949230 release v0.2.0; offer v0.3.0; printf 'v0.3.0\ta[$(touch %s/ran4)]\n' "$T" > "$U/noted"
 check "  ...a noted whose count would run a command: taken as absent, nothing run" "$(tool --noted):$([ -e "$T/ran4" ] && echo ran || echo none)" "v0.3.0:none"
 
-# --- UT4: --open before the update exists, --version-of, and values that would run a command
-fresh; stamp 949230 release v0.3.0; offer v0.3.0; before="$(ls -A "$U" | tr '\n' ' ')"
-check "--open when not ready: failed and the sentence, nothing written" "$(tool --open):$([ "$(ls -A "$U" | tr '\n' ' ')" = "$before" ] && echo same)" "failed${TAB}No update is waiting.:same"
+# --- UT4: --open (plan 3.4): it refuses unless the state is ready; ready, it writes one file and hands it to Terminal
+printf '#!/bin/bash\n{ printf "OPEN"; for a in "$@"; do printf "|%%s" "$a"; done; echo; } >> "$CALLS"\nexit "${STUB_OPEN_EXIT:-0}"\n' > "$T/bin/open"; chmod +x "$T/bin/open"
+TM="$T/tmp"
+opn() {   # [VAR=value ...]: --open with the stubs; TMPDIR is a fresh scratch folder; the call log is emptied first
+  rm -rf "$TM"; mkdir -p "$TM"; : > "$CALLS"
+  env L1_UPDATE_DIR="$U" L1_CURL="$T/bin/curl" L1_OPEN="$T/bin/open" L1_UPDATE_NOW="$NOW" TMPDIR="$TM" "$@" bash "$S" --open; echo "rc=$?"
+}
+opens() { grep -c '^OPEN' "$CALLS"; }
+tmleft() { ls -A "$TM" | wc -l | tr -d ' '; }
+for st in current unknown none manual off; do
+  fresh
+  case "$st" in
+    current) stamp 949230 release v0.3.0; offer v0.3.0 ;;
+    unknown) stamp 949230 release v0.2.0 ;;
+    none) offer v0.3.0 ;;
+    manual) stamp 949230 checkout v0.2.0; offer v0.3.0 ;;
+    off) stamp 949230 release v0.2.0; offer v0.3.0; : > "$U/off" ;;
+  esac
+  before="$(ls -A "$U" | tr '\n' ' ')"
+  check "--open in the state $st: failed and the sentence, exit 0, nothing written, L1_OPEN not called" \
+    "$(opn | tr '\n' ':')$([ "$(ls -A "$U" | tr '\n' ' ')" = "$before" ] && echo same):$(tmleft):$(opens)" "failed${TAB}No update is waiting.:rc=0:same:0:0"
+done
+fresh; stamp 949230 release v0.2.0; offer v0.3.0; before="$(ls -A "$U" | tr '\n' ' ')"
+check "--open when ready: opened, exit 0, nothing written into the record's folder" "$(opn | tr '\n' ':')$([ "$(ls -A "$U" | tr '\n' ' ')" = "$before" ] && echo same)" "opened:rc=0:same"
+CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
+check "  ...L1_OPEN called once, with -a, Terminal and one file: Update 1launcher.command, mode 755, alone in a new folder of TMPDIR" \
+  "$(opens):$(grep -c "^OPEN|-a|Terminal|$TM/1launcher-update\.[A-Za-z0-9]*/Update 1launcher\.command\$" "$CALLS"):$(stat -f %Lp "$CMD" 2>/dev/null):$(tmleft):$(ls -A "$(dirname "$CMD")" | wc -l | tr -d ' ')" "1:1:755:1:1"
+check "  ...the file names the curl it was given, and fetches the root install.sh of release by the branch's full name" \
+  "$(sed -n 2p "$CMD"):$(grep -c 'https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/install\.sh)"; rc=\$?$' "$CMD"):$(grep -c 'raw\.githubusercontent' "$CMD")" "CURL='$T/bin/curl':1:1"
+check "  ...curl is not called by --open itself" "$(calls)" 0
+for bad in "x'; touch $T/ran7; '" '/tmp/$(touch '"$T"'/ran7)' 'curl' "$T/bin/cu rl"; do
+  check "L1_CURL holding [$bad]: the file names /usr/bin/curl, and nothing ran" "$(opn L1_CURL="$bad" | tr '\n' ':')$(sed -n 2p "$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"):$([ -e "$T/ran7" ] && echo ran || echo none)" "opened:rc=0:CURL='/usr/bin/curl':none"
+done
+check "Terminal could not be opened: failed and a sentence, exit 0, and the file and its folder are removed again" \
+  "$(opn STUB_OPEN_EXIT=1 | tr '\n' ':')$(opens):$(tmleft)" "failed${TAB}Terminal could not be opened for the update.:rc=0:1:0"
+# with a TMPDIR that cannot be used, the folder is made in /tmp, as the installer app's is; what this run made is removed
+check "a TMPDIR that is no folder: opened all the same, the file in a new folder of /tmp" \
+  "$(opn TMPDIR="$T/no-such-folder" | tr '\n' ':')$(grep -c '^OPEN|-a|Terminal|/tmp/1launcher-update\.[A-Za-z0-9]*/Update 1launcher\.command$' "$CALLS")" "opened:rc=0:1"
+CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
+case "$CMD" in /tmp/1launcher-update.*/"Update 1launcher.command") rm -f "$CMD"; rmdir "$(dirname "$CMD")" 2>/dev/null ;; esac
+
+# --- UT4: --version-of, and values that would run a command
+fresh
 check "--version-of: a file's version, and nothing for a file without one, exit 0 both times" "$(tool --version-of "$T/body.md"; echo "rc=$?"):$(tool --version-of "$T/none.md"; echo "rc=$?")" "v0.3.0
 rc=0:rc=0"
 fresh; stamp 949230 release v0.2.0; printf 'a[$(touch %s/ran5)]\n' "$T" > "$U/tried"

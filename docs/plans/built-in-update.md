@@ -1105,7 +1105,7 @@ findings (5 and 3) were read again in the source by the session before they were
   an app ID it does not know (`common/wrappers.sh:44`): a new row of a fetched `games.tsv` then falls under "not
   set up here".
 
-## UL1 on the Studio (2026-11-24, on James's word: "Sure. I'm on my way home", then "I'm at the Studio"): passed, one defect found and fixed, a light capture still to come
+## UL1 on the Studio (2026-11-24, on James's word: "Sure. I'm on my way home", then "I'm at the Studio"): passed, one defect found and fixed
 
 From the branch at `d4c6a19`, then with the fix below. Staged while the screen was still locked, with no request
 made: in the workspace's `built-in-update-ul1/`, a scratch `_update` (mode 700) holding one stamp
@@ -1122,7 +1122,8 @@ The window alone was captured, with the system in Dark.
 | "Not Now" | **Pass.** The sheet closes; Terminal is not started; no update folder is made |
 | The menu | **Pass.** "Check for Updates…" stands above "Quit 14unch3r". Chosen, it opens the same sheet, and `tried` is unchanged (the state held was `ready`, so nothing is asked again, as 3.5 says) |
 | A second opening within the day | **Pass.** The window comes up at 444 by 228 with the line; `tried` is unchanged |
-| Escape, Command-U, Return (James's keys) | **Pass.** After the three, the sheet was closed, the window still open, `tried` unchanged, and nothing had been run |
+| Escape, Command-U, Return (James's keys) | **Pass.** James: "The keys behaved as expected." After the three, the sheet was closed, the window still open, `tried` unchanged, and nothing had been run |
+| The system in Light (James switched it) | **Pass.** The window and the sheet were captured alone again: both keep their dark look, as the window's design has it, and every word reads as in Dark. James: "window looked the same in light/dark". In that capture "Not Now" is drawn without its colour: the window was not the active one when it was taken |
 | "Update" | **Pass.** At 07:53:11 the click; the window quit; Terminal opened and printed "Fetching the installer from github.com/macgameport/1launcher ...", "not a Steam app ID: update", the usage line, the front page's address, then "The update did not finish: see the lines above. You can close this window."; by 07:53:22 the file and its folder were gone. So the word arrives at today's `release`, which does not know it |
 | Dialogs of macOS between the click and that line | **None that held it up:** nobody was at the Studio at that minute and the lines were printed within eleven seconds. The privacy log has no question in that minute; the quarantine resolver was asked once at 07:53:12, with nothing shown |
 
@@ -1148,8 +1149,11 @@ test passes on the changed source (245 cases) and all 96 mutants of its two test
    have none for links, and `CLAUDE.md` § Releases asks for full addresses in a section.
 3. **Terminal's window title** shows the temporary folder's path and the file's name.
 
-**Still to come of UL1:** the capture with the system in Light (the setting is James's to switch), and the
-clean-up: the scratch apps deleted and unregistered with `lsregister -u`.
+**Cleaned up afterwards:** the scratch window quit; the two scratch builds of 14unch3r and the fixture app moved
+to the Trash and unregistered with `lsregister -u` (a move into the Trash registers an app again, so the
+unregistering is done after the move: a first try before it left both copies registered). `lsregister -dump`
+then names one 14unch3r, the installed one. The scratch `_update`, the captures and the build outputs stay in
+the workspace's `built-in-update-ul1/`. Exit criterion 2 still wants UL1b, UL1c, UL2 and UL3.
 
 ## Review log
 

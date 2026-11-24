@@ -25,6 +25,9 @@ program's path, which changes with the wrapper's name). Answer it, either way: S
 signs in with its saved login. The launcher says so if the sign-in takes long, and waits ten minutes where it used
 to give up after two.
 
+**What the rename does not do:** it takes the wrappers out of what Spotlight offers for a game's name; it does not
+put the game's app first, and files and web pages may still come before it. Typing `14` offers 14unch3r first.
+
 **What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
 made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find a
 wrapper whatever its name, after a rename by hand too.

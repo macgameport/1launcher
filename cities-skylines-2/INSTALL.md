@@ -491,6 +491,10 @@ names them `wrapper-949230.app` and `wrapper-0.app`, names nobody types, and eve
 mark setup writes into its `Info.plist`, whatever its name. `bash common/wrappers.sh list` prints the wrappers
 on this Mac.
 
+The quickest way to a game from Spotlight is to type `14`, which offers 14unch3r first. Typing the game's name no
+longer offers the wrapper, but Spotlight may still list files and web pages before the game's app; that order is
+Spotlight's own.
+
 **What setup does.** At its next run it writes the mark and renames each wrapper: nothing is copied. It says what
 it renamed. It stops, before it changes anything, while the game, its launcher or an install is using the game's
 wrapper. When a rename cannot be made safely for another reason (Steam open in the Windows Steam's wrapper while

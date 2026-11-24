@@ -35,8 +35,8 @@ Own the game on Steam, on an Apple Silicon Mac? Paste one line into Terminal:
 The installer makes the Wine wrapper, puts Steam for Windows in it, waits while you sign in and the game
 downloads (about 100 GB), applies the patches, and builds a double-clickable app with the game's own icon,
 and **14unch3r**, one small window that lists every game set up on your Mac and starts the one you click.
-Each game's own app stays in Applications, so Spotlight finds it too, and setup offers a 14unch3r shortcut
-on the Desktop. **[The install guide](cities-skylines-2/INSTALL.md) walks through it step by step**, says
+Each game's own app stays in Applications, and setup offers a 14unch3r shortcut on the Desktop. In Spotlight,
+type `14`: 14unch3r comes first. A game's name may bring files and web pages before its app. **[The install guide](cities-skylines-2/INSTALL.md) walks through it step by step**, says
 what is downloaded from whom, and has the same steps by hand. The stack, the numbers and the story are in
 the game's [README](cities-skylines-2/README.md).
 

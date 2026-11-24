@@ -142,6 +142,10 @@ app, and a wrapper opened directly starts Steam outside the launcher. Setup now 
 `~/Applications/wrapper-3215050.app`, a name nobody types, and finds it by a mark it writes into the wrapper's
 `Info.plist`, whatever its name.
 
+The quickest way to a game from Spotlight is to type `14`, which offers 14unch3r first. Typing the game's name no
+longer offers the wrapper, but Spotlight may still list files and web pages before the game's app; that order is
+Spotlight's own.
+
 **What setup does.** At its next run (the installer opened again, or setup in a checkout) it writes the mark and
 renames the wrapper: nothing is copied. It says what it renamed. It stops, and changes nothing, while the game or
 another launch or install is using the wrapper; when the rename cannot be made safely for another reason, it skips

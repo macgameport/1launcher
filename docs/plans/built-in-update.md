@@ -1,14 +1,15 @@
 # A built-in update: 14unch3r says when a new version is out, and one click runs the installer again
 
-**Status: check-it'd 2026-11-23 — build-ready-with-fixes (pass 1c, folded).** Pass 1 said needs-rework and the
-plan was reworked the same day; pass 1b, two fitted re-checks of the rework, said build-ready-with-fixes and is
-folded; pass 1c verified that fold. Not started. **Before U1:** the plan is checked
-again once `wrapper-names` has merged, because that merge moves the lines this plan cites. One change there is already known (2026-11-23,
-W2b of that plan): `common/test-launcher-parity.sh` now has a rule 10 and mutants up to 24, and the launchers'
-shared block gained `signin_wait`, so this plan's new rule is 11 and its mutants start at 25 (3.6, UT9 and 6.1
-still say 10 and 17), and its notice block sits in launchers that wait ten minutes for Steam's sign-in.
+**Status: check-it'd 2026-11-24 — build-ready-with-fixes (pass 2, the re-check after the merge, folded).** Pass 1
+(2026-11-23) said needs-rework and the plan was reworked the same day; pass 1b, two fitted re-checks of the
+rework, said build-ready-with-fixes and is folded; pass 1c verified that fold. `wrapper-names` was merged into
+`main` on 2026-11-24 (`35f0eb8`, the commit of `v0.3.0`), `main` was merged into this branch, and pass 2 read
+every cite again against that tree: no blocker, ten corrections, folded ("Pass 2" at the foot). Not started.
+The merge changed two things this plan leans on: `common/test-launcher-parity.sh` now has a rule 10 and mutants
+up to 24, so this plan's new rule is 11 and its mutants start at 25; and the launchers' shared block gained
+`signin_wait`, so its notice block sits in launchers that wait up to ten minutes for Steam's sign-in.
 Written 2026-11-23 on the branch `built-in-update`, cut from `wrapper-names` at `efe176b`; every `file:line`
-below was read at that commit. Pass 1's findings, and where each went, are at the foot ("Review corrections").
+below was read at that commit and again at `35f0eb8`, where the seven that had moved were corrected. Pass 1's findings, and where each went, are at the foot ("Review corrections").
 Tracking: issue #34 (opened 2026-11-23); the two defects of step U0 are on record as issue #31. James answered the fifteen decisions of section 9 on
 2026-11-23: fourteen as recommended, which is what the design below is built on, and UD9 his own way (the
 release that carries this raises the third number).
@@ -84,14 +85,14 @@ Skylines II's setup for its words only (`cities-skylines-2/scripts/setup.sh:99`,
 ### 1.4 The launchers
 
 - Each launcher's only update step is the game's own, through Steam (`step 4 "Checking for a game update…"`,
-  `surviving-mars-relaunched/launch-relaunched.sh:460`; `cities-skylines-2/launchers/launch-cs2-dxmt11.sh:395`).
-- `note` (`launch-relaunched.sh:122`, `launch-cs2-dxmt11.sh:61`) is "something the player should see even
+  `surviving-mars-relaunched/launch-relaunched.sh:478`; `cities-skylines-2/launchers/launch-cs2-dxmt11.sh:413`).
+- `note` (`launch-relaunched.sh:124`, `launch-cs2-dxmt11.sh:63`) is "something the player should see even
   while the progress window is up": a line in the log and, from the app, a notification. The notification is
   `osascript ... display notification`, with the text passed as an argument.
-- A deployed launcher finds `wrappers.sh` beside itself (`launch-relaunched.sh:71-80`), and
+- A deployed launcher finds `wrappers.sh` beside itself (`launch-relaunched.sh:73-82`), and
   `common/test-launcher-parity.sh` holds the blocks the two launchers share equal byte for byte (rule 9) and
   records every `note` call in two lists that must match exactly (rule 5).
-- Both launchers put the Wine engine's `bin` first on `PATH` (`launch-relaunched.sh:87`).
+- Both launchers put the Wine engine's `bin` first on `PATH` (`launch-relaunched.sh:89`).
 
 ### 1.5 What GitHub, curl and macOS answer (measured from the Studio: `/usr/bin/curl` 8.7.1, bash 3.2.57, macOS 27.2)
 
@@ -294,12 +295,13 @@ Both `cities-skylines-2/scripts/setup.sh` and `surviving-mars-relaunched/scripts
    (`~/...`). 14unch3r will not offer updates for this game." and keeps its exit code;
 6. in the closing words, name every other game of `l1w_games` that has a wrapper with the game in it (looked for with
    its wrapper variable unset, as in 3.4 step 4) and no stamp: "`<title>` was set up by an older version. Paste its installer line once, so that it gets updates
-   too."
+   too." The title is the third field of that ID's row in the tree's `common/games.tsv` (`l1w_row` carries no
+   title), so `games.tsv` joins the new own-files loop below, and each hand-made `common/` of UT5 gains it.
 
 **The own-files lists.** A fetched tree can lose files while it is in use (macOS clears old temporary
 files), and each script tests for the files it needs before it starts. `common/updates.sh`, and for
 Surviving Mars `common/paths.sh`, join them in a **separate loop below the existing one** at
-`cities-skylines-2/scripts/setup.sh:70-74`, `surviving-mars-relaunched/scripts/setup.sh:93` and `:164`,
+`cities-skylines-2/scripts/setup.sh:72-76`, `surviving-mars-relaunched/scripts/setup.sh:93` and `:164`,
 `cities-skylines-2/scripts/install.sh:109-110` and `surviving-mars-relaunched/scripts/install.sh:226-228`.
 A separate loop, because three older mutants are anchored on the existing loops' lines (Surviving Mars's
 `test-setup.sh` MUTANT 17; Cities: Skylines II's 37 and 38).
@@ -569,7 +571,7 @@ it is measured against this in section 9).
 ### 3.6 The launchers
 
 One block, the same in both launchers, placed after the `acquire_lock` call and before the first `step 1`,
-and compared byte for byte by `common/test-launcher-parity.sh` (a new rule 10, in the form of rule 9, which
+and compared byte for byte by `common/test-launcher-parity.sh` (a new rule 11, in the form of rule 9, which
 also checks the place):
 
 ```bash
@@ -590,7 +592,7 @@ unset _l1u _l1v _l1p
 ```
 
 - The repository's own launcher has no `update-dir` beside it, so it does nothing there.
-- The sentence joins both recorded `note` lists of rule 5 (`common/test-launcher-parity.sh:163-187`), or that
+- The sentence joins both recorded `note` lists of rule 5 (`common/test-launcher-parity.sh:184-208`), or that
   rule goes red.
 - The notice is said at the first two starts after a version comes out, whichever games they are (`noted`).
   Two, because a notification from `osascript` belongs to Script Editor and may not show at all (1.5), and
@@ -678,8 +680,13 @@ Each step is one or more commits on `built-in-update`, with its tests in the sam
 section 6 applied and seen red before the step is called done.
 
 - **U0. Two fixes found on the way.** The root `install.sh` and the installer app's program judge a fetch by
-  3.2's rule (the installer app's program fetches into a file in its own folder, as 3.4's `.command` does);
-  `core_space` is silent on a finished install. Tests UT1, UT2.
+  3.2's rule (the installer app's program fetches into a file in its own folder, as 3.4's `.command` does, reads
+  it into `S` and removes it at once, so that its trap line and its `/bin/bash -c "$S" 1launcher-install` line,
+  on which mutants 5 and 6 of `common/test-make-installer-app.sh` are anchored, keep their text, and the case
+  "only itself is removed" still holds); `-L` and `--retry 2` stay on the root `install.sh`'s fetch (the archive
+  address redirects), `-f` goes; for every code but `200` and `404` the sentence keeps the words "GitHub could
+  not be reached" and "Check the network" and adds the code; `core_space` is silent on a finished install.
+  Tests UT1, UT2.
 - **U1. The record and the rule.** `common/paths.sh` and its header; `common/updates.sh`;
   `common/test-updates.sh`; the root `install.sh` exports `L1_FETCHED_COMMIT`; both setups, both installers'
   own-files loops and `common/make-launcher-app.sh` (3.3; its key is tested with the window, in UT8); the `CLAUDE.md` line for `_update` and
@@ -687,7 +694,7 @@ section 6 applied and seen red before the step is called done.
 - **U2. The update.** `install.sh update`, `common/update-games.sh`, `common/test-update-games.sh`,
   `updates.sh --open`, and the `refs/heads` form of the archive for `release`. Tests UT6, UT7, UT7b.
 - **U3. The window.** The seams, the foot line, the sheets, the menu item, the text modes. Test UT8.
-- **U4. The launchers.** The block, rule 10, the two note lists. Test UT9.
+- **U4. The launchers.** The block, rule 11, the two note lists. Test UT9.
 - **U5. The gate and the words.** `common/check-release-move.sh` question 5 and its header (UT10);
   `CLAUDE.md` (published addresses, releases, `common/` in the layout table); the four statements of 3.10;
   the root `README.md`, both `INSTALL.md` files, `cities-skylines-2/README.md` and Surviving Mars's
@@ -749,14 +756,15 @@ output, as curl does. A mutant is applied to the source and must be seen red (ex
 | UT3 | `common/test-updates.sh` (new) | `l1u_version_of`: the first version heading under `## Unreleased`; none when there is none; a leading zero, a fourth number, no date, `###` are not versions; only the first 1 MiB is read. `l1u_newer`: `v0.10.0` over `v0.9.9`; equal is not newer; `-` is lowest; a seven-digit number is not a version. `l1u_state`: each of the six words in 3.2's order, among them: a `checkout` stamp and **no `offer`** gives `manual` with the detail `checkout`; no stamp and an `offer` gives `none`; two `release` stamps at different versions use the lower; an `offer` older than the installed version gives `current`; in `installed/` a link, a folder, a two-line file, a five-field file and a file of 5,000 bytes are passed over; a stamp or an `offer` whose version is `a[$(touch <file>)]`, `v0.08.1`, `v1.2.3x` or 30 digits is passed over or absent, and `<file>` does not exist; fields that have no value print `-` | `l1u_newer` made a comparison of text; "ready when different"; "lowest" made "highest"; the `manual` rule dropped; rules 3 and 4 swapped; the match before the comparison dropped |
 | UT4 | the same file | `l1u_refresh`: within a day of `tried`, curl is not called, **after a failure too**; at exactly 86,400 s and with `--now` it is, with exactly 3.2's options, `-q` first; a `tried` after now: called; curl exit 56, exit 63, a 404, a 2 MiB file served with exit 0, and a file with no heading each leave `offer` and `notes.md` byte for byte as they were, leave no `.fetch.*` behind and print `failed`; in the states `off`, `none` and `manual` curl is never called, with `--now` too; with no `installed/` folder, or a `_update` others can write, nothing is written; two refreshes at once with a slow stub leave a whole `notes.md`; every call exits 0. `--notes`: the newer sections only, newest first, cleaned by each of the five rules (a fixture per rule), cut before the line that passes 200 lines or 12,000 bytes, with the closing line. `--noted`: prints at the first two calls for a version and then nothing; prints again for a newer version; when not `ready`, prints nothing and writes nothing. `--open` when not `ready`: `failed` and the sentence, nothing written, `L1_OPEN` not called | `tried` not written on failure; the script's own size check dropped; the future-time test dropped; the state test before the fetch dropped; the `installed/` test dropped; one fixed name for the new file; `--noted` not writing `noted` |
 | UT5 | both games' `scripts/test-setup.sh`; each scratch `common/` gains `paths.sh` and `updates.sh` | After a setup that finishes: `installed/<app ID>` holds `checkout`, the tree's version, `-` and `L1_UPDATE_NOW`; with `L1_FETCHED_REF=release` and `L1_FETCHED_COMMIT`: `release` and that commit; with `L1_FETCHED_REF=v0.2.0`: that line, and the state is `manual`; `_update/updates.sh` is byte for byte `common/updates.sh`; `update-dir` beside the launcher holds the path; a setup that stops or fails writes no stamp and leaves an older one as it was; `--check`, `--mac-only` and `--dest` touch nothing of `_update`; exit 5 writes one; a `_update` writable by the group: exit 1, nothing written; `common/updates.sh` missing from the tree: the own-files sentence; another game set up with no stamp is named in the closing words; with `L1_UPDATE=1` and a terminal, the Desktop question is not asked | the stamp written before the app is built; the stamp written on failure; the stamp written in place; `updates.sh` not deployed; `update-dir` not written; the own-folder test dropped; the `L1_UPDATE` test dropped |
-| UT6 | `common/test-bootstrap.sh` | `install.sh update`, fetched: the fixture's `common/update-games.sh` is run with `L1_FETCHED_REF` and `L1_FETCHED_COMMIT` and no argument, and its exit code is returned; `update x --yes` and `update --check`: usage, exit 2, nothing fetched; a fixture without the driver: the sentence, exit 1; from a checkout: the sentence, exit 2, curl not called; `Update`, `updates` and a folder's name are still "not a Steam app ID"; the game path also exports `L1_FETCHED_COMMIT` | the word accepted in any case; arguments passed on to the driver; the checkout case made to run the driver; the exit code dropped |
+| UT6 | `common/test-bootstrap.sh` | `install.sh update`, fetched: the fixture's `common/update-games.sh` is run with `L1_FETCHED_REF` and `L1_FETCHED_COMMIT` and no argument, and its exit code is returned; `update x --yes` and `update --check`: usage, exit 2, nothing fetched; a fixture without the driver: the sentence, exit 1; from a checkout: the sentence, exit 2, curl not called; `Update`, `updates` and a folder's name are still "not a Steam app ID" | the word accepted in any case; arguments passed on to the driver; the checkout case made to run the driver; the exit code dropped |
 | UT7 | `common/test-update-games.sh` (new): stub installers that record their arguments and read one line of their input; the driver is given a file as its input; wrappers are the "bare" fixture of `docs/plans/wrapper-names.md` section 6 in the scratch `~/Applications` | Two set-up games stamped `release`: both installers run, in the order of the IDs as numbers, with no argument, **each reading the driver's own input**; a failing installer first: the second still runs, exit 1; 3 then 0: exit 3; 1 then 3: exit 1; an installer's exit 4: failed; 5: done. **A set-up game with no stamp beside a stamped one: not run, named with its pasted line, the closing line is not "Everything is up to date", exit 3.** A stamp on `checkout`: not run, the line says so, exit 3. A stamp newer than the tree: left. A stamp whose wrapper is gone, or whose wrapper has no game in it: the stamp removed, no installer run. Two wrappers marked alike: nothing run, the stamp kept, exit 1. The game's wrapper variable set to a path that does not exist: the set-up game is still found. The row of a set-up game given the folder `../x`: nothing run outside the tree. `offer` newer than the tree: the "not yet" sentence, nothing run, exit 3. A live `updating` lock: the sentence, exit 3; a dead one: taken over. No game set up: its sentence, exit 3. `L1_FETCHED_REF` unset: exit 2. The stubs' recorded arguments hold no `--yes`. `updates.sh --open`: the written file, run with a stub curl, records `$0` as `1launcher-install` and `$1` as `update`, one word; it is mode 755, begins with `clear`, removes itself, exits with the driver's code and says the sentence for it; `L1_OPEN` got `-a Terminal` and its path | the stamps as the list (the look at wrappers dropped); the list read by a loop on standard input; the driver stopping at the first failure; resolver exit 2 treated as "none"; the wrapper variable not unset; `--yes` added; a stamp on another line run anyway; 5 counted as failed; the folder taken without the pattern; the version test dropped; the lock dropped; `release` made `main` in the `.command`'s address |
 | UT7b | each game's `scripts/test-install.sh`, in the case that keeps the real `setup.sh` | **The parts joined.** From a finished-install fixture with a stamp `release` at `v0.0.9` and an `offer` at the tree's version: `updates.sh` says `ready`; `install.sh update` through the real driver, installer and setup; then the stamp holds the tree's version and `updates.sh` says `current`. With the second game's installer made to stop: its stamp is old and the state stays `ready` | `l1u_stamp` not called by setup; the driver's test of the line inverted |
 | UT8 | `common/test-launcher-window.sh`, through the modes of 3.5; `common/test-make-launcher-app.sh` | The first call of the tool has no argument, and no text mode calls `--refresh`; with a stub saying `ready`: `--grid` holds the `foot` line with 3.5's text, the grid 24 points higher, the row selected at open unchanged, the contrast line for it at 4.5 or more; `--act foot` prints `sheet update` and never `start`, and the tool was not called with `--open`; `--update-sheet`: message, text, notes, and the buttons in the order "Not Now", "Update"; the text shows the state line's second field; with `-`, the first sentence is absent; with no notes, the one line with the address; with a busy row, the other sheet, naming the first busy row; `--update-open`: `opened` gives `quit`, `failed` and a sentence gives that sentence, no answer gives "The update tool did not answer."; `--update-menu`: each of the seven rows of 3.5's table, among them `current` with a failed fetch giving row 6; under a sheet, `--act` Escape gives `end-sheet` and Return `pass`; every other state, a seventh word, an offered text that is not a version, a tool that hangs past the limit, a tool that is a link, a relative `--update-dir`: no foot line, and the list as without the tool; `--update-dir` with no value: usage; with no tile, no `foot` line and the size as today; `L1UpdateDir` is in the built `Info.plist` only when the tool exists; the three source gates of 3.5 and its fourth count | the first button of the sheet made to give `open`; the test before the one call of `--open` dropped; the first call made `--refresh`; "Update" made the first button; the line that sets `sheet` dropped before one new sheet (the first source gate); the line shown for `current`; the offered text shown unmatched; the limit removed from a call; row 6 placed after row 7 |
-| UT9 | `common/test-launcher-parity.sh` (rule 10); behaviour in a new `common/test-update-notice.sh`, on the block taken from each launcher in turn, with `update-dir` beside the extract | The two blocks are equal byte for byte, and in each launcher the block lies after the `acquire_lock` call and before the first `step 1`; the sentence is in both recorded note lists; the tool printing a version: exactly one `note` with 3.6's sentence; printing nothing: none; a tool that sleeps 30 s on `--refresh`: the block returns within 2 s; the refresh's output goes nowhere; no `update-dir`, a relative path in it, a folder with no `updates.sh`, a tool that is a link: nothing is run; the tool printing `v0.04.0`, a version with words after it, or two lines: no `note`; with programs named `cat` and `dirname` that fail first on `PATH`: one `note` still, and neither was called; the three variables are unset afterwards | one byte changed in one copy; the block moved above `acquire_lock` in one launcher; the `&` dropped; the `note` made unconditional; the test of the path dropped; the match made `[ -n ]` in both copies; `/bin/cat` made `cat` in both copies |
+| UT9 | `common/test-launcher-parity.sh` (rule 11); behaviour in a new `common/test-update-notice.sh`, on the block taken from each launcher in turn, with `update-dir` beside the extract | The two blocks are equal byte for byte, and in each launcher the block lies after the `acquire_lock` call and before the first `step 1`; the sentence is in both recorded note lists; the tool printing a version: exactly one `note` with 3.6's sentence; printing nothing: none; a tool that sleeps 30 s on `--refresh`: the block returns within 2 s; the refresh's output goes nowhere; no `update-dir`, a relative path in it, a folder with no `updates.sh`, a tool that is a link: nothing is run; the tool printing `v0.04.0`, a version with words after it, or two lines: no `note`; with programs named `cat` and `dirname` that fail first on `PATH`: one `note` still, and neither was called; the three variables are unset afterwards | one byte changed in one copy; the block moved above `acquire_lock` in one launcher; the `&` dropped; the `note` made unconditional; the test of the path dropped; the match made `[ -n ]` in both copies; `/bin/cat` made `cat` in both copies |
 | UT10 | `common/test-check-release-move.sh`; the fixture gains `CHANGELOG.md` on the commit and on `origin/release`, and annotated tags | A commit holding `common/updates.sh`: untagged fails; an `installer-1` tag alone fails; tagged `v0.4.0` with the heading `v0.4.1` fails; tagged, heading equal, not newer than `release`'s fails; a tag named `release` on the remote fails; all right passes; `origin/release` with no changelog counts as `-`; a commit without the file, on a `release` without it, is not asked; a commit without the file on a `release` that has it **is** asked | each of the four conditions dropped in turn; the tag compared by its object; the trigger read from the commit alone |
 | UT3, UT4, also | `common/test-updates.sh` | A two-line stamp is passed over; `tried`, `noted`, a stamp's time and `L1_UPDATE_NOW` holding `a[$(touch <file>)]` are each taken as absent and `<file>` is not made; an answer whose version is older than `offer`'s leaves `offer` and `notes.md` byte for byte as they were, leaves no `.fetch.*` and prints `fetched`; stubs named `mktemp`, `stat`, `date` and `mv` first on `PATH` record no call; `--version-of` prints a file's version and nothing for a file without one | a failed fetch made to exit 1; `-q` dropped; the address made the short `release` form; the `local PATH` line dropped; `offer` lowered by an older answer; the second read of a stamp dropped |
 | UT5, also | both games' `scripts/test-setup.sh`, both `scripts/test-install.sh` | The stand-in for the window's builder records that `_update/updates.sh` existed when it was called; with `common/updates.sh` missing, each installer says its own-files sentence with exit 4 before setup runs; a set-up game whose wrapper variable names a path that does not exist is still named in the closing words | the new own-files loop dropped (setup; installer); the copy made after the window is built; item 6's closing words dropped |
+| UT5, also (built at U1) | `common/test-bootstrap.sh` | On the game path the root `install.sh` exports `L1_FETCHED_COMMIT`, on a line of its own, beside `L1_FETCHED_REF`: the fixture installer records it in a side file (as `$CALLS.patchdir` is), not on its one recorded line, which six checks match to its end | the export dropped |
 | UT6, also | `common/test-bootstrap.sh` | For the ref `release`, on the game path and the update path, the recorded address is the `refs/heads` form; for any other ref it is as today | the short form put back for `release` |
 | UT7, also | `common/test-update-games.sh` | No `_update` folder: the sentence of step 2, exit 3, nothing run; a lock whose target is `0`: taken over; no `updating` left after a run that finished and after one that failed; the only game with two wrappers: not "No game is set up", exit 1; a wrapper kept with the game's program gone: not run; `L1_CURL` holding a quote, a `$` or a relative path: the file names `/usr/bin/curl`. The `.command`: a 404 gives its sentence, nothing run, exit 1, and no line of step 6; `000` gives the other sentence | the lock not removed; the program test dropped; the per-game version test dropped (apart from step 3's); the fetched file run whatever the code; the folder test of step 2 dropped; the match of the lock's target dropped; "No game is set up" said beside a failure |
 | UT8, also | `common/test-launcher-window.sh`, `common/test-make-launcher-app.sh` | `--update-answer`: `second` gives `open`; `first` and `escape` give `nothing`. The foot's click: a press on the line and a release on a tile, a second click, a `reload` in between and `block,foot` each print `nothing`; the `foot` line carries the button role and 3.5's label, and `axpress:foot` opens the sheet. With 17 games and the last row selected the line's rectangle ends inside the shown part. `--update-tool` from inside a built app prints the tool when the key was written and `-` when not; a relative path and a link, given with `--update-dir`, give `-`; the key is absent when the tool was absent at the build | the foot's release not compared with what was armed; the foot's press action doing nothing; a relative path taken; a link taken; the key written when the tool is absent; the scroll rule left without the line's height |
@@ -769,12 +777,12 @@ output, as curl does. A mutant is applied to the source and must be seen red (ex
 |---|---|
 | `common/test-paths.sh` | `:62` (six lines become seven), `:72-73` (the exact printed lines); the header of `common/paths.sh` (`:5-7`). Its count of files that spell a root stays, because Surviving Mars's `setup.sh:151` stays |
 | `cities-skylines-2/scripts/test-move-install.sh` | `:54` evals every `L1_*=` line `paths.sh` prints: one more |
-| `common/test-bootstrap.sh` | the stub curl honours `-w`; the `STUB_CURL_EXIT=22` cases (`:189-190`) become UT1's; the recorded archive address for `release` becomes the `refs/heads` form; its header lists mutants to 10 and the file has 11: new ones start at 12 |
-| `common/test-make-installer-app.sh` | the stub curl; the recorded curl line (`:143`) and the `STUB_CURL_EXIT=22` case (`:149-153`); its check that every copy of the pasted address agrees gains `updates.sh`'s, compared after `refs/heads/` is taken out |
+| `common/test-bootstrap.sh` | the stub curl honours `-w`; the `STUB_CURL_EXIT` cases (`:189-191`) become UT1's, and the stub gains a second variable for the code, printed on standard output when `-w` is given; the recorded archive address for `release` becomes the `refs/heads` form; its header lists mutants to 10 and the file has 11: new ones start at 12 |
+| `common/test-make-installer-app.sh` | the stub curl; the recorded curl line (`:143`) and the `STUB_CURL_EXIT=22` case (`:149-153`); its check that every copy of the pasted address agrees gains `updates.sh`'s, compared after `refs/heads/` is taken out; the stub honours `-o` (today it prints the script on standard output); new mutants from 11 |
 | `cities-skylines-2/scripts/test-install.sh` and `test-install.golden` | `:489` ("low space: a CAUTION line, and on") runs on a finished install and inverts; the golden transcript loses that line and is recorded again on purpose, the difference read line by line; the cases that run the real setup need `common/updates.sh` in their fixture |
 | `surviving-mars-relaunched/scripts/test-install.sh` | the same fixture; a `df` stub for UT2 |
-| both games' `scripts/test-setup.sh` | each hand-made `common/` gains `paths.sh` and `updates.sh` (Cities: Skylines II's at four places); the "writes nothing" snapshots; MUTANTs 17, 37 and 38 stay anchored because the new own-files check is a separate loop |
-| `common/test-launcher-parity.sh` | the header's rules (ten); both recorded note lists; new mutants from 17 |
+| both games' `scripts/test-setup.sh` | each hand-made `common/` gains `paths.sh` and `updates.sh` (Cities: Skylines II's at four places for setup, `:151`, `:329`, `:337` and `:616`, and the `check-deploy.sh` copy at `:595`); the "writes nothing" snapshots; MUTANTs 17, 37 and 38 stay anchored because the new own-files check is a separate loop |
+| `common/test-launcher-parity.sh` | the header's rules (eleven); both recorded note lists; new mutants from 25 |
 | `common/test-check-release-move.sh` | the fixture; the gate's header ("asks four things") |
 | `common/test-mac-inventory.sh` | `common/mac-inventory.sh` lists what lies under both roots, so `_update` appears: the expected lines |
 | `common/check-deploy.sh` | it counts what Cities: Skylines II's setup copies: `_update/updates.sh` and `update-dir` are added to what it compares |
@@ -1005,6 +1013,44 @@ A reference build of U0, U1, U2, U4 and U5 **from the first draft**, with its te
 `<workspace>/built-in-update-p0/` (`builder-first-draft.patch`; the game's `CLAUDE.md` says where the workspace
 is). It predates the rework: it shows what breaks and where, and is not the design.
 
+### Pass 2: the re-check after `wrapper-names` merged (2026-11-24): build-ready-with-fixes, folded
+
+One read-only agent on Fable 5.2 against `main` at `35f0eb8`, with this branch's plan beside it. It opened all
+79 live cites (72 in files unchanged since `efe176b`, 7 in the two launchers and `common/test-launcher-parity.sh`),
+counted the rules and mutants of the parity test, and read the code U0, U1 and U2 touch. No blocker. Two of its
+findings (5 and 3) were read again in the source by the session before they were folded.
+
+| # | Finding | Where it went |
+|---|---|---|
+| 1 | The parity test's rule 10 and mutants 17 to 24 are taken by the sign-in wait | 3.6, U4, UT9 and 6.1: rule 11, mutants from 25 |
+| 2 | Seven cites in the launchers and the parity test had moved | 1.4 and 3.6, corrected |
+| 3 | 3.3 item 6 names another game by its title, and no setup reads `games.tsv` | 3.3 item 6: the title's source, and `games.tsv` in the own-files loop and in UT5's fixtures |
+| 4 | U1 exports `L1_FETCHED_COMMIT`, but its only test was a clause of UT6, built at U2 | a "UT5, also (built at U1)" row with its mutant; the clause removed from UT6 |
+| 5 | U0's fetch into a file would unanchor mutants 5 and 6 of `common/test-make-installer-app.sh` | U0: read into `S`, removed at once; the two lines keep their text |
+| 6 | 6.1 did not say where that file's new mutants start | 6.1: from 11 |
+| 7 | "four places" in Cities: Skylines II's `test-setup.sh` are five | 6.1, with the lines |
+| 8 | "wait ten minutes" is not true as a flat statement (issue #32) | the status line: "up to ten minutes". No design consequence: the notice block runs before `step 1` |
+| 9, 10 | two loose ranges (`setup.sh:70-74`, `test-bootstrap.sh:189-190`) | 3.3 and 6.1 |
+
+**For the builder, not said elsewhere in the plan** (each read at `35f0eb8`):
+
+- **U0.** Both stub curls exit before they write anything when `STUB_CURL_EXIT` is set
+  (`common/test-bootstrap.sh:74-80`, `common/test-make-installer-app.sh:62-67`); UT1's "a 404 with exit 0, 22
+  and 56" needs the second variable. `GAME_EXE`, `GDIR` and `MANIFEST` are set only by `use_wrapper`
+  (`common/install-core.sh:148-157`), so `core_space` tests `prefix_known` first. The low-space transcript that
+  inverts is `test-install.golden:806-817`.
+- **U1.** The new own-files loop of Cities: Skylines II's setup sits under `MAC_ONLY = 0`, inside the existing
+  `if` after its `done` (mutant 38 then still applies); Surviving Mars's goes below the loop at `:93` (mutant 17
+  removes from that `for` to the first `done`). `L1_FETCHED_COMMIT` is exported on a line of its own (mutant 5
+  matches the whole `export L1_FETCHED_REF` line), and new locals are appended after `local id="" ref=release `
+  (mutant 6). The stamp in Cities: Skylines II's setup goes between `:595` and `desktop_step` at `:596`; exit 5
+  is at `:618`.
+- **U2.** `install.sh:69` keeps its text and indent (mutant 7), so the `case` at `:68-74` is not wrapped; no
+  second line that is six spaces and `return 2 ;;` (mutant 10); the early return for `update` goes after `:114`
+  and before `:115`; `update --yes` is caught by `$#` after the word loop (`:45-56`). `l1w_row` returns 1 for
+  an app ID it does not know (`common/wrappers.sh:44`): a new row of a fetched `games.tsv` then falls under "not
+  set up here".
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |
@@ -1012,6 +1058,7 @@ is). It predates the rework: it shows what breaks and where, and is not the desi
 | 2026-11-23 | 1 | architecture and rollout; security and privacy; correctness; builder simulation; test plan; design and words; platform facts | seven agents, none editing the repository; the builder in a scratch clone with U0, U1, U2, U4 and U5 built and the test files run; measurements against GitHub and of curl, bash and `mktemp` on this Mac; each blocker read against the source inline | Fable 5.2 | `built-in-update` at `13966b6` (`wrapper-names` at `efe176b` and the plan) | needs-rework; reworked the same day |
 | 2026-11-23 | 1b | the rework: every correction against the plan and the code; section 3.5 with UT8 traced as a build | two agents, none editing the repository; the plan's own code run under bash 3.2.57; a prototype of the foot line built in a scratch folder and measured in the text modes | Fable 5.2 | `built-in-update` at `ba7daad` | build-ready-with-fixes, folded |
 | 2026-11-23 | 1c | the fold of pass 1b: each row against the normative text, new text against old, the test table, the facts taken from the re-check agents | one agent, not editing the repository; the cited lines read in the source; the block of 3.6 run under bash 3.2.57 with stubs | Fable 5.2 | the working tree over `ba7daad` | build-ready-with-fixes, folded |
+| 2026-11-24 | 2 (fitted re-check after the merge of `wrapper-names`) | every cite at the merged tree; the parity test's numbers; the notice block's place; what U0, U1 and U2 touch | one read-only agent; findings 3 and 5 read again in the source by the session; folded the same night, audited two-sided | Fable 5.2 | `main` at `35f0eb8` | build-ready-with-fixes, folded |
 
 Key paths: `install.sh`, `common/install-core.sh`, `common/paths.sh`, `common/wrappers.sh`,
 `common/games.tsv`, `common/launcher-window.swift`, `common/make-launcher-app.sh`,

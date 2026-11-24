@@ -162,10 +162,14 @@ check "the small form cannot be drawn: all ten from the full one, and the icon i
 # --- the update tool's folder (docs/plans/built-in-update.md, 3.3 and 3.5; UT8). The builder reads the folder from
 # common/paths.sh beside it, so these builds come from a scratch common/ that holds it; the tool is an empty stub,
 # and nothing calls it: --update-tool only says where the window would look.
-mkdir -p "$T/upd/common" "$T/u1" "$T/u2" "$T/u3" "$T/u4" "$T/home3/Library/Application Support/1launcher/_update"
+# where paths.sh puts the folder under a home with nothing set: taken from paths.sh, never spelled here
+# (common/test-paths.sh, LT14, lists the files that may spell a root)
+UPD3="$(env -u L1_DATA_ROOT -u L1_WORK_ROOT -u L1_UPDATE_DIR HOME="$T/home3" bash "$HERE/paths.sh" 2>/dev/null | sed -n 's/^L1_UPDATE_DIR=//p')"
+case "$UPD3" in "$T/home3/"*/_update) ;; *) echo "REFUSED: paths.sh gave no update folder under the scratch home"; exit 2 ;; esac
+mkdir -p "$T/upd/common" "$T/u1" "$T/u2" "$T/u3" "$T/u4" "$UPD3"
 cp "$BUILDER" "$SRC" "$T/repo/common/games.tsv" "$HERE/paths.sh" "$T/upd/common/"
 printf '#!/bin/bash\nexit 0\n' > "$T/u1/updates.sh"
-cp "$T/u1/updates.sh" "$T/u4/updates.sh"; cp "$T/u1/updates.sh" "$T/home3/Library/Application Support/1launcher/_update/updates.sh"
+cp "$T/u1/updates.sh" "$T/u4/updates.sh"; cp "$T/u1/updates.sh" "$UPD3/updates.sh"
 ln -s "$T/u1/updates.sh" "$T/u3/updates.sh"
 mku() {   # <update folder or -> <dest> [<home>]: a build with L1_UPDATE_DIR at the folder (-: not set); echoes the exit code
   if [ "$1" = - ]; then
@@ -188,7 +192,7 @@ check "the tool is a link: no key, and -" "$rc:$(px L1UpdateDir "$T/k3/14unch3r.
 rc=$(mku - "$T/k4" "$T/home3")
 check "L1_UPDATE_DIR not set: the folder is the one paths.sh gives, under that HOME, and its space survives" \
   "$rc:$(px L1UpdateDir "$T/k4/14unch3r.app"):$(ut "$T/k4")" \
-  "0:$T/home3/Library/Application Support/1launcher/_update:$T/home3/Library/Application Support/1launcher/_update/updates.sh"
+  "0:$UPD3:$UPD3/updates.sh"
 check "--update-dir wins over the key; a relative one, and one that holds a link, give -" \
   "$(ut "$T/k1" --update-dir "$T/u4")|$(cd "$T" && ut "$T/k1" --update-dir u4)|$(ut "$T/k1" --update-dir "$T/u3")" "$T/u4/updates.sh|-|-"
 mv "$T/u1/updates.sh" "$T/u1/gone.sh"

@@ -15,6 +15,12 @@
 #   MUTANT=8 ...  the game's folder written into the program, not its Steam app ID; must exit 1
 #   MUTANT=9 ...  the folder put back into the address the program prints; must exit 1
 #   MUTANT=10 ..  the ID dropped from one document's pasted line; must exit 1
+#   MUTANT=11 ..  curl's exit code 22 put back as the test for a withdrawn installer; must exit 1
+#   MUTANT=12 ..  the answer's code left at the end of the script that is run; must exit 1
+#   MUTANT=13 ..  every answer but 200 read as "withdrawn"; must exit 1
+# The stub curl honours -o and -w as curl does (the body to the file, or to standard output without -o; the
+# answer's code to standard output). STUB_CURL_CODE is that code (200 when unset; 000 = no answer, nothing
+# written) and STUB_CURL_EXIT curl's exit (0 when unset). What it serves for 200 is $T/served.sh.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -51,6 +57,9 @@ case "${MUTANT:-0}" in
   8) mutate 's#-e "s\#@APPID@\#\$APPID\#g"#-e "s\#@APPID@\#$GAME\#g"#' '@APPID@#\$GAME#g' ;;
   9) mutate 's#^  echo "  https://github.com/macgameport/1launcher"$#  echo "  https://github.com/macgameport/1launcher/blob/main/cities-skylines-2/INSTALL.md"#' 'blob/main/cities-skylines-2/INSTALL.md"$' ;;
   10) mutate 's#install.sh)" 1launcher-install 949230#install.sh)"#' 'install.sh)"$' "$T/docs/README.md" ;;
+  11) mutate 's#^elif \[ "\$code" = 404 \]; then$#elif [ "$rc" = 22 ]; then#' '^elif \[ "\$rc" = 22 \]; then$' ;;
+  12) mutate 's#^S="\$(cat "\$F" 2>/dev/null)"; rm -f "\$F"$#S="$(cat "$F" 2>/dev/null)$code"; rm -f "$F"#' '2>/dev/null)\$code"; rm -f "\$F"$' ;;
+  13) mutate 's#^elif \[ "\$code" = 404 \]; then$#elif [ "$code" != 200 ]; then#' '^elif \[ "\$code" != 200 \]; then$' ;;
 esac
 
 fails=0
@@ -62,9 +71,17 @@ printf '#!/bin/bash\necho "OPEN $*" >> "$CALLS"\n' > "$T/bin/open"
 cat > "$T/bin/curl" << 'C'
 #!/bin/bash
 echo "CURL $*" >> "$CALLS"
-[ -n "${STUB_CURL_EXIT:-}" ] && exit "$STUB_CURL_EXIT"
-echo 'echo "BOOT $0 $1 $2 words=$#" >> "$CALLS"'
+out=""; w=0; while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2 ;; -w) w=1; shift 2 ;; *) shift ;; esac; done
+code="${STUB_CURL_CODE:-200}"
+if [ "$code" = 200 ]; then body="$SERVED"; else body="$SERVED.err"; echo "$code: an error page" > "$body"; fi
+if [ "$code" != 000 ]; then if [ -n "$out" ]; then cp "$body" "$out"; else cat "$body"; fi; fi
+[ "$w" = 1 ] && printf '%s' "$code"
+exit "${STUB_CURL_EXIT:-0}"
 C
+# What GitHub serves: a script in install.sh's form (functions, the call of main last), which records how it
+# was called and its own text as bash was given it.
+export SERVED="$T/served.sh"
+printf '%s\n' 'main() {' '  echo "BOOT $0 $1 $2 words=$#" >> "$CALLS"' '  printf "%s" "$BASH_EXECUTION_STRING" > "$CALLS.ran"' '}' 'main "$@"' > "$SERVED"
 printf '#!/bin/bash\nexit 0\n' > "$T/bin/clear"
 printf '#!/bin/bash\necho "OSASCRIPT $*" >> "$CALLS"\n' > "$T/bin/osascript"
 chmod +x "$T/bin"/*
@@ -140,17 +157,28 @@ case "$C2" in /tmp/1launcher-install.*/*) rm -f "$C2"; rmdir "$(dirname "$C2")" 
 runcmd() { env HOME="$T/home" PATH="$T/bin:$PATH" "$@" bash "$C" > "$T/cmd.out" 2>&1; echo $?; }
 : > "$CALLS"; cp "$C" "$T/saved.command"; rc="$(runcmd)"
 check "the .command: fetches the one address over https, and hands it the game's ID and the ref and nothing else" \
-  "$(grep -cF "CURL --proto =https --tlsv1.2 -fsSL $ADDR" "$CALLS"):$(grep -c '^BOOT 1launcher-install 949230 release words=2$' "$CALLS")" "1:1"
+  "$(grep -c "^CURL --proto =https --tlsv1.2 -sSL -o .*/\.1launcher-fetch\.[0-9][0-9]* -w %{http_code} $ADDR\$" "$CALLS"):$(grep -c '^BOOT 1launcher-install 949230 release words=2$' "$CALLS")" "1:1"
+check "  ...what it runs is what GitHub served, byte for byte, with no line after the call of main" \
+  "$([ "$(cat "$CALLS.ran")" = "$(cat "$SERVED")" ] && echo same):$(tail -n 1 "$CALLS.ran")" 'same:main "$@"'
 check "  ...then removes itself and its folder" "$([ -e "$C" ] && echo file):$([ -e "$(dirname "$C")" ] && echo folder)" ":"
 runsaved() {   # <folder to run a copy in> [VAR=value]: the saved .command copied there and run
   local d="$1"; shift; mkdir -p "$d"; cp "$T/saved.command" "$d/x.command"
   env HOME="$T/home" PATH="$T/bin:$PATH" "$@" bash "$d/x.command" > "$T/cmd.out" 2>&1; echo $?
 }
-: > "$CALLS"; runsaved "$T/c22" STUB_CURL_EXIT=22 > /dev/null
-check "GitHub answers not found: the withdrawn lines, with the front page and no folder, and nothing run" \
-  "$(grep -c 'has been withdrawn or has moved' "$T/cmd.out"):$(grep -c '^  https://github.com/macgameport/1launcher$' "$T/cmd.out"):$(grep -c 'INSTALL.md' "$T/cmd.out"):$(grep -c BOOT "$CALLS")" "1:1:0:0"
-: > "$CALLS"; runsaved "$T/c6" STUB_CURL_EXIT=6 > /dev/null
-check "GitHub cannot be reached: the network line" "$(grep -c 'GitHub could not be reached' "$T/cmd.out"):$(grep -c BOOT "$CALLS")" "1:0"
+# UT1 (built-in-update U0): a 404 is "withdrawn" whatever curl's exit; any other answer is "could not be reached"
+for x in 0 22 56; do
+  : > "$CALLS"; runsaved "$T/c404-$x" STUB_CURL_CODE=404 STUB_CURL_EXIT=$x > /dev/null
+  check "GitHub answers 404 (curl exit $x): the withdrawn lines, with the front page and no folder, nothing run, nothing left" \
+    "$(grep -c 'has been withdrawn or has moved' "$T/cmd.out"):$(grep -c '^  https://github.com/macgameport/1launcher$' "$T/cmd.out"):$(grep -c 'INSTALL.md' "$T/cmd.out"):$(grep -c 'could not be reached' "$T/cmd.out"):$(grep -c BOOT "$CALLS"):$(ls -A "$T/c404-$x" | wc -l | tr -d ' ')" "1:1:0:0:0:0"
+done
+: > "$CALLS"; runsaved "$T/c6" STUB_CURL_CODE=000 STUB_CURL_EXIT=6 > /dev/null
+check "GitHub cannot be reached (no answer, curl exit 6): the network line, not the withdrawn one, nothing run" \
+  "$(grep -c 'GitHub could not be reached' "$T/cmd.out"):$(grep -c 'withdrawn' "$T/cmd.out"):$(grep -c BOOT "$CALLS")" "1:0:0"
+for c in 403 500; do
+  : > "$CALLS"; runsaved "$T/c$c" STUB_CURL_CODE=$c > /dev/null
+  check "GitHub answers $c: the network line, not the withdrawn one, nothing run" \
+    "$(grep -c 'GitHub could not be reached' "$T/cmd.out"):$(grep -c 'withdrawn' "$T/cmd.out"):$(grep -c BOOT "$CALLS")" "1:0:0"
+done
 mkdir -p "$T/desk"; echo precious > "$T/desk/other.txt"; runsaved "$T/desk" > /dev/null
 check "copied beside another file and run: only itself is removed" "$(cat "$T/desk/other.txt" 2>/dev/null):$([ -e "$T/desk/x.command" ] && echo left || echo gone)" "precious:gone"
 

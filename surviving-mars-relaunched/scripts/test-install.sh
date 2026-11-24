@@ -118,6 +118,11 @@ PY
   32) sed -i '' 's| --mark game "\$GAME_APPID"||g' "$CORE" ;;
   33) sed -i '' 's|^core_after_setup \$?$|(exit $?)|' "$S" ;;
   34|35) ;;   # applied below, to the real setup.sh of the WT11 copy
+  # UT2 (docs/plans/built-in-update.md, U0): 36 silent for a finished install only; 37 silent for a game that is
+  # only partly there too; 38 the wrapper not asked for first
+  36) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed) return 0 ;; esac; fi#' "$CORE" ;;
+  37) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed|update|partial) return 0 ;; esac; fi#' "$CORE" ;;
+  38) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#case "$(game_state)" in installed|update) return 0 ;; esac#' "$CORE" ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
@@ -216,6 +221,7 @@ stub ps 'p=""; for a in "$@"; do p="$a"; done; sed -n "s/^$p //p" "$ST/procs" 2>
 stub lsof 'p=""; for a in "$@"; do p="$a"; done; cat "$ST/lsof.$p" 2>/dev/null'
 stub sysctl 'echo 1'
 stub sw_vers 'echo 27.2.1'
+stub df 'echo "Filesystem 1024-blocks Used Available Capacity Mounted"; echo "/dev/x 999999999 1 ${STUB_DF_KB:-999999999} 1% /"'
 stub arch 'exit 0'
 export PATH="$T/bin:$PATH"
 
@@ -239,6 +245,9 @@ before=$(snap); rc=$(run -- --check)
 check "--check with no wrapper: exit 0, steps 4 to 7 named" "$rc:$(grep -c '^Step [4567] of 7' "$T/out")" "0:4"
 check "  ...it says it would ask, and asks nothing" "$(o 'would ask before fetching'):$(o 'type y')" "1:0"
 check "  ...it fetches and changes nothing" "$(c '^FETCH'):$(c '^MAKE-ENGINE'):$(c '^MAKE-WRAPPER .*--check'):$([ "$(snap)" = "$before" ] && echo same)" "0:0:1:same"
+# UT2 (docs/plans/built-in-update.md, U0): the free-space caution is for an install that still has to download
+rc=$(run STUB_DF_KB=5000000 -- --check)
+check "low space and no wrapper yet: the CAUTION, and no unbound variable" "$rc:$(o 'CAUTION: 4 GB free'):$(o 'unbound variable')" "0:1:0"
 rc=$(run --)
 check "nobody to ask: exit 3, and nothing is made or fetched" "$rc:$(o "Nothing of Apple's was fetched"):$(c '^MAKE-WRAPPER'):$(c '^FETCH')" "3:1:0:0"
 rc=$(run -- --yes)
@@ -259,6 +268,15 @@ rc=$(run --)
 check "everything done, nobody to ask: exit 0, no question, nothing fetched, setup run" "$rc:$(o "Apple's Game Porting Toolkit"):$(c '^FETCH'):$(c '^SETUP')" "0:0:0:1"
 rc=$(run -- --yes)
 check "  ...--yes reaches setup" "$(c '^SETUP --yes via=1')" 1
+ACF="$DS/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_3215050.acf"
+rc=$(run STUB_DF_KB=5000000 -- --check)
+check "low space on a finished install: no CAUTION" "$rc:$(o 'CAUTION: ')" "0:0"
+sed -i '' 's/"StateFlags"\t\t"4"/"StateFlags"\t\t"6"/' "$ACF"; rc=$(run STUB_DF_KB=5000000 -- --check)
+check "low space with a game update waiting (6): no CAUTION" "$rc:$(grep -c '"6"' "$ACF"):$(o 'CAUTION: ')" "0:1:0"
+sed -i '' 's/"StateFlags"\t\t"6"/"StateFlags"\t\t"1026"/' "$ACF"; rc=$(run STUB_DF_KB=5000000 -- --check)
+check "low space with a download that stopped (1026): the CAUTION" "$rc:$(grep -c '"1026"' "$ACF"):$(o 'CAUTION: 4 GB free')" "0:1:1"
+sed -i '' 's/"StateFlags"\t\t"1026"/"StateFlags"\t\t"4"/' "$ACF"
+check "  ...the fixture is a finished install again" "$(grep -c '"StateFlags".*"4"' "$ACF")" 1
 
 # --- step 4: skipped at 3 or later, run at 2.1 and with no framework, --rebuild with a BAK
 fresh 3.1 steam game

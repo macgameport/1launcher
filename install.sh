@@ -33,7 +33,7 @@ games_with_installer() {   # <table> <root>: the ID and title of every row whose
 }
 main() {
   set -u
-  local id="" ref=release words=0 self here="" table="" folder top url rc commit n e
+  local id="" ref=release words=0 self here="" table="" folder top url rc commit n e code
   local front="https://github.com/macgameport/1launcher"
   local usage="usage: install.sh <Steam app ID> [<ref>] [options]"
   L1_TMP=""   # not local: the EXIT trap runs after this function has returned
@@ -94,13 +94,15 @@ main() {
   local tmp="$L1_TMP"
   url="https://github.com/macgameport/1launcher/archive/$ref.tar.gz"
   echo "Fetching 1launcher ($ref) from github.com/macgameport/1launcher ..."
-  curl --proto '=https' --tlsv1.2 -fsSL --retry 2 -o "$tmp/repo.tar.gz" "$url"; rc=$?
-  if [ "$rc" = 22 ]; then
+  # The answer is judged by its code and never by which non-zero exit curl gave: for a 404 curl 8.7.1 exits
+  # 56 over HTTP/2 and 22 over HTTP/1.1. So no -f; the code comes on standard output, the archive in the file.
+  code="$(curl --proto '=https' --tlsv1.2 -sSL --retry 2 -o "$tmp/repo.tar.gz" -w '%{http_code}' "$url")"; rc=$?
+  if [ "$code" = 404 ]; then
     echo "GitHub has no \"$ref\" of 1launcher. The current way in is at:"
     echo "  $front"
     return 1
-  elif [ "$rc" != 0 ]; then
-    echo "GitHub could not be reached (curl exit $rc). Check the network, then try again."
+  elif [ "$rc" != 0 ] || [ "$code" != 200 ]; then
+    echo "GitHub could not be reached (curl exit $rc, answer ${code:-none}). Check the network, then try again."
     return 1
   fi
   commit="$(gzip -dc "$tmp/repo.tar.gz" 2>/dev/null | head -c 1024 | LC_ALL=C grep -a -o 'comment=[0-9a-f]\{40\}' | head -n 1)"

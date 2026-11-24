@@ -168,6 +168,10 @@ case "${MUTANT:-0}" in
   66) mutate 's#^W="\$(l1w_incomplete game "\$GAME_APPID")" || W=#W=#' '^W="\$HOME/Applications/\$(l1w_name' ;;
   67|68|69) ;;   # applied below, to the real setup.sh of the WT11 copy
   70) mutate 's#^core_after_setup \$?$#(exit $?)   \# no core_after_setup: the code kept, the lock not followed#' '^(exit \$?)   # no core_after_setup' ;;
+  # UT2 (docs/plans/built-in-update.md, U0): 71 silent for a finished install only; 72 silent for a stopped download too; 73 the wrapper not asked for first
+  71) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed) return 0 ;; esac; fi#' '^if prefix_known; then case "\$(game_state)" in installed) return 0 ;; esac; fi$' ;;
+  72) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed|update|partial) return 0 ;; esac; fi#' '^if prefix_known; then case "\$(game_state)" in installed|update|partial) return 0' ;;
+  73) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#case "$(game_state)" in installed|update) return 0 ;; esac#' '^case "\$(game_state)" in installed|update) return 0 ;; esac$' ;;
 esac
 
 fails=0
@@ -485,8 +489,15 @@ newh; done_all; rc="$(STUB_PY_EXIT=1 run)"
 check "tools there, python3 broken: exit 1, Apple not asked" "$rc:$(calls 'XS --install')" "1:0"
 
 # --- step 3: the wrapper
+# UT2 (docs/plans/built-in-update.md, U0): the free-space caution is for an install that still has to download
 newh; done_all
-check "low space: a CAUTION line, and on" "$(STUB_DF_KB=50000000 run):$(said 'CAUTION: 47 GB free')" "0:1"
+check "low space on a finished install: no CAUTION, and on" "$(STUB_DF_KB=50000000 run):$(said 'CAUTION: ')" "0:0"
+newh; bash "$MKW" "$WR" steam game 6
+check "low space with a game update waiting: no CAUTION" "$(STUB_DF_KB=50000000 run):$(said 'CAUTION: ')" "0:0"
+newh; bash "$MKW" "$WR" steam game 1026; dl installed
+check "low space with a download that stopped: the CAUTION, and on" "$(STUB_DF_KB=50000000 run):$(said 'CAUTION: 47 GB free')" "0:1"
+newh; rc="$(STUB_DF_KB=50000000 STUB_MW_EXIT=1 run)"
+check "low space and no wrapper yet: the CAUTION, and no unbound variable" "$rc:$(said 'CAUTION: 47 GB free'):$(said 'unbound variable')" "1:1:0"
 newh; rc="$(STUB_MW_EXIT=1 run)"; check "make-wrapper fails: exit 1" "$rc" 1
 newh; rc="$(STUB_MW_EXIT=3 run)"; check "make-wrapper finds another build at work: exit 3" "$rc" 3
 newh; : > "$ST/game"; STUB_GAME_OTHER="$T/elsewhere"; export STUB_GAME_OTHER; dl installed

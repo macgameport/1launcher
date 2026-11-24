@@ -15,6 +15,12 @@
 #   MUTANT=8 ...  the folder taken from the word, not from the table; must exit 1
 #   MUTANT=9 ...  a table of IDs and folders written into the script; must exit 1
 #   MUTANT=10 ..  with no game named, the list got by fetching first; must exit 1
+#   MUTANT=11 ..  a variable put in front of the pasted line dropped before the game's installer; must exit 1
+#   MUTANT=12 ..  curl's exit code 22 put back as the test for "no such ref"; must exit 1
+#   MUTANT=13 ..  every answer but 200 read as "no such ref"; must exit 1
+# The stub curl honours -o and -w as curl does: the body goes to the file and the answer's code to standard
+# output. STUB_CURL_CODE is that code (200 when unset; 000 = no answer, nothing written) and STUB_CURL_EXIT
+# curl's exit (0 when unset): for a 404 the real one exits 0 without -f, 22 or 56 with it (built-in-update 1.5).
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 REAL="$REPO/install.sh"
@@ -36,6 +42,8 @@ case "${MUTANT:-0}" in
   9) mutate 's#^  awk -F.*#  case "$2" in 949230) echo cities-skylines-2 ;; esac#' '^  case "\$2" in 949230) echo cities-skylines-2 ;; esac$' ;;
   10) mutate 's#^      return 2 ;;$#      ;;#' '^      ;;$' ;;
   11) mutate 's#^  bash "\$top/\$folder/scripts/install.sh" "\$@"$#  unset CS2_PATCH_DIR; bash "$top/$folder/scripts/install.sh" "$@"#' '^  unset CS2_PATCH_DIR; bash ' ;;
+  12) mutate 's#^  if \[ "\$code" = 404 \]; then$#  if [ "$rc" = 22 ]; then#' '^  if \[ "\$rc" = 22 \]; then$' ;;
+  13) mutate 's#^  if \[ "\$code" = 404 \]; then$#  if [ "$code" != 200 ]; then#' '^  if \[ "\$code" != 200 \]; then$' ;;
 esac
 
 fails=0
@@ -74,9 +82,11 @@ mkdir -p "$T/bin"
 cat > "$T/bin/curl" << 'C'
 #!/bin/bash
 echo "CURL $*" >> "$CALLS"
-[ -n "${STUB_CURL_EXIT:-}" ] && exit "$STUB_CURL_EXIT"
-out=""; while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2 ;; *) shift ;; esac; done
-cp "$FIX" "$out"
+out=""; w=0; while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2 ;; -w) w=1; shift 2 ;; *) shift ;; esac; done
+code="${STUB_CURL_CODE:-200}"
+if [ "$code" = 200 ]; then cp "$FIX" "$out"; elif [ "$code" != 000 ]; then echo "$code: an error page" > "$out"; fi
+[ "$w" = 1 ] && printf '%s' "$code"
+exit "${STUB_CURL_EXIT:-0}"
 C
 printf '#!/bin/bash\nif [ "$1" = -u ] && [ -n "${STUB_ROOT:-}" ]; then echo 0; else exec /usr/bin/id "$@"; fi\n' > "$T/bin/id"
 chmod +x "$T/bin"/*
@@ -107,7 +117,7 @@ check "CS2_PATCH_DIR in front of the pasted line arrives at the game's installer
 # --- the pasted form always fetches, and finds the game's folder in the table it fetched
 rc="$(pasted "$T/empty" "$F/good.tar.gz" x 949230)"
 check "pasted with an ID, from an empty folder: fetches the release branch, runs that row's installer, exit 0" \
-  "$rc:$(grep -c "^CURL --proto =https --tlsv1.2 -fsSL --retry 2 -o .* $URL/release.tar.gz\$" "$CALLS"):$(grep -c '^INSTALLER args= ref=release from=1launcher-release game=cities-skylines-2$' "$CALLS")" "0:1:1"
+  "$rc:$(grep -c "^CURL --proto =https --tlsv1.2 -sSL --retry 2 -o .* -w %{http_code} $URL/release.tar.gz\$" "$CALLS"):$(grep -c '^INSTALLER args= ref=release from=1launcher-release game=cities-skylines-2$' "$CALLS")" "0:1:1"
 check "  ...says the commit it fetched" "$(said "^1launcher at commit $COMMIT\$")" 1
 check "  ...and leaves no temporary folder" "$(left)" 0
 rc="$(STUB_INSTALL_EXIT=7 pasted "$T/empty" "$F/good.tar.gz" x 949230)"
@@ -186,9 +196,18 @@ nogame "an ID whose row names no plain folder" "$(pasted "$T/empty" "$F/good.tar
 
 # --- failures: exit 1 with a line, no folder left, no installer run
 failed() { check "$1: exit 1, no installer run, no folder left" "$2:$(calls '^INSTALLER'):$(left)" "1:0:0"; }
-failed "the fetch fails" "$(STUB_CURL_EXIT=6 pasted "$T/empty" "$F/good.tar.gz" x 949230)"; check "  ...says to check the network" "$(said 'Check the network')" 1
-failed "GitHub has no such ref" "$(STUB_CURL_EXIT=22 pasted "$T/empty" "$F/good.tar.gz" x 949230)"
-check "  ...points at the front page, and at no folder" "$(said "^  $FRONT\$"):$(said 'INSTALL.md')" "1:0"
+failed "the fetch fails: no answer" "$(STUB_CURL_CODE=000 STUB_CURL_EXIT=6 pasted "$T/empty" "$F/good.tar.gz" x 949230)"
+check "  ...says to check the network, with curl's exit, and not that the ref is missing" "$(said 'GitHub could not be reached (curl exit 6, answer 000). Check the network'):$(said 'GitHub has no')" "1:0"
+# UT1 (built-in-update U0): a 404 is "no such ref" whatever curl's exit; any other answer is "could not be reached"
+for x in 0 22 56; do
+  failed "GitHub has no such ref (404, curl exit $x)" "$(STUB_CURL_CODE=404 STUB_CURL_EXIT=$x pasted "$T/empty" "$F/good.tar.gz" x 949230)"
+  check "  ...says so, points at the front page and at no folder, and does not blame the network" \
+    "$(said '^GitHub has no "release" of 1launcher'):$(said "^  $FRONT\$"):$(said 'INSTALL.md'):$(said 'Check the network')" "1:1:0:0"
+done
+for c in 403 500; do
+  failed "GitHub answers $c" "$(STUB_CURL_CODE=$c pasted "$T/empty" "$F/good.tar.gz" x 949230)"
+  check "  ...could not be reached, with the code, and not \"no such ref\"" "$(said "GitHub could not be reached (curl exit 0, answer $c). Check the network"):$(said 'GitHub has no')" "1:0"
+done
 failed "what came is not an archive" "$(pasted "$T/empty" "$F/broken.tar.gz" x 949230)"
 failed "an archive with two top folders" "$(pasted "$T/empty" "$F/two.tar.gz" x 949230)"
 failed "an archive whose top entry is a link" "$(pasted "$T/empty" "$F/link.tar.gz" x 949230)"

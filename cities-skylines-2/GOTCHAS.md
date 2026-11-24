@@ -2627,6 +2627,11 @@ rename on 2026-11-18 (P4) raised no question either: neither is explained.
   is gone. The instruments that start a launcher (`scripts/boot-verify.sh`, Surviving Mars's
   `tools/licence-wait-probe.sh`) set 120. Plan: `docs/plans/wrapper-names.md`, "W2 fold".
 - **Not done:** keeping Steam from asking for the microphone at all (neither game needs it). It needs a probe.
+- ⚠ **The 600 s wait can end early with the question still open** (MacBook, 2026-11-24, W3 step 7, Surviving
+  Mars's wrapper renamed by hand). The question was put at 00:48:36 and answered at 00:55:04; the launcher ran
+  its `steam.exe -shutdown` at 00:51:50 and said "Steam did not sign in by itself". `signin_wait` ends early
+  only for a Steam seen and then gone 15 s, so that Steam left, or was no longer attributed to the prefix,
+  about three minutes into the question: which of the two was not seen. The start after the answer ran. Issue #32.
 - A path that has been answered is not asked again, a rename back to it included.
 
 

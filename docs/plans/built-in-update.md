@@ -844,7 +844,7 @@ output, as curl does. A mutant is applied to the source and must be seen red (ex
 | `common/test-make-launcher-app.sh` | new mutants from 9; its three scratch `common/` folders hold no `paths.sh`, and the builder then writes no key (3.3) |
 
 **Not tested, and said so:** what Terminal shows, and whether macOS asks anything when 14unch3r opens a
-`.command` (UL1); the sheet drawn on screen, Return and Escape on a sheet that holds a scrolling text view,
+`.command` (UL1); the sheet drawn on screen, where its notes stand when it opens (UL1 found them 136 points down, and fixed it), Return and Escape on a sheet that holds a scrolling text view,
 and the second showing of the list after the background refresh (UL1, by eye; on macOS 27 only, never on 14
 or 15); a real notification, who macOS names as its sender and what a click on it opens (UL1b); GitHub's real
 404 (UL1c) and its answer when it limits requests (not provoked: with no version heading in the answer,
@@ -1104,6 +1104,52 @@ findings (5 and 3) were read again in the source by the session before they were
   and before `:115`; `update --yes` is caught by `$#` after the word loop (`:45-56`). `l1w_row` returns 1 for
   an app ID it does not know (`common/wrappers.sh:44`): a new row of a fetched `games.tsv` then falls under "not
   set up here".
+
+## UL1 on the Studio (2026-11-24, on James's word: "Sure. I'm on my way home", then "I'm at the Studio"): passed, one defect found and fixed, a light capture still to come
+
+From the branch at `d4c6a19`, then with the fix below. Staged while the screen was still locked, with no request
+made: in the workspace's `built-in-update-ul1/`, a scratch `_update` (mode 700) holding one stamp
+`installed/999999` (`release`, `v0.0.9`) and the branch's `updates.sh`; a fixture app "Stand-in Game" (ID
+999999) in a folder of its own; and a 14unch3r built into a scratch folder with `L1_UPDATE_DIR` at that
+`_update`. Opened with `open -n <app> --args <the fixture's folder>`. The session drove the window through the
+accessibility interface, which James allowed for 14unch3r and Terminal; the three key presses were his own.
+The window alone was captured, with the system in Dark.
+
+| What | Result |
+|---|---|
+| The first opening | **Pass.** Before it: state `unknown`, no `offer`, no `tried`. Within the first second the window was 444 by 204, then 444 by 228 (the line's 24 points), and `offer` (`v0.1.0`), `tried` and `notes.md` were there. The foot line reads "1launcher v0.1.0 is out. Click to see what changed." |
+| The sheet, by a click on the line | **Pass, after the fix below.** Message "1launcher v0.1.0 is out."; text "This Mac has v0.0.9. Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there."; the buttons "Update" and, as the default, "Not Now". The sheet is 562 by 500 and hangs over the small window. The notes begin "v0.1.0 (2026-11-16)" |
+| "Not Now" | **Pass.** The sheet closes; Terminal is not started; no update folder is made |
+| The menu | **Pass.** "Check for Updates…" stands above "Quit 14unch3r". Chosen, it opens the same sheet, and `tried` is unchanged (the state held was `ready`, so nothing is asked again, as 3.5 says) |
+| A second opening within the day | **Pass.** The window comes up at 444 by 228 with the line; `tried` is unchanged |
+| Escape, Command-U, Return (James's keys) | **Pass.** After the three, the sheet was closed, the window still open, `tried` unchanged, and nothing had been run |
+| "Update" | **Pass.** At 07:53:11 the click; the window quit; Terminal opened and printed "Fetching the installer from github.com/macgameport/1launcher ...", "not a Steam app ID: update", the usage line, the front page's address, then "The update did not finish: see the lines above. You can close this window."; by 07:53:22 the file and its folder were gone. So the word arrives at today's `release`, which does not know it |
+| Dialogs of macOS between the click and that line | **None that held it up:** nobody was at the Studio at that minute and the lines were printed within eleven seconds. The privacy log has no question in that minute; the quarantine resolver was asked once at 07:53:12, with nothing shown |
+
+**The defect, and its fix (`common/launcher-window.swift`, the class `NotesText`).** The notes opened 136 points
+down, in the middle of their text. Measured with a copy that wrote the scroll position down: at the sheet's
+opening the position is 0, and a tenth of a second later 136, moved by an animated scroll of AppKit's;
+136 is (450 - 178) / 2, the view's height less its frame's, halved. The sheet's first responder was the notes
+view, not "Not Now": with keyboard navigation off (the default of macOS) no button can hold the keyboard, the
+sheet gives it to the next view that can, and AppKit brings that view into sight by its middle. The notes view
+now does not accept the keyboard while the sheet opens, and accepts it from the next turn of the run loop on
+(Tab, with keyboard navigation on) and at a click, which selecting text needs. With it the position stays 0 and
+the notes begin with the version's heading. Two attempts before it did nothing and are not in the code: a scroll
+to the top after the sheet is shown (the animation comes later), and refusing a request to show the whole view
+(the scroll does not go through the text view). No test sees this: the text modes build no sheet. The window's
+test passes on the changed source (245 cases) and all 96 mutants of its two test files are red.
+
+**Seen and not changed, for James to decide:**
+
+1. **The line's accessibility press opens the sheet and answers "failure" to its caller.** `showUpdate` shows
+   the list anew before the sheet, so the element that was pressed is gone when the press returns. VoiceOver
+   would open the sheet; whether it sounds an error was not heard.
+2. **A link in the notes shows as it is written,** `[Install guide](https://...)`: 3.2's five cleaning rules
+   have none for links, and `CLAUDE.md` § Releases asks for full addresses in a section.
+3. **Terminal's window title** shows the temporary folder's path and the file's name.
+
+**Still to come of UL1:** the capture with the system in Light (the setting is James's to switch), and the
+clean-up: the scratch apps deleted and unregistered with `lsregister -u`.
 
 ## Review log
 

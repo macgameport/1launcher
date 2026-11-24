@@ -1877,6 +1877,22 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuI
             self.sheet = .none
             self.answered(answer, tool)
         }
+        DispatchQueue.main.async { (box.documentView as? NotesText)?.armed = true }   // not while the sheet opens: NotesText
+    }
+
+    // The notes open at their first line, the newest version's heading. Measured at the live step UL1 of
+    // docs/plans/built-in-update.md: with keyboard navigation off no button can hold the keyboard, so the sheet
+    // gave it to the notes as it opened, and AppKit then scrolled the view, with an animation, until its middle
+    // was in sight (450 points in 178: the notes opened 136 points down). So the notes do not take the keyboard
+    // while the sheet opens. They take it from the next turn of the run loop on (the Tab key, with keyboard
+    // navigation on) and at a click, which is what selecting text needs.
+    final class NotesText: NSTextView {
+        var armed = false
+        override var acceptsFirstResponder: Bool { armed }
+        override func mouseDown(with event: NSEvent) {
+            armed = true
+            super.mouseDown(with: event)
+        }
     }
 
     // What changed, under the sheet's text: a scroll view with a plain text view in it, read-only, selectable (a
@@ -1888,7 +1904,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuI
         box.hasVerticalScroller = true
         box.autohidesScrollers = true
         box.drawsBackground = false
-        let view = NSTextView(frame: NSRect(origin: .zero, size: box.contentSize))
+        let view = NotesText(frame: NSRect(origin: .zero, size: box.contentSize))
         view.isEditable = false
         view.isSelectable = true
         view.isRichText = false

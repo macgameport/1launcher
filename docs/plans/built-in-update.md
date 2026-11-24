@@ -1172,7 +1172,7 @@ temporary folder. Asked by hand with the same options, `/usr/bin/curl` 8.7.1 exi
 a body of 14 bytes: without `-f` the code is all there is to go by, which is what U0 made the script read.
 Before U0 this run said "GitHub could not be reached (curl exit 56)" (issue #31).
 
-## UL1b on the Studio (2026-11-24, on James's word: "Yes, run UL1b"): the notice at the first and second start and none at the third; what macOS showed is James's to say
+## UL1b on the Studio (2026-11-24, on James's word: "Yes, run UL1b"): the notice at the first and second start and none at the third; James saw the notification; its sender's name is still to be written down
 
 **What the step needed and the plan did not say.** The Studio's installed Surviving Mars launcher was
 `v0.3.0`'s, which has no notice block, so an `update-dir` beside it would have done nothing. For the step the
@@ -1187,6 +1187,7 @@ was put back and is byte for byte `main`'s again (sha256 `a73ceab28f5b4888`, as 
 | 1, from the game's app at 08:15:52 | **The notice: as 3.6 has it.** The launcher's log has, as the session's first line, "1launcher v0.1.0 is out. Open the 14unch3r app to update.", before "[1/5] Starting Steam and signing in…"; `noted` then held `v0.1.0` and 1; `tried` was unchanged, so the look in the background asked GitHub nothing (it had been asked that morning). Whether macOS showed the notification, and whom it named as the sender, is James's to say. **Then the start stopped at step 3:** Steam logged on 28 s after the start, and the launcher's own check found a Steam Cloud conflict on `account.dat` and `account.dat.bak`, said so in its alert, shut Steam down, and ended when James answered. No game was started |
 | 2, at 08:22:09, after the conflict was cleared (below) and the branch's launcher put in place again | **The notice again.** One line of it in the launcher's log; `noted` then `v0.1.0` and 2; `tried` unchanged. The game ran and was closed 15 s after its window: exit `rc=0`, saves uploaded |
 | 3, at 08:23:23 | **No notice.** No such line in the log; `noted` unchanged at 2; `tried` unchanged. The game ran: `rc=0` |
+| 4, at 08:34:31, for James's eyes (he had been away from the screen at the first three, and asked for it again): `noted` moved aside, the branch's launcher in place once more | **The notice, and James saw the notification on screen ("I saw it").** One line of it in the log; `noted` then `v0.1.0` and 1. The game reached its menu and was closed there; saves uploaded. The launcher took about four minutes to end after the game's window, longer than at the other starts; why was not looked into. The original launcher was put back afterwards, byte for byte `main`'s. **Not yet written down:** whom macOS named as the sender, and what a click on the notification opens |
 
 So the launcher gives the notice at the first two starts and not at the third, and its look in the background
 asked GitHub nothing in any of the three (it had been asked that morning). The watcher's own verdict on starts 2

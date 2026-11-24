@@ -15,14 +15,19 @@
 #
 # Never deletes through a symlink: links go with unlink, and rm -r refuses a link and anything outside
 # the wrapper it is meant for (an `rm -rf link/` deletes the target's contents -- measured 2026-11-07).
-# SPLIT_DONOR / SPLIT_STORE / SPLIT_CLONE / SPLIT_RUNS / SPLIT_BACKUP / SPLIT_LAUNCHER override the paths
+# The donor is given in SPLIT_DONOR: the name it once defaulted to now belongs to the generated Steam app. The
+# store's default is the wrapper common/wrappers.sh finds for the Windows Steam, and the clone's the name it gives
+# the game's wrapper; the clone is marked as the game's at A1 (docs/plans/wrapper-names.md).
+# SPLIT_STORE / SPLIT_CLONE / SPLIT_RUNS / SPLIT_BACKUP / SPLIT_LAUNCHER override the other paths
 # and SPLIT_SKIP_ENGINE=1 skips A3, for tools/test-split-wrapper.sh.
 set -eu
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 SM_STATE="${SM_STATE:-$HOME/Library/Application Support/1launcher/surviving-mars-relaunched}"
-DONOR="${SPLIT_DONOR:-$HOME/Applications/S734M.app}"
-STORE="${SPLIT_STORE:-$HOME/Applications/CS2dxmt11-pk110.app}"
-CLONE="${SPLIT_CLONE:-$HOME/Applications/SurvivingMars.app}"
+. "$HERE/../common/wrappers.sh"
+DONOR="${SPLIT_DONOR:-}"
+[ -n "$DONOR" ] || { echo "REFUSED: name the donor wrapper in SPLIT_DONOR"; exit 1; }
+STORE="${SPLIT_STORE:-$(l1w_find steam 2>/dev/null || true)}"
+CLONE="${SPLIT_CLONE:-$HOME/Applications/$(l1w_name game 3215050)}"
 RUNS="${SPLIT_RUNS:-$SM_STATE/runs}"
 BACKUP="${SPLIT_BACKUP:-$SM_STATE/backup/one-wrapper-$(date +%Y%m%d-%H%M%S)}"
 LAUNCHER="${SPLIT_LAUNCHER:-$HERE/launch-relaunched.sh}"
@@ -124,6 +129,7 @@ cp -Rc "$DONOR" "$CLONE" || abort "clone failed"
 [ "$(stat -f %d "$DONOR")" = "$(stat -f %d "$CLONE")" ] || abort "the clone is on another volume (cp -c made a full copy)"
 inside "$CLONE" "$(pfx "$CLONE")/.launcher.lock"; rm -f "$(pfx "$CLONE")/.launcher.lock"
 inside "$CLONE" "$CS/.crash"; rm -f "$CS/.crash"
+l1w_mark "$CLONE" game 3215050 0 || abort "the clone could not be marked as the game's wrapper"   # the donor's marker is not its
 
 step "A2 strip Cities: Skylines II from the clone"
 rmtree "$CLONE" "$CS/steamapps/common/Cities Skylines II"

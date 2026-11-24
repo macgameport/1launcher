@@ -60,7 +60,7 @@ H1='===== 2026-11-10 09:00:00 =====\n'; H2='\n===== 2026-11-10 21:00:00 =====\n'
 # --- what the window shows
 check "no log file: 0 0" "$("$P" --parse "$T/absent" 2>&1)" "0 0"
 check "an empty log: 0 0" "$(parse '')" "0 0"
-check "a session with no step: 0 0" "$(parse "${H1}Wrapper: CS2dxmt11.app\nEngine: wine-11.16\n")" "0 0"
+check "a session with no step: 0 0" "$(parse "${H1}Wrapper: wrapper-949230.app\nEngine: wine-11.16\n")" "0 0"
 check "one step" "$(parse "${H1}[1/5] Checking the Mac fixes for the game…\n")" "1 5 Checking the Mac fixes for the game…"
 check "the last step wins" "$(parse "${H1}[1/5] one\nPatches ensured.\n[2/5] two\nsome other line\n")" "2 5 two"
 check "a step line with no newline yet" "$(parse "${H1}[1/5] one\n[3/5] three")" "3 5 three"

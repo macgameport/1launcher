@@ -78,12 +78,15 @@ while [ $# -gt 0 ]; do
 done
 check_name "$APPNAME"
 
-DEFAULT_WRAPPER="$HOME/Applications/CS2dxmt11.app"
+COMMON="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common"
 if [ -z "$LAUNCHER" ]; then
-  . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh" || exit 1
+  . "$COMMON/paths.sh" || exit 1
   LAUNCHER="$CS2_DATA/launch-cs2-dxmt11.sh"
 fi
-[ -n "$GAME_EXE" ] || GAME_EXE="$DEFAULT_WRAPPER/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2.exe"
+if [ -z "$GAME_EXE" ]; then   # the game in the wrapper common/wrappers.sh finds (docs/plans/wrapper-names.md)
+  _w="$(bash "$COMMON/wrappers.sh" find game 949230 2>/dev/null)" || _w=""
+  GAME_EXE="${_w:+$_w/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2.exe}"
+fi
 # L1Prefix: the game path up to and including the first /Contents/SharedSupport/prefix that is followed by
 # /, kept only when it is absolute and that folder exists. It records what this builder was told: a launcher
 # steered elsewhere by CS2_WRAPPER uses another prefix.

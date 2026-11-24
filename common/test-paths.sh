@@ -116,7 +116,7 @@ LIST
   joins="$(git -C "$REPO" grep -ohE '\$\{?CS2_(DATA|WORK)\}?/[A-Za-z0-9_.-]+' -- '*.sh' '*.command' '*.py' | tr -d '{}' | sort -u)"
   swapped="$(printf '%s\n' "$joins" | while IFS=/ read -r v n; do
       [ -n "$v" ] || continue
-      case "$n" in (launch-cs2-dxmt11.sh|launch-cs2.sh|repatch.sh|cs2-display-profile.sh|patch-modconflict-badge.py|patches|revenv|launch-cs2*.sh.bak) k='$CS2_DATA' ;; (*) k='$CS2_WORK' ;; esac
+      case "$n" in (launch-cs2-dxmt11.sh|launch-cs2.sh|repatch.sh|cs2-display-profile.sh|patch-modconflict-badge.py|wrappers.sh|patches|revenv|launch-cs2*.sh.bak) k='$CS2_DATA' ;; (*) k='$CS2_WORK' ;; esac
       [ "$v" = "$k" ] || echo "$v/$n"
     done)"
   check "no name is joined to the wrong one of CS2_DATA and CS2_WORK" "$swapped" ""

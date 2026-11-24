@@ -14,17 +14,23 @@
 #     5 the question asked when both steps are done   6 the lock taken after step 4
 #     7 a swap stopped part way left as it is    8 the other game's manifest accepted
 #     9 --check fetching                        10 setup run with the game absent
-#    11 setup run with SM_WRAPPER given          12 WINEMSYNC dropped from the exports
+#    11 the stop before step 7 not comparing (setup run with another wrapper given)
+#                                               12 WINEMSYNC dropped from the exports
 #    13 the version pattern made 3.0             14 SM_VIA_INSTALLER not passed to setup
 #    15 --rebuild never passed                   16 the wait for Wine to let go removed
 #    17 game_cleanup's removal taken out         18 game_cleanup not called by the core
-#    19 an EXIT trap of the game's own           20 SM_WRAPPER read after core_begin
+#    19 an EXIT trap of the game's own           20 L1_WRAPPER_GIVEN decided after the core's export
 #    21 WINE left out of game_env                22 ENGINE taken from SM_ENGINE
 #    23 GAME taken from the resolved path        24 the swap finished under --check
 #    25 the lock's holder not looked at before the finish
 #    26 the finish made only when wine64 is gone 27 a refused finish passed on to the core's test
 #    28 the closing line put back after a Mac check that exits 3 (docs/plans/first-run-findings.md, 2.8, FT5)
 #    29 the closing line dropped after the refusal of Rosetta too
+#    30 the stop before step 7 put back to "whenever SM_WRAPPER is given" (docs/plans/wrapper-names.md, WT11 (e))
+#    31 game_wrapper not asking the resolver's incomplete (WT11 (f))
+#    32 the marking option dropped in the core (WT10 (b))
+#    33 core_after_setup removed at this installer's call, setup's exit code kept (WT11 (c))
+#    34 setup's unset of SM_WRAPPER removed (WT11 (b))       35 --holders-skip not passed by setup (WT11 (g))
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -43,6 +49,7 @@ mkdir -p "$R/common" "$G/scripts" "$G/tools" "$T/bin" "$T/st" "$T/home/Applicati
 S="$G/scripts/install.sh"; CORE="$R/common/install-core.sh"
 cp "$HERE/scripts/install.sh" "$S"; cp "$REPO/common/install-core.sh" "$CORE"
 : > "$G/launch-relaunched.sh"; : > "$G/make-app.sh"; : > "$G/tools/frame-fix.exe"; : > "$R/common/make-launcher-app.sh"
+cp "$REPO/common/wrappers.sh" "$R/common/wrappers.sh"; : > "$R/common/move-wrappers.sh"   # the resolver, real; the mover, setup's
 
 py() { python3 -I - "$@"; }
 case "$M" in
@@ -71,7 +78,7 @@ PY
   8) sed -i '' 's|^GAME_APPID=3215050$|GAME_APPID=949230|' "$S" ;;
   9) sed -i '' 's|^elif \[ "\$CHECK" = 1 \]; then say "D3DMetal \$D3DM_VER: version 3\.0 would be fetched|elif false; then say "D3DMetal $D3DM_VER: version 3.0 would be fetched|' "$S" ;;
   10) sed -i '' 's|^core_game 6$|: core_game 6|' "$S" ;;
-  11) sed -i '' 's|^if \[ -n "\$GIVEN_WRAPPER" \]; then$|if false; then|' "$S" ;;
+  11) sed -i '' 's|^  if \[ "\$_app_w" != "\$W" \]; then$|  if false; then|' "$S" ;;
   12) sed -i '' 's|^export WINEESYNC=1 WINEMSYNC=1 D3DMETAL=1 |export WINEESYNC=1 D3DMETAL=1 |' "$S" ;;
   13) sed -i '' 's|^  \[3-9\]\.\*) ;;$|  3.0) ;;|' "$S" ;;
   14) sed -i '' 's|^SM_VIA_INSTALLER=1 bash "\$SETUP" "\$@"$|bash "$SETUP" "$@"|' "$S" ;;
@@ -80,12 +87,13 @@ PY
   17) sed -i '' 's|^game_cleanup() { \[ -n "\${SM_TMP:-}" \] \&\& rm -rf "\$SM_TMP"; return 0; }|game_cleanup() { return 0; }|' "$S" ;;
   18) sed -i '' '/^  declare -F game_cleanup > \/dev\/null && game_cleanup$/d' "$CORE" ;;
   19) sed -i '' 's|^core_begin$|trap '"'"'rm -rf "$SM_TMP"'"'"' EXIT; core_begin|' "$S" ;;
-  20) py "$S" << 'PY'
+  20) py "$CORE" << 'PY'
 import sys
 p = sys.argv[1]; s = open(p).read()
-a = 'GIVEN_WRAPPER="${SM_WRAPPER:-}"\n'
-assert s.count(a) == 1 and s.count("\ncore_begin\n") == 1
-s = s.replace(a, "").replace("\ncore_begin\n", "\ncore_begin\n" + a)
+a = 'if [ -n "${!WRAPPER_VAR:-}" ]; then L1_WRAPPER_GIVEN=1; else L1_WRAPPER_GIVEN=0; fi\nexport L1_WRAPPER_GIVEN\n'
+b = '  use_wrapper "$W"\n  LOCK="$WINEPREFIX/.launcher.lock"\n'
+assert s.count(a) == 1 and s.count(b) == 1
+s = s.replace(a, "").replace(b, b + a)
 open(p, "w").write(s)
 PY
      ;;
@@ -105,10 +113,15 @@ PY
      ;;
   28) sed -i '' '/^  \[ "\$rc" = 3 \] && END=quiet /d' "$CORE" ;;
   29) sed -i '' 's|softwareupdate --install-rosetta --agree-to-license"; exit 3 ;;$|softwareupdate --install-rosetta --agree-to-license"; END=quiet; exit 3 ;;|' "$CORE" ;;
+  30) sed -i '' 's|^  if \[ "\$_app_w" != "\$W" \]; then$|  if true; then|' "$S" ;;
+  31) sed -i '' 's|W="\$(l1w_incomplete game "\$GAME_APPID")" \|\| W=|W=|' "$S" ;;
+  32) sed -i '' 's| --mark game "\$GAME_APPID"||g' "$CORE" ;;
+  33) sed -i '' 's|^core_after_setup \$?$|(exit $?)|' "$S" ;;
+  34|35) ;;   # applied below, to the real setup.sh of the WT11 copy
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
-  cmp -s "$HERE/scripts/install.sh" "$S" && cmp -s "$REPO/common/install-core.sh" "$CORE" && { echo "REFUSED: mutant $M did not apply"; exit 2; }
+  case "$M" in 34|35) ;; *) cmp -s "$HERE/scripts/install.sh" "$S" && cmp -s "$REPO/common/install-core.sh" "$CORE" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;; esac
   bash -n "$S" && bash -n "$CORE" || { echo "REFUSED: mutant $M does not parse"; exit 2; }
 fi
 
@@ -133,9 +146,12 @@ X
   for f in external/libd3dshared.dylib wine/x86_64-windows/atidxx64.dll wine/x86_64-windows/d3d11.dll \
            wine/x86_64-windows/d3d12.dll wine/x86_64-windows/dxgi.dll; do echo "v$2 $f" > "$1/lib/$f"; done
 }
-mkwrap() {   # <wrapper> <version, or none> [steam] [game] [othergame]
+mkwrap() {   # <wrapper> <version, or none> [steam] [game] [othergame] [mark]: mark writes common/wrappers.sh's marker
   local s="$1/Contents/SharedSupport" sd
   mkdir -p "$s/prefix/drive_c" "$1/Contents/Frameworks"; mkwine "$s/wine" "$2"
+  printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string></dict></plist>\n' > "$1/Contents/Info.plist"
+  case " $* " in *" mark "*) plutil -replace L1Role -string game-wrapper "$1/Contents/Info.plist"; plutil -replace L1SteamAppID -integer 3215050 "$1/Contents/Info.plist" ;; esac
+  chmod 755 "$1"
   sd="$s/prefix/drive_c/Program Files (x86)/Steam"
   case " $* " in *" steam "*) mkdir -p "$sd"; : > "$sd/steam.exe" ;; esac
   case " $* " in *" game "*) mkdir -p "$sd/steamapps/common/Project Spark"; : > "$sd/steamapps/common/Project Spark/Mars.exe"
@@ -152,15 +168,16 @@ cat > "$G/scripts/setup.sh" << 'X'
 #!/bin/bash
 case " $* " in *" --mac-only "*) [ -n "${STUB_MAC_WORDS:-}" ] && echo "  $STUB_MAC_WORDS"; exit "${STUB_MAC_RC:-0}" ;; esac
 w="${SM_WRAPPER:-/none}"
-echo "SETUP $* via=${SM_VIA_INSTALLER:-} lock=$(readlink "$w/Contents/SharedSupport/prefix/.launcher.lock" 2>/dev/null) ppid=$PPID" >> "$CALLS"
+echo "SETUP $* via=${SM_VIA_INSTALLER:-} lock=$(readlink "$w/Contents/SharedSupport/prefix/.launcher.lock" 2>/dev/null) ppid=$PPID given=${L1_WRAPPER_GIVEN-unset}" >> "$CALLS"
 exit "${STUB_SETUP_RC:-0}"
 X
 cat > "$R/common/make-wrapper.sh" << 'X'
 #!/bin/bash
 echo "MAKE-WRAPPER $*" >> "$CALLS"
 case " $* " in *" --check "*) echo "  would make the wrapper (stub)"; exit 0 ;; esac
+m=""; case " $* " in *" --mark game 3215050 "*) m=mark ;; esac
 while [ $# -gt 0 ]; do [ "$1" = --wrapper ] && W="$2"; shift; done
-mkwrap "$W" 2.1 ${STUB_NEW_WRAPPER-steam game}
+mkwrap "$W" 2.1 ${STUB_NEW_WRAPPER-steam game} $m
 X
 cat > "$G/tools/fetch-d3dmetal.sh" << 'X'
 #!/bin/bash
@@ -214,8 +231,8 @@ c() { grep -c -- "$1" "$CALLS"; }
 o() { grep -c -- "$1" "$T/out"; }
 snap() { (cd "$HOME" && find . | LC_ALL=C sort | shasum | cut -c1-12); }
 tmpleft() { ls -A "$TMPDIR" | wc -l | tr -d ' '; }
-D="$HOME/Applications/SurvivingMars.app"; DS="$D/Contents/SharedSupport"
-fresh() { rm -rf "$D"; world; mkwrap "$D" "$@"; }   # the default wrapper anew
+D="$HOME/Applications/$(bash "$REPO/common/wrappers.sh" name game 3215050)"; DS="$D/Contents/SharedSupport"   # the name the installer gives
+fresh() { rm -rf "$D"; world; mkwrap "$D" "$@" mark; }   # the installer's own wrapper anew, marked as make-wrapper.sh --mark marks it
 
 # --- nothing there: --check, nobody to ask, the whole install
 before=$(snap); rc=$(run -- --check)
@@ -232,7 +249,8 @@ check "  ...the wrapper is made with this game's engine pin" "$(c '^MAKE-WRAPPER
 check "  ...the lock is held at the fetch, by the installer" "$(grep -c '^FETCH.* lock=\([0-9][0-9]*\) ppid=\1$' "$CALLS")" 1
 check "  ...and at the engine swap" "$(grep -c '^MAKE-ENGINE.* lock=\([0-9][0-9]*\) ppid=\1$' "$CALLS")" 1
 check "  ...the engine is given the temporary folder's pieces, and no --rebuild" "$(grep -c "^MAKE-ENGINE --install $D CX_GPTK=$TMPDIR/1launcher-d3dmetal\.[A-Za-z0-9]*/pieces/lib " "$CALLS")" 1
-check "  ...setup is run by the installer, which holds the lock, with SM_VIA_INSTALLER=1" "$(grep -c '^SETUP --yes via=1 lock=\([0-9][0-9]*\) ppid=\1$' "$CALLS")" 1
+check "  ...setup is run by the installer, which holds the lock, with SM_VIA_INSTALLER=1, told no wrapper was given" "$(grep -c '^SETUP --yes via=1 lock=\([0-9][0-9]*\) ppid=\1 given=0$' "$CALLS")" 1
+check "  ...the wrapper was made with the resolver's name, and marked" "$(c "^MAKE-WRAPPER .* --wrapper $D --mark game 3215050\$")" 1
 check "  ...the engine script's two lines are shown, naming the temporary folder, and no other line of it" "$(o '^  source Wine :'):$(grep -c "^  D3DMetal    : $TMPDIR/1launcher-d3dmetal\.[A-Za-z0-9]*/pieces/lib " "$T/out"):$(o 'some other line')" "1:1:0"
 check "  ...the temporary folder is gone, and the lock released" "$(tmpleft):$(lockof "$D")" "0:"
 check "  ...it ends with the core's closing line" "$(o '^Done\. Start the game from Applications: Surviving Mars Relaunched, or 14unch3r\.$')" 1
@@ -300,6 +318,19 @@ rc=$(run -- --check); check "  ...the other game's manifest is not this game's" 
 world; mkwrap "$T/other.app" 3.0 steam game
 rc=$(run SM_WRAPPER="$T/other.app" --)
 check "SM_WRAPPER given: it stops before step 7 with exit 0, runs no setup, and has no closing line" "$rc:$(o 'Stopped before step 7: SM_WRAPPER names another wrapper'):$(c '^SETUP'):$(o '^Done')" "0:1:0:0"
+fresh 3.0 steam game
+rc=$(run SM_WRAPPER="$D" --)
+check "SM_WRAPPER naming the wrapper the game's app starts: setup runs, told a wrapper was given (WT11)" "$rc:$(o 'Stopped before step 7'):$(grep -c '^SETUP .* given=1$' "$CALLS")" "0:0:1"
+[ "$rc" = 0 ] || sed 's/^/   | /' "$T/out"
+mv "$D" "$T/aside.app"; mkdir -p "$HOME/Applications/SurvivingMars.app/Contents"
+rc=$(run --)
+check "an old-named app with no prefix and no other wrapper: exit 1, the looks-incomplete line, nothing made (WT11)" \
+  "$rc:$(o 'SurvivingMars.app looks incomplete'):$(c '^MAKE-WRAPPER')" "1:1:0"
+rm -rf "$HOME/Applications/SurvivingMars.app"; mv "$T/aside.app" "$D"
+mkwrap "$HOME/Applications/twin.app" 3.0 steam game mark
+rc=$(run --)
+check "two wrappers marked alike: exit 1, the duplicates line, no setup (WT4b)" "$rc:$(o 'Move one to the Trash, or name the one to use in SM_WRAPPER.'):$(c '^SETUP')" "1:1:0"
+rm -rf "$HOME/Applications/twin.app"
 check "a relative SM_WRAPPER is exit 2, by that name" "$(run SM_WRAPPER=other.app --):$(o '^SM_WRAPPER must be an absolute path: other.app$')" "2:1"
 check "--desktop is exit 2 for this game" "$(run -- --desktop):$(o 'unknown option: --desktop')" "2:1"
 fresh 3.0 steam game
@@ -353,7 +384,7 @@ check "a wine.new with no BAK is not a finished swap: step 4 runs as for any 2.1
 # --- the game running, seen under the path the launcher was given
 ln -s "$T/home" "$T/homelink"
 fresh 3.0 steam game
-echo "4343 $T/homelink/Applications/SurvivingMars.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe" > "$ST/procs"
+echo "4343 $T/homelink/Applications/$(basename "$D")/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe" > "$ST/procs"
 rc=$(run HOME="$T/homelink" --)
 check "the game running, started under a home folder that resolves to another: exit 3" "$rc:$(o 'The game is running'):$(c '^SETUP')" "3:1:0"
 world
@@ -371,6 +402,38 @@ check "the version expression equals the launcher's" "$(same 'D3DM_VER=$(plutil'
 check "the version pattern equals the launcher's" "$(same 'case "$D3DM_VER" in' '  [3-9]')" "$(want 'case "$D3DM_VER" in' '  [3-9]' 2)"
 check "game_running equals the launcher's" "$(fn "$S" 'game_running() {' | shasum | cut -c1-12):$(fn "$S" 'game_running() {' | wc -l | tr -d ' ')" "$(fn "$LAUNCHER" 'game_running() {' | shasum | cut -c1-12):8"
 check "no line of the installer names the other game" "$(grep -c -i -E 'cities|skylines|949230|CS2' "$HERE/scripts/install.sh")" 0
+
+# --- WT11 (docs/plans/wrapper-names.md): the installer's route through the real setup.sh, wrappers.sh and
+#     move-wrappers.sh, in a second scratch copy; its app builder is the real one with xcrun a stub, its window
+#     builder a stub, the mover's probe a stub
+R2="$T/repo2"; G2="$R2/surviving-mars-relaunched"; mkdir -p "$R2/common" "$G2/scripts" "$G2/tools"
+cp "$S" "$G2/scripts/install.sh"; cp "$CORE" "$R2/common/install-core.sh"   # the copies under test: their mutants apply here too
+cp "$HERE/scripts/setup.sh" "$G2/scripts/"; cp "$HERE/launch-relaunched.sh" "$HERE/make-app.sh" "$G2/"; cp "$HERE/tools/frame-fix.exe" "$G2/tools/"
+cp "$G/tools/fetch-d3dmetal.sh" "$G/tools/make-engine.sh" "$G2/tools/"
+cp "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
+printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"
+S2="$G2/scripts/setup.sh"
+case "$M" in
+  34) sed -i '' 's|^\[ "\${SM_VIA_INSTALLER:-0}" = 1 \] \&\& \[ "\${L1_WRAPPER_GIVEN:-}" = 0 \] \&\& unset SM_WRAPPER$|: no unset|' "$S2"
+      grep -q '^: no unset$' "$S2" || { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+  35) sed -i '' 's|a+=(--holders-skip --held-by "\$PPID")|a+=(--held-by "$PPID")|' "$S2"
+      grep -q -- '--holders-skip --held-by' "$S2" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+esac
+stub xcrun 'exit 1'
+stub wprobe '[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"; exit 0'
+# a pgrep that, as the real one, exits 1 when nothing matches: the app builder refuses while its app's program runs
+mkdir -p "$T/bin2"; printf '#!/bin/bash\ni=""; pat=""; for a in "$@"; do [ "$a" = -i ] && i=-i; pat="$a"; done\ngrep -E $i -- "$pat" "$ST/procs" 2>/dev/null | cut -d" " -f1 | grep .\n' > "$T/bin2/pgrep"; chmod +x "$T/bin2/pgrep"
+OLDW="$HOME/Applications/SurvivingMars.app"; NEWW="$HOME/Applications/$(bash "$REPO/common/wrappers.sh" name game 3215050)"
+oldw() { rm -rf "$HOME/Applications"/*.app "$HOME/Library"; world; mkwrap "$OLDW" 3.0 steam game; }
+run2() { : > "$CALLS"; env -u SM_WRAPPER -u L1_WRAPPER_GIVEN PATH="$T/bin2:$PATH" L1_WMOVE_PROBE="$T/bin/wprobe" "$@" /bin/bash "$G2/scripts/install.sh" < /dev/null > "$T/out" 2>&1; echo $?; }
+oldw; rc=$(run2)
+check "WT11 through the real setup: an old-named wrapper, no variable given: renamed and marked, exit 0" \
+  "$rc:$([ -d "$NEWW" ] && echo renamed):$(plutil -extract L1Role raw -o - "$NEWW/Contents/Info.plist" 2>/dev/null)" "0:renamed:game-wrapper"
+check "  ...the app's L1Prefix names the renamed wrapper, and no .launcher.lock is left in it" \
+  "$(plutil -extract L1Prefix raw -o - "$HOME/Applications/Surviving Mars Relaunched.app/Contents/Info.plist" 2>/dev/null):$(lockof "$NEWW")" "$NEWW/Contents/SharedSupport/prefix:"
+oldw; rc=$(run2 STUB_WHOLDERS=4242)
+check "WT11 a holder reported by the probe: exit 0, one skip line, nothing renamed" "$rc:$(o 'skip: something of the wrapper'):$([ -d "$OLDW" ] && echo kept)" "0:1:kept"
+rm -rf "$HOME/Applications"/*.app "$HOME/Library"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

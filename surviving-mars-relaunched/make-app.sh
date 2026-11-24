@@ -22,7 +22,14 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 APP="${SM_APP:-$HOME/Applications/Surviving Mars Relaunched.app}"
 while [ "$APP" != / ] && [ "${APP%/}" != "$APP" ]; do APP="${APP%/}"; done   # tested as the bundle it names
 SCRIPT="${SM_SCRIPT:-$HERE/launch-relaunched.sh}"
-GAME_EXE="${SM_GAME_EXE:-$HOME/Applications/SurvivingMars.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe}"
+# the game's program in the wrapper common/wrappers.sh finds (docs/plans/wrapper-names.md), unless SM_GAME_EXE names one
+# With none found, where the installer would make one. The shim's running test must never be given an empty path,
+# which would match every command line: with no resolver at all, a path that matches none.
+if [ -n "${SM_GAME_EXE:-}" ]; then GAME_EXE="$SM_GAME_EXE"
+elif [ -f "$HERE/../common/wrappers.sh" ]; then
+  _w="$(bash "$HERE/../common/wrappers.sh" find game 3215050 2>/dev/null)" || _w="$HOME/Applications/$(bash "$HERE/../common/wrappers.sh" name game 3215050)"
+  GAME_EXE="$_w/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe"
+else GAME_EXE="/nonexistent/Mars.exe"; fi
 PE_ICON="$HERE/../cities-skylines-2/scripts/pe-icon.py"
 # L1Prefix: the game path up to and including the first /Contents/SharedSupport/prefix that is followed by
 # /, kept only when it is absolute and that folder exists. It records what this builder was told: a launcher

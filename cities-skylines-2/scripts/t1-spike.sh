@@ -40,7 +40,8 @@
 # (macgameport, 2026-09-03)
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+SS="$CS2W/Contents/SharedSupport"
 W="$SS/wine/bin/wine64"; S="$SS/prefix/drive_c/Program Files (x86)/Steam"
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
 DRV="${CS2_DRIVER:-$CS2_WORK/win-resize-driver.exe}"
@@ -50,7 +51,7 @@ PHASE="${1:-}"
 case "$PHASE" in before|after|analyse) ;; *) echo "usage: $0 before|after|analyse" >&2; exit 64 ;; esac
 mkdir -p "$OUT"
 export WINEPREFIX="$SS/prefix"
-export DYLD_FALLBACK_LIBRARY_PATH="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
+export DYLD_FALLBACK_LIBRARY_PATH="$CS2W/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
 [ -x /tmp/pixel-probe ] || swiftc -O "$REPO/scripts/pixel-probe.swift" -o /tmp/pixel-probe || exit 1
 [ -x /tmp/winlist ]     || swiftc -O "$REPO/scripts/winlist.swift"     -o /tmp/winlist     || exit 1
 

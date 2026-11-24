@@ -15,7 +15,7 @@ set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/licence-wait-probe-test.XXXX)"
 trap 'rm -rf "$T"' EXIT
-S="$T/g/scripts"; H="$T/home"; mkdir -p "$T/common"; cp "$REPO/../common/paths.sh" "$T/common/"; LD="$(env -u CS2_PATCH_DIR -u CS2_WORK_DIR -u L1_DATA_ROOT -u L1_WORK_ROOT HOME="$H" bash "$T/common/paths.sh" | sed -n 's/^CS2_DATA=//p')"   # the runtime folder
+S="$T/g/scripts"; H="$T/home"; mkdir -p "$T/common"; cp "$REPO/../common/paths.sh" "$REPO/../common/wrappers.sh" "$T/common/"; LD="$(env -u CS2_PATCH_DIR -u CS2_WORK_DIR -u L1_DATA_ROOT -u L1_WORK_ROOT HOME="$H" bash "$T/common/paths.sh" | sed -n 's/^CS2_DATA=//p')"   # the runtime folder
 LW="$(env -u CS2_PATCH_DIR -u CS2_WORK_DIR -u L1_DATA_ROOT -u L1_WORK_ROOT HOME="$H" bash "$T/common/paths.sh" | sed -n 's/^CS2_WORK=//p')"   # the workspace
 mkdir -p "$S" "$T/bin" "$T/runs" "$LD" "$H/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix"
 P="$S/licence-wait-probe.sh"; cp "$REPO/scripts/licence-wait-probe.sh" "$P"

@@ -82,7 +82,7 @@ for r in $(seq 1 "$RUNS"); do
   LL="$OUT/run-$r.launcher.log"
   prev=$(ls -t "$GLOGS"/Mars.exe-*.log 2>/dev/null | head -1)
   t0=$(date +%s)
-  SM_LICENCE_WAIT="$SECS" bash "$L" > "$LL" 2>&1 &
+  SM_LICENCE_WAIT="$SECS" L1_SIGNIN_SECS=120 bash "$L" > "$LL" 2>&1 &   # 120: the wait below counts on it (the launcher's own is 600)
   LP=$!
   glog=""
   for _ in $(seq 1 150); do          # sign-in (<= 120 s) + the wait + the cloud sync + the game's start

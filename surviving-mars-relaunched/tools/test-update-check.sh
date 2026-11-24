@@ -233,7 +233,7 @@ tty_case ttysilent '' SM_UPDATE_ASK_SECS=1
 expect ttysilent has 'WARNING: game update waiting'; expect ttysilent lacks 'steam://'
 
 # 13. the real manifest, when present on this machine (print only: its state is whatever Steam says)
-REAL_NOW="$HOME/Applications/SurvivingMars.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_3215050.acf"
+REAL_NOW="$(bash "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/wrappers.sh" find game 3215050 2>/dev/null)/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_3215050.acf"
 if [ -f "$REAL_NOW" ]; then
   run_case realnow $NUL MANIFEST_OVERRIDE="$REAL_NOW" SM_UPDATE=skip
   echo "live manifest: $(grep -m1 -E 'is current|WARNING|skipped' "$T/realnow.out")"

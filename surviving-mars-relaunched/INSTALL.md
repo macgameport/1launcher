@@ -125,7 +125,7 @@ This project passes on nothing of Apple's: no file of Apple's is in this reposit
 
 | What | Where |
 |---|---|
-| The wrapper: Wine, Steam, the game, your saves and mods | `~/Applications/SurvivingMars.app` |
+| The wrapper: Wine, Steam, the game, your saves and mods | `~/Applications/wrapper-3215050.app` (`SurvivingMars.app` until v0.3.0; below) |
 | The app you start the game with | `~/Applications/Surviving Mars Relaunched.app` |
 | The window that lists every game | `~/Applications/14unch3r.app` |
 | The launcher the app runs, and its click helper | `~/Library/Application Support/1launcher/surviving-mars-relaunched/` (`launch-relaunched.sh`, `tools/`) |
@@ -134,6 +134,46 @@ This project passes on nothing of Apple's: no file of Apple's is in this reposit
 
 Saves travel by Steam Cloud: the launcher waits for Steam to pull them before the game starts and to
 upload them after it exits.
+
+## The wrapper's name
+
+Until v0.3.0 the game's wrapper was `~/Applications/SurvivingMars.app`. Spotlight offered it beside the game's
+app, and a wrapper opened directly starts Steam outside the launcher. Setup now names it
+`~/Applications/wrapper-3215050.app`, a name nobody types, and finds it by a mark it writes into the wrapper's
+`Info.plist`, whatever its name.
+
+A quick way to a game from Spotlight may be to type `14`: on the one Mac where it was tried, which had opened
+14unch3r often, that offered 14unch3r first. Typing the game's name no longer offers the wrapper, but Spotlight
+may still list files and web pages before the game's app; that order is Spotlight's own.
+
+**What setup does.** At its next run (the installer opened again, or setup in a checkout) it writes the mark and
+renames the wrapper: nothing is copied. It says what it renamed. It stops, and changes nothing, while the game or
+another launch or install is using the wrapper; when the rename cannot be made safely for another reason, it skips
+it, says why, and tries again at its next run. At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
+way. Answered within about a minute, Steam signs in as before and the game starts. If the start ends with "Steam
+did not sign in by itself", start the game again once the question is answered: with the question left open, Steam
+itself gives up after about three minutes, and the message comes some minutes after that.
+
+**What stops working until you point it at the new name:** anything of yours that names the old path: a Dock
+item made from the wrapper, an alias, a saved command. The game's app and 14unch3r find the wrapper whatever its
+name.
+
+**To keep the old name** on a Mac not renamed yet, put `L1_KEEP_WRAPPER_NAMES=1` and a space in front of the line
+you run, for that run:
+
+```bash
+L1_KEEP_WRAPPER_NAMES=1 /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/macgameport/1launcher/release/install.sh)" 1launcher-install 3215050
+```
+
+**To put the old name back**, quit the game and Steam, rename the wrapper, then run setup once (open the installer
+again): it rebuilds the app, and from then on leaves the wrapper under the name you gave it.
+
+```bash
+mv ~/Applications/wrapper-3215050.app ~/Applications/SurvivingMars.app
+```
+
+Going back to v0.1.0 or v0.2.0 on a Mac that was renamed needs this too: the launcher of those versions knows
+only `SurvivingMars.app`.
 
 ## A Steam Cloud conflict
 
@@ -144,8 +184,8 @@ the files.
 
 To clear one, with the game and this wrapper's Steam closed:
 
-1. Copy these two folders somewhere safe. Both are inside
-   `~/Applications/SurvivingMars.app/Contents/SharedSupport/prefix/drive_c/`:
+1. Copy these two folders somewhere safe. Both are inside the wrapper's
+   `Contents/SharedSupport/prefix/drive_c/`:
    `users/Wineskin/Saved Games/Surviving Mars Relaunched/<a long number>/`, your saves, and
    `Program Files (x86)/Steam/userdata/<a number>/3215050/`, Steam's record of them.
 2. In the saves folder, delete the files the launcher named. In Steam's folder, delete
@@ -164,7 +204,7 @@ The wrapper holds the game and its saves. Your saves are also in Steam Cloud, if
 them.
 
 ```bash
-rm -rf ~/Applications/SurvivingMars.app ~/Applications/"Surviving Mars Relaunched.app"
+rm -rf ~/Applications/wrapper-3215050.app ~/Applications/SurvivingMars.app ~/Applications/"Surviving Mars Relaunched.app"
 rm -rf ~/Library/Application\ Support/1launcher/surviving-mars-relaunched/launch-relaunched.sh ~/Library/Application\ Support/1launcher/surviving-mars-relaunched/tools
 rm -f ~/Library/Logs/sm-relaunched-launcher.log
 ```

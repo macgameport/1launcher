@@ -23,7 +23,7 @@ trap 'rm -rf "$T"' EXIT
 
 # scratch copies laid out as in the repo, so that a mutant edits a copy
 mkdir -p "$T/repo/common" "$T/repo/cities-skylines-2/scripts" "$T/repo/surviving-mars-relaunched"
-cp "$TOP/common/games.tsv" "$T/repo/common/"
+cp "$TOP/common/games.tsv" "$TOP/common/wrappers.sh" "$TOP/common/paths.sh" "$T/repo/common/"   # the builders read the resolver
 cp "$TOP/cities-skylines-2/scripts/make-shortcut.sh" "$TOP/cities-skylines-2/scripts/make-steam-shortcut.sh" "$T/repo/cities-skylines-2/scripts/"
 cp "$TOP/surviving-mars-relaunched/make-app.sh" "$T/repo/surviving-mars-relaunched/"
 TSV="$T/repo/common/games.tsv"; SM_MAKE="$T/repo/surviving-mars-relaunched/make-app.sh"

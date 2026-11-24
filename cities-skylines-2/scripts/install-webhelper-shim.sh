@@ -22,7 +22,7 @@
 # Re-run after any Steam client update (the update restores the original webhelper).
 set -u
 
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+APP="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else by its marker
 REVERT=0
 while [ $# -gt 0 ]; do
   case "$1" in

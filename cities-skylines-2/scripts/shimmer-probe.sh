@@ -20,9 +20,10 @@
 #      for EVERY window on a locked screen, including a known-good non-wine one, and a blind sensor
 #      reads exactly like a black window. (Harness trap 2, steam-render-cell.sh.)
 set -u
-SS=$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+SS=$CS2W/Contents/SharedSupport
 export WINEPREFIX="$SS/prefix" WINEDEBUG=-all
-export DYLD_FALLBACK_LIBRARY_PATH="$HOME/Applications/CS2dxmt11.app/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
+export DYLD_FALLBACK_LIBRARY_PATH="$CS2W/Contents/Frameworks:$SS/wine/lib:/usr/lib:/usr/local/lib"
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
 W="$SS/wine/bin/wine64"; DRV=$CS2_WORK/win-resize-driver.exe
 # CHURN_A / CHURN_B / CHURN_N override the driver's size pair and step count (issue #7 T7:

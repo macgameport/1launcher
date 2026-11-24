@@ -24,7 +24,8 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="${CS2_BUILD_DIR:-$CS2_WORK/build-1116}"
 WINE_VER=11.16
 TARBALL_SHA=c66e2090343dcd727f7f7fd2f87ee0bfb0b118790c1d745ab7b8a4c3a4197f2f
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+APP="$CS2W"
 PKLIB="$APP/Contents/SharedSupport/wine/lib"
 SRC="$WORK/wine-$WINE_VER"; PATCHED="$WORK/wine-$WINE_VER-dxmt"; B="$WORK/wine-1116-vis-build"
 OUT="$WORK/winemac-visibility/winemac.so"

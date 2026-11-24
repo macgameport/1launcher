@@ -9,7 +9,8 @@
 #   MUTANT=4 ...  the closing chmod -R dropped; must exit 1
 #   MUTANT=5 ...  a name the runtime folder already holds is lifted over it; must exit 1
 #   MUTANT=6 ...  the volume comparison dropped; must exit 1
-#   MUTANT=7 ...  with no --lock, the first wrapper on the list is read whether or not it is there; must exit 1
+#   MUTANT=7 ...  with no --lock, common/wrappers.sh not asked (no lock read); must exit 1. (Its first form, the first
+#                 wrapper of a list read whether or not it was there, is common/test-wrappers.sh MUTANT=4 now.)
 #   MUTANT=8 ...  one path printed raw; must exit 1
 #   MUTANT=9 ...  a symlinked root is not looked at; must exit 1
 #   MUTANT=10 ... a root the script makes keeps the umask's mode; must exit 1
@@ -20,7 +21,7 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/move-test.XXXX)"; T="$(cd "$T" && pwd -P)"
 trap 'kill $(cat "$T"/*.pid 2>/dev/null) 2>/dev/null; chmod -R u+w "$T" 2>/dev/null; rm -rf "$T"' EXIT
 mkdir -p "$T/repo/cities-skylines-2/scripts" "$T/repo/common" "$T/bin"
-cp "$REPO/scripts/move-install.sh" "$T/repo/cities-skylines-2/scripts/"; cp "$REPO/../common/paths.sh" "$T/repo/common/"
+cp "$REPO/scripts/move-install.sh" "$T/repo/cities-skylines-2/scripts/"; cp "$REPO/../common/paths.sh" "$REPO/../common/wrappers.sh" "$T/repo/common/"
 M="$T/repo/cities-skylines-2/scripts/move-install.sh"
 mutate() { perl -0pi -e "$1" "$M"; grep -q -- "$2" "$M" || { echo "REFUSED: mutant did not apply"; exit 2; }; }
 case "${MUTANT:-0}" in
@@ -30,7 +31,7 @@ case "${MUTANT:-0}" in
   4) mutate 's/\nclose_modes\(\) \{[^\n]*\n/\nclose_modes() { return 0; }\n/' 'close_modes() { return 0; }' ;;
   5) mutate 's/\n    if \[ -e "\$2\/\$n" \] \|\| \[ -L "\$2\/\$n" \]; then echo "  left in the workspace: \$n"; continue; fi\n/\n    : lifted over it\n/; s/    elif mv_q "\$1\/\$n" "\$2\/\$n"; then/    elif mv -f "\$1\/\$n" "\$2\/\$n"; then/' 'elif mv -f ' ;;
   6) mutate 's/    \[ "\$\(probe_dev "\$\(parent "\$t"\)"\)" = "\$dv" \] \|\| reason skip/    true || reason skip/' 'true || reason skip' ;;
-  7) mutate 's/    else for x in \$WRAPPERS; do \[ -d [^\n]*\n/    else w="\$HOME\/Applications\/\${WRAPPERS%% *}"; fi\n/' 'WRAPPERS%% ' ;;
+  7) mutate 's/    \[ -f "\$x" \] && w="\$\(bash "\$x" find game 949230 2>\/dev\/null\)"/    false \&\& w="" # MUTANT-7/' 'MUTANT-7' ;;
   8) mutate 's/  echo "  would move: \$\(tilde "\$OLD"\) -> \$\(tilde "\$WORK"\)"/  echo "  would move: \$OLD -> \$(tilde "\$WORK")"/' 'would move: \$OLD -> ' ;;
   9) mutate 's/  if \[ -L "\$d" \]; then reason skip "\$\(tilde "\$d"\) is a symlink"\n  elif \[ -e "\$d" \]; then own_folder/  if [ -e "\$d" ] \&\& [ ! -L "\$d" ]; then own_folder/' 'if \[ -e "\$d" \] && \[ ! -L "\$d" \]; then own_folder' ;;
   10) mutate 's/\nmake_root\(\) \{[^\n]*\n/\nmake_root() { [ -d "\$1" ] || mkdir -p "\$1"; }\n/' 'make_root() { \[ -d "\$1" \] || mkdir -p "\$1"; }' ;;

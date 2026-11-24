@@ -19,6 +19,8 @@
 #                                      that a step is not posted as a notification as well
 #   CS2_LICENCE_WAIT=<seconds>         the wait after a fresh sign-in, 0 to 999 (default 15).
 #                                      scripts/licence-wait-probe.sh measures shorter ones
+#   L1_SIGNIN_SECS=<seconds>           how long to wait for Steam's sign-in, 0 to 999 (default 600: a
+#                                      question from macOS can hold it). scripts/boot-verify.sh sets 120
 #   WINEDEBUG=...                      respected if set (scripts/diag-launch-dxmt11.sh uses it)
 #   CS2_ARGS="..."                     extra Cities2.exe arguments (e.g. -benchmark for the
 #                                      perf-pass measurement cells; unquoted expansion, so
@@ -30,21 +32,17 @@
 set -u
 
 # ---------------------------------------------------------------- locate the wrapper
-find_wrapper() {
-  [ -n "${CS2_WRAPPER:-}" ] && { echo "$CS2_WRAPPER"; return; }
-  for cand in "$HOME/Applications/CS2dxmt11.app" "$HOME/Applications/CS2.app" \
-              "/Applications/CS2dxmt11.app"; do
-    [ -d "$cand/Contents/SharedSupport/prefix" ] && { echo "$cand"; return; }
-  done
-  # last resort: any wrapper in ~/Applications that has the game installed inside it
-  for cand in "$HOME/Applications"/*.app; do
-    [ -f "$cand/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2.exe" ] \
-      && { echo "$cand"; return; }
-  done
-  echo ""
-}
-
-APP="$(find_wrapper)"
+WRAPPER_APPID=949230; WRAPPER_VAR=CS2_WRAPPER; WRAPPER_GAMEDIR=..   # this launcher's own: its game, and in the repo, its game's folder
+# >>> find-wrapper (the same in both launchers: common/test-launcher-parity.sh compares the copies)
+# common/wrappers.sh finds the wrapper by its marker, whatever its name (docs/plans/wrapper-names.md, 3.2).
+# A deployed launcher reads the copy setup put beside it, and nothing else; the repo's own copy, whose game
+# folder holds scripts/setup.sh, reads the checkout's common/wrappers.sh.
+_l1w="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -f "$_l1w/wrappers.sh" ] && [ -f "$_l1w/$WRAPPER_GAMEDIR/scripts/setup.sh" ]; then _l1w="$_l1w/$WRAPPER_GAMEDIR/../common"; fi
+APP=""; WRAPPER_RC=3
+if [ -f "$_l1w/wrappers.sh" ]; then . "$_l1w/wrappers.sh"; APP="$(l1w_find game "$WRAPPER_APPID")"; WRAPPER_RC=$?; fi
+unset _l1w
+# <<< find-wrapper
 QUIET="${CS2_QUIET:-0}"
 # >>> launch-feedback-config (this launcher's own values)
 STEPS=5
@@ -76,6 +74,26 @@ licence_wait() {   # <step> <seconds as set, may be empty> <default>: the wait a
     if [ "$w" -gt 15 ]; then sleep 15; w=$((w - 15)); else sleep "$w"; w=0; fi
   done
 }
+signin_wait() {   # <step> <test> [<alive>]: wait for Steam's sign-in; 0 = signed in, 1 = not
+  # After 45 s the step line says what may be holding Steam up: a question from macOS (after a rename it
+  # asks again whether wine64 may use the microphone), or its check of a wrapper not opened for a long time.
+  # The wait is L1_SIGNIN_SECS (600; a value that is not one to three digits counts as 600). With <alive>
+  # given, it ends early once Steam was seen and has then been gone for 15 s in a row: no answer brings back
+  # a Steam that died. A Steam not seen yet is waited for: macOS can hold its first process for minutes.
+  local limit="${L1_SIGNIN_SECS:-600}" t=0 hinted=0 seen=0 gone=0
+  case "$limit" in ''|*[!0-9]*|????*) limit=600 ;; esac
+  while [ "$t" -lt "$limit" ]; do
+    "$2" && return 0
+    if [ "$hinted" = 0 ] && [ "$t" -ge 45 ]; then hinted=1; step "$1" "Still signing in. If macOS asks a question, answer it…"; fi
+    if [ -n "${3:-}" ]; then
+      if "$3"; then seen=1; gone=0
+      elif [ "$seen" = 1 ]; then gone=$((gone + 3)); [ "$gone" -ge 15 ] && return 1; fi
+    fi
+    sleep 3; t=$((t + 3))
+  done
+  "$2" && return 0
+  return 1
+}
 # <<< launch-feedback
 
 die() {   # fatal: alert dialog when quiet, pause-on-keypress otherwise
@@ -88,10 +106,14 @@ die() {   # fatal: alert dialog when quiet, pause-on-keypress otherwise
   exit 1
 }
 
+case "$WRAPPER_RC" in
+  3) die "wrappers.sh is not beside the launcher, so the game's wrapper cannot be found. Run the game's setup again." ;;
+  2) die "Two wrappers carry this game's marker. Move one to the Trash, or name the one to use in $WRAPPER_VAR." ;;
+esac
 [ -n "$APP" ] || die "No Wine wrapper found. Install the Porting Kit Wine 11 + DXMT wrapper (see INSTALL.md), or set CS2_WRAPPER=/path/to/Wrapper.app"
 
 SS="$APP/Contents/SharedSupport"
-APPTAG="$(basename "$APP")"          # e.g. CS2dxmt11.app — used to scope pgrep to THIS wrapper
+APPTAG="$(basename "$APP")"          # the wrapper's file name, whatever it is — used to scope pgrep to THIS wrapper
 export WINE="$SS/wine/bin/wine64"
 export WINEPREFIX="$SS/prefix"
 export PATH="$SS/wine/bin:$PATH"
@@ -237,7 +259,7 @@ ensure_patches() {
   # 0b) Badge patch (Game.dll): re-ensure after game updates — Steam replaces Game.dll and
   #     repatch.sh does not cover it (see patch-modconflict-badge.py; fail-open by design).
   if [ -f "$PATCH_DIR/patch-modconflict-badge.py" ]; then   # installed only where the player asked: setup.sh --hide-mod-badges
-    BP_OUT=$(python3 "$PATCH_DIR/patch-modconflict-badge.py" apply 2>&1) \
+    BP_OUT=$(CS2_GAME_DIR="$GDIR" python3 "$PATCH_DIR/patch-modconflict-badge.py" apply 2>&1) \
       && echo "Badge patch: $(printf '%s' "$BP_OUT" | tail -1)" \
       || echo "WARNING: badge-patch check failed — continuing (cosmetic). $(printf '%s' "$BP_OUT" | head -1)"
   fi
@@ -264,6 +286,7 @@ ensure_patches || patches_note $? start
 #    Windows-style command lines. The PARENT steam.exe carries the unix path of its wrapper, so
 #    scope on that. The fresh-login check reads THIS prefix's connection log.
 fresh_login() { tail -n +$((BEFORE+1)) "$CL" 2>/dev/null | grep -qE "LogOnResponse.*'OK'|\[Logged On.*\[U:1:[1-9]"; }
+signed_in() { fresh_login && webhelper_up; }
 BEFORE=$(wc -l < "$CL" 2>/dev/null || echo 0)
 STARTED_STEAM=0
 if steam_exe_up; then
@@ -282,12 +305,7 @@ else
   # `disown` is a shell builtin: no exec, nothing to strip.
   "$WINE" "$STEAM" -silent -no-cef-sandbox >/dev/null 2>&1 & disown
   STARTED_STEAM=1
-  ok=0
-  for i in $(seq 1 40); do
-    if fresh_login && webhelper_up; then ok=1; break; fi
-    sleep 3
-  done
-  [ "$ok" = 1 ] || die "Steam did not auto-login (token expired, or it crashed). Open Steam inside the wrapper, sign in until the library loads, then relaunch. If Steam won't start at all, reboot — a kill -9 can wedge it."
+  signin_wait 2 signed_in steam_exe_up || die "Steam did not auto-login (token expired, or it crashed). If macOS asked a question (whether wine64 may use the microphone, for one), answer it and relaunch. Otherwise open Steam inside the wrapper, sign in until the library loads, then relaunch. If Steam won't start at all, reboot — a kill -9 can wedge it."
 fi
 
 # 2) Licence sync — ONLY needed when we just started Steam. Launching Cities2.exe too soon after a

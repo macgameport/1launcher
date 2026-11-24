@@ -24,7 +24,8 @@
 # CS2_VANILLA_DIR overrides where the harvested PEs live (expects x86_64/ and i386/ subdirs).
 set -u
 
-SRC="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+SRC="$CS2W"
 DST="${CS2_VANILLA_WRAPPER:-$HOME/Applications/CS2vanilla-d3d.app}"
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
 VAN="${CS2_VANILLA_DIR:-$CS2_WORK/build-1116/vanilla-1116}"

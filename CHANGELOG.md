@@ -7,6 +7,45 @@ the pasted line installs it.
 
 ## Unreleased
 
+## v0.3.0 (2026-11-24)
+
+**Setup renames the Wine wrappers in `~/Applications`** (docs/plans/wrapper-names.md). Spotlight offered them
+beside the game's app, and a wrapper opened directly starts Steam outside the launcher and its lock. The new
+names are ones nobody types:
+
+- Cities: Skylines II: `CS2dxmt11.app` (on an older Mac `CS2.app`) becomes `wrapper-949230.app`;
+- the Windows Steam, where the engine build made one: `CS2dxmt11-pk110.app` becomes `wrapper-0.app`;
+- Surviving Mars: Relaunched: `SurvivingMars.app` becomes `wrapper-3215050.app`.
+
+Every script now finds a wrapper by a mark setup writes into its `Info.plist`, never by its name, so a name is a
+label and can be anything. It is a rename with nothing copied, and setup says what it renamed. It stops, before it
+changes anything, while the game, a launch or an install is using the game's wrapper; it skips a rename it cannot
+make safely, among them while Steam is open in the Windows Steam's wrapper, says why, and tries again at its next
+run. `--check` says what a run would do. A new install makes its wrapper under the new name, marked. **At the first start
+after the rename macOS may ask once more whether wine64 may use the microphone** (it keeps that answer by the
+program's path, which changes with the wrapper's name). Answer it, either way. Answered within about a minute, Steam signed in with its saved login and the game started
+(seen on both Macs). If the start ends with "Steam did not sign in by itself" (Cities: Skylines II: "Steam did not
+auto-login"), start the game again once the question is answered: with the question left open, Steam itself gives up
+after about three minutes (measured on both Macs), and the start ends with that message some minutes later; the
+next start, after the answer, ran. The launcher says after 45 seconds what may be holding the sign-in up, and
+waits up to ten minutes for a Steam that is still running, where it used to give up after two.
+
+**What the rename does not do:** it takes the wrappers out of what Spotlight offers for a game's name; it does not
+put the game's app first, and files and web pages may still come before it. Typing `14` offered 14unch3r first on
+the one Mac where it was tried, a Mac that had opened 14unch3r often.
+
+**What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
+made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find a
+wrapper whatever its name, after a rename by hand too.
+
+**To keep the old names**, put `L1_KEEP_WRAPPER_NAMES=1` in front of setup, the installer or the pasted line, for
+that run. A wrapper named in `CS2_WRAPPER` or `SM_WRAPPER` keeps its name too.
+
+**Going back to an earlier version on a renamed Mac:** Cities: Skylines II still starts, but that version's setup
+finds no wrapper; Surviving Mars does not start until its wrapper is renamed back. To rename one back, quit the
+game and Steam, `mv` it to its old name, and run setup once: from then on setup leaves it under that name. Both
+`INSTALL.md` files say how, in "The Wine wrappers' names" and "The wrapper's name".
+
 ## v0.2.0 (2026-11-17)
 
 **Setup moves a Cities: Skylines II install out of the home folder.** Until now everything was in one

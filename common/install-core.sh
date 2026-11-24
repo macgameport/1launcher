@@ -1,7 +1,8 @@
 # install-core.sh -- the shared installer (docs/plans/shared-installer.md, 2.1): read with `.` by a game's
 # scripts/install.sh after its settings are set, never run by itself. It parses the options, defines the
 # stages a game calls in order (core_begin, core_mac, core_tools, core_space, core_wine, core_lock,
-# core_steam, core_game), and holds the copies of the launcher's lock and Steam helpers. A game puts its own
+# core_steam, core_game, and core_after_setup on the line after the game's setup), and holds the copies of the
+# launcher's lock and Steam helpers. It reads common/wrappers.sh, the rule for finding a wrapper. A game puts its own
 # stages between these and after them, and gives every stage its number. No line here names a game, a size
 # or a step: each comes from a setting.
 # Settings the game sets first: GAME_TITLE GAME_APPID GAME_DIR GAME_EXE WRAPPER_VAR STEPS NEED_GB
@@ -25,6 +26,8 @@ for _f in game_wrapper game_env game_running tools_ok words_play; do
 done
 CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAKE_WRAPPER="$CORE_DIR/make-wrapper.sh"
+[ -f "$CORE_DIR/wrappers.sh" ] || { echo "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
+. "$CORE_DIR/wrappers.sh"
 STEAM_URLS="https://cdn.fastly.steamstatic.com/client/installer/SteamSetup.exe https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 STEAM_TESTED_SHA=7d3654531c32d941b8cae81c4137fc542172bfa9635f169cb392f245a0a12bcb
 POLL=5            # seconds between looks at Steam and the download
@@ -268,6 +271,10 @@ echo "You can open the installer again at any point: it carries on from where it
 if [ -n "${!WRAPPER_VAR:-}" ]; then
   case "${!WRAPPER_VAR}" in /*) ;; *) END=quiet; echo "$WRAPPER_VAR must be an absolute path: ${!WRAPPER_VAR}"; exit 2 ;; esac
 fi
+# Who gave the variable (docs/plans/wrapper-names.md, 3.2): use_wrapper exports it below whatever the player did,
+# so each setup this runs reads this to tell a wrapper the player named from one the installer chose.
+if [ -n "${!WRAPPER_VAR:-}" ]; then L1_WRAPPER_GIVEN=1; else L1_WRAPPER_GIVEN=0; fi
+export L1_WRAPPER_GIVEN
 unset WINEPREFIX LOCK
 game_wrapper
 if [ -d "$W" ]; then
@@ -347,14 +354,26 @@ esac
 core_wine() {
 stage "$1" "Wine, which runs Windows programs ($WORDS_WINE)"
 if [ -d "$W" ]; then say "OK: $(tilde "$W")"
-elif [ "$CHECK" = 1 ]; then bash "$MAKE_WRAPPER" $(engine_opts) --wrapper "$W" --check; rc=$?; [ "$rc" = 3 ] && exit 3
+elif [ "$CHECK" = 1 ]; then bash "$MAKE_WRAPPER" $(engine_opts) --wrapper "$W" --mark game "$GAME_APPID" --check; rc=$?; [ "$rc" = 3 ] && exit 3
 else
-  bash "$MAKE_WRAPPER" $(engine_opts) --wrapper "$W"; rc=$?
+  bash "$MAKE_WRAPPER" $(engine_opts) --wrapper "$W" --mark game "$GAME_APPID"; rc=$?
   [ "$rc" = 3 ] && exit 3
   [ "$rc" = 0 ] || exit 1
   W="$(cd "$W" && pwd -P)"
   use_wrapper "$W"
 fi
+}
+core_after_setup() {   # <setup's exit code>: returns it, with APP, WINEPREFIX and LOCK naming the wrapper where setup left it
+  # Setup may have renamed the wrapper (common/move-wrappers.sh); the exit trap's release_lock must find the
+  # installer's own link in it. Asked with the game's variable unset, which the installer exported itself.
+  local w
+  if [ "${L1_WRAPPER_GIVEN:-1}" = 0 ] && [ -n "${LOCK:-}" ]; then
+    w="$(unset "$WRAPPER_VAR"; l1w_find game "$GAME_APPID" 2> /dev/null)"
+    if [ -n "$w" ] && [ -d "$w/Contents/SharedSupport/prefix" ]; then
+      APP="$w"; SS="$APP/Contents/SharedSupport"; WINEPREFIX="$SS/prefix"; LOCK="$WINEPREFIX/.launcher.lock"
+    fi
+  fi
+  return "$1"
 }
 engine_opts() { printf '%s\n' --engine-url "$ENGINE_URL" --engine-bytes "$ENGINE_BYTES" --engine-sha "$ENGINE_SHA"; }   # no space in any pin
 core_lock() {

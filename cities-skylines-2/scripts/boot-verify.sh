@@ -88,7 +88,7 @@ set -u
 
 usage() { sed -n '5,7p' "$0" >&2; exit 64; }
 
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+APP="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else by its marker
 SS="$APP/Contents/SharedSupport"
 ENGINE="${CS2_ENGINE:-$SS/wine}"   # an override for testing another engine: the driver joins that engine's wineserver
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
@@ -240,7 +240,10 @@ LOG="$OUT/launcher.log"
 t0=$(date +%s)
 echo "boot-verify             : run dir $OUT"
 echo "t0                      : $t0 ($(date -r "$t0" '+%F %T'))"
-CMD="CS2_QUIET=0 bash \"$LAUNCHER\"; echo \"EXIT:\$?\""
+# L1_SIGNIN_SECS=120: the launcher waits ten minutes for Steam's sign-in since 2026-11-23 (a question from
+# macOS can hold it). This run is watched and waits 240 s for a game process below, so it keeps the two
+# minutes the launcher had: a sign-in that does not come is then the launcher's own ERROR: line, as before.
+CMD="CS2_QUIET=0 L1_SIGNIN_SECS=120 bash \"$LAUNCHER\"; echo \"EXIT:\$?\""
 if command -v setsid >/dev/null 2>&1; then
   setsid bash -c "$CMD" </dev/null >"$LOG" 2>&1 &
 else

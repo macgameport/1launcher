@@ -44,20 +44,7 @@ STEAM_ARGS="-no-cef-sandbox"
 TAKES_DESKTOP=1             # setup.sh takes --desktop
 
 # --- copies of the launcher's own functions (cities-skylines-2/launchers/launch-cs2-dxmt11.sh); test-install.sh
-# --- holds them identical to it
-find_wrapper() {
-  [ -n "${CS2_WRAPPER:-}" ] && { echo "$CS2_WRAPPER"; return; }
-  for cand in "$HOME/Applications/CS2dxmt11.app" "$HOME/Applications/CS2.app" \
-              "/Applications/CS2dxmt11.app"; do
-    [ -d "$cand/Contents/SharedSupport/prefix" ] && { echo "$cand"; return; }
-  done
-  # last resort: any wrapper in ~/Applications that has the game installed inside it
-  for cand in "$HOME/Applications"/*.app; do
-    [ -f "$cand/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2.exe" ] \
-      && { echo "$cand"; return; }
-  done
-  echo ""
-}
+# --- holds them identical to it. The wrapper is found by common/wrappers.sh, which the core reads.
 game_running() { local p; for p in $(pgrep -f 'Cities2\.exe' 2>/dev/null); do lsof -p "$p" 2>/dev/null | grep -q "$WINEPREFIX" && return 0; done; return 1; }
 game_env() {   # the launcher's exports for the wrapper at $APP
   export WINE="$SS/wine/bin/wine64"
@@ -80,14 +67,21 @@ cat << WORDS
        inside Steam. This window sees the download finish, closes Steam, and goes on to step $1.
 WORDS
 }
-game_wrapper() {   # sets W: the launcher's choice, else ~/Applications/CS2dxmt11.app
-W="$(find_wrapper)"
-HOLDS="Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2.exe"
-if [ -n "${CS2_WRAPPER:-}" ]; then W="${CS2_WRAPPER%/}"
-elif [ "$W" = "$HOME/Applications/CS2dxmt11.app" ]; then :
-elif [ -n "$W" ] && [ -f "$W/$HOLDS" ]; then say "Using $(tilde "$W"), which holds the game."
-else W="$HOME/Applications/CS2dxmt11.app"
+game_wrapper() {   # sets W: the resolver's choice (common/wrappers.sh), else the old-named app with no prefix, which
+# the core then stops on, else the path of a wrapper to be made, with the name the resolver gives
+local rc
+W="$(l1w_find game "$GAME_APPID")"; rc=$?
+[ "$rc" = 2 ] && exit 1   # two wrappers carry the game's marker: the resolver has named both
+if [ "$rc" = 0 ]; then
+  W="${W%/}"
+  l1w_row game "$GAME_APPID"   # an unmarked wrapper under another name than the first old one, holding the game, is named
+  if [ -z "${CS2_WRAPPER:-}" ] && [ -z "$(l1w_key "$W" L1Role)" ] && [ "$W" != "${L1W_OLD%%$'\n'*}" ] \
+     && [ -f "$W/Contents/SharedSupport/prefix/$L1W_PROGRAM" ]; then
+    say "Using $(tilde "$W"), which holds the game."
+  fi
+  return 0
 fi
+W="$(l1w_incomplete game "$GAME_APPID")" || W="$HOME/Applications/$(l1w_name game "$GAME_APPID")"
 }
 
 . "$GAME_ROOT/../common/install-core.sh"
@@ -112,11 +106,13 @@ stage 6 "The Mac fixes and the game's app"
 if [ "$CHECK" = 1 ]; then say "would run setup.sh"; exit 0; fi
 if [ "$NO_SETUP" = 1 ]; then END=quiet; say "Stopped before step 6, as asked."; exit 0; fi
 if prefix_known && game_running; then say "!! The game is running. Quit it, then open the installer again."; exit 3; fi
-for f in "$SETUP" "$GAME_ROOT/scripts/move-install.sh" "$GAME_ROOT/repatch.sh" "$GAME_ROOT/patches" "$GAME_ROOT/../common/make-launcher-app.sh" "$GAME_ROOT/../common/paths.sh"; do
+for f in "$SETUP" "$GAME_ROOT/scripts/move-install.sh" "$GAME_ROOT/repatch.sh" "$GAME_ROOT/patches" "$GAME_ROOT/../common/make-launcher-app.sh" "$GAME_ROOT/../common/paths.sh" \
+         "$GAME_ROOT/../common/wrappers.sh" "$GAME_ROOT/../common/move-wrappers.sh"; do
   [ -e "$f" ] || { say "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
 done
 set --
 [ "$YES" = 1 ] && set -- "$@" --yes
 [ "$DESKTOP" = 1 ] && set -- "$@" --desktop
 CS2_VIA_INSTALLER=1 bash "$SETUP" "$@"
+core_after_setup $?
 exit $?

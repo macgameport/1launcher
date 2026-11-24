@@ -32,7 +32,8 @@
 # Run it DETACHED with a log: a tool timeout kills the process group and Steam with it.
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-SS="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}/Contents/SharedSupport"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+SS="$CS2W/Contents/SharedSupport"
 INST="$SS/wine/lib/wine/x86_64-unix/winemac.so"
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
 DAILY="$CS2_WORK/winemac.so.stage1"

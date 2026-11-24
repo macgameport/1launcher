@@ -21,7 +21,8 @@
 set -u
 
 CELL="${1:?usage: [CELL_ENV…] bash scripts/perf-bench.sh <cell-name>}"
-WRAPPER="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+WRAPPER="$CS2W"
 PREFIX="$WRAPPER/Contents/SharedSupport/prefix"
 LOCALLOW="$PREFIX/drive_c/users/Wineskin/AppData/LocalLow/Colossal Order/Cities Skylines II"
 BC="$LOCALLOW/Benchmark.coc"

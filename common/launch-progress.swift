@@ -62,7 +62,8 @@ func reading(ofLog path: String) -> Reading {
 
 // Whether the window stays up. It ends by what the log says, with no process matching. The limits:
 // `die` has shown its own alert; 5 s after the final step the game's window is on its way; the longest
-// designed silence of a launch that is moving is the Surviving Mars cloud sync, 5 minutes, so 15 without
+// designed silence of a launch that is moving is the wait for Steam's sign-in after its one hint line, a little
+// over 9 minutes (the Surviving Mars cloud sync is 5), so 15 without
 // a line means the launcher is stuck, gone, or waiting at an alert nobody has answered (Surviving Mars's
 // note before a first start waits without a limit; its alert stays up when this window goes); a game update is allowed 60 minutes and can run a little past that, so 90 in all;
 // and a window whose shim has gone has nothing left to report.

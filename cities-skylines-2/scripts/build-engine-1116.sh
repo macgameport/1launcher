@@ -33,7 +33,8 @@ step(){ echo; echo "== $1"; }
 
 # ---------------------------------------------------------------- 0. preflight
 step "Preflight"
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+APP="$CS2W"
 [ -d "$APP/Contents/SharedSupport/prefix" ] || die "no wrapper at $APP — install the base stack first (INSTALL.md steps 1-4), or set CS2_WRAPPER"
 PK="$APP/Contents/SharedSupport/wine"
 # Donor x86_64 dylibs (freetype, gnutls, …). Older Porting Kit wrappers keep them in wine/lib;

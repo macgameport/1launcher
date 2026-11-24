@@ -2,8 +2,8 @@
 # launch-relaunched.sh -- Surviving Mars: Relaunched (Windows, Steam app 3215050) on macOS.
 #
 # The game is DirectX 12 only (Mars.exe loads d3d12.dll, exports D3D12SDKVersion 618, no D3D11 or
-# Vulkan path), so it needs D3DMetal: DXMT is D3D11-only. It has its own wrapper,
-# ~/Applications/SurvivingMars.app (docs/plans/one-wrapper-per-game.md, built 2026-11-07 by
+# Vulkan path), so it needs D3DMetal: DXMT is D3D11-only. It has its own wrapper in ~/Applications, found
+# by common/wrappers.sh whatever its name (docs/plans/one-wrapper-per-game.md, built 2026-11-07 by
 # tools/split-wrapper.sh): an APFS clone of the Kegworks/Sikarugir "Steambuild Metal" wrapper S734M
 # (Wine 10; first menu 2026-10-31) with Cities: Skylines II stripped out, the game in its own Steam
 # library, and D3DMetal 3.0 from CrossOver 26 in its wine/ (tools/make-engine.sh --install; the 2.1
@@ -63,10 +63,23 @@
 #   + 39 s (15), + 54 s (30), + 57 or + 68 s (45). The game sometimes stalls a fixed 13.5 s before
 #   "Account storage loaded" (10/10 of those runs, 7 of 23 at 45 s); cause not identified, README.
 # SM_UPDATE=ask|apply|skip -> what to do when Steam has a game update waiting (default ask; see 2b).
+# L1_SIGNIN_SECS=<s> -> how long to wait for Steam's sign-in, 0 to 999 (default 600: a question from macOS can
+#   hold it; tools/licence-wait-probe.sh sets 120).
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SM_STATE="${SM_STATE:-$HOME/Library/Application Support/1launcher/surviving-mars-relaunched}"
-APP="${SM_WRAPPER:-$HOME/Applications/SurvivingMars.app}"   # the wrapper whose prefix, Steam and game this is
+# APP is the wrapper whose prefix, Steam and game this is.
+WRAPPER_APPID=3215050; WRAPPER_VAR=SM_WRAPPER; WRAPPER_GAMEDIR=.   # this launcher's own: its game, and in the repo, its game's folder
+# >>> find-wrapper (the same in both launchers: common/test-launcher-parity.sh compares the copies)
+# common/wrappers.sh finds the wrapper by its marker, whatever its name (docs/plans/wrapper-names.md, 3.2).
+# A deployed launcher reads the copy setup put beside it, and nothing else; the repo's own copy, whose game
+# folder holds scripts/setup.sh, reads the checkout's common/wrappers.sh.
+_l1w="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -f "$_l1w/wrappers.sh" ] && [ -f "$_l1w/$WRAPPER_GAMEDIR/scripts/setup.sh" ]; then _l1w="$_l1w/$WRAPPER_GAMEDIR/../common"; fi
+APP=""; WRAPPER_RC=3
+if [ -f "$_l1w/wrappers.sh" ]; then . "$_l1w/wrappers.sh"; APP="$(l1w_find game "$WRAPPER_APPID")"; WRAPPER_RC=$?; fi
+unset _l1w
+# <<< find-wrapper
 SS="$APP/Contents/SharedSupport"
 GAME="$SS/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"
 HELPER="$HERE/tools/frame-fix.exe"
@@ -122,6 +135,26 @@ licence_wait() {   # <step> <seconds as set, may be empty> <default>: the wait a
     if [ "$w" -gt 15 ]; then sleep 15; w=$((w - 15)); else sleep "$w"; w=0; fi
   done
 }
+signin_wait() {   # <step> <test> [<alive>]: wait for Steam's sign-in; 0 = signed in, 1 = not
+  # After 45 s the step line says what may be holding Steam up: a question from macOS (after a rename it
+  # asks again whether wine64 may use the microphone), or its check of a wrapper not opened for a long time.
+  # The wait is L1_SIGNIN_SECS (600; a value that is not one to three digits counts as 600). With <alive>
+  # given, it ends early once Steam was seen and has then been gone for 15 s in a row: no answer brings back
+  # a Steam that died. A Steam not seen yet is waited for: macOS can hold its first process for minutes.
+  local limit="${L1_SIGNIN_SECS:-600}" t=0 hinted=0 seen=0 gone=0
+  case "$limit" in ''|*[!0-9]*|????*) limit=600 ;; esac
+  while [ "$t" -lt "$limit" ]; do
+    "$2" && return 0
+    if [ "$hinted" = 0 ] && [ "$t" -ge 45 ]; then hinted=1; step "$1" "Still signing in. If macOS asks a question, answer it…"; fi
+    if [ -n "${3:-}" ]; then
+      if "$3"; then seen=1; gone=0
+      elif [ "$seen" = 1 ]; then gone=$((gone + 3)); [ "$gone" -ge 15 ] && return 1; fi
+    fi
+    sleep 3; t=$((t + 3))
+  done
+  "$2" && return 0
+  return 1
+}
 # <<< launch-feedback
 
 die() {
@@ -130,6 +163,11 @@ die() {
   exit 1
 }
 
+case "$WRAPPER_RC" in
+  3) die "wrappers.sh is not beside the launcher, so the game's wrapper cannot be found. Run the game's setup again." ;;
+  2) die "Two wrappers carry this game's marker. Move one to the Trash, or name the one to use in $WRAPPER_VAR." ;;
+esac
+[ -n "$APP" ] || die "The game's wrapper is missing. Open the installer again: it makes one."
 arch -x86_64 /usr/bin/true 2>/dev/null || die "Rosetta is missing (a macOS update removes it). Run: softwareupdate --install-rosetta --agree-to-license"
 [ -d "$WINEPREFIX" ] || die "The game's wrapper is missing: $APP. Open the installer again: it makes one. (On a Mac set up from a checkout: bash surviving-mars-relaunched/tools/split-wrapper.sh)"
 [ -x "$WINE" ] || die "The game's Wine engine is missing: $ENGINE."
@@ -313,6 +351,7 @@ stop_steam() {
   [ -n "$_strays" ] && kill $_strays 2>/dev/null   # plain TERM, never -9
 }
 
+signed_in() { tail -n +$((BEFORE + 1)) "$CL" 2>/dev/null | grep -qE "LogOnResponse.*'OK'|\[Logged On" && steam_exe_up; }
 STARTED=0
 if steam_exe_up; then
   step 1 "Steam is already running…"
@@ -323,13 +362,8 @@ else
   rm -f "$WINEPREFIX/drive_c/Program Files (x86)/Steam/.crash" 2>/dev/null
   # never nohup/env/setsid here: macOS strips DYLD_* and wine loses its fonts (cs2, 2026-08-30)
   "$STEAM_WINE" "$STEAM" -silent -no-cef-sandbox >/dev/null 2>&1 & disown
-  ok=0
-  for _ in $(seq 1 40); do
-    tail -n +$((BEFORE + 1)) "$CL" 2>/dev/null | grep -qE "LogOnResponse.*'OK'|\[Logged On" && steam_exe_up && { ok=1; break; }
-    sleep 3
-  done
   # A Steam left up after a failed sign-in would be "reused" by the next launch, skipping this check.
-  [ "$ok" = 1 ] || { stop_steam; die "Steam did not sign in by itself. Open Steam in the $(basename "$APP" .app) wrapper, sign in, then launch again."; }
+  signin_wait 1 signed_in steam_exe_up || { stop_steam; die "Steam did not sign in by itself. If macOS asked a question (whether wine64 may use the microphone, for one), answer it and start the game again. Otherwise open Steam in the $(basename "$APP" .app) wrapper, sign in, then launch again."; }
   licence_wait 2 "${SM_LICENCE_WAIT:-}" 15
 fi
 

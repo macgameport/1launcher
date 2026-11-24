@@ -1,4 +1,3 @@
-== the copy of find_wrapper equals the launcher's :: same
 == the copy of _owns equals the launcher's :: same
 == the copy of webhelper_up equals the launcher's :: same
 == the copy of steam_family equals the launcher's :: same
@@ -7,7 +6,7 @@
 == the python3 test equals setup.sh's :: 1
 == the library path is exported with the launcher's own line :: 1
 == no nohup, env, setsid or kill -9 outside comments :: 0
-== wrapper rule: an empty home :: T/h1/Applications/CS2dxmt11.app
+== wrapper rule: an empty home :: T/h1/Applications/wrapper-949230.app
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -27,7 +26,48 @@ Step 5 of 6: The game
 
 Step 6 of 6: The Mac fixes and the game's app
   would run setup.sh
-== wrapper rule: CS2dxmt11.app :: T/h2/Applications/CS2dxmt11.app
+==   ...the wrapper to be made has the resolver's name, and is marked :: 1
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+
+Step 4 of 6: Steam for Windows
+  would be downloaded from Valve and installed in the new wrapper
+
+Step 5 of 6: The game
+  would wait for you to sign in to Steam and press Install
+
+Step 6 of 6: The Mac fixes and the game's app
+  would run setup.sh
+== wrapper rule: the installer's own wrapper, found by its marker :: T/h2/Applications/wrapper-949230.app
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+  would run setup.sh
+== wrapper rule: an old-named wrapper :: T/h3/Applications/CS2dxmt11.app
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -48,7 +88,28 @@ Step 5 of 6: The game
 
 Step 6 of 6: The Mac fixes and the game's app
   would run setup.sh
-== wrapper rule: CS2.app with the game :: T/h3/Applications/CS2.app
+==   ...used, and nothing said of it :: CS2dxmt11.app:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+  would run setup.sh
+== wrapper rule: CS2.app with the game :: T/h4/Applications/CS2.app
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -92,7 +153,49 @@ Step 5 of 6: The game
 
 Step 6 of 6: The Mac fixes and the game's app
   would run setup.sh
-== wrapper rule: CS2.app without the game: CS2dxmt11.app is made beside it :: T/h4/Applications/CS2dxmt11.app
+== wrapper rule: CS2.app without the game: the installer uses it, and no wrapper is made :: T/h5/Applications/CS2.app
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2.app
+
+Step 4 of 6: Steam for Windows
+  would be downloaded from Valve and installed in the wrapper
+
+Step 5 of 6: The game
+  not installed: would start Steam and wait for you to sign in and press Install
+
+Step 6 of 6: The Mac fixes and the game's app
+  would run setup.sh
+==   ...which is CS2.app, and the maker is not called :: CS2.app:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2.app
+
+Step 4 of 6: Steam for Windows
+  would be downloaded from Valve and installed in the wrapper
+
+Step 5 of 6: The game
+  not installed: would start Steam and wait for you to sign in and press Install
+
+Step 6 of 6: The Mac fixes and the game's app
+  would run setup.sh
+== wrapper rule: CS2.app with no prefix and no other wrapper: the maker called with the new name, as it was with the old :: 1
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -112,27 +215,24 @@ Step 5 of 6: The game
 
 Step 6 of 6: The Mac fixes and the game's app
   would run setup.sh
-==   ...which is CS2dxmt11.app :: CS2dxmt11.app
+== an old-named app with no prefix and no other wrapper: exit 1, the looks-incomplete line, the maker not called :: 1:1:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
+  !! ~/Applications/CS2dxmt11.app looks incomplete: it has no Wine or no prefix. Move it to the Trash, then open the installer again.
 
-Step 1 of 6: This Mac
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== two wrappers marked alike: exit 1 before anything, the duplicates line, setup not run (WT4b) :: 1:1:0:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+Two wrappers carry the marker of game 949230:
+  ~/Applications/a.app
+  ~/Applications/b.app
+Move one to the Trash, or name the one to use in CS2_WRAPPER.
 
-Step 2 of 6: Apple's Command Line Tools
-  OK
-
-Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-
-Step 4 of 6: Steam for Windows
-  would be downloaded from Valve and installed in the new wrapper
-
-Step 5 of 6: The game
-  would wait for you to sign in to Steam and press Install
-
-Step 6 of 6: The Mac fixes and the game's app
-  would run setup.sh
-== wrapper rule: the game under another name :: T/h5/Applications/Other.app
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== wrapper rule: the game under another name :: T/h9/Applications/Other.app
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -154,7 +254,7 @@ Step 5 of 6: The game
 
 Step 6 of 6: The Mac fixes and the game's app
   would run setup.sh
-== wrapper rule: two holding the game :: T/h6/Applications/A.app
+== wrapper rule: two holding the game :: T/h10/Applications/A.app
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -176,7 +276,7 @@ Step 5 of 6: The game
 
 Step 6 of 6: The Mac fixes and the game's app
   would run setup.sh
-== wrapper rule: CS2_WRAPPER with a space, to be made :: 0:T/my w7/X.app
+== wrapper rule: CS2_WRAPPER with a space, to be made :: 0:T/my w11/X.app
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -205,7 +305,7 @@ CS2_WRAPPER must be an absolute path: Applications/X.app
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
-  !! ~/Applications/CS2dxmt11.app looks incomplete: it has no Wine or no prefix. Move it to the Trash, then open the installer again.
+  !! ~/Applications/wrapper-949230.app looks incomplete: it has no Wine or no prefix. Move it to the Trash, then open the installer again.
 
 The install stopped. The lines above say why. Open the installer again to carry on from that step.
 == a wrapper without a prefix folder: exit 1, nothing deleted :: 1:kept
@@ -227,7 +327,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -238,7 +338,7 @@ Step 5 of 6: The game
 Step 6 of 6: The Mac fixes and the game's app
 
 Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
-==   ...setup run once, with CS2_VIA_INSTALLER=1 and the wrapper :: 1
+==   ...setup run once, with CS2_VIA_INSTALLER=1 and the wrapper, and told no wrapper was given :: 1
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -250,7 +350,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -273,7 +373,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -296,7 +396,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -319,7 +419,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -342,7 +442,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -365,7 +465,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -388,7 +488,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -411,7 +511,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -434,7 +534,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -457,7 +557,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -480,7 +580,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -574,7 +674,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -602,7 +702,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -641,7 +741,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -666,7 +766,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -717,7 +817,7 @@ Step 2 of 6: Apple's Command Line Tools
   CAUTION: 47 GB free. The game with its DLC takes about 100 GB, and Wine and Steam about 5 GB more.
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -842,7 +942,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
@@ -880,7 +980,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
@@ -918,7 +1018,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
@@ -956,7 +1056,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
@@ -994,7 +1094,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
@@ -1032,7 +1132,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   !! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again.
@@ -1052,7 +1152,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   !! Steam's installer could not be downloaded from Valve. Check the network, then open the installer again.
@@ -1072,7 +1172,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   !! the file downloaded from Valve is not Steam's installer (a cut download, or an error page)
@@ -1090,7 +1190,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   !! the file downloaded from Valve is not Steam's installer (a cut download, or an error page)
@@ -1108,7 +1208,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   !! the file downloaded from Valve is not Steam's installer (a cut download, or an error page)
@@ -1126,7 +1226,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
@@ -1146,7 +1246,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   Steam's installer: 2100013 bytes, sha256 42966ab47ab6ad0303a44a1d014e7d3b43f80ef7f7c7acf05de6f4c7b390fb19
@@ -1158,6 +1258,7 @@ The install stopped. The lines above say why. Open the installer again to carry 
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
+  Using ~/Applications/wrapper-949230.app, which holds the game.
   The Mac is kept awake while this runs.
 
 Step 1 of 6: This Mac
@@ -1166,7 +1267,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1181,6 +1282,7 @@ Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
+  Using ~/Applications/wrapper-949230.app, which holds the game.
   The Mac is kept awake while this runs.
 
 Step 1 of 6: This Mac
@@ -1189,7 +1291,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1204,6 +1306,7 @@ Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
+  Using ~/Applications/wrapper-949230.app, which holds the game.
   The Mac is kept awake while this runs.
 
 Step 1 of 6: This Mac
@@ -1212,7 +1315,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1240,6 +1343,7 @@ Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
+  Using ~/Applications/wrapper-949230.app, which holds the game.
   The Mac is kept awake while this runs.
 
 Step 1 of 6: This Mac
@@ -1248,7 +1352,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1284,7 +1388,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1320,7 +1424,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1356,7 +1460,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1392,7 +1496,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1428,7 +1532,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1464,7 +1568,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1500,7 +1604,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1536,7 +1640,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1548,7 +1652,7 @@ Step 5 of 6: The game
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
      then open the installer again. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 ==   ...that Steam was ended and no other started before the transfer :: XFER starts=1 steam=down
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1561,7 +1665,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1573,7 +1677,7 @@ Step 5 of 6: The game
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
      then open the installer again. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 ==   ...one transfer, with the options of 2.1, of the largest file asked for since that start, no carriage return on it :: 1:1
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1586,7 +1690,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1598,7 +1702,7 @@ Step 5 of 6: The game
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
      then open the installer again. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == the transfer cut (56), a tunnel: exit 4, the vpn form, 1 start(s), Steam not left running :: 4:vpn:1:down:1:1:1:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1611,7 +1715,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1623,7 +1727,7 @@ Step 5 of 6: The game
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
      then open the installer again. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == the transfer cut (92), a tunnel: exit 4, the vpn form, 1 start(s), Steam not left running :: 4:vpn:1:down:1:1:1:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1636,7 +1740,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1648,7 +1752,7 @@ Step 5 of 6: The game
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,
      then open the installer again. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == the transfer cut (18), no tunnel: exit 4, the later form, 1 start(s), Steam not left running :: 4:later:1:down:1:1:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1661,7 +1765,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1672,7 +1776,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == the transfer cut (18), the route not told: exit 4, the later form, 1 start(s), Steam not left running :: 4:later:1:down:1:1:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1685,7 +1789,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1696,7 +1800,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == no network (6), a tunnel: exit 4, the none form, 1 start(s), Steam not left running :: 4:none:1:down:1:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1709,7 +1813,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1720,7 +1824,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update: this Mac cannot reach Valve's server.
      Check the network, then open the installer again. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == no network (7), a tunnel: exit 4, the none form, 1 start(s), Steam not left running :: 4:none:1:down:1:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1733,7 +1837,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1744,7 +1848,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update: this Mac cannot reach Valve's server.
      Check the network, then open the installer again. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == the transfer working (0 with 20,000,000 bytes), a tunnel, and the next start comes up: exit 0, 2 start(s), no words :: 0:2:1:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1757,7 +1861,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1793,7 +1897,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1804,7 +1908,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update, although this Mac reaches Valve's server.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == the transfer working (28 with 20,000,000 bytes), a tunnel, and the next start comes up: exit 0, 2 start(s), no words :: 0:2:1:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1817,7 +1921,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1853,7 +1957,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1864,7 +1968,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update, although this Mac reaches Valve's server.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == not known (28 with 19,999,999 bytes): another start, which comes up: exit 0, 2 start(s), no words :: 0:2:1:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1877,7 +1981,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1913,7 +2017,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1924,7 +2028,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == not known (0 with 5 MB), a tunnel, the starts used up: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:1:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1937,7 +2041,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1948,7 +2052,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == not known (22), then four starts that end in the other fatal line: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:1:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1961,7 +2065,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1972,7 +2076,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == no address in the log since that start: curl is not run, not known: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:0:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -1985,7 +2089,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -1996,7 +2100,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == only addresses outside the pattern: curl is not run, not known: exit 4, the plain form, 5 start(s), Steam not left running :: 4:plain:5:down:0:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -2009,7 +2113,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2020,7 +2124,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == larger addresses outside the pattern beside smaller ones inside it: exit 4, the later form, 1 start(s), Steam not left running :: 4:later:1:down:1:1:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -2033,7 +2137,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2044,7 +2148,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 ==   ...the largest inside the pattern is used :: 1
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -2057,7 +2161,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2068,7 +2172,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == both fatal lines new in one look: needs to be online is the one acted on: exit 4, the later form, 1 start(s), Steam not left running :: 4:later:1:down:1:1:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -2081,7 +2185,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2092,7 +2196,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update: the connection to Valve's server keeps being cut.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == download location, then needs to be online: the first restarts, the second does not: exit 4, the none form, 2 start(s), Steam not left running :: 4:none:2:down:1:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -2105,7 +2209,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2116,7 +2220,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update: this Mac cannot reach Valve's server.
      Check the network, then open the installer again. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == an earlier run's needs to be online and its addresses in the log, a tunnel, and a start that comes up: exit 0, 1 start(s), no words :: 0:1:0:0:0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -2129,7 +2233,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2165,7 +2269,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2201,7 +2305,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2212,7 +2316,7 @@ Step 5 of 6: The game
   "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
   !! Steam could not download its own update.
      Open the installer again in a few minutes. It carries on from this step.
-     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
+     Steam's own log, if you ask for help: ~/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt
 == a one-poll gap in Steam's process: not started again :: 0:1
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -2225,7 +2329,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2261,7 +2365,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2297,7 +2401,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2326,7 +2430,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2355,7 +2459,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2391,7 +2495,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2427,7 +2531,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2461,7 +2565,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2497,7 +2601,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2534,7 +2638,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2571,7 +2675,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2604,7 +2708,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2640,7 +2744,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2676,7 +2780,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2712,7 +2816,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2742,7 +2846,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2772,7 +2876,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2802,7 +2906,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2832,7 +2936,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2869,7 +2973,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2893,7 +2997,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2917,7 +3021,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2941,7 +3045,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2963,7 +3067,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -2984,7 +3088,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -3005,7 +3109,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -3026,7 +3130,7 @@ Step 2 of 6: Apple's Command Line Tools
   missing: the installer would ask Apple for them
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -3052,7 +3156,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -3178,7 +3282,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -3199,7 +3303,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -3222,7 +3326,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -3245,7 +3349,7 @@ Step 2 of 6: Apple's Command Line Tools
   OK
 
 Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/CS2dxmt11.app
+  OK: ~/Applications/wrapper-949230.app
 
 Step 4 of 6: Steam for Windows
   OK
@@ -3269,13 +3373,21 @@ Step 5 of 6: The game
 Step 6 of 6: The Mac fixes and the game's app
 
 Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
-== no run reached the runaway guard :: 0
+== WT11 through the real setup: an old-named wrapper, no variable given: renamed and marked, exit 0 :: 0:renamed:game-wrapper
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
   The Mac is kept awake while this runs.
 
 Step 1 of 6: This Mac
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+
 
 Step 2 of 6: Apple's Command Line Tools
   OK
@@ -3287,21 +3399,549 @@ Step 4 of 6: Steam for Windows
   OK
 
 Step 5 of 6: The game
-  Steam for Windows is starting. The first time, a small window that says "Updating Steam..." shows
-  Steam downloading its own update: leave it, and do not press its Cancel. A box headed
-  "Steam - Fatal Error" can also appear once or twice and close again: click nothing in it.
-  When Steam's sign-in window appears:
-    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
-       Steam may ask for a code from your email or the Steam app on your phone.
-    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
-       The download is about 100 GB and takes hours.
-    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
-       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
-  Leave this window open. The Mac is kept awake while it runs.
-  Waiting for you to choose Install in Steam
-  The game is installed. Closing Steam.
   OK
 
 Step 6 of 6: The Mac fixes and the game's app
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: would move: ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (CS2dxmt11.app)                         OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  moved: ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h102/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h102/Applications/Cities Skylines II.app ===
+    launcher: T/h102/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h102/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Renamed:   ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
+           The game's app and 14unch3r find a wrapper by a mark inside it, whatever its name. Anything of yours
+           that names an old path (a Dock item made from a wrapper, an alias, a saved command, a Porting Kit
+           entry) must be pointed at the new one. To keep the old names on a Mac not renamed yet: L1_KEEP_WRAPPER_NAMES=1 bash scripts/install.sh
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+==   ...the app's L1Prefix names the renamed wrapper, and no .launcher.lock is left in it :: T/h102/Applications/wrapper-949230.app/Contents/SharedSupport/prefix:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: would move: ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (CS2dxmt11.app)                         OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  moved: ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h102/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h102/Applications/Cities Skylines II.app ===
+    launcher: T/h102/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h102/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Renamed:   ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
+           The game's app and 14unch3r find a wrapper by a mark inside it, whatever its name. Anything of yours
+           that names an old path (a Dock item made from a wrapper, an alias, a saved command, a Porting Kit
+           entry) must be pointed at the new one. To keep the old names on a Mac not renamed yet: L1_KEEP_WRAPPER_NAMES=1 bash scripts/install.sh
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== WT11 the variable given by the caller: nothing renamed, and the line says a wrapper was named :: 0:kept:1
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: the game's wrapper cannot be renamed now
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (CS2dxmt11.app)                         OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  skip: CS2_WRAPPER names a wrapper (T/h103/Applications/CS2dxmt11.app): it is used as it is and keeps its name
+Nothing was renamed.
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h103/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h103/Applications/Cities Skylines II.app ===
+    launcher: T/h103/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h103/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Not renamed: a wrapper kept its name, for the reason given above. Every start of the game still works.
+           The next run tries again: open the installer again.
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== WT11 setup alone with CS2_VIA_INSTALLER=1, the variable set and L1_WRAPPER_GIVEN not set: nothing renamed :: 0:kept
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: the game's wrapper cannot be renamed now
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (CS2dxmt11.app)                         OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  skip: CS2_WRAPPER names a wrapper (~/Applications/CS2dxmt11.app): it is used as it is and keeps its name
+Nothing was renamed.
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h104/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h104/Applications/Cities Skylines II.app ===
+    launcher: T/h104/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h104/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Not renamed: a wrapper kept its name, for the reason given above. Every start of the game still works.
+           The next run tries again: open the installer again.
+== WT11 a holder reported by the probe: the installer exits 0, one skip line, nothing renamed :: 0:1:kept
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: the game's wrapper cannot be renamed now
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (CS2dxmt11.app)                         OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  skip: something of the wrapper's Wine is still running (process N): it keeps its old name this run, and the next setup run renames it. If that is your own Steam, quit it and open the installer again
+Nothing was renamed.
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h105/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h105/Applications/Cities Skylines II.app ===
+    launcher: T/h105/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h105/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Not renamed: a wrapper kept its name, for the reason given above. Every start of the game still works.
+           The next run tries again: open the installer again.
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== no run reached the runaway guard :: 0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/CS2dxmt11.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+=== Cities: Skylines II on macOS — setup ===
+repo: T/repo2/cities-skylines-2
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: the game's wrapper cannot be renamed now
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (CS2dxmt11.app)                         OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  skip: something of the wrapper's Wine is still running (process N): it keeps its old name this run, and the next setup run renames it. If that is your own Steam, quit it and open the installer again
+Nothing was renamed.
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h105/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h105/Applications/Cities Skylines II.app ===
+    launcher: T/h105/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h105/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Not renamed: a wrapper kept its name, for the reason given above. Every start of the game still works.
+           The next run tries again: open the installer again.
 
 Done. Start the game from Applications: Cities Skylines II, or 14unch3r.

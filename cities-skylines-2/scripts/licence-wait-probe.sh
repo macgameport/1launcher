@@ -135,7 +135,8 @@ case "$RUNS" in ''|0*|*[!0-9]*) echo "runs: a count from 1 (got '$RUNS')" >&2; u
 [ $# -le 2 ] || usage
 
 # the same places boot-verify.sh uses, and its own tests for what runs in this wrapper
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+APP="$CS2W"
 . "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/paths.sh"
 LAUNCHER="${CS2_LAUNCHER:-$CS2_DATA/launch-cs2-dxmt11.sh}"
 WINEPREFIX="$APP/Contents/SharedSupport/prefix"

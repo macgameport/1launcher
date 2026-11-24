@@ -119,11 +119,12 @@ built on (`WS12Wine11.0_DXMT-v0.80`).
 
 1. Download and install Porting Kit.
 2. Create a new wrapper using the **Wine 11.0 + DXMT** engine.
-3. Name it `CS2dxmt11` — the scripts look for `~/Applications/CS2dxmt11.app` by default. Any name
-   works if you pass `CS2_WRAPPER=/path/to/Wrapper.app` later.
+3. Name it `wrapper-949230`: the name `bash common/wrappers.sh name game 949230` prints, which is no word you
+   would type into Spotlight. Any name works: the scripts find the wrapper by the game inside it, and once setup
+   has run, by a mark it writes into the wrapper; `CS2_WRAPPER=/path/to/Wrapper.app` names one outright.
 
 Porting Kit's UI changes between versions, so follow their current instructions for creating a
-wrapper. What matters is the end state: **`~/Applications/CS2dxmt11.app` exists and contains
+wrapper. What matters is the end state: **a wrapper in `~/Applications` that contains
 `Contents/SharedSupport/prefix`**.
 
 > **Porting Kit 6.7.0:** creating the wrapper can fail with `ERROR: WS12WineWine11.0_1_DXMT-v0.80
@@ -148,7 +149,7 @@ Steam has to live **inside** the wrapper's Windows prefix, not your Mac's Steam.
    Terminal:
 
    ```bash
-   WINEPREFIX=~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix ~/Applications/CS2dxmt11.app/Contents/SharedSupport/wine/bin/wine64 ~/Downloads/SteamSetup.exe
+   W=~/Applications/wrapper-949230.app; WINEPREFIX="$W/Contents/SharedSupport/prefix" "$W/Contents/SharedSupport/wine/bin/wine64" ~/Downloads/SteamSetup.exe
    ```
 
 3. Launch Steam inside the wrapper and **sign in**, letting the library finish loading. Tick "remember
@@ -223,7 +224,7 @@ bash scripts/build-engine-1116.sh
 ⚠ **One trade-off, decided by measurement:** the 11.16 engine kills the alt-tab freeze and is
 faster, but **Steam's visible storefront window is black on it** (the game, its login, licences
 and Paradox Mods downloads are all unaffected — the daily flow runs Steam in tray mode). The
-build script handles this for you: it preserves the wine 11.0 wrapper as `CS2dxmt11-pk110.app`
+build script handles this for you: it preserves the wine 11.0 wrapper as the Windows Steam's own wrapper
 (an APFS clone — under a minute, ~no extra disk, the game install stripped from the clone) and
 installs **S734M.app**, the Windows Steam, in `~/Applications` (until 2026-11-10 it was called **CS2 Steam
 Store.app**). Play from **Cities Skylines II.app** or from **14unch3r**, which lists every game set up on this
@@ -378,7 +379,7 @@ warning. `CS2_UPDATE=apply` updates without asking; `CS2_UPDATE=skip` never does
 To check by hand — for example if a mod suddenly errors after a Paradox update:
 
 ```bash
-grep -E '"(StateFlags|buildid|TargetBuildID)"' ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program\ Files\ \(x86\)/Steam/steamapps/appmanifest_949230.acf
+grep -E '"(StateFlags|buildid|TargetBuildID)"' "$(bash common/wrappers.sh find game 949230)/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_949230.acf"
 ```
 
 `StateFlags` other than `4`, or two different build ids, means one is pending. Without the
@@ -481,11 +482,62 @@ code as well, `v0.1.0` is the last version whose setup knows only `~/cs2-patch`:
 clone, or the pasted line with `v0.1.0` after the app ID. Held there, an install gets no later fix, a patch
 re-derived after a game update included.
 
+## The Wine wrappers' names
+
+Until v0.3.0 the game's Wine wrapper was `~/Applications/CS2dxmt11.app` (on a Mac set up long ago, `CS2.app`),
+and the Windows Steam's, where the engine build made one, `~/Applications/CS2dxmt11-pk110.app`. Spotlight
+offered them beside the game's app, and a wrapper opened directly starts Steam outside the launcher. Setup now
+names them `wrapper-949230.app` and `wrapper-0.app`, names nobody types, and every script finds a wrapper by a
+mark setup writes into its `Info.plist`, whatever its name. `bash common/wrappers.sh list` prints the wrappers
+on this Mac.
+
+A quick way to a game from Spotlight may be to type `14`: on the one Mac where it was tried, which had opened
+14unch3r often, that offered 14unch3r first. Typing the game's name no longer offers the wrapper, but Spotlight
+may still list files and web pages before the game's app; that order is Spotlight's own.
+
+**What setup does.** At its next run it writes the mark and renames each wrapper: nothing is copied. It says what
+it renamed. It stops, before it changes anything, while the game, its launcher or an install is using the game's
+wrapper. When a rename cannot be made safely for another reason (Steam open in the Windows Steam's wrapper while
+you buy something, say), it skips that one, says why, and tries again at its next run. A wrapper in
+`/Applications` is used where it is and never renamed. `bash scripts/setup.sh --check` says what a run would do.
+At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
+way. Answered within about a minute, Steam signs in as before and the game starts. If the start ends with "Steam
+did not auto-login", start the game again once the question is answered: with the question left open, Steam itself
+gives up after about three minutes, and the start ends then.
+
+**What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
+made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find
+a wrapper whatever its name.
+
+**To keep the old names** on a Mac not renamed yet, put `L1_KEEP_WRAPPER_NAMES=1` in front, for that run:
+
+```bash
+L1_KEEP_WRAPPER_NAMES=1 bash scripts/setup.sh
+```
+
+```bash
+L1_KEEP_WRAPPER_NAMES=1 /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/macgameport/1launcher/release/install.sh)" 1launcher-install 949230
+```
+
+A wrapper named in `CS2_WRAPPER` is used as it is, and keeps its name too.
+
+**To put the old names back**, quit the game and Steam, rename each wrapper, then run setup once: it rebuilds the
+apps with those paths, and from then on leaves a wrapper under the name you gave it.
+
+```bash
+mv ~/Applications/wrapper-949230.app ~/Applications/CS2dxmt11.app
+mv ~/Applications/wrapper-0.app ~/Applications/CS2dxmt11-pk110.app
+```
+
+Going back to v0.1.0 or v0.2.0 on a Mac that was renamed: the game still starts, because that launcher finds the
+renamed wrapper by the game inside it, but that version's setup finds no wrapper. To run it, rename the wrapper
+back first, as above.
+
 ## Troubleshooting
 
 | Symptom | What's happening |
 |---|---|
-| "Steam did not auto-login" | The saved token expired. Open Steam inside the wrapper, sign in until the library loads, then relaunch. |
+| "Steam did not auto-login" | Either macOS asked a question and it was not answered in time (after a wrapper is renamed it asks again whether wine64 may use the microphone; with the question left open, Steam itself gives up after about three minutes and the launcher then stops): answer it and relaunch. Or the saved token expired: open Steam inside the wrapper, sign in until the library loads, then relaunch. |
 | No main menu after a fresh start, and `platform service integration failed` in the game's `SceneFlow.log` | The game started before Steam had confirmed your licence. Start it once from Terminal with a longer wait, `CS2_LICENCE_WAIT=45 bash "$HOME/Library/Application Support/1launcher/cities-skylines-2"/launch-cs2-dxmt11.sh`, and please open an issue: the default of 15 seconds rests on two Macs. |
 | Game exits immediately, launch fails with code 1 | A stale `.crash` marker from a force-kill. The launcher clears it automatically now; if it persists, delete `.../Steam/.crash` inside the prefix. |
 | Black screen with a working cursor | The Coherent Gameface UI fix didn't apply. Re-run `bash scripts/setup.sh` and check its patch output, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |
@@ -506,8 +558,8 @@ rm -rf ~/Applications/"Cities Skylines II.app" ~/Applications/"S734M.app" ~/Appl
 defaults delete local.1launcher.window 2>/dev/null; rm -f ~/Library/Preferences/local.1launcher.window.plist
 ```
 
-Then delete the wrappers (`~/Applications/CS2dxmt11.app`, and `~/Applications/CS2dxmt11-pk110.app`
-if the engine build created it) via Porting Kit or the Finder, and the **14unch3r** shortcut on the
+Then delete the wrappers (the game's, and the Windows Steam's if the engine build created one: `bash
+common/wrappers.sh list` prints them) via Porting Kit or the Finder, and the **14unch3r** shortcut on the
 Desktop if you made one: move it to the Trash in the Finder. Nothing is installed outside those paths.
 Rosetta 2 and Apple's Command Line Tools, if the installer added them, stay: they are Apple's, and other
 programs may use them.

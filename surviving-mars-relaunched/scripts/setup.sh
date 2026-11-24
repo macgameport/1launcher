@@ -19,10 +19,13 @@
 # `git pull`, a maintainer runs setup again. A copy is never written over a file in place: it is written
 # beside it and renamed over it, because a launcher goes on reading its own file after the game exits.
 #
+# The wrapper is found by common/wrappers.sh, by the marker in its Info.plist, and setup gives an old-named one
+# its new name with common/move-wrappers.sh (docs/plans/wrapper-names.md, 3.4). L1_KEEP_WRAPPER_NAMES=1 declines.
+#
 # Read from the environment: SM_VIA_INSTALLER=1, set by scripts/install.sh, which holds the wrapper's lock
-# while it runs setup and has already asked the question about this Mac; SM_STATE, SM_APP and SM_WRAPPER,
-# which name another state folder, app and wrapper (tests). With SM_APP set, 14unch3r is built in that
-# app's folder.
+# while it runs setup and has already asked the question about this Mac, and L1_WRAPPER_GIVEN, which says
+# whether the player named the wrapper; SM_STATE, SM_APP and SM_WRAPPER, which name another state folder, app
+# and wrapper (tests). With SM_APP set, 14unch3r is built in that app's folder.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 GAME_ROOT="$(cd "$HERE/.." && pwd)"
@@ -84,9 +87,29 @@ if [ "$MAC_ONLY" = 1 ]; then   # scripts/install.sh, step 1: this Mac alone
 fi
 [ "$ROSETTA" = 1 ] || { echo "      -> the game cannot run without it. Install it:  softwareupdate --install-rosetta --agree-to-license"; exit 1; }
 
+# --- the wrapper, found by common/wrappers.sh. Its two files are looked for first, in the own-files words: without
+#     them the first call would fail as a shell error. Under the installer, which exports SM_WRAPPER itself, the
+#     variable says nothing about the player: L1_WRAPPER_GIVEN does, and when it is 0 the variable is dropped.
+for f in "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh"; do
+  [ -f "$f" ] || { echo "  !! setup's own files are missing ($(tilde "$f")). Open the installer again, or run setup from a whole checkout."; exit 1; }
+done
+. "$REPO/common/wrappers.sh"
+[ "${SM_VIA_INSTALLER:-0}" = 1 ] && [ "${L1_WRAPPER_GIVEN:-}" = 0 ] && unset SM_WRAPPER
+find_wrapper() {   # sets WRAPPER and GAME; exits 1 when two wrappers carry the game's marker, before anything is changed
+  local rc=0
+  WRAPPER="$(l1w_find game 3215050)" || rc=$?
+  if [ "$rc" = 2 ]; then echo "  !! Setup stops here, before it changes anything: two wrappers carry the game's marker (the lines above)."; exit 1; fi
+  [ "$rc" = 0 ] || WRAPPER=""
+  GAME="$WRAPPER/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"
+}
+wmover() {   # [--dry-run]: common/move-wrappers.sh for the game's wrapper; under the installer its hold is let through
+  local a=()
+  [ "${SM_VIA_INSTALLER:-0}" = 1 ] && a+=(--holders-skip --held-by "$PPID")
+  bash "$REPO/common/move-wrappers.sh" ${a[@]+"${a[@]}"} "$@" game 3215050
+}
+find_wrapper
+
 # --- what must not be happening: the game running, or a launch or an install using the wrapper
-WRAPPER="${SM_WRAPPER:-$HOME/Applications/SurvivingMars.app}"
-GAME="$WRAPPER/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"
 # --- the launcher's own function (launch-relaunched.sh); scripts/test-setup.sh holds it identical
 game_running() {
   for _p in $(pgrep -f 'Mars\.exe' 2>/dev/null); do
@@ -105,6 +128,24 @@ if [ -n "$h" ] && kill -0 "$h" 2>/dev/null; then
     exit 3
   fi
 fi
+# what a rename would do, said by --check too; and a rename that cannot be done now stops setup before it changes
+# anything. Looked for only when there is something to rename.
+WM_RC=0; WM_OUT="$(wmover --dry-run 2>&1)" || WM_RC=$?
+WM_STATE="$(printf '%s\n' "$WM_OUT" | sed -n '1s/^state: //p')"
+case "$WM_STATE" in
+  old|part-way)
+    if [ "$WM_RC" = 3 ]; then
+      echo "  !! Setup stops here, before it changes anything:"; printf '%s\n' "$WM_OUT" | grep '^  stop: '
+      echo "     When it has finished, run setup again."
+      exit 3
+    fi
+    if printf '%s\n' "$WM_OUT" | grep -q '^  would '; then WLINE="$(printf '%s\n' "$WM_OUT" | sed -n 's/^  \(would .*\)$/wrapper: \1/p')"
+    else WLINE="wrapper: the game's wrapper cannot be renamed now
+$(printf '%s\n' "$WM_OUT" | grep -E '^  (stop|skip): ')"; fi ;;
+  none) WLINE="wrapper: nothing to rename" ;;
+  *) WLINE="wrapper: the wrapper mover gave no answer:
+$WM_OUT" ;;
+esac
 
 # --- the state folder: the user's own, and nobody else may write to it
 STATE="${SM_STATE:-$HOME/Library/Application Support/1launcher/surviving-mars-relaunched}"
@@ -124,6 +165,7 @@ for f in "$GAME_ROOT/launch-relaunched.sh" "$GAME_ROOT/tools/frame-fix.exe" "$GA
   [ -f "$f" ] || { echo "  !! setup's own files are missing ($(tilde "$f")). Open the installer again, or run setup from a whole checkout."; exit 1; }
 done
 if [ "$CHECK" = 1 ]; then
+  printf '%s\n' "$WLINE"
   echo "  would copy the launcher and the click helper into $(tilde "$STATE")"
   echo "  would build $(tilde "$APP") and 14unch3r beside it"
   echo "(--check: stopping before making changes)"
@@ -141,12 +183,28 @@ put() {   # <from> <to>
 }
 put "$GAME_ROOT/launch-relaunched.sh" "$STATE/launch-relaunched.sh"
 put "$GAME_ROOT/tools/frame-fix.exe" "$STATE/tools/frame-fix.exe"
+put "$REPO/common/wrappers.sh" "$STATE/wrappers.sh"
 say "the launcher and its helper" "in $(tilde "$STATE")"
+
+# --- the wrapper's name, after the copies: the launcher just copied finds a renamed wrapper by its marker even if
+#     the app is not built below. A stop that appears only now (something started since) is a skip.
+RENAMED=""; WM_SKIPPED=0
+WM_RC=0; WM_OUT="$(wmover 2>&1)" || WM_RC=$?
+case "$WM_RC" in
+  0) RENAMED="$(printf '%s\n' "$WM_OUT" | sed -n 's/^  moved: //p')"
+     [ -n "$RENAMED" ] && say "the game's wrapper" "renamed: $RENAMED" ;;
+  1|3) WM_SKIPPED=1; say "the game's wrapper" "keeps its name this run:"; printf '%s\n' "$WM_OUT" | sed '1d' | sed 's/^  stop: /  skip: /; s/^/  /' ;;
+  *) printf '%s\n' "$WM_OUT" | sed '1d' | sed 's/^/  /'
+     echo "  !! The rename stopped part-way. The game still starts; the next run of setup finishes it."
+     exit 1 ;;
+esac
+find_wrapper   # resolved again: it may have a new name now
 
 # --- the game's app, built to run that copy
 echo
 OUT="$(mktemp /tmp/sm-setup.XXXXXX)" || { echo "  !! no temporary file could be made."; exit 1; }
-if ! SM_SCRIPT="$STATE/launch-relaunched.sh" bash "$GAME_ROOT/make-app.sh" > "$OUT" 2>&1; then
+GEXE="${SM_GAME_EXE:-}"; [ -n "$WRAPPER" ] && GEXE="$GAME/Mars.exe"   # the game in the wrapper resolved again
+if ! SM_SCRIPT="$STATE/launch-relaunched.sh" SM_GAME_EXE="$GEXE" bash "$GAME_ROOT/make-app.sh" > "$OUT" 2>&1; then
   sed 's/^/  /' "$OUT"; rm -f "$OUT"
   echo "  !! The game's app was not built. The lines above say why."
   exit 1
@@ -169,6 +227,8 @@ in_spotlight() {   # <app>: Spotlight and Launchpad list an app in one of these 
   return 1
 }
 if in_spotlight "$APP"; then ALSO=", also in Spotlight and Launchpad"; else ALSO=""; fi
+if [ "${SM_VIA_INSTALLER:-0}" = 1 ]; then WDECLINE="L1_KEEP_WRAPPER_NAMES=1 bash scripts/install.sh"
+else WDECLINE="L1_KEEP_WRAPPER_NAMES=1 bash surviving-mars-relaunched/scripts/setup.sh"; fi
 cat << DONE
 
 === setup complete ===
@@ -176,3 +236,11 @@ The game:   $(tilde "$APP")$ALSO
 To update:  $UPDATE
   If you use mods from Paradox Mods: at the first start, open the game's Mod Manager before you load a save.
 DONE
+if [ -n "$RENAMED" ]; then
+  echo "Renamed:    $RENAMED"
+  echo "  The game's app and 14unch3r find the wrapper by a mark inside it, whatever its name. Anything of yours that"
+  echo "  names the old path (a Dock item made from the wrapper, an alias, a saved command) must be pointed at the new one."
+  echo "  To keep the old name on a Mac not renamed yet: $WDECLINE"
+fi
+[ "$WM_SKIPPED" = 1 ] && echo "Not renamed: the game's wrapper kept its name, for the reason given above. The next run tries again."
+exit 0

@@ -38,7 +38,7 @@
 #   A number that is none of these is REFUSED (exit 2).
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-GAME="${CS2_GAME_DIR:-$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II}"
+GAME="${CS2_GAME_DIR:-$(bash "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/common/wrappers.sh" find game 949230 2>/dev/null)/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II}"   # as repatch.sh finds it
 MAN="$GAME/Cities2_Data/Managed"
 for f in "$MAN/PDX.SDK.dll" "$MAN/PDX.SDK.dll.bak" "$MAN/Colossal.IO.dll" "$GAME/Cities2.exe"; do
   [ -f "$f" ] || { echo "SKIPPED: no game here (wants PDX.SDK.dll and its .bak, Colossal.IO.dll and Cities2.exe)"; exit 0; }

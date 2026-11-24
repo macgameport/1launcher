@@ -5,8 +5,8 @@
 #   bash scripts/move-install.sh [--dry-run] [--lock <path> [--held-by <pid>]]
 #
 #   --dry-run     print the reasons and the moves, change nothing, and exit as the real run would: 0, 1 or 3
-#   --lock        the launch lock to read (default: the lock of the wrapper setup would choose: $CS2_WRAPPER
-#                 when it is set and has a prefix, else the first wrapper on setup's list that has one)
+#   --lock        the launch lock to read (default: the lock of the wrapper setup would choose, by
+#                 common/wrappers.sh, when it has a prefix)
 #   --held-by     a process whose hold on that lock is let through (the installer that called setup)
 #
 # Its output is an interface: setup.sh relays it and reads it. Line 1 is "state: none" (nothing to move; no
@@ -39,10 +39,9 @@ done
 OLD="$HOME/cs2-patch"
 DATA="$L1_DATA_ROOT/cities-skylines-2"
 WORK="$L1_WORK_ROOT/cities-skylines-2"
-WRAPPERS="CS2dxmt11.app CS2.app"   # setup.sh's list
 tilde() { case "$1" in "$HOME") printf '~' ;; "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;; *) printf '%s' "$1" ;; esac; }
 is_runtime() {
-  case "$1" in launch-cs2-dxmt11.sh|launch-cs2.sh|repatch.sh|cs2-display-profile.sh|patch-modconflict-badge.py|patches|revenv|launch-cs2*.sh.bak) return 0 ;; esac
+  case "$1" in launch-cs2-dxmt11.sh|launch-cs2.sh|repatch.sh|cs2-display-profile.sh|patch-modconflict-badge.py|wrappers.sh|patches|revenv|launch-cs2*.sh.bak) return 0 ;; esac
   return 1
 }
 own_folder() {   # as surviving-mars-relaunched/scripts/setup.sh has it
@@ -90,8 +89,8 @@ reason() { echo "  $1: $2"; if [ "$1" = stop ]; then stop=1; else skip=1; fi; }
 lock_reason() {
   local l="$LOCK" h w="" x
   if [ -z "$l" ]; then   # run by hand: the wrapper setup would choose, or none
-    if [ -n "${CS2_WRAPPER:-}" ]; then [ -d "$CS2_WRAPPER/Contents/SharedSupport/prefix" ] && w="$CS2_WRAPPER"
-    else for x in $WRAPPERS; do [ -d "$HOME/Applications/$x/Contents/SharedSupport/prefix" ] && { w="$HOME/Applications/$x"; break; }; done; fi
+    x="$HERE/../../common/wrappers.sh"
+    [ -f "$x" ] && w="$(bash "$x" find game 949230 2>/dev/null)" && [ -d "$w/Contents/SharedSupport/prefix" ] || w=""
     [ -n "$w" ] || return 0
     l="$w/Contents/SharedSupport/prefix/.launcher.lock"
   fi

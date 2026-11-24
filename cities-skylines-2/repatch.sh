@@ -1,6 +1,6 @@
 #!/bin/bash
 # Re-apply the Cities: Skylines II binary patches (idempotent).
-#   bash repatch.sh                  the default wrapper's game folder, or CS2_GAME_DIR
+#   bash repatch.sh                  the game folder in the game's wrapper (common/wrappers.sh), or CS2_GAME_DIR
 #   bash repatch.sh dxmt11           the same
 #   bash repatch.sh <game folder>    that folder
 # Each patch pattern-matches and REFUSES to write if the code moved (a game update), rather than
@@ -13,10 +13,25 @@
 # Wine 10 did not. Nothing here touches that check, and nothing ever shipped here did.
 set -e
 HERE="$(cd "$(dirname "$0")/patches" && pwd)"
-DXMT_GAME="${CS2_GAME_DIR:-$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II}"
+dxmt_game() {   # the game folder: CS2_GAME_DIR (the launcher passes it), else in the wrapper common/wrappers.sh finds.
+  # A deployed copy reads the wrappers.sh setup put beside it; the repo's copy reads the checkout's.
+  local d w rc=0
+  if [ -n "${CS2_GAME_DIR:-}" ]; then printf '%s\n' "$CS2_GAME_DIR"; return 0; fi
+  d="$(cd "$(dirname "$0")" && pwd)"
+  if [ ! -f "$d/wrappers.sh" ] && [ -f "$d/scripts/setup.sh" ]; then d="$d/../common"; fi
+  if [ ! -f "$d/wrappers.sh" ]; then
+    echo "repatch.sh: wrappers.sh is not beside it, so the game's wrapper cannot be found. Run setup again, or name the game folder in CS2_GAME_DIR." >&2
+    return 1
+  fi
+  . "$d/wrappers.sh"
+  w="$(l1w_find game 949230)" || rc=$?
+  [ "$rc" = 2 ] && return 1   # two wrappers carry the game's marker: the resolver has named both
+  [ "$rc" = 0 ] || { echo "repatch.sh: no wrapper of the game was found. Name the game folder in CS2_GAME_DIR." >&2; return 1; }
+  printf '%s\n' "$w/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II"
+}
 ERRNO_PATCHES=0
 case "${1:-dxmt11}" in
-  dxmt11|DXMT11|wine11) GAME="$DXMT_GAME" ;;
+  dxmt11|DXMT11|wine11) GAME="$(dxmt_game)" || exit 1 ;;
   free|FREE|d3dmetal|wine10)
     echo "The Wine 10 + D3DMetal stack was retired on 2026-11-09. Its last version is commit fefc1e0."
     exit 2 ;;

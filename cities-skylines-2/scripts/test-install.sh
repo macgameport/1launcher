@@ -63,6 +63,11 @@
 #   58 the old two lines (by its own case, and by the transcript)   59 a size in the lines
 # Setup's exit 5, a fix not out yet for this build (docs/plans/patch-outcomes.md, 2.5, PT6); each must exit 1:
 #   61 the case for 5 dropped    62 5 mapped to "Done."    63 the test of WORDS_NOFIX dropped
+# Wrapper names (docs/plans/wrapper-names.md, WT10, WT11); each must exit 1:
+#   64 the marking option dropped in the core (WT10 (b))    65 L1_WRAPPER_GIVEN not exported by core_begin (WT11 (a))
+#   66 game_wrapper not asking the resolver's incomplete (WT11 (f))
+#   67 setup's unset of CS2_WRAPPER removed (WT11 (b))      68 an unset L1_WRAPPER_GIVEN read as "not given" (WT11 (d))
+#   69 --holders-skip not passed by setup (WT11 (g))        70 core_after_setup removed at this installer's call (WT11 (c))
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -84,6 +89,7 @@ S="$R/cities-skylines-2/scripts/install.sh"; cp "$HERE/install.sh" "$S"
 C="$R/common/install-core.sh"; cp "$REPO/common/install-core.sh" "$C"   # the shared stages: mutants apply in either file
 : > "$R/cities-skylines-2/repatch.sh"; : > "$R/common/make-launcher-app.sh"
 : > "$R/common/paths.sh"; : > "$R/cities-skylines-2/scripts/move-install.sh"   # setup's own files (docs/plans/local-files-layout.md, 3.4)
+cp "$REPO/common/wrappers.sh" "$R/common/wrappers.sh"; : > "$R/common/move-wrappers.sh"   # the resolver, real; the mover, setup's (docs/plans/wrapper-names.md)
 mutate() {  # <sed expression> <grep that proves it applied>
   sed -i '' "$1" "$S" "$C"; cat "$S" "$C" | grep -q -- "$2" || { echo "REFUSED: mutant did not apply"; exit 2; }
 }
@@ -157,6 +163,11 @@ case "${MUTANT:-0}" in
   61) sed -i '' '/^         5:set) echo "\$WORDS_NOFIX" ;;$/d' "$C"; grep -q '^         5:set) ' "$C" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   62) mutate 's#^         0:\*) echo "Done\. #         0:*|5:*) echo "Done. #' '^         0:\*|5:\*) echo "Done\. ' ;;
   63) mutate 's#^         5:set) echo #         5:*) echo #' '^         5:\*) echo "\$WORDS_NOFIX" ;;$' ;;
+  64) sed -i '' 's# --mark game "\$GAME_APPID"##g' "$C"; grep -q -- '--mark game' "$C" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  65) mutate 's#^export L1_WRAPPER_GIVEN$#: no export#' '^: no export$' ;;
+  66) mutate 's#^W="\$(l1w_incomplete game "\$GAME_APPID")" || W=#W=#' '^W="\$HOME/Applications/\$(l1w_name' ;;
+  67|68|69) ;;   # applied below, to the real setup.sh of the WT11 copy
+  70) mutate 's#^core_after_setup \$?$#(exit $?)   \# no core_after_setup: the code kept, the lock not followed#' '^(exit \$?)   # no core_after_setup' ;;
 esac
 
 fails=0
@@ -172,7 +183,7 @@ fn() {   # one function, as common/test-launch-lock.sh cuts it
   awk -v f="$1" 'index($0, f "() {") == 1 { print; if ($0 ~ /; }[[:space:]]*$/) exit; p = 1; next }
                  p { print; if ($0 ~ /^}/) exit }' "$2"
 }
-for f in find_wrapper _owns webhelper_up steam_family game_running acf_field; do
+for f in _owns webhelper_up steam_family game_running acf_field; do
   check "the copy of $f equals the launcher's" "$( [ -n "$(fn "$f" "$ALL")" ] && [ "$(fn "$f" "$ALL")" = "$(fn "$f" "$LAUNCHER")" ] && echo same )" same
 done
 check "the python3 test equals setup.sh's" "$(grep -cxF "$(grep -m1 '^if python3 -c' "$HERE/setup.sh")" "$ALL")" 1
@@ -185,7 +196,7 @@ B="$T/bin"; mkdir -p "$B" "$T/fixbin"
 export ST="$T/state" CALLS="$T/calls"
 cat > "$R/cities-skylines-2/scripts/setup.sh" << 'X'
 #!/bin/bash
-echo "SETUP $* via=${CS2_VIA_INSTALLER:-} wrapper=${CS2_WRAPPER:-}" >> "$CALLS"
+echo "SETUP $* via=${CS2_VIA_INSTALLER:-} wrapper=${CS2_WRAPPER:-} given=${L1_WRAPPER_GIVEN-unset}" >> "$CALLS"
 printf '%s\n' "${CS2_PATCH_DIR:-}" > "$CALLS.patchdir"
 case " $* " in *" --mac-only "*)
   if [ -n "${STUB_NO_ROSETTA:-}" ] && [ ! -f "$ST/rosetta" ]; then echo "  Rosetta 2   MISSING"; exit 1; fi
@@ -198,17 +209,22 @@ cat > "$R/common/make-wrapper.sh" << 'X'
 echo "MAKEWRAPPER $*" >> "$CALLS"
 case " $* " in *" --check "*) exit 0 ;; esac
 [ -n "${STUB_MW_EXIT:-}" ] && exit "$STUB_MW_EXIT"
+all=" $* "
 while [ "$1" != --wrapper ]; do shift; done
-bash "$MKW" "$2"
+case "$all" in *" --mark game 949230 "*) bash "$MKW" "$2" mark ;; *) bash "$MKW" "$2" ;; esac
 X
 cat > "$T/mkw.sh" << 'X'
 #!/bin/bash
-# mkw.sh <wrapper> [steam] [game <StateFlags>|game-nomanifest]: a fixture wrapper
+# mkw.sh <wrapper> [mark] [steam] [game <StateFlags>|game-nomanifest]: a fixture wrapper; mark writes the marker
+# of common/wrappers.sh, as common/make-wrapper.sh --mark game 949230 does
 S="$1/Contents/SharedSupport"; P="$S/prefix/drive_c/Program Files (x86)/Steam"
 mkdir -p "$S/wine/bin" "$P/logs"; cp "$FIXBIN/wine64" "$FIXBIN/wineserver" "$S/wine/bin/"
+printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string></dict></plist>' > "$1/Contents/Info.plist"
+chmod 755 "$1"
 shift
 while [ $# -gt 0 ]; do
   case "$1" in
+    mark) plutil -replace L1Role -string game-wrapper "$S/../Info.plist"; plutil -replace L1SteamAppID -integer 949230 "$S/../Info.plist" ;;
     steam) : > "$P/Steam.exe" ;;
     game) mkdir -p "$P/steamapps/common/Cities Skylines II"; : > "$P/steamapps/common/Cities Skylines II/Cities2.exe"
           printf '"AppState"\n{\n\t"StateFlags"\t\t"%s"\n\t"BytesToDownload"\t\t"0"\n\t"BytesDownloaded"\t\t"0"\n}\n' "$2" > "$P/steamapps/appmanifest_949230.acf"; shift ;;
@@ -344,9 +360,11 @@ chmod +x "$B"/* "$T/fixbin"/* "$R/cities-skylines-2/scripts"/*.sh "$R/common"/*.
 n=0
 newh() {   # a fresh HOME, state and call log
   n=$((n + 1)); H="$T/h$n"; mkdir -p "$H/Applications"; rm -rf "$ST"; mkdir -p "$ST"; : > "$ST/ticks"; : > "$CALLS"; : > "$ST/dl"
-  WR="$H/Applications/CS2dxmt11.app"; PFX="$WR/Contents/SharedSupport/prefix"; SD="$PFX/drive_c/Program Files (x86)/Steam"
+  WR="$H/Applications/$NEWNAME"; PFX="$WR/Contents/SharedSupport/prefix"; SD="$PFX/drive_c/Program Files (x86)/Steam"
 }
-done_all() { bash "$MKW" "$WR" steam game 4; }     # every step done
+NEWNAME="$(bash "$REPO/common/wrappers.sh" name game 949230)"   # what a wrapper the installer makes is named
+OLDNAME=CS2dxmt11.app                                         # the old name, a fixture (common/test-wrappers.sh, WT12)
+done_all() { bash "$MKW" "$WR" mark steam game 4; }     # every step done, in a wrapper the installer made
 dl() { printf '%s\n' "$@" > "$ST/dl"; }               # what the download does, one item per poll once Steam's client is up
 run() {    # [install.sh arguments]: HOME=$H; output in $H.out; echoes the exit code, or "timeout"
   local p i=0
@@ -366,20 +384,34 @@ starts() { cat "$ST/starts" 2>/dev/null || echo 0; }
 
 # --- which wrapper: install.sh's choice equals the launcher's once the wrapper exists
 chosen() {   # the wrapper install.sh used under --check, resolved
-  local m; m="$(sed -n 's/^MAKEWRAPPER .*--wrapper \(.*\) --check$/\1/p' "$CALLS")"
+  local m; m="$(sed -n 's/^MAKEWRAPPER .*--wrapper \(.*\) --mark game 949230 --check$/\1/p' "$CALLS")"
   [ -n "$m" ] || m="$(sed -n 's/^  OK: \(.*\)$/\1/p' "$H.out" | sed "s#^~#$H#")"
-  [ -d "$m" ] || bash "$MKW" "$m"
+  [ -d "$m" ] || bash "$MKW" "$m" mark   # as make-wrapper.sh --mark would have made it
   (cd "$m" && pwd -P)
 }
-launchers_choice() { env -u CS2_WRAPPER HOME="$H" ${1:+CS2_WRAPPER="$1"} bash -c "$(fn find_wrapper "$LAUNCHER"); w=\"\$(find_wrapper)\"; cd \"\$w\" && pwd -P"; }
+launchers_choice() {   # the launcher's choice: common/wrappers.sh, which it reads (docs/plans/wrapper-names.md, 3.2)
+  env -u CS2_WRAPPER HOME="$H" ${1:+CS2_WRAPPER="$1"} bash -c '. "$1"; w="$(l1w_find game 949230)"; cd "$w" && pwd -P' _ "$REPO/common/wrappers.sh"
+}
 newh; run --check > /dev/null; check "wrapper rule: an empty home" "$(chosen)" "$(launchers_choice)"
-newh; done_all; run --check > /dev/null; check "wrapper rule: CS2dxmt11.app" "$(chosen)" "$(launchers_choice)"
+check "  ...the wrapper to be made has the resolver's name, and is marked" "$(grep -c -- "--wrapper $H/Applications/$NEWNAME --mark game 949230 --check\$" "$CALLS")" 1
+newh; done_all; run --check > /dev/null; check "wrapper rule: the installer's own wrapper, found by its marker" "$(chosen)" "$(launchers_choice)"
+newh; bash "$MKW" "$H/Applications/$OLDNAME" steam game 4; run --check > /dev/null; check "wrapper rule: an old-named wrapper" "$(chosen)" "$(launchers_choice)"
+check "  ...used, and nothing said of it" "$(chosen | sed 's#.*/##'):$(said 'which holds the game')" "$OLDNAME:0"
 newh; bash "$MKW" "$H/Applications/CS2.app" steam game 4; run --check > /dev/null
 check "wrapper rule: CS2.app with the game" "$(chosen)" "$(launchers_choice)"
 check "  ...named, with ~" "$(said 'Using ~/Applications/CS2.app, which holds the game.')" 1
 newh; bash "$MKW" "$H/Applications/CS2.app"; run --check > /dev/null
-check "wrapper rule: CS2.app without the game: CS2dxmt11.app is made beside it" "$(chosen)" "$(launchers_choice)"
-check "  ...which is CS2dxmt11.app" "$(chosen | sed 's#.*/##')" CS2dxmt11.app
+check "wrapper rule: CS2.app without the game: the installer uses it, and no wrapper is made" "$(chosen)" "$(launchers_choice)"
+check "  ...which is CS2.app, and the maker is not called" "$(chosen | sed 's#.*/##'):$(calls MAKEWRAPPER)" "CS2.app:0"
+newh; mkdir -p "$H/Applications/CS2.app/Contents"; run --check > /dev/null
+check "wrapper rule: CS2.app with no prefix and no other wrapper: the maker called with the new name, as it was with the old" \
+  "$(grep -c -- "--wrapper $H/Applications/$NEWNAME --mark game 949230 --check\$" "$CALLS")" 1
+newh; mkdir -p "$H/Applications/$OLDNAME/Contents"
+check "an old-named app with no prefix and no other wrapper: exit 1, the looks-incomplete line, the maker not called" \
+  "$(run):$(said "~/Applications/$OLDNAME looks incomplete"):$(calls MAKEWRAPPER)" "1:1:0"
+newh; bash "$MKW" "$H/Applications/a.app" mark steam game 4; bash "$MKW" "$H/Applications/b.app" mark steam game 4
+check "two wrappers marked alike: exit 1 before anything, the duplicates line, setup not run (WT4b)" \
+  "$(run):$(said 'Move one to the Trash, or name the one to use in CS2_WRAPPER.'):$(calls SETUP):$(calls MAKEWRAPPER)" "1:1:0:0"
 newh; bash "$MKW" "$H/Applications/Other.app" steam game 4; run --check > /dev/null
 check "wrapper rule: the game under another name" "$(chosen)" "$(launchers_choice)"
 newh; bash "$MKW" "$H/Applications/A.app" steam game 4; bash "$MKW" "$H/Applications/B.app" steam game 4; run --check > /dev/null
@@ -389,13 +421,13 @@ check "wrapper rule: CS2_WRAPPER with a space, to be made" "$rc:$(chosen)" "0:$(
 newh; check "a relative CS2_WRAPPER: exit 2" "$(env CS2_WRAPPER=Applications/X.app HOME="$H" PATH="$B:$PATH" bash "$S" > "$H.out" 2>&1; echo $?)" 2
 newh; bash "$MKW" "$WR"; rm "$WR/Contents/SharedSupport/wine/bin/wine64"
 check "a wrapper without wine64: exit 1, nothing deleted" "$(run):$([ -d "$PFX" ] && echo kept)" "1:kept"
-newh; bash "$MKW" "$WR"; rm -rf "$PFX"
+newh; WR="$H/Applications/$OLDNAME"; bash "$MKW" "$WR"; rm -rf "$WR/Contents/SharedSupport/prefix"
 check "a wrapper without a prefix folder: exit 1, nothing deleted" "$(run):$([ -d "$WR/Contents/SharedSupport/wine" ] && echo kept)" "1:kept"
 
 # --- all done: only setup runs
 newh; done_all
 check "all done: exit 0" "$(run)" 0
-check "  ...setup run once, with CS2_VIA_INSTALLER=1 and the wrapper" "$(grep -c "^SETUP  via=1 wrapper=$(cd "$WR" && pwd -P)\$" "$CALLS")" 1
+check "  ...setup run once, with CS2_VIA_INSTALLER=1 and the wrapper, and told no wrapper was given" "$(grep -c "^SETUP  via=1 wrapper=$(cd "$WR" && pwd -P) given=0\$" "$CALLS")" 1
 check "  ...nothing else changed: no Steam start, no wrapper made, no download, no Rosetta, no Apple box" \
   "$(calls '^WINE '):$(calls MAKEWRAPPER):$(calls CURL):$(calls SOFTWAREUPDATE):$(calls 'XS --install')" "0:0:0:0:0"
 # the installer starts caffeinate in the background, so its stub may write its line after the installer has
@@ -459,7 +491,7 @@ newh; rc="$(STUB_MW_EXIT=1 run)"; check "make-wrapper fails: exit 1" "$rc" 1
 newh; rc="$(STUB_MW_EXIT=3 run)"; check "make-wrapper finds another build at work: exit 3" "$rc" 3
 newh; : > "$ST/game"; STUB_GAME_OTHER="$T/elsewhere"; export STUB_GAME_OTHER; dl installed
 rc="$(run)"; unset STUB_GAME_OTHER
-check "a wrapper to be made, with a game running in another wrapper: made, not taken for ours" "$rc:$(grep -c "^MAKEWRAPPER --engine-url https://github.com/vitor251093/porting-kit-engines/releases/download/wineskin/WS12Wine11.0_DXMT-v0.80.tar.7z --engine-bytes 180784324 --engine-sha afdaab97e84ec7064b8fddf47192c95b18b8bbb9cc3aa4d81060a57d7b4dced0 --wrapper $H/Applications/CS2dxmt11.app\$" "$CALLS")" "0:1"
+check "a wrapper to be made, with a game running in another wrapper: made, not taken for ours" "$rc:$(grep -c "^MAKEWRAPPER --engine-url https://github.com/vitor251093/porting-kit-engines/releases/download/wineskin/WS12Wine11.0_DXMT-v0.80.tar.7z --engine-bytes 180784324 --engine-sha afdaab97e84ec7064b8fddf47192c95b18b8bbb9cc3aa4d81060a57d7b4dced0 --wrapper $H/Applications/$NEWNAME --mark game 949230\$" "$CALLS")" "0:1"
 # (with no prefix yet, set -u stops the copied function inside its own pipeline, so the game is not taken for
 # ours either way; what the guard saves is the shell's error line in the player's Terminal)
 check "  ...and no copied function was run before there was a prefix" "$(said 'unbound variable')" 0
@@ -524,7 +556,7 @@ seed() { sed "s/\$/$(printf '\r')/" >> "$SD/logs/bootstrap_log.txt"; }   # lines
 form() {   # the form of 2.1 the output ends in, whole lines with nothing after them: vpn later none reach plain, or other
   local c="  !! Steam could not download its own update: the connection to Valve's server keeps being cut."
   local w="     Open the installer again in a few minutes. It carries on from this step."
-  local l="     Steam's own log, if you ask for help: ~/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt"
+  local l="     Steam's own log, if you ask for help: ~/Applications/$NEWNAME/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/logs/bootstrap_log.txt"
   local nl=$'\n'
   case "$(tail -n 4 "$H.out")" in
     "$c$nl     This Mac is using a VPN, which may be the cause. Change the VPN's server or pause it,$nl     then open the installer again. It carries on from this step.$nl$l") echo vpn; return ;;
@@ -709,6 +741,50 @@ check "  ...with the game installed Steam is not needed, so it is not looked for
 newh; bash "$MKW" "$WR" steam; : > "$ST/lookalike"; dl installed
 check "a line that only names steam.exe is not a Steam: the install goes on" "$(run):$(said 'Steam is open in'):$(starts)" "0:0:1"
 
+# --- WT11 (docs/plans/wrapper-names.md): the installer's route through the real setup.sh, wrappers.sh and
+#     move-wrappers.sh, in a second scratch copy. Its patch scripts are empty files run by the python3 stub; its
+#     window builder a stub; xcrun a stub, so that the app builder compiles nothing; the mover's probe a stub.
+R2="$T/repo2"; G2="$R2/cities-skylines-2"; mkdir -p "$R2/common" "$G2/patches/_vendor" "$T/wt11bin"
+cp -R "$REPO/cities-skylines-2/scripts" "$REPO/cities-skylines-2/launchers" "$REPO/cities-skylines-2/repatch.sh" "$G2/"
+for f in "$REPO"/cities-skylines-2/patches/patch_*.py; do : > "$G2/patches/$(basename "$f")"; done
+cp "$S" "$G2/scripts/install.sh"; cp "$C" "$R2/common/install-core.sh"   # the copies under test: a mutant of either applies here too
+cp "$REPO/common/paths.sh" "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
+printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"; printf '#!/bin/bash\nexit 1\n' > "$T/wt11bin/xcrun"
+printf '#!/bin/bash\n[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"\nexit 0\n' > "$T/wt11bin/wprobe"
+# this Mac, the same on any Mac, so that the transcript does not depend on the one it runs on (as scripts/test-setup.sh has it)
+printf '#!/bin/bash\n[ "$1" = -productVersion ] && echo 27.2\n' > "$T/wt11bin/sw_vers"
+printf '#!/bin/bash\n[ "$*" = "-n hw.optional.arm64" ] && { echo 1; exit 0; }\nexec /usr/sbin/sysctl "$@"\n' > "$T/wt11bin/sysctl"
+printf '#!/bin/bash\n[ "$1" = -x86_64 ] && exit 0\nexec /usr/bin/arch "$@"\n' > "$T/wt11bin/arch"
+chmod +x "$T/wt11bin"/*
+S2="$G2/scripts/setup.sh"
+case "${MUTANT:-0}" in
+  67) sed -i '' 's#^\[ "\${CS2_VIA_INSTALLER:-0}" = 1 \] \&\& \[ "\${L1_WRAPPER_GIVEN:-}" = 0 \] \&\& unset CS2_WRAPPER$#: no unset#' "$S2"; grep -q '^: no unset$' "$S2" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  68) sed -i '' 's#\[ "\${L1_WRAPPER_GIVEN:-}" = 0 \] \&\& unset CS2_WRAPPER#[ "${L1_WRAPPER_GIVEN:-0}" = 0 ] \&\& unset CS2_WRAPPER#' "$S2"; grep -q 'L1_WRAPPER_GIVEN:-0' "$S2" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  69) sed -i '' 's#a+=(--holders-skip --held-by "\$PPID")#a+=(--held-by "$PPID")#' "$S2"; grep -q -- '--holders-skip --held-by' "$S2" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+esac
+run2() {   # [VAR=value ...] -- [install.sh arguments]: the WT11 copy; output in $H.out; echoes the exit code
+  local envs=(); while [ "$1" != -- ]; do envs+=("$1"); shift; done; shift
+  env -u CS2_WRAPPER -u L1_TRACE -u CS2_VIA_INSTALLER -u L1_WRAPPER_GIVEN HOME="$H" PATH="$T/wt11bin:$B:$PATH" L1_KILL="$B/killrec" \
+    L1_WMOVE_PROBE="$T/wt11bin/wprobe" ${envs[@]+"${envs[@]}"} bash "$G2/scripts/install.sh" "$@" > "$H.out" 2>&1 < /dev/null
+  echo $?
+}
+NW="$H/Applications/$NEWNAME"
+oldw() { newh; WR="$H/Applications/$OLDNAME"; bash "$MKW" "$WR" steam game 4; NW="$H/Applications/$NEWNAME"; }
+l1p() { plutil -extract L1Prefix raw -o - "$H/Applications/Cities Skylines II.app/Contents/Info.plist" 2>/dev/null; }
+oldw
+check "WT11 through the real setup: an old-named wrapper, no variable given: renamed and marked, exit 0" \
+  "$(run2 --):$([ -d "$NW" ] && echo renamed):$(plutil -extract L1Role raw -o - "$NW/Contents/Info.plist" 2>/dev/null)" "0:renamed:game-wrapper"
+check "  ...the app's L1Prefix names the renamed wrapper, and no .launcher.lock is left in it" \
+  "$(l1p):$([ -L "$NW/Contents/SharedSupport/prefix/.launcher.lock" ] && echo left || echo none)" "$NW/Contents/SharedSupport/prefix:none"
+oldw
+check "WT11 the variable given by the caller: nothing renamed, and the line says a wrapper was named" \
+  "$(run2 CS2_WRAPPER="$WR" --):$([ -d "$WR" ] && echo kept):$(said 'CS2_WRAPPER names a wrapper')" "0:kept:1"
+oldw
+rc="$(env -u L1_WRAPPER_GIVEN HOME="$H" PATH="$T/wt11bin:$B:$PATH" L1_WMOVE_PROBE="$T/wt11bin/wprobe" CS2_VIA_INSTALLER=1 CS2_WRAPPER="$WR" bash "$S2" > "$H.out" 2>&1 < /dev/null; echo $?)"
+check "WT11 setup alone with CS2_VIA_INSTALLER=1, the variable set and L1_WRAPPER_GIVEN not set: nothing renamed" "$rc:$([ -d "$WR" ] && echo kept)" "0:kept"
+oldw
+check "WT11 a holder reported by the probe: the installer exits 0, one skip line, nothing renamed" \
+  "$(run2 STUB_WHOLDERS=4242 --):$(said '^  skip: something of the wrapper.s Wine is still running'):$([ -d "$WR" ] && echo kept)" "0:1:kept"
 check "no run reached the runaway guard" "$(cat "$T/runaway" 2>/dev/null | wc -l | tr -d ' ')" 0
 # --- the transcript: what the installer printed in every case above, against what it printed when last recorded
 GOLD="$HERE/test-install.golden"

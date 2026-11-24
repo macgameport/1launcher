@@ -47,7 +47,8 @@
 # Same three guards as shimmer-probe, plus one more: it will not score unless the window size
 # ACTUALLY CHANGED, so "I forgot to drag" comes back as VOID rather than as a clean bill of health.
 set -u
-SS=$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+SS=$CS2W/Contents/SharedSupport
 out="${OUT_DIR:-/tmp/livedrag}"; rm -rf "$out"; mkdir -p "$out"
 # WAIT is the drag window. 90 s suits a human at the keyboard; an agent running this FOR a human
 # who reads messages intermittently should set WAIT=1800 — the 2026-09-03 run voided at 240 s and

@@ -41,7 +41,8 @@ done
 mkdir -p "$OUTDIR"
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-APP="${CS2_WRAPPER:-$HOME/Applications/CS2dxmt11.app}"
+CS2W="$(bash "$(cd "$(dirname "$0")/../.." && pwd)/common/wrappers.sh" find game 949230)"   # CS2_WRAPPER, else the game's wrapper by its marker (docs/plans/wrapper-names.md)
+APP="$CS2W"
 SS="$APP/Contents/SharedSupport"; E="$SS/wine"; PFX="$SS/prefix"
 S="$PFX/drive_c/Program Files (x86)/Steam"
 FATAL=0; WARN=0

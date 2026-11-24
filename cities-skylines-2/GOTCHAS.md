@@ -1137,7 +1137,7 @@ was still running after a session I had reported clean.
    `rundll32.exe setupapi,InstallHinfSection … wine.inf` (a prefix update that never finished) had
    `…/SharedSupport/wine/share/wine/wine.inf` open and **no prefix path at all**. A
    `lsof | grep "$WINEPREFIX"` sweep is structurally blind to it. Match on the **wrapper root**
-   (`…/CS2dxmt11.app`) to catch both, not the prefix subdirectory.
+   (`…/<the wrapper>.app`) to catch both, not the prefix subdirectory.
 2. **Other prefixes.** Probing PK 11.0 or wine-stable leaves *their* services running. Tearing down
    the prefix under test says nothing about them — sweep every wrapper you touched this session.
 
@@ -1158,11 +1158,12 @@ confirmed by name that no `steam.exe` is in the set, and check both prefixes for
    pattern could find. **Enumerate every PID and let `lsof` decide.** It is slower and it is the
    only version that is correct.
 
-**Sweep that actually works:**
+**Sweep that actually works** (its pattern since 2026-11-21 matches every wrapper in `~/Applications` by its
+place and not by a list of names, which setup changes: `docs/plans/wrapper-names.md`):
 
 ```bash
 for p in $(ps -axo pid=); do
-  lsof -p "$p" 2>/dev/null | grep -qE '/(CS2dxmt11|CS2dxmt11-pk110|S734M)\.app' \
+  lsof -p "$p" 2>/dev/null | grep -qE '/Applications/[^/]+\.app/Contents/SharedSupport/' \
     && echo "$p  $(ps -o etime= -p $p) $(ps -o command= -p $p | cut -c1-60)"
 done
 ```
@@ -2604,7 +2605,68 @@ is cosmetic. Never point a dyld search path into a wrapper bundle for a throwawa
   120 s sign-in wait expired first and reported *"Steam did not sign in"*, which misnames it. Wine
   carried on by itself once the sheet closed; the next launch was not re-verified. **Tell:**
   `osascript -e 'tell application "System Events" to get value of every static text of every window of process "CoreServicesUIAgent"'`.
-  Don't click Cancel; wait, then relaunch.
+  Don't click Cancel; wait, then relaunch. (Since 2026-11-23 the launchers wait ten minutes and say what
+  may be holding Steam up: the next entry.)
+
+## After a wrapper is renamed, macOS asks about the microphone again and Steam waits for the answer (2026-11-23)
+
+**macOS keeps Wine's answer to "may it use the microphone" by the PATH of `wine64`, not by anything inside the
+wrapper.** So the first Steam start from a path it has not run from asks again, one second after `steam.exe`
+starts, and Steam logs nothing more (no connectivity result, no logon) until someone answers. Measured on the
+Studio at wrapper-names' W2, five starts of five in wrappers whose Wine came from Porting Kit: stalls of 77 to
+116 s while a person answered, and twice the launcher's 120 s sign-in wait ran out first and said "Steam did not
+sign in by itself", which again misnames it. The wrapper with the self-built engine was never asked, and a hand
+rename on 2026-11-18 (P4) raised no question either: neither is explained.
+
+- **Tell:** `/usr/bin/log show --start '<time>' --style compact --predicate 'process == "tccd" AND eventMessage
+  CONTAINS "AUTHREQ_PROMPTING"'` shows `service=kTCCServiceMicrophone, subject=<the wrapper>/.../wine64`; the
+  `AUTHREQ_RESULT` with `authReason=2` that follows is the person's answer. In the tool's zsh, write
+  `/usr/bin/log`: `log` alone is a shell builtin and prints nothing.
+- **What was done:** the launchers' shared `signin_wait` waits 600 s (`L1_SIGNIN_SECS`), says after 45 s
+  "Still signing in. If macOS asks a question, answer it…", and ends early only for a Steam that was up and
+  is gone. The instruments that start a launcher (`scripts/boot-verify.sh`, Surviving Mars's
+  `tools/licence-wait-probe.sh`) set 120. Plan: `docs/plans/wrapper-names.md`, "W2 fold".
+- **Not done:** keeping Steam from asking for the microphone at all (neither game needs it). It needs a probe.
+- ⚠ **The 600 s wait can end early with the question still open** (MacBook, 2026-11-24, W3 step 7, Surviving
+  Mars's wrapper renamed by hand). The question was put at 00:48:36 and answered at 00:55:04; the launcher ran
+  its `steam.exe -shutdown` at 00:51:50 and said "Steam did not sign in by itself". `signin_wait` ends early
+  only for a Steam seen and then gone 15 s, so that Steam left, or was no longer attributed to the prefix,
+  about three minutes into the question: which of the two was not seen. The start after the answer ran. Issue #32.
+- **Measured on the Studio the same night (01:16, the question never answered): Steam itself gives up.** Its
+  connectivity test started 10 s after the start and the question was put at the same second; the first
+  `steam.exe` was gone 3 min 2 s after that test began, with no result line (the MacBook's: about 3 min too).
+  The launcher counted it gone for 15 s and ran `stop_steam`, whose `steam.exe -shutdown`, with no Steam
+  running, **came up as a Steam client of its own** and sat in the same wait for 3 min 1 s; the launcher
+  waited on it in the foreground, so its "Steam did not sign in by itself" came 6 min 30 s after the start.
+  So no length of `L1_SIGNIN_SECS` helps while the question is open, and the Surviving Mars launcher's
+  shutdown call costs three minutes more (Cities: Skylines II's launcher makes no such call there). Not
+  built: start Steam again while the wait lasts, and never send `-shutdown` when no Steam of the prefix is
+  up. The watch and its output: the Surviving Mars workspace, `probe-issue32/`.
+- A path that has been answered is not asked again, a rename back to it included.
+
+
+## Steam waits 20 s before it logs on when DNS gives IPv6 addresses that cannot be reached (2026-11-23)
+
+**A start that is about 20 s slower than yesterday's is the network before it is anything of ours.** At its start
+Steam tests IPv6 against two hosts of its own. When this Mac's DNS returns IPv6 addresses for them and IPv6 does
+not get through, both tests time out and Steam calls its logon 20 s later; when DNS returns none, it logs on 3 to
+6 s after its start. Measured in the Surviving Mars wrapper's log on the Studio: of 38 starts from 2026-11-11 to
+2026-11-23, the 13 with two timeouts took 23 to 27 s to the logon call (one 90 s, a microphone question) and the
+25 others 3 to 6 s. It cost a wrong finding: on 2026-11-23 the DNS answers changed three minutes before a wrapper
+was renamed, and the slower starts were first put down to the rename, then suspected of issue #30's `ntdll.dll`
+(issue #33; one start with each file settled it: 27 s to logon and 44 s to the window with both).
+
+- **Tell:** in `<prefix>/drive_c/Program Files (x86)/Steam/logs/connection_log.txt`, a slow start has
+  `IPv6 HTTP connectivity test (...) - TIMEOUT` and `IPv6 UDP connectivity test (... / <an IPv6 address>) -
+  TIMEOUT`, and `LogOn() called` 20 s after the second. A quick one has `IPv6 UDP connectivity test (...) -
+  FAILED, no addresses resolved`. The file holds account numbers: quote times from it, never lines.
+- **The Mac's side:** `dscacheutil -q host -a name ipv6check-udp.steamserver.net` lists `ipv6_address` lines in
+  the slow state; `/usr/bin/log show --predicate 'process == "configd" AND eventMessage CONTAINS "network
+  changed"'` shows when DNS changed.
+- **Before comparing two starts' times, compare their IPv6 lines.** A "before" and an "after" taken on different
+  days are not a pair until both are in the same state.
+- **Not explained:** what changes the DNS answers on the Studio (not looked at: the VPN), and seven starts on
+  2026-11-10 that took 24 s with no IPv6 address resolved.
 
 ## Wine's per-directory Makefile is a stub: `gmake -C dlls/win32u win32u.so` is always "up to date" (2026-10-10)
 
@@ -3211,3 +3273,26 @@ else. Measured on copies, at build 26404411 (`docs/plans/errno-by-name.md`, sect
   "already patched".
 - **`patch_fshandle.py` is still a byte search** (a 13-byte fingerprint, the same for its search and its
   "already patched" test since #24), and the other four byte-search scripts count their sites.
+
+## A race test that suspends a thread can be blind on one build and sharp on another (2026-11-24)
+
+**"No fault in 600 s" cleared nothing, because the test could not stop the thread where the fault is.** Issue #30's
+test (`common/wine-wait-race.sh`) suspends a waker at random moments to hold it inside a gap of two or three
+instructions. Under the Surviving Mars wrapper's Wine 10.0 it faults within 5 s. Under the Cities: Skylines II
+engine (Wine 11.16) it ran 60 s and 600 s with no fault, although that engine's compiled `RtlWakeAddressAll`
+has the same order (the address cleared at `+0xbb`, the entry's next read again at `+0xc7`).
+
+- **Measured:** a scratch variant called `GetThreadContext` after each `SuspendThread` and counted the
+  instruction pointers. A suspended waker is reported at some instructions and never at others, in both builds.
+  Wine 10.0: 316 of 96,043 suspensions in the function were inside the gap. Wine 11.16: none of 53,649 was at
+  either instruction of the gap (`+0xc3`, `+0xc7`); the nearest were just before the clear and just after the
+  second read.
+- **Inferred, not measured:** the processor can still leave the thread between any two instructions when the
+  scheduler takes it away, so the 11.16 engine is not cleared. Why a suspension stops only at some instructions
+  was not looked into (these are x86_64 programs on an Apple silicon Mac).
+- **The scheduler alone did not open the gap in a test:** with no suspending, 300 threads on 18 processors ran
+  300 s on the Wine 10.0 file with no fault. So there is no test here that can clear a build; reading the
+  compiled code is what decides.
+- **Rule:** before a clean run of a test that works by stopping a thread is taken as a result, show that the
+  thread can be stopped at the place that matters on that build. The scratch variant and its outputs are in the
+  workspace, `probe-issue30/` (`rip/`, `rip-*.txt`, `run-1116-*.txt`).

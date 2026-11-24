@@ -1,7 +1,7 @@
 #!/bin/bash
 # test-make-engine-install.sh -- make-engine.sh --install on throwaway wrappers whose wine/ is an APFS clone
 # of S734M's Wine (no game, no Steam): the S734M wrapper's own while it is in ~/Applications, else the copy
-# SurvivingMars.app keeps as wine.d3dm21-BAK (docs/plans/launcher-window.md, D11). Refusals: no path; a
+# the game's wrapper keeps as wine.d3dm21-BAK (docs/plans/launcher-window.md, D11). Refusals: no path; a
 # wrapper holding Cities2.exe; a Wine process using the wrapper; an existing wine.d3dm21-BAK without
 # --rebuild. Then a real install (3.0 in, 2.1 kept as the BAK) and a --rebuild that builds from the BAK,
 # never from the installed 3.0 engine. Then a swap stopped part way (docs/plans/surviving-mars-install.md,
@@ -11,7 +11,7 @@
 # It starts the Intel wine64 of a clone; tools/test-engine-source.sh checks only which Wine and which
 # D3DMetal are chosen, and starts nothing.
 # The D3DMetal 3.0 pieces come from CX_GPTK when it is given, and otherwise from the wine/lib of the
-# installed SurvivingMars.app when its framework reads 3.0 (that folder has the shape CX_GPTK takes). No
+# game's installed wrapper (common/wrappers.sh) when its framework reads 3.0 (that folder has the shape CX_GPTK takes). No
 # CrossOver is needed. What is installed is compared with that folder, never with a published checksum.
 #   bash tools/test-make-engine-install.sh            exit 0 = every case passed; 2 = refused (no Wine, no pieces)
 #   MUTANT=<n> bash tools/test-make-engine-install.sh   each must exit 1; 2 = the mutant did not apply
@@ -24,12 +24,14 @@ set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 ME="$HERE/tools/make-engine.sh"
 SRCW="$HOME/Applications/S734M.app/Contents/SharedSupport/wine"
-[ -d "$SRCW" ] || SRCW="$HOME/Applications/SurvivingMars.app/Contents/SharedSupport/wine.d3dm21-BAK"
+_r="$HERE/../common/wrappers.sh"   # the game's wrapper, found by its marker (docs/plans/wrapper-names.md), else its name
+GW="$(bash "$_r" find game 3215050 2>/dev/null)" || GW="$HOME/Applications/$(bash "$_r" name game 3215050 2>/dev/null)"
+[ -d "$SRCW" ] || SRCW="$GW/Contents/SharedSupport/wine.d3dm21-BAK"
 [ -x "$SRCW/bin/wine64" ] || { echo "REFUSED: no Wine to clone at $SRCW"; exit 2; }
 fwver() { plutil -extract CFBundleShortVersionString raw "$1/Versions/A/Resources/Info.plist" 2>/dev/null; }
 GP="${CX_GPTK:-}"
 if [ -z "$GP" ]; then
-  GP="$HOME/Applications/SurvivingMars.app/Contents/SharedSupport/wine/lib"
+  GP="$GW/Contents/SharedSupport/wine/lib"
   case "$(fwver "$GP/external/D3DMetal.framework")" in 3.*) ;; *) GP="" ;; esac
 fi
 [ -n "$GP" ] && [ -d "$GP/external/D3DMetal.framework" ] \

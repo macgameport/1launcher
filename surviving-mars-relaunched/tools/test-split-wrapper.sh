@@ -8,6 +8,7 @@
 #   bash tools/test-split-wrapper.sh            exit 0 = every case passed
 #   MUTANT=1 bash tools/test-split-wrapper.sh   the clone's link removed with `rm -rf link/`; must exit 1
 #   MUTANT=2 bash tools/test-split-wrapper.sh   the save check passes every save; must exit 1
+#   MUTANT=3 bash tools/test-split-wrapper.sh   the clone not marked (WT16 (b), docs/plans/wrapper-names.md); must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT="$HERE/tools/split-wrapper.sh"
@@ -15,13 +16,18 @@ T="$(mktemp -d /tmp/split-test.XXXX)"
 FIX=""
 cleanup() { [ -n "$FIX" ] && kill "$FIX" 2>/dev/null; wait 2>/dev/null; rm -rf "$T"; }
 trap cleanup EXIT
+# a mutant runs a copy laid out as in the repo, so that the copy finds common/wrappers.sh where the script does
+MS="$T/sm/tools/split-wrapper.sh"; mkdir -p "$T/sm/tools" "$T/common"; cp "$HERE/../common/wrappers.sh" "$T/common/"
 case "${MUTANT:-0}" in
-  1) sed 's|^unlink_in "\$CLONE" "\$L"$|rm -rf "$L/"|' "$SCRIPT" > "$T/split-wrapper.sh"
-     grep -q '^rm -rf "\$L/"$' "$T/split-wrapper.sh" || { echo "REFUSED: mutant did not apply"; exit 2; }
-     SCRIPT="$T/split-wrapper.sh" ;;
-  2) sed 's|^  u=$(unsynced "\$RC" "\$SAVES")$|  u=""|' "$SCRIPT" > "$T/split-wrapper.sh"
-     grep -q '^  u=""$' "$T/split-wrapper.sh" || { echo "REFUSED: mutant did not apply"; exit 2; }
-     SCRIPT="$T/split-wrapper.sh" ;;
+  1) sed 's|^unlink_in "\$CLONE" "\$L"$|rm -rf "$L/"|' "$SCRIPT" > "$MS"
+     grep -q '^rm -rf "\$L/"$' "$MS" || { echo "REFUSED: mutant did not apply"; exit 2; }
+     SCRIPT="$MS" ;;
+  2) sed 's|^  u=$(unsynced "\$RC" "\$SAVES")$|  u=""|' "$SCRIPT" > "$MS"
+     grep -q '^  u=""$' "$MS" || { echo "REFUSED: mutant did not apply"; exit 2; }
+     SCRIPT="$MS" ;;
+  3) sed 's|^l1w_mark "\$CLONE" game 3215050 0 .*|: not marked|' "$SCRIPT" > "$MS"
+     grep -q '^: not marked$' "$MS" || { echo "REFUSED: mutant did not apply"; exit 2; }
+     SCRIPT="$MS" ;;
 esac
 ST="drive_c/Program Files (x86)/Steam"
 
@@ -44,6 +50,8 @@ fixture() {   # <dir>: build donor + store wrappers under <dir>; echo nothing
   echo save > "$dp/drive_c/users/Wineskin/Saved Games/Surviving Mars Relaunched/111/Archibald.savegame.sav"
   printf '[2026-11-07 17:50:01] [AppID 3215050] Starting sync (up,AC Exit,)\r\n[2026-11-07 17:50:07] [AppID 3215050] Upload complete, result OK\r\n' > "$dp/$ST/logs/cloud_log.txt"
   touch "$dp/$ST/.crash"
+  # the donor's Info.plist, marked as a store clone is (docs/plans/wrapper-names.md): the clone must not keep it
+  printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string><key>L1Role</key><string>steam-wrapper</string></dict></plist>' > "$d/Donor.app/Contents/Info.plist"
 }
 run() {   # <dir>: run the script against <dir>'s fixture; echo its exit code
   SPLIT_DONOR="$1/Donor.app" SPLIT_STORE="$1/Store.app" SPLIT_CLONE="$1/Game.app" SPLIT_RUNS="$1/runs" \
@@ -70,6 +78,7 @@ check "donor keeps Cities: Skylines II and its manifest" "$(yes_no "[ -f \"$DS/s
 check "clone lost CS2 tree, manifest, shader cache, userdata" "$(yes_no "[ ! -e \"$CS/steamapps/common/Cities Skylines II\" ] && [ ! -e \"$CS/steamapps/appmanifest_949230.acf\" ] && [ ! -e \"$CS/steamapps/shadercache/949230\" ] && [ ! -e \"$CS/userdata/111/949230\" ]")" yes
 check "clone keeps 228980, its SM manifest, saves, cloud cache" "$(yes_no "[ -f \"$CS/steamapps/appmanifest_228980.acf\" ] && [ -f \"$CS/steamapps/appmanifest_3215050.acf\" ] && [ -f \"$D/Game.app/Contents/SharedSupport/prefix/drive_c/users/Wineskin/Saved Games/Surviving Mars Relaunched/111/Archibald.savegame.sav\" ] && [ -f \"$CS/userdata/111/3215050/remotecache.vdf\" ]")" yes
 check "clone has no .crash marker" "$(yes_no "[ ! -e \"$CS/.crash\" ]")" yes
+check "clone is marked as the game's wrapper, the donor's marker gone (WT16)" "$(plutil -extract L1Role raw -o - "$D/Game.app/Contents/Info.plist" 2>/dev/null):$(plutil -extract L1SteamAppID raw -o - "$D/Game.app/Contents/Info.plist" 2>/dev/null)" "game-wrapper:3215050"
 check "backups: 2 manifests, saves, userdata, buildid" "$(ls "$D/backup" | sort | tr '\n' ' ')" "appmanifest_3215050.acf.s734m appmanifest_3215050.acf.store buildid saved-games.tgz userdata-3215050 "
 
 # --- A0 refusals: each on a fresh fixture, each must change nothing

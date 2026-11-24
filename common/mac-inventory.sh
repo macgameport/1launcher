@@ -135,15 +135,23 @@ for a in "Cities Skylines II" "S734M" "CS2 Steam Store" "Surviving Mars Relaunch
 done
 # the 14unch3r window has no shim to read, so it has a line of its own
 echo "14unch3r.app: $([ -d "$HOME/Applications/14unch3r.app" ] && echo present || echo absent)"
-for w in CS2dxmt11 CS2dxmt11-pk110 S734M SurvivingMars CS2 CS2child-test; do
-  p="$HOME/Applications/$w.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps"
-  [ -d "$HOME/Applications/$w.app/Contents/SharedSupport" ] || continue
-  echo "$w.app: Cities: Skylines II $([ -f "$p/common/Cities Skylines II/Cities2.exe" ] && echo "installed, build $(grep -m1 '"buildid"' "$p/appmanifest_949230.acf" 2>/dev/null | tr -dc 0-9)" || echo "not installed") · Surviving Mars $([ -f "$p/common/Project Spark/Mars.exe" ] && echo "installed, build $(grep -m1 '"buildid"' "$p/appmanifest_3215050.acf" 2>/dev/null | tr -dc 0-9)" || echo "not installed")"
-done
+# A wrapper is known by the marker in its Info.plist (docs/plans/wrapper-names.md, 3.1), not by its name: each bundle
+# with a prefix is reported by its name, its marker or "unmarked", and the games inside it.
+key() { plutil -extract "$2" raw -o - "$1/Contents/Info.plist" 2>/dev/null; }
+GAME_W=""   # the game's marked wrapper, for the badge count below
 for a in "$HOME"/Applications/*.app; do
   [ -d "$a/Contents/SharedSupport/prefix" ] || continue
-  n="$(basename "$a" .app)"
-  case "$n" in CS2dxmt11|CS2dxmt11-pk110|S734M|SurvivingMars|CS2|CS2child-test) ;; *) echo "$(printf '%s' "$n" | safe).app: a Wine wrapper that is not one of the six this script knows from the Studio" ;; esac
+  n="$(basename "$a" .app | safe)"; r="$(key "$a" L1Role)"
+  case "$r" in
+    game-wrapper) m="marked game-wrapper $(key "$a" L1SteamAppID | tr -dc 0-9)"
+                  [ "$(key "$a" L1SteamAppID)" = 949230 ] && [ -z "$GAME_W" ] && GAME_W="$a" ;;
+    steam-wrapper) m="marked steam-wrapper" ;;
+    '') m="unmarked" ;;
+    *) m="marked $(printf '%s' "$r" | safe), not a wrapper's role" ;;
+  esac
+  key "$a" L1RenamePending > /dev/null && m="$m, rename pending"
+  p="$a/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps"
+  echo "$n.app: a Wine wrapper, $m · Cities: Skylines II $([ -f "$p/common/Cities Skylines II/Cities2.exe" ] && echo "installed, build $(grep -m1 '"buildid"' "$p/appmanifest_949230.acf" 2>/dev/null | tr -dc 0-9)" || echo "not installed") · Surviving Mars $([ -f "$p/common/Project Spark/Mars.exe" ] && echo "installed, build $(grep -m1 '"buildid"' "$p/appmanifest_3215050.acf" 2>/dev/null | tr -dc 0-9)" || echo "not installed")"
 done
 
 sec "the Cities: Skylines II install folder"
@@ -166,7 +174,7 @@ install_folder() {   # <folder> <label> <old|runtime>
   if [ ! -e "$I" ]; then echo "$L: absent"; return; fi
   echo "$L: $([ -L "$I" ] && echo "a symlink" || echo "a folder"), $(ls -A "$I" | wc -l | tr -d ' ') entries · launcher dated $(stat -f '%Sm' -t '%Y-%m-%d' "$I/launch-cs2-dxmt11.sh" 2>/dev/null || echo "absent")"
   echo "    patch scripts: $(ls "$I"/patches/*.py 2>/dev/null | wc -l | tr -d ' ') · library folder patches/_vendor: $([ -d "$I/patches/_vendor" ] && echo yes || echo no) · old Python environment revenv: $([ -d "$I/revenv" ] && echo yes || echo no)"
-  B="$HOME/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2_Data/Managed"
+  B="${GAME_W:-/nonexistent}/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II/Cities2_Data/Managed"
   echo "    mod badge patch: file $([ -f "$I/patch-modconflict-badge.py" ] && echo installed || echo absent) · marker $([ -f "$I/patches/.mod-badges-on" ] && echo yes || echo no) · times it has run here: $(ls "$B"/Game.dll.bak-modconflict-* 2>/dev/null | wc -l | tr -d ' ')"
   if [ "$3" = old ]; then
     echo "    retired fallback launcher still there: $([ -f "$I/launch-cs2.sh" ] && echo yes || echo no) · $(old_patchers "$I")"

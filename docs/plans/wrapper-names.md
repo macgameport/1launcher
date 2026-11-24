@@ -9,7 +9,7 @@ a rename and Steam's first start waits for the answer; that is folded and checke
 waits, says so") and built as W2b (`5d23ddf`), whose live step passed on the Studio the same day ("W2b on the Studio"); W3, the
 MacBook, is next;
 the read-only half of W3 step 0 was taken on the MacBook on 2026-11-23 ("W3 on the MacBook": its three wrappers
-pass every test of a candidate), and the typed half is open. The
+pass every test of a candidate), and so was the typed half (the window puts a wrapper first for `surviving mars` and for `cs2`). The
 findings of every pass and where each went are at the foot ("Review corrections"). Tracking: #26 (refs #26; one checkbox per phase there, as #22 has them).
 
 > **🔧 As-built (2026-11-23): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
@@ -1612,7 +1612,7 @@ parses the old loops or loses a sentence it quotes. Its findings, and where each
 | 8 | The Troubleshooting row for "Steam did not auto-login" knew only the expired token; `L1_SIGNIN_SECS` had no home; the progress window's comment named another longest silence | item 6; item 4 |
 | 9 | Four things the test row asserted had no mutant | WT19 (parity 19 to 22) |
 
-## W3 on the MacBook (2026-11-23): step 0, the read-only half taken; the typed half is James's and is open
+## W3 on the MacBook (2026-11-23): step 0 taken; setup has not run
 
 Taken at 20:05 EST from `main` at `210117a`, before the branch was checked out; the branch was then checked out
 for this record only, and nothing of it has run. Nothing of Wine or Steam was running. Outputs in
@@ -1668,12 +1668,23 @@ step of this plan touches it, so it will still be in the index after the rename.
 wrapper among the rows") can be met with it there; whether the window offers it for `surviving mars` is part of
 the typed "before" below. Removing it is James's choice, not a step of this plan.
 
+**The "before": Spotlight's window, typed by James the same evening, nothing opened (three screenshots).**
+
+| Typed | The field completes to | Rows, top first |
+|---|---|---|
+| `surviving mars` | "SurvivingMars.app", **the wrapper** | **`SurvivingMars.app`** (Top Hit); the folder `surviving-mars-relaunched` of the repo; the folder "Surviving Mars Relaunched" in Pictures; `surviving-mars-install.md`; `p5-run2.txt`. Neither the game's app nor the macOS Steam's shortcut `Surviving Mars.app` is among the five |
+| `cs2` | "cs2dxmt11.app — Open", **the game's wrapper** | **`CS2dxmt11.app`** (Top Hit); **`CS2dxmt11-pk110.app`**; `cs2-on-macos.png`; `cs2-paradox-mods.jpg`. Neither `Cities Skylines II.app` nor `S734M.app` is among the four shown |
+| `steam` | "steam.app — Open", the macOS Steam | `Steam.app` (Top Hit); the two CrossOver Steam apps; their two Support Center apps. No wrapper, and `S734M.app` is not among the five |
+
+So the fault is here as #26 reported it, and for `cs2` as well, where no wrapper has a use count: the window puts
+a wrapper first, and completes to it, for `surviving mars` and `cs2`. `steam` is as on the Studio before its
+rename (P0). An "Applications" filter is offered for `surviving mars`; none is among the filters visible in the
+other two screenshots. The rows with that filter on were not read: this "before" is the plain window only.
+
 **Open, before setup runs here:**
 
-- The typed half, by James at the MacBook: what Spotlight's window shows for `surviving mars`, `cs2` and
-  `steam`, without and with the Applications filter, nothing opened.
-- W0 step 2's hand rename of the Surviving Mars wrapper and back (WD10 covers it), offered at this visit: the
-  one reading that can select branch B before steps 1 to 7.
+- W0 step 2's hand rename of the Surviving Mars wrapper and back (WD10 covers it, on James's word), offered at
+  this visit: the one reading that can select branch B before steps 1 to 7.
 
 ## Review log
 

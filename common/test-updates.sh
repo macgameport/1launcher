@@ -22,6 +22,7 @@
 #   MUTANT=17 ..  the PATH of the functions that run programs left as the caller's; must exit 1
 #   MUTANT=18 ..  the offer lowered by an older answer; must exit 1
 #   MUTANT=19 ..  the second read of a file dropped; must exit 1
+#   MUTANT=20 ..  a commit left in the environment recorded for a checkout; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 T="$(mktemp -d /tmp/updates-test.XXXX)"
@@ -52,6 +53,7 @@ case "${MUTANT:-0}" in
   17) sed -i '' 's#local PATH=/usr/bin:/bin:/usr/sbin:/sbin#local _unused=#' "$S"; grep -q 'local PATH=' "$S" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   18) mutate 's#^    if l1u_newer "\$have" "\$ver"; then$#    if false; then#' '^    if false; then$' ;;
   19) mutate 's#IFS= read -r more || r2=1; }#r2=1; }#' 'rest || true; r2=1; }' ;;
+  20) mutate 's#^  \[ "\$line" != checkout \] && \[\[ "\${L1_FETCHED_COMMIT:-}"#  [[ "${L1_FETCHED_COMMIT:-}"#' '^  \[\[ "\${L1_FETCHED_COMMIT:-}" =~ \$_L1U_COMMIT \]\] && commit=' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 bash -n "$S" || { echo "REFUSED: the mutant does not parse"; exit 2; }
@@ -158,6 +160,29 @@ fresh; printf 'release\tv0.2.0\t-\ta[$(touch %s/ran3)]\n' "$T" > "$U/installed/9
 check "a stamp whose time would run a command: passed over, nothing run" "$(tool | cut -f1):$([ -e "$T/ran3" ] && echo ran || echo none)" "none:none"
 fresh; printf 'release\tv0.2.0\t-\t100' > "$U/installed/949230"
 check "a stamp with no final newline counts" "$(tool | cut -f1,2)" "unknown${TAB}v0.2.0"
+
+# --- the stamp, written by a setup (plan 3.1), and what is read back of it
+HEX=0123456789abcdef0123456789abcdef01234567
+mkdir -p "$T/tree" "$T/bare"; cp "$T/body.md" "$T/tree/CHANGELOG.md"
+st() { ( export L1_UPDATE_DIR="$U" L1_UPDATE_NOW="$NOW"; "$@"; . "$S"; l1u_stamp 949230 "${TREE:-$T/tree}"; echo "rc=$?" ); }
+fresh
+check "a stamp from a checkout: the line checkout, the tree's version, no commit, the time" "$(st true):$(cat "$U/installed/949230")" "rc=0:checkout${TAB}v0.3.0$TAB-$TAB$NOW"
+check "  ...and nothing is left beside it" "$(ls -A "$U/installed" | tr '\n' ' ')" "949230 "
+fresh
+check "a stamp from a fetch: the ref and the commit" "$(st export L1_FETCHED_REF=release L1_FETCHED_COMMIT=$HEX):$(cat "$U/installed/949230")" "rc=0:release${TAB}v0.3.0$TAB$HEX$TAB$NOW"
+fresh
+check "a commit left in the environment says nothing about a checkout" "$(st export L1_FETCHED_COMMIT=$HEX):$(cut -f1,3 "$U/installed/949230")" "rc=0:checkout$TAB-"
+fresh
+check "a fetched ref with a commit that is not 40 hex digits: recorded with no commit" "$(st export L1_FETCHED_REF=v0.2.0 L1_FETCHED_COMMIT=xyz):$(cut -f1,3 "$U/installed/949230")" "rc=0:v0.2.0$TAB-"
+fresh
+check "a ref that is not a line: 1, nothing written" "$(st export 'L1_FETCHED_REF=a b'):$(ls -A "$U/installed" | wc -l | tr -d ' ')" "rc=1:0"
+fresh
+check "a tree with no changelog: the version is -" "$(TREE="$T/bare" st true):$(cut -f2 "$U/installed/949230")" "rc=0:-"
+fresh; chmod 770 "$U/installed"
+check "an installed/ the group can write: 1, nothing written" "$(st true):$(ls -A "$U/installed" | wc -l | tr -d ' ')" "rc=1:0"
+fresh; stamp 949230 release v0.2.0; stamp 3215050 checkout v0.3.0
+check "l1u_stamp_of: the line and the version of a game's stamp; 1 for a game with none, and for a name that is no ID" \
+  "$(fn l1u_stamp_of 949230):$(fn l1u_stamp_of 3215050):$(fn l1u_stamp_of 777; echo "rc=$?"):$(fn l1u_stamp_of '../x'; echo "rc=$?")" "release${TAB}v0.2.0:checkout${TAB}v0.3.0:rc=1:rc=1"
 
 # --- UT4: the refresh: when curl is called, and with what
 OPTS="CURL -q --proto =https --tlsv1.2 -sS --max-time 10 --max-filesize 1048576 -o $U/.fetch.[A-Za-z0-9]* -w %{http_code} https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/CHANGELOG.md"

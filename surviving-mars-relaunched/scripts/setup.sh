@@ -19,6 +19,11 @@
 # `git pull`, a maintainer runs setup again. A copy is never written over a file in place: it is written
 # beside it and renamed over it, because a launcher goes on reading its own file after the game exits.
 #
+# Setup also keeps the record of which version this was (docs/plans/built-in-update.md, 3.1 and 3.3):
+# common/updates.sh is copied into the folder `bash common/paths.sh` prints as L1_UPDATE_DIR, a file update-dir
+# beside the launcher names that folder, and before the closing words one line is written to its
+# installed/3215050. A run with --check or --mac-only touches nothing of that folder.
+#
 # The wrapper is found by common/wrappers.sh, by the marker in its Info.plist, and setup gives an old-named one
 # its new name with common/move-wrappers.sh (docs/plans/wrapper-names.md, 3.4). L1_KEEP_WRAPPER_NAMES=1 declines.
 #
@@ -93,6 +98,10 @@ fi
 for f in "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh"; do
   [ -f "$f" ] || { echo "  !! setup's own files are missing ($(tilde "$f")). Open the installer again, or run setup from a whole checkout."; exit 1; }
 done
+# the record's files (docs/plans/built-in-update.md, 3.3), in a loop of their own: the one above is as older tests know it
+for f in "$REPO/common/paths.sh" "$REPO/common/updates.sh" "$REPO/common/games.tsv"; do
+  [ -f "$f" ] || { echo "  !! setup's own files are missing ($(tilde "$f")). Open the installer again, or run setup from a whole checkout."; exit 1; }
+done
 . "$REPO/common/wrappers.sh"
 [ "${SM_VIA_INSTALLER:-0}" = 1 ] && [ "${L1_WRAPPER_GIVEN:-}" = 0 ] && unset SM_WRAPPER
 find_wrapper() {   # sets WRAPPER and GAME; exits 1 when two wrappers carry the game's marker, before anything is changed
@@ -150,6 +159,9 @@ esac
 # --- the state folder: the user's own, and nobody else may write to it
 STATE="${SM_STATE:-$HOME/Library/Application Support/1launcher/surviving-mars-relaunched}"
 APP="${SM_APP:-$HOME/Applications/Surviving Mars Relaunched.app}"
+# the record's folder (docs/plans/built-in-update.md, 3.1): common/paths.sh says where, and only that is taken from
+# it: the state folder stays as the line above gives it
+L1_UPDATE_DIR="$( . "$REPO/common/paths.sh" 2>/dev/null; printf '%s' "$L1_UPDATE_DIR" )"
 own_folder() {   # <folder>: 0 when it is a real folder of this user's that group and others cannot write to
   [ -d "$1" ] && [ ! -L "$1" ] || return 1
   [ "$(stat -f %u "$1")" = "$(id -u)" ] || return 1
@@ -171,9 +183,22 @@ if [ "$CHECK" = 1 ]; then
   echo "(--check: stopping before making changes)"
   exit 0
 fi
+# the record: its tool is read (the l1u_* functions), and its folder, the one that holds it, and installed/ in it
+# are each the user's own too, tested before anything is copied (docs/plans/built-in-update.md, 3.3 items 1 and 2)
+. "$REPO/common/updates.sh"
+stamp_step() {
+  l1u_stamp 3215050 "$REPO" && return 0
+  echo "  !! This version could not be recorded ($(tilde "$L1_UPDATE_DIR/installed/3215050")). 14unch3r will not offer updates for this game."
+  return 0
+}
+for d in "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installed"; do
+  if [ -e "$d" ] || [ -L "$d" ]; then
+    own_folder "$d" || { echo "  !! $(tilde "$d") is not a folder of your own that only you can write to; setup will not keep its record of versions there."; exit 1; }
+  fi
+done
 
 # --- the copies: each written beside the old one and renamed over it, never written in place
-for d in "$STATE" "$STATE/tools"; do
+for d in "$STATE" "$STATE/tools" "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installed"; do
   [ -d "$d" ] || { mkdir -p "$d" && chmod go-w "$d"; } || { echo "  !! $(tilde "$d") could not be made."; exit 1; }
 done
 put() {   # <from> <to>
@@ -184,6 +209,15 @@ put() {   # <from> <to>
 put "$GAME_ROOT/launch-relaunched.sh" "$STATE/launch-relaunched.sh"
 put "$GAME_ROOT/tools/frame-fix.exe" "$STATE/tools/frame-fix.exe"
 put "$REPO/common/wrappers.sh" "$STATE/wrappers.sh"
+# the record's tool, and beside the launcher the line that names its folder: before 14unch3r is built, so that a
+# first setup already gives a window that finds the tool (docs/plans/built-in-update.md, 3.3 items 3 and 4)
+put_line() {   # <one line> <to>
+  local tmp="$2.new.$$"
+  if printf '%s\n' "$1" > "$tmp" && chmod 644 "$tmp" && mv -f "$tmp" "$2"; then return 0; fi
+  rm -f "$tmp"; echo "  !! $(tilde "$2") could not be written."; exit 1
+}
+put "$REPO/common/updates.sh" "$L1_UPDATE_DIR/updates.sh"
+put_line "$L1_UPDATE_DIR" "$STATE/update-dir"
 say "the launcher and its helper" "in $(tilde "$STATE")"
 
 # --- the wrapper's name, after the copies: the launcher just copied finds a renamed wrapper by its marker even if
@@ -220,6 +254,25 @@ case "$rc" in
 esac
 rm -f "$OUT"
 
+# --- the record of this version (docs/plans/built-in-update.md, 3.3 item 5): written when the work is done
+stamp_step
+# every other game that is set up on this Mac (a wrapper with the game's program in it, looked for with the game's
+# wrapper variable unset: one left in the environment must not decide what is set up) and has no stamp (item 6)
+unrecorded_games() {
+  local id w title
+  for id in $(l1w_games); do
+    [ "$id" = 3215050 ] && continue
+    l1w_row game "$id" || continue
+    w="$( [ -z "$L1W_VAR" ] || unset "$L1W_VAR"; l1w_find game "$id" 2>/dev/null )" || continue
+    l1w_program "$w" "$L1W_PROGRAM" || continue
+    l1u_stamp_of "$id" > /dev/null && continue
+    title="$(awk -F'\t' -v id="$id" '$1 == id { print $3; exit }' "$REPO/common/games.tsv" 2>/dev/null)"
+    [ -n "$title" ] || continue
+    echo "$title was set up by an older version. Paste its installer line once, so that it gets updates too."
+  done
+  return 0
+}
+
 if [ "${SM_VIA_INSTALLER:-0}" = 1 ]; then UPDATE="open the installer again."
 else UPDATE="after  git pull , run  bash surviving-mars-relaunched/scripts/setup.sh  again."; fi
 in_spotlight() {   # <app>: Spotlight and Launchpad list an app in one of these two folders only
@@ -243,4 +296,5 @@ if [ -n "$RENAMED" ]; then
   echo "  To keep the old name on a Mac not renamed yet: $WDECLINE"
 fi
 [ "$WM_SKIPPED" = 1 ] && echo "Not renamed: the game's wrapper kept its name, for the reason given above. The next run tries again."
+unrecorded_games
 exit 0

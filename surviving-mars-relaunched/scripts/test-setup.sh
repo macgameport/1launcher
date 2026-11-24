@@ -18,7 +18,15 @@
 #    14 the closing line about mods from Paradox Mods is removed
 #    docs/plans/wrapper-names.md: 15 the copy of wrappers.sh removed (WT15 (a))   16 the mover before the state folder's tests and the copies (WT17 (c))
 #    17 the early test of the two files removed (WT17 (f))   18 the resolver's exit 2 treated as none (WT4b)
+#    docs/plans/built-in-update.md, 3.3 (UT5 and "UT5, also"):
+#    19 the stamp written before the app is built           20 the stamp written when the app's builder fails
+#    21 the stamp written in place, not beside its place and renamed (common/updates.sh)
+#    22 updates.sh not deployed                              23 update-dir not written
+#    24 the record's folders not tested for being the user's own
+#    25 the own-files loop for paths.sh, updates.sh and games.tsv dropped
+#    26 updates.sh deployed after 14unch3r is built          27 the closing words about a game set up by an older version dropped
 set -u
+unset L1_UPDATE_DIR L1_UPDATE_NOW L1_FETCHED_REF L1_FETCHED_COMMIT L1_DATA_ROOT CS2_WRAPPER   # the record's variables are the cases' own
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
 T="$(mktemp -d /tmp/sm-setup-test.XXXX)"
@@ -36,7 +44,12 @@ mkdir -p "$G/scripts" "$G/tools" "$T/repo/common" "$T/bin" "$T/home/Applications
 cp "$HERE/scripts/setup.sh" "$G/scripts/"; cp "$HERE/launch-relaunched.sh" "$HERE/make-app.sh" "$G/"
 cp "$HERE/tools/frame-fix.exe" "$G/tools/"
 cp "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$T/repo/common/"   # docs/plans/wrapper-names.md
-printf '#!/bin/bash\necho "make-launcher-app $*" >> "%s/calls"\nexit "${WINDOW_RC:-0}"\n' "$T" > "$T/repo/common/make-launcher-app.sh"
+# the record of versions (docs/plans/built-in-update.md, 3.3): where it is, its tool and the table of games are
+# setup's own files too, and the scratch tree has a changelog whose first version heading is the tree's version
+cp "$REPO/common/paths.sh" "$REPO/common/updates.sh" "$REPO/common/games.tsv" "$T/repo/common/"
+printf '%s\n' '# Changelog' '' '## Unreleased' '' '## v0.4.2 (2026-11-24)' '' 'Words.' '' '## v0.4.1 (2026-11-20)' > "$T/repo/CHANGELOG.md"
+# the stand-in for the 14unch3r builder also records whether the record's tool was deployed when it was called
+printf '#!/bin/bash\necho "make-launcher-app $*" >> "%s/calls"\n( . "$(dirname "$0")/paths.sh"; [ -f "$L1_UPDATE_DIR/updates.sh" ] && echo there || echo missing ) > "%s/calls.tool"\nexit "${WINDOW_RC:-0}"\n' "$T" "$T" > "$T/repo/common/make-launcher-app.sh"
 S="$G/scripts/setup.sh"
 py() { python3 -I - "$@"; }
 case "$M" in
@@ -75,10 +88,47 @@ open(p, "w").write(s)
 PY
      ;;
   18) sed -i '' 's/^  if \[ "\$rc" = 2 \]; then echo "  !! Setup stops here/  if false; then echo "  !! Setup stops here/' "$S" ;;
+  19) py "$S" << 'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = "# --- the game's app, built to run that copy\n"
+assert s.count("\nstamp_step\n") == 1 and s.count(a) == 1
+s = s.replace("\nstamp_step\n", "\n").replace(a, "stamp_step\n" + a)
+open(p, "w").write(s)
+PY
+     ;;
+  20) sed -i '' 's|^  echo "  !! The game.s app was not built\. The lines above say why\."$|  stamp_step; echo "  !! The app was not built."|' "$S" ;;
+  21) perl -pi -e 's/^  if printf \x27%s\\n\x27 "\$2" > "\$t" 2>\/dev\/null && mv -f "\$t" "\$1" 2>\/dev\/null; then return 0; fi$/  if printf \x27%s\\n\x27 "\$2" > "\$1" 2>\/dev\/null; then : > "\$t"; return 0; fi/' "$T/repo/common/updates.sh" ;;
+  22) sed -i '' '/^put "\$REPO\/common\/updates.sh" "\$L1_UPDATE_DIR\/updates.sh"$/d' "$S" ;;
+  23) sed -i '' '/^put_line "\$L1_UPDATE_DIR" "\$STATE\/update-dir"$/d' "$S" ;;
+  24) sed -i '' 's/^    own_folder "\$d" || { echo "  !! \$(tilde "\$d") is not a folder of your own that only you can write to; setup will not keep its record /    true || { echo "  !! $(tilde "$d") is not a folder of your own that only you can write to; setup will not keep its record /' "$S" ;;
+  25) py "$S" << 'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = 'for f in "$REPO/common/paths.sh" "$REPO/common/updates.sh" "$REPO/common/games.tsv"; do\n'
+i = s.index(a); j = s.index("done\n", i) + 5
+s = s[:i] + s[j:]
+open(p, "w").write(s)
+PY
+     ;;
+  26) py "$S" << 'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = 'put "$REPO/common/updates.sh" "$L1_UPDATE_DIR/updates.sh"\n'; b = '\nrm -f "$OUT"\n'
+assert s.count(a) == 1 and s.count(b) == 1
+s = s.replace(a, "").replace(b, b + a)
+open(p, "w").write(s)
+PY
+     ;;
+  27) sed -i '' '/^unrecorded_games$/d' "$S" ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
-  cmp -s "$HERE/scripts/setup.sh" "$S" && { echo "REFUSED: mutant $M did not apply"; exit 2; }
+  case "$M" in
+    21) cmp -s "$REPO/common/updates.sh" "$T/repo/common/updates.sh" && { echo "REFUSED: mutant $M did not apply"; exit 2; }
+        bash -n "$T/repo/common/updates.sh" || { echo "REFUSED: mutant $M does not parse"; exit 2; } ;;
+    *) cmp -s "$HERE/scripts/setup.sh" "$S" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+  esac
   bash -n "$S" || { echo "REFUSED: mutant $M does not parse"; exit 2; }
 fi
 
@@ -245,6 +295,109 @@ plutil -replace L1Role -string game-wrapper "$H/Applications/twin.app/Contents/I
 check "WT4b two wrappers marked alike: exit 1, setup's line, nothing copied" \
   "$(run):$(grep -c "^  !! Setup stops here, before it changes anything: two wrappers carry the game's marker" "$T/out"):$(copies)" "1:1:0"
 H="$H1"
+
+# --- the record of which version this game was set up from (docs/plans/built-in-update.md, 3.1 and 3.3; UT5 and
+# "UT5, also"). The clock is L1_UPDATE_NOW; the tree's version is the first version heading of its CHANGELOG.md.
+# Each case has a home, a state folder and an app folder of its own.
+TAB="$(printf '\t')"
+NOW=1800000000; NOW2=1800000777; VER=v0.4.2; HEX=0123456789abcdef0123456789abcdef01234567
+PLIST1='<?xml version="1.0" encoding="UTF-8"?>'
+mk3() {   # <name>: sets H, STATE, APP, UPD and UPDT; the home holds a marked wrapper with the game in it
+  H="$T/home-$1"; STATE="$T/state-$1"; APP="$T/apps-$1/Surviving Mars Relaunched.app"; mkdir -p "$T/apps-$1"
+  local w="$H/Applications/wrapper-3215050.app"
+  mkdir -p "$w/Contents/SharedSupport/wine/bin" "$w/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"
+  printf '#!/bin/sh\nexit 0\n' > "$w/Contents/SharedSupport/wine/bin/wine64"; chmod 755 "$w/Contents/SharedSupport/wine/bin/wine64"
+  : > "$w/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe"
+  printf '%s\n' "$PLIST1" '<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string><key>L1Role</key><string>game-wrapper</string><key>L1SteamAppID</key><integer>3215050</integer></dict></plist>' > "$w/Contents/Info.plist"
+  UPD="$(HOME="$H" bash "$T/repo/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"
+  UPDT="~${UPD#"$H"}"   # as setup prints it
+}
+other() {   # [noprogram]: in $H, a Cities: Skylines II wrapper under its new name, marked, with the game's program in it
+  local a="$H/Applications/wrapper-949230.app"; local g="$a/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II"
+  mkdir -p "$a/Contents/SharedSupport/wine/bin" "$g"
+  printf '#!/bin/sh\nexit 0\n' > "$a/Contents/SharedSupport/wine/bin/wine64"; chmod 755 "$a/Contents/SharedSupport/wine/bin/wine64"
+  [ "${1:-}" = noprogram ] || : > "$g/Cities2.exe"
+  printf '%s\n' "$PLIST1" '<plist version="1.0"><dict><key>CFBundleName</key><string>Steambuild Metal</string><key>L1Role</key><string>game-wrapper</string><key>L1SteamAppID</key><integer>949230</integer></dict></plist>' > "$a/Contents/Info.plist"
+}
+stampof() { cat "$UPD/installed/3215050" 2>/dev/null; }
+stateof() { HOME="$H" bash "$UPD/updates.sh"; }   # the deployed tool, asked as a launcher or the window asks it
+snapu() { if [ -d "$UPD" ]; then (cd "$UPD" && { find . | LC_ALL=C sort; find . -type f -exec shasum {} +; } | shasum | cut -c1-12); else echo none; fi; }
+has() { if [ -e "$1" ]; then echo yes; else echo no; fi; }
+o() { grep -c -- "$1" "$T/out"; }
+mk3 u1; : > "$T/calls.tool"
+check "UT5 a setup that finishes: exit 0, and the stamp holds checkout, the tree's version, no commit and the time" \
+  "$(L1_UPDATE_NOW=$NOW run):$(stampof)" "0:checkout${TAB}$VER${TAB}-${TAB}$NOW"
+check "UT5 ...the deployed updates.sh is byte for byte the tree's, and nothing written beside a place is left" \
+  "$(cmp -s "$T/repo/common/updates.sh" "$UPD/updates.sh" && echo same):$(find "$UPD" "$STATE" -name '*.new.*' -o -name '.put.*' | wc -l | tr -d ' ')" "same:0"
+check "UT5 ...update-dir beside the launcher holds the folder's path, one line" "$(cat "$STATE/update-dir"):$(wc -l < "$STATE/update-dir" | tr -d ' ')" "$UPD:1"
+check "UT5 ...the folders setup made are the user's own: no group or other may write" "$(stat -f %Lp "$UPD"):$(stat -f %Lp "$UPD/installed")" "755:755"
+check "UT5, also: updates.sh was there when the 14unch3r builder was called" "$(cat "$T/calls.tool")" there
+check "UT5 ...a checkout's state is manual, with checkout as its detail" "$(stateof)" "manual${TAB}$VER${TAB}-${TAB}checkout"
+check "UT5 ...nothing is said of another game, none being set up here, and the line about mods still closes the block" \
+  "$(o 'was set up by an older version'):$(tail -n 1 "$T/out" | cut -c1-36)" "0:  If you use mods from Paradox Mods:"
+ln "$UPD/installed/3215050" "$T/keep.stamp"
+check "UT5 with L1_FETCHED_REF=release and L1_FETCHED_COMMIT: the stamp holds release and that commit" \
+  "$(L1_FETCHED_REF=release L1_FETCHED_COMMIT=$HEX L1_UPDATE_NOW=$NOW2 run):$(stampof)" "0:release${TAB}$VER${TAB}$HEX${TAB}$NOW2"
+check "UT5 ...written beside its place and renamed: a second name of the old stamp still holds the old line" "$(cat "$T/keep.stamp")" "checkout${TAB}$VER${TAB}-${TAB}$NOW"
+check "UT5 ...with no offer fetched yet the state is unknown" "$(stateof)" "unknown${TAB}$VER${TAB}-${TAB}-"
+check "UT5 with L1_FETCHED_REF=v0.2.0: that line in the stamp, and the state is manual with it as the detail" \
+  "$(L1_FETCHED_REF=v0.2.0 L1_UPDATE_NOW=$NOW run):$(stampof | cut -f1,4):$(stateof)" "0:v0.2.0${TAB}$NOW:manual${TAB}$VER${TAB}-${TAB}v0.2.0"
+# a setup that fails or stops writes no stamp, and leaves an older one as it was
+old="$(stampof)"; keep="$APP"; APP="$T/apps-u1/Foreign.app"; mkdir -p "$APP/Contents/SharedSupport"
+check "UT5 the app's builder failing: exit 1, the older stamp as it was" "$(L1_UPDATE_NOW=$NOW2 run):$(stampof)" "1:$old"
+APP="$keep"
+check "UT5 the game running (exit 3): the older stamp as it was" "$(L1_UPDATE_NOW=$NOW2 STUB_GAME=1 STUB_GAME_CMD="$H/Applications/wrapper-3215050.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe -x" run):$(stampof)" "3:$old"
+before="$(snapu)"
+check "UT5 --check and --mac-only on a home that has a record: every file of it as it was" \
+  "$(L1_UPDATE_NOW=$NOW2 run --check):$(L1_UPDATE_NOW=$NOW2 run --mac-only):$(snapu)" "0:0:$before"
+mk3 u2; APP="$T/apps-u2/Foreign.app"; mkdir -p "$APP/Contents/SharedSupport"
+check "UT5 the app's builder failing on a new install: exit 1, no stamp" "$(run):$(has "$UPD/installed/3215050")" "1:no"
+mk3 u3
+check "UT5 the game running on a new install (exit 3): nothing of the record is made" \
+  "$(STUB_GAME=1 STUB_GAME_CMD="$H/Applications/wrapper-3215050.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe -x" run):$(has "$UPD"):$(has "$STATE/update-dir")" "3:no:no"
+check "UT5 --check on a new install: no record folder, no update-dir, nothing copied" "$(run --check):$(has "$UPD"):$(has "$STATE/update-dir"):$(copies)" "0:no:no:0"
+check "UT5 --mac-only: the same" "$(run --mac-only):$(has "$UPD"):$(has "$STATE")" "0:no:no"
+# the record's folders are the user's own, or setup stops before it copies anything
+NOTOWN='is not a folder of your own that only you can write to; setup will not keep its record of versions there\.$'
+mk3 u4; mkdir -p "$UPD"; chmod g+w "$UPD"
+check "UT5 a record folder the group can write to: exit 1, said, nothing copied and nothing made in it" \
+  "$(run):$(o "^  !! $UPDT $NOTOWN"):$(copies):$(ls -A "$UPD" | wc -l | tr -d ' ')" "1:1:0:0"
+mk3 u5; mkdir -p "$UPD/installed"; chmod o+w "$UPD/installed"
+check "UT5 ...installed/ in it writable by others: the same" "$(run):$(o "^  !! $UPDT/installed $NOTOWN"):$(copies):$(has "$UPD/updates.sh")" "1:1:0:no"
+mk3 u6; mkdir -p "$T/rec-u6"; chmod 777 "$T/rec-u6"
+check "UT5 ...L1_UPDATE_DIR naming a folder inside one that others can write to: the same, and that folder stays empty" \
+  "$(L1_UPDATE_DIR="$T/rec-u6/_update" run):$(o "^  !! $T/rec-u6 $NOTOWN"):$(copies):$(ls -A "$T/rec-u6" | wc -l | tr -d ' ')" "1:1:0:0"
+chmod 755 "$T/rec-u6"
+check "UT5 ...made the user's own, the record goes there, and update-dir names it" \
+  "$(L1_UPDATE_DIR="$T/rec-u6/_update" run):$(has "$T/rec-u6/_update/installed/3215050"):$(cat "$STATE/update-dir"):$(has "$UPD")" "0:yes:$T/rec-u6/_update:no"
+# a stamp that cannot be written is said, and changes no exit code
+mk3 u10; mkdir -p "$UPD/installed"; chmod 555 "$UPD/installed"
+check "UT5 installed/ cannot be written to: the sentence, with the home folder as ~, no stamp, and setup's exit code is kept" \
+  "$(run):$(o "^  !! This version could not be recorded ($UPDT/installed/3215050)\. 14unch3r will not offer updates for this game\.\$"):$(has "$UPD/installed/3215050"):$(o '^=== setup complete ===$')" "0:1:no:1"
+chmod 755 "$UPD/installed"
+# setup's own files: where the record is, its tool and the table of games
+mk3 u7
+for gone in paths.sh updates.sh games.tsv; do
+  mv "$T/repo/common/$gone" "$T/$gone.aside"
+  check "UT5 common/$gone missing from the tree: exit 1 in the own-files words, and nothing copied" \
+    "$(run):$(o "^  !! setup's own files are missing (.*common/$gone). Open the installer again, or run setup from a whole checkout\.\$"):$(grep -cE 'command not found|No such file' "$T/out"):$(copies):$(has "$UPD")" "1:1:0:0:no"
+  check "UT5 ...with --mac-only that run is outside the check: exit 0" "$(run --mac-only):$(o "setup's own files")" "0:0"
+  mv "$T/$gone.aside" "$T/repo/common/$gone"
+done
+# the closing words name every other game that is set up on this Mac and has no stamp
+OLDER='was set up by an older version\. Paste its installer line once, so that it gets updates too\.$'
+mk3 u8; other
+check "UT5 another game set up with no stamp: named in the closing words, by its title in the tree's table, last" \
+  "$(run):$(o "^Cities: Skylines II $OLDER"):$(o "$OLDER"):$(tail -n 1 "$T/out" | cut -c1-19)" "0:1:1:Cities: Skylines II"
+check "UT5, also: its wrapper variable naming a path that does not exist: still named" "$(CS2_WRAPPER="$T/no-such.app" run):$(o "^Cities: Skylines II $OLDER")" "0:1"
+sed -i '' "s/${TAB}Cities: Skylines II${TAB}/${TAB}A Title From The Table${TAB}/" "$T/repo/common/games.tsv"
+check "UT5 ...the title is the third field of that ID's row" "$(run):$(o "^A Title From The Table $OLDER")" "0:1"
+cp "$REPO/common/games.tsv" "$T/repo/common/games.tsv"
+printf 'release\t%s\t-\t100\n' "$VER" > "$UPD/installed/949230"
+check "UT5 ...a game that has a stamp is not named" "$(run):$(o "$OLDER")" "0:0"
+mk3 u9; other noprogram
+check "UT5 ...a wrapper without the game's program is not a game set up: not named" "$(run):$(o "$OLDER")" "0:0"
+H="$H1"; APP="$A1"; STATE="$T/state"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

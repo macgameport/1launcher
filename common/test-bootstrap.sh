@@ -2,7 +2,8 @@
 # test-bootstrap.sh -- the root install.sh (docs/plans/simple-install.md, 2.4 and NT4; docs/plans/
 # shared-installer.md, 2.2 and ST5), with HOME and TMPDIR at scratch folders and a stub curl that serves
 # fixture archives. Every fixture holds a common/games.tsv; the fixture's game installer records its
-# arguments, what L1_FETCHED_REF it was given, and the folder it lies in. One fixture is cut with git archive
+# arguments, what L1_FETCHED_REF it was given, and the folder it lies in, on one line, and what L1_FETCHED_COMMIT
+# and CS2_PATCH_DIR it was given in two side files. One fixture is cut with git archive
 # from a scratch repository, so that it carries its commit in its header as GitHub's archives do. No network.
 #   bash common/test-bootstrap.sh            exit 0 = every case passed
 #   MUTANT=1 ...  the temporary folder kept; must exit 1
@@ -18,6 +19,7 @@
 #   MUTANT=11 ..  a variable put in front of the pasted line dropped before the game's installer; must exit 1
 #   MUTANT=12 ..  curl's exit code 22 put back as the test for "no such ref"; must exit 1
 #   MUTANT=13 ..  every answer but 200 read as "no such ref"; must exit 1
+#   MUTANT=14 ..  L1_FETCHED_COMMIT not exported (built-in-update 3.3; UT5, also); must exit 1
 # The stub curl honours -o and -w as curl does: the body goes to the file and the answer's code to standard
 # output. STUB_CURL_CODE is that code (200 when unset; 000 = no answer, nothing written) and STUB_CURL_EXIT
 # curl's exit (0 when unset): for a 404 the real one exits 0 without -f, 22 or 56 with it (built-in-update 1.5).
@@ -44,6 +46,7 @@ case "${MUTANT:-0}" in
   11) mutate 's#^  bash "\$top/\$folder/scripts/install.sh" "\$@"$#  unset CS2_PATCH_DIR; bash "$top/$folder/scripts/install.sh" "$@"#' '^  unset CS2_PATCH_DIR; bash ' ;;
   12) mutate 's#^  if \[ "\$code" = 404 \]; then$#  if [ "$rc" = 22 ]; then#' '^  if \[ "\$rc" = 22 \]; then$' ;;
   13) mutate 's#^  if \[ "\$code" = 404 \]; then$#  if [ "$code" != 200 ]; then#' '^  if \[ "\$code" != 200 \]; then$' ;;
+  14) mutate 's#^  if \[ -n "\$commit" \]; then export L1_FETCHED_COMMIT=.*#  :#' '^  :$' ;;
 esac
 
 fails=0
@@ -57,6 +60,7 @@ REC='#!/bin/bash
 here="$(cd "$(dirname "$0")/.." && pwd)"
 echo "INSTALLER args=$* ref=${L1_FETCHED_REF:-} from=$(basename "$(dirname "$here")") game=$(basename "$here")" >> "$CALLS"
 echo "${CS2_PATCH_DIR:-}" > "$CALLS.patchdir"
+echo "${L1_FETCHED_COMMIT-unset}" > "$CALLS.commit"
 exit "${STUB_INSTALL_EXIT:-0}"'
 table() {   # <root> [the first game's folder]: the table, with a game that has no installer and a row gone wrong
   mkdir -p "$1/common"
@@ -119,14 +123,16 @@ rc="$(pasted "$T/empty" "$F/good.tar.gz" x 949230)"
 check "pasted with an ID, from an empty folder: fetches the release branch, runs that row's installer, exit 0" \
   "$rc:$(grep -c "^CURL --proto =https --tlsv1.2 -sSL --retry 2 -o .* -w %{http_code} $URL/release.tar.gz\$" "$CALLS"):$(grep -c '^INSTALLER args= ref=release from=1launcher-release game=cities-skylines-2$' "$CALLS")" "0:1:1"
 check "  ...says the commit it fetched" "$(said "^1launcher at commit $COMMIT\$")" 1
+check "  ...and exports it as L1_FETCHED_COMMIT, the 40 digits alone, beside L1_FETCHED_REF (built-in-update 3.3)" "$(cat "$CALLS.commit")" "$COMMIT"
 check "  ...and leaves no temporary folder" "$(left)" 0
 rc="$(STUB_INSTALL_EXIT=7 pasted "$T/empty" "$F/good.tar.gz" x 949230)"
 check "the installer's exit code is this script's" "$rc:$(left)" "7:0"
 rc="$(pasted "$T/empty" "$F/good.tar.gz" 1launcher-install 949230 simple-install --check --yes)"
 check "pasted with a name and arguments: the ref fetched, the options passed on" \
   "$rc:$(calls " $URL/simple-install.tar.gz\$"):$(grep -c '^INSTALLER args=--check --yes ref=simple-install ' "$CALLS")" "0:1:1"
-rc="$(pasted "$T/empty" "$F/plain.tar.gz" x 949230)"
+rc="$(L1_FETCHED_COMMIT=0123456789abcdef0123456789abcdef01234567 pasted "$T/empty" "$F/plain.tar.gz" x 949230)"
 check "an archive with no commit in its header: says so, and goes on" "$rc:$(said '^1launcher: commit not read$'):$(calls '^INSTALLER')" "0:1:1"
+check "  ...no L1_FETCHED_COMMIT is exported then, and one left in the environment does not pass for this fetch's" "$(cat "$CALLS.commit")" unset
 rc="$(pasted "$T/empty" "$F/renamed.tar.gz" x 949230)"
 check "the game's folder renamed and its row changed: the same ID reaches it" \
   "$rc:$(grep -c '^INSTALLER args= ref=release from=1launcher-x game=a-new-name$' "$CALLS")" "0:1"

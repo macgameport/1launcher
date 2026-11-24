@@ -2,7 +2,8 @@
 # make-launcher-app.sh -- build 14unch3r.app, one window that lists every game set up on this Mac and starts
 # the one chosen (docs/plans/launcher-window.md, 2.3). It compiles common/launcher-window.swift into the app,
 # copies common/games.tsv beside it, draws the app's icon with the program it just built, and writes the
-# Info.plist. Cities: Skylines II's setup.sh runs it after building that game's app.
+# Info.plist, with the key L1UpdateDir when the update tool is deployed (docs/plans/built-in-update.md, 3.3).
+# Cities: Skylines II's setup.sh runs it after building that game's app.
 #
 #   bash common/make-launcher-app.sh                    # ~/Applications/14unch3r.app
 #   bash common/make-launcher-app.sh --dest <folder>    # build somewhere else (testing)
@@ -125,6 +126,15 @@ PLIST
 plutil -replace CFBundleName -string "$NAME" "$PL" > /dev/null 2>&1 || not_built
 plutil -replace CFBundleDisplayName -string "$NAME" "$PL" > /dev/null 2>&1 || not_built
 if [ "$ICON_OK" = 1 ]; then plutil -replace CFBundleIconFile -string 14unch3r.icns "$PL" > /dev/null 2>&1 || not_built; fi
+# Where the update tool is (docs/plans/built-in-update.md, 3.3): common/paths.sh beside this script says which
+# folder (it keeps an L1_UPDATE_DIR already set), and the window is told only when updates.sh is a regular file
+# in it. With no such file, or no paths.sh here, the key is not written and the window has no update parts.
+if [ -f "$HERE/paths.sh" ]; then
+  UPDATE_DIR="$( . "$HERE/paths.sh" 2>/dev/null; printf '%s' "$L1_UPDATE_DIR" )"
+  if [ -n "$UPDATE_DIR" ] && [ -f "$UPDATE_DIR/updates.sh" ] && [ ! -L "$UPDATE_DIR/updates.sh" ]; then
+    plutil -replace L1UpdateDir -string "$UPDATE_DIR" "$PL" > /dev/null 2>&1 || not_built
+  fi
+fi
 plutil -lint "$PL" > /dev/null 2>&1 || not_built
 
 # The swap: the old app into the build folder, the new one into its place, the old one back if that fails.

@@ -16,6 +16,8 @@
 #   bash updates.sh --notes            the fetched notes of every version newer than the installed one, cleaned
 #   bash updates.sh --noted            the offered version, at most twice for one version (for a launcher)
 #   bash updates.sh --version-of <f>   that file's version, or nothing
+# Sourced, the functions a caller uses: l1u_own, l1u_stamp <app ID> <tree root>, l1u_stamp_of <app ID>,
+# l1u_state, l1u_version_of <file>, l1u_newer <x> <y>, l1u_refresh [--now], l1u_notes, l1u_noted.
 # Run, it uses L1_UPDATE_DIR if set and otherwise the folder it lies in, which for the deployed copy is the
 # folder itself. Every call exits 0 when it could answer and says the outcome in its output. The options and
 # the output lines are a contract between versions on one Mac: a later version may add an option or a field
@@ -129,7 +131,8 @@ l1u_stamp() {
   fi
   ver="$(l1u_version_of "$tree/CHANGELOG.md")" || ver=-
   _l1u_is_version "$ver" || ver=-
-  [[ "${L1_FETCHED_COMMIT:-}" =~ $_L1U_COMMIT ]] && commit="$L1_FETCHED_COMMIT"
+  # the commit belongs to a fetch: one left in the environment says nothing about a checkout
+  [ "$line" != checkout ] && [[ "${L1_FETCHED_COMMIT:-}" =~ $_L1U_COMMIT ]] && commit="$L1_FETCHED_COMMIT"
   now="$(_l1u_now)"; [[ "$now" =~ $_L1U_TIME ]] || return 1
   _l1u_put "$L1_UPDATE_DIR/installed/$id" "$line"$'\t'"$ver"$'\t'"$commit"$'\t'"$now"
 }
@@ -147,6 +150,19 @@ _l1u_stamps() {
     [[ "$_l1u_d" =~ $_L1U_TIME ]] || continue
     printf '%s\t%s\t%s\n' "$id" "$_l1u_a" "$_l1u_b"
   done | sort -n
+}
+
+# <app ID>: prints "<line> TAB <version>" of that game's stamp and returns 0; returns 1 when it has no stamp
+# that counts. (For the setups' closing words and for the update's driver.)
+l1u_stamp_of() {
+  local id line ver
+  [[ "$1" =~ $_L1U_ID ]] || return 1
+  while IFS=$'\t' read -r id line ver; do
+    if [ "$id" = "$1" ]; then printf '%s\t%s\n' "$line" "$ver"; return 0; fi
+  done <<EOF
+$(_l1u_stamps)
+EOF
+  return 1
 }
 
 # the offered version, or nothing: `offer` is one line, the version and the time of the fetch

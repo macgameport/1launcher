@@ -31,6 +31,8 @@
 #    32 the marking option dropped in the core (WT10 (b))
 #    33 core_after_setup removed at this installer's call, setup's exit code kept (WT11 (c))
 #    34 setup's unset of SM_WRAPPER removed (WT11 (b))       35 --holders-skip not passed by setup (WT11 (g))
+#    (36 to 38: docs/plans/built-in-update.md, U0, UT2: the free-space caution.)
+#    39 the own-files loop for common/paths.sh, updates.sh and games.tsv dropped (built-in-update 3.3; UT5, also)
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -50,6 +52,7 @@ S="$G/scripts/install.sh"; CORE="$R/common/install-core.sh"
 cp "$HERE/scripts/install.sh" "$S"; cp "$REPO/common/install-core.sh" "$CORE"
 : > "$G/launch-relaunched.sh"; : > "$G/make-app.sh"; : > "$G/tools/frame-fix.exe"; : > "$R/common/make-launcher-app.sh"
 cp "$REPO/common/wrappers.sh" "$R/common/wrappers.sh"; : > "$R/common/move-wrappers.sh"   # the resolver, real; the mover, setup's
+: > "$R/common/paths.sh"; : > "$R/common/updates.sh"; : > "$R/common/games.tsv"   # setup's record of versions (docs/plans/built-in-update.md, 3.3)
 
 py() { python3 -I - "$@"; }
 case "$M" in
@@ -123,6 +126,7 @@ PY
   36) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed) return 0 ;; esac; fi#' "$CORE" ;;
   37) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed|update|partial) return 0 ;; esac; fi#' "$CORE" ;;
   38) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#case "$(game_state)" in installed|update) return 0 ;; esac#' "$CORE" ;;
+  39) sed -i '' 's|^for f in "\$GAME_ROOT/\.\./common/paths\.sh" "\$GAME_ROOT/\.\./common/updates\.sh" .*|for f in; do|' "$S" ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
@@ -132,6 +136,7 @@ fi
 
 # --- the fixture maker
 export ST="$T/st" CALLS="$T/calls" HOME="$T/home" TMPDIR="$T/tmp"
+unset L1_UPDATE_DIR L1_UPDATE_NOW L1_FETCHED_REF L1_FETCHED_COMMIT L1_DATA_ROOT   # the record of versions is the cases' own
 plist() {   # <wine folder> <version>
   mkdir -p "$1/lib/external/D3DMetal.framework/Versions/A/Resources"
   printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>CFBundleShortVersionString</key><string>%s</string></dict></plist>\n' "$2" \
@@ -356,6 +361,13 @@ check "--no-setup stops before step 7" "$(run -- --no-setup):$(o 'Stopped before
 rm "$G/tools/frame-fix.exe"
 check "the installer's own files gone: exit 4" "$(run --):$(c '^SETUP')" "4:0"
 : > "$G/tools/frame-fix.exe"
+# UT5, also (docs/plans/built-in-update.md, 3.3): the files of setup's record of versions are the installer's own too
+for gone in paths.sh updates.sh games.tsv; do
+  mv "$R/common/$gone" "$T/$gone.aside"
+  check "common/$gone gone: exit 4 in the own-files words, before setup runs" "$(run --):$(o "The installer's own files are gone"):$(c '^SETUP')" "4:1:0"
+  mv "$T/$gone.aside" "$R/common/$gone"
+done
+check "  ...with all three back: setup runs" "$(run --):$(c '^SETUP')" "0:1"
 rc=$(run STUB_MAC_RC=3 STUB_MAC_WORDS="!! This Mac has an Intel processor." --)
 check "a Mac check that exits 3 stops the install, setup's words above the core's" "$rc:$(grep -n -E 'Intel processor|the check of this Mac failed \(exit 3\)' "$T/out" | cut -d: -f2 | cut -c1-14 | tr '\n' '|')" "1:  !! This Mac |  !! the check|"
 # the core's closing line sends the player to the installer again, which cannot help on such a Mac
@@ -429,6 +441,7 @@ cp "$S" "$G2/scripts/install.sh"; cp "$CORE" "$R2/common/install-core.sh"   # th
 cp "$HERE/scripts/setup.sh" "$G2/scripts/"; cp "$HERE/launch-relaunched.sh" "$HERE/make-app.sh" "$G2/"; cp "$HERE/tools/frame-fix.exe" "$G2/tools/"
 cp "$G/tools/fetch-d3dmetal.sh" "$G/tools/make-engine.sh" "$G2/tools/"
 cp "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
+cp "$REPO/common/paths.sh" "$REPO/common/updates.sh" "$REPO/common/games.tsv" "$R2/common/"   # the real setup keeps its record of versions
 printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"
 S2="$G2/scripts/setup.sh"
 case "$M" in
@@ -449,6 +462,11 @@ check "WT11 through the real setup: an old-named wrapper, no variable given: ren
   "$rc:$([ -d "$NEWW" ] && echo renamed):$(plutil -extract L1Role raw -o - "$NEWW/Contents/Info.plist" 2>/dev/null)" "0:renamed:game-wrapper"
 check "  ...the app's L1Prefix names the renamed wrapper, and no .launcher.lock is left in it" \
   "$(plutil -extract L1Prefix raw -o - "$HOME/Applications/Surviving Mars Relaunched.app/Contents/Info.plist" 2>/dev/null):$(lockof "$NEWW")" "$NEWW/Contents/SharedSupport/prefix:"
+# what the root install.sh exports reaches the real setup through the installer: its stamp (docs/plans/built-in-update.md, 3.1)
+TAB="$(printf '\t')"
+oldw; rc=$(run2 L1_FETCHED_REF=release L1_FETCHED_COMMIT=0123456789abcdef0123456789abcdef01234567 L1_UPDATE_NOW=1800000000)
+check "UT5 through the installer and the real setup: the stamp holds the line, no version (this tree has no changelog), the commit and the time" \
+  "$rc:$(cat "$(HOME="$HOME" bash "$R2/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')/installed/3215050" 2>/dev/null)" "0:release${TAB}-${TAB}0123456789abcdef0123456789abcdef01234567${TAB}1800000000"
 oldw; rc=$(run2 STUB_WHOLDERS=4242)
 check "WT11 a holder reported by the probe: exit 0, one skip line, nothing renamed" "$rc:$(o 'skip: something of the wrapper'):$([ -d "$OLDW" ] && echo kept)" "0:1:kept"
 rm -rf "$HOME/Applications"/*.app "$HOME/Library"

@@ -122,6 +122,7 @@ main() {
   fi
   if [ -n "$commit" ]; then echo "1launcher at commit ${commit#comment=}"; else echo "1launcher: commit not read"; fi
   export L1_FETCHED_REF="$ref"
+  if [ -n "$commit" ]; then export L1_FETCHED_COMMIT="${commit#comment=}"; else unset L1_FETCHED_COMMIT; fi
   bash "$top/$folder/scripts/install.sh" "$@"
   return $?
 }

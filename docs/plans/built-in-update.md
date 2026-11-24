@@ -23,6 +23,11 @@ release that carries this raises the third number).
 > by the session; the second part of U1, U2, U3, U4 and the gate of U5 by builder agents from this plan, each
 > read by the session and every gate of each run again before its commit (clean runs, and every new mutant
 > seen red; the older mutants of the touched files were swept on frozen copies of the commits).
+> **The last sweep (2026-11-24):** on a frozen copy of `3aa0832`, every test file and every mutant of every
+> test file this plan touched. It found one red file, `common/test-paths.sh`: U3's new cases in
+> `common/test-make-launcher-app.sh` spelled the data root, which LT14 allows only in a fixed list of files;
+> fixed in `32ee477` (the folder is asked of `paths.sh`). Of 425 mutant runs 424 were red and one refused:
+> Cities: Skylines II's `test-setup.sh` 36, retired on 2026-11-21. At `32ee477` all 46 test files exit 0.
 > Deviations from the text above:
 > - **`common/updates.sh` has one function 3.2 does not list, `l1u_stamp_of <app ID>`** (the line and the
 >   version of a game's stamp): both setups' closing words and the driver ask it, so that nothing outside the

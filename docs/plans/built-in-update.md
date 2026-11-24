@@ -4,7 +4,7 @@
 (2026-11-23) said needs-rework and the plan was reworked the same day; pass 1b, two fitted re-checks of the
 rework, said build-ready-with-fixes and is folded; pass 1c verified that fold. `wrapper-names` was merged into
 `main` on 2026-11-24 (`35f0eb8`, the commit of `v0.3.0`), `main` was merged into this branch, and pass 2 read
-every cite again against that tree: no blocker, ten corrections, folded ("Pass 2" at the foot). Not started.
+every cite again against that tree: no blocker, ten corrections, folded ("Pass 2" at the foot). **Built through U5 on the branch on 2026-11-24** (as-built header below); the live steps of section 7 have not run, and nothing is merged or released.
 The merge changed two things this plan leans on: `common/test-launcher-parity.sh` now has a rule 10 and mutants
 up to 24, so this plan's new rule is 11 and its mutants start at 25; and the launchers' shared block gained
 `signin_wait`, so its notice block sits in launchers that wait up to ten minutes for Steam's sign-in.
@@ -13,6 +13,55 @@ below was read at that commit and again at `35f0eb8`, where the seven that had m
 Tracking: issue #34 (opened 2026-11-23); the two defects of step U0 are on record as issue #31. James answered the fifteen decisions of section 9 on
 2026-11-23: fourteen as recommended, which is what the design below is built on, and UD9 his own way (the
 release that carries this raises the third number).
+
+> **🔧 As-built (2026-11-24): partial — steps U0 to U5 built on the branch `built-in-update` (pushed, not
+> merged, not in `release`); step U6 not started: no live step of section 7 has run, UL4 (the first real
+> offer) can only come at the first release after the one that carries this, and UD5's rulesets are not set.**
+> Commits: `fb0213e` (U0), `f234c3e` and `797b97e` (U1), `146f711` (U2), `0a93b3b` (U3), `df5a5a6` (U4),
+> `b9b5bfd` (U5), in the order U0, U1, U2, U4, U5, U3: U3 and U4 were built side by side on separate files,
+> and U5's words were written while the window was still being built. U0 and the first part of U1 were built
+> by the session; the second part of U1, U2, U3, U4 and the gate of U5 by builder agents from this plan, each
+> read by the session and every gate of each run again before its commit (clean runs, and every new mutant
+> seen red; the older mutants of the touched files were swept on frozen copies of the commits).
+> Deviations from the text above:
+> - **`common/updates.sh` has one function 3.2 does not list, `l1u_stamp_of <app ID>`** (the line and the
+>   version of a game's stamp): both setups' closing words and the driver ask it, so that nothing outside the
+>   file reads a stamp. And `l1u_stamp` records `L1_FETCHED_COMMIT` only for a fetched tree: one left in the
+>   environment says nothing about a checkout.
+> - **The driver's words beyond 3.4.** The sentences of step 4 are printed once, in the closing block under
+>   "=== The update ===", not during the walk; a game that ran gets a line of its own ("`<title>`: updated.",
+>   and one each for exit 5, exit 3 and a failure); it refuses any argument and tests for its own files
+>   first; INT, TERM and HUP release the lock. In the root `install.sh` the word `update` passes the test of
+>   the first word as the stand-in `0`, and an option after it gets its own sentence.
+> - **The gate's fifth question prints one FAIL line for each part that does not hold**, counts a failed
+>   `git ls-remote` as a failure of its own, and writes the changelog to one temporary file, which it
+>   removes. Like questions 3 and 4 it reads local tags, so a `v` tag not yet pushed satisfies it.
+> - **The window.** Two names beyond 3.5's seam table: `Call` (the four calls with their limits) and
+>   `askState`. The menu item is switched off through `validateMenuItem`. `Look`'s new constants: `footGrowX`,
+>   `footGrowY`, `footRadius`, `notesW`, `notesH`, `notesInset`, `notesFont`, `foot()`, `footSpoken()`,
+>   `out()`, `has()`, `updateText`, `notNow`, `update`, `ok`, `notesLabel`, `notesAddress`, `quitFirst()`,
+>   `quitFirstText`, `notOpened`, `noAnswer`, `checkItem`, `checkKey`, `offMessage`, `offText`, `noneMessage`,
+>   `noneText`, `manualMessage`, `checkoutText`, `namedText`, `unreadMessage`, `unreadText`, `newest()`,
+>   `newestText`. Measured in the text modes: one game with the line is 444 by 196, contrast 9.63.
+> - **More mutants than section 6 lists**, each seen red: three for `--open` in `common/test-updates.sh`
+>   (21 to 23) and one for the stamp (20), two more in the parity test (27, 28), ten in the new
+>   `common/test-update-notice.sh`, one in the gate's test (11), one in `common/test-make-launcher-app.sh` (10).
+> - **The guides say "from v0.3.1"** (README, both `INSTALL.md`, both games' READMEs). That is this plan's
+>   release only if it is the next one after `v0.3.0`: if the launcher fix of issue #32 is released first, the
+>   number in them changes with it.
+> - **Not judged by any test, and still to be read off the screen at UL1:** the sheet's focus, Return and
+>   Escape; the notes view in light and dark; the window growing when the first answer arrives; the menu item
+>   and Command-U; hover, the cursor and VoiceOver on the line. One oddity is known: with a `release` stamp
+>   whose tree had no version heading, the menu's row 7 would read "1launcher - is the newest version."
+>
+> **Verify against:** `common/updates.sh`, `common/update-games.sh`, `common/paths.sh`, `install.sh`,
+> `common/install-core.sh` (`core_space`), `common/make-installer-app.sh`, `common/make-launcher-app.sh`,
+> `common/launcher-window.swift`, `common/check-release-move.sh`, `common/check-deploy.sh`, both games'
+> `scripts/setup.sh` and `scripts/install.sh`, both launchers (the block between `# >>> update-notice` and
+> `# <<< update-notice`), and the tests `common/test-updates.sh`, `common/test-update-games.sh`,
+> `common/test-update-notice.sh`, `common/test-bootstrap.sh`, `common/test-make-installer-app.sh`,
+> `common/test-launcher-window.sh`, `common/test-make-launcher-app.sh`, `common/test-launcher-parity.sh`,
+> `common/test-check-release-move.sh`, both games' `scripts/test-setup.sh` and `scripts/test-install.sh`.
 
 James asked on 2026-11-23: "How do we make the app have a built in auto update process? I'd especially like
 this for when we add compatibility with additional games."

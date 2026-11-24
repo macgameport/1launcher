@@ -1702,7 +1702,21 @@ So what Spotlight learned from one use of the wrapper did not follow the file to
 put back at 20:11:39 (`SurvivingMars.app`, use count 1 again in the index) and 14unch3r's `--list` was read
 afterwards. Setup has not run.
 
-**Open:** steps 1 to 7 of W2 here, on James's word.
+### W3 steps 1 to 7 on the MacBook (2026-11-23, on James's word): in progress
+
+From the branch at `0990d7f`. Recorded first: the three names and each wrapper's `Info.plist`
+(`before-*.Info.plist`). Outputs in `<workspace>/wrapper-names-w3/`.
+
+| Step | What ran | Result |
+|---|---|---|
+| 1 | `setup.sh --check` for each game | **Pass.** Cities: Skylines II's names two renames (the game's wrapper to `wrapper-949230.app`, the Windows Steam's to `wrapper-0.app`), Surviving Mars's names one (`wrapper-3215050.app`); neither names anything else; both exit 0 |
+| 2 | Cities: Skylines II's setup, then `boot-verify.sh` detached | **Pass.** Setup exit 0 in 14 s, 10 of 10 patch scripts, both renames made, the game's app, `S734M.app` and 14unch3r rebuilt. Boot-verify `20261123-201442`: `VERDICT: PASS`, `GRACEFUL: yes`; the game up 50 s after the start, menu reached, exit `rc=0`, Steam down after, no crash marker. The launcher's log names `wrapper-949230.app` and holds no hint line: the first start after the rename did not wait for a question |
+| 3 | Surviving Mars's `scripts/install.sh` from the branch | **The installer's half: pass.** Exit 0 in 8 s, every step OK, the wrapper renamed in step 7, no `.launcher.lock` left in it. The start from 14unch3r is to come. This Mac's "before", from its launcher log and run logs with the original `ntdll.dll`: 27 s, 28 s and 28 s from the launcher's start to the game's start on 2026-11-22 and 23 |
+| 4 | `S734M.app` | to come |
+| 5 | `wrappers.sh list`; 14unch3r `--list`; `lsregister -dump` | **Pass.** Three marked wrappers (`steam-wrapper`, `game-wrapper 949230`, `game-wrapper 3215050`), no `L1RenamePending`; two games and one Steam app, all `ready`. `lsregister`: 0 lines for each old path, 1 for each new one |
+| 6 | `mdimport` of each wrapper, then `mdfind` | **Index half: pass.** The old names were gone at the first look. `surviving`, `mars`: `Surviving Mars Relaunched.app` and the macOS Steam's shortcut `Surviving Mars.app`. `smr`: the game's app alone. `cities`, `skylines`: `Cities Skylines II.app`. `cs2`: that app and `S734M.app`. `steam`, `store`, `s734m`: `S734M.app`. `launcher`, `1launcher`, `14`: `14unch3r.app`. No wrapper for any of the twelve words; `wrapper` returns the three. The typed half is to come |
+| 7 | the hand renames | to come |
+
 
 ## Review log
 

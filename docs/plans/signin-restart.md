@@ -9,7 +9,7 @@ second and third subjects; its first, keeping Steam from asking at all, is not h
 > listed in "Review corrections" at the foot.
 
 > **🔧 As-built (2026-11-24): partial — R0b passed; R1 to R4 built on the branch `signin-restart` (pushed, not merged,
-> not in `release`); RL1 to RL3 have not run.** Built by a builder agent from this plan; both launchers' changes
+> not in `release`); RL2 passed on the Studio the same night; RL1 and RL3 are to come.** Built by a builder agent from this plan; both launchers' changes
 > read by the session, and the gates run again by it: all 47 test files, and all 75 mutants of the three files of
 > section 7 red (`test-launch-feedback.sh` 1 to 28, `test-launcher-parity.sh` 1 to 36, `test-launcher-steam.sh`
 > 1 to 11). Deviations:
@@ -610,6 +610,31 @@ put no question. Started by an app of the form the games' apps have, `wine64` it
 So **RL1 and RL2 start the game from its app and never from a session's shell**, and the boot-verify runs of W2
 and W3 (`docs/plans/wrapper-names.md`), started from sessions, could not have met the question for Cities:
 Skylines II: its first start from its own app after the rename may still ask.
+
+## RL2 on the Studio (2026-11-24, 22:28): passed; the run was meant as RL1 (James: "Yes, start RL1") and nobody answered
+
+Before it: both setups run from the branch at `d9fbc18` (exit 0 each, nothing renamed, 10 of 10 patch scripts), so
+both installed launchers are the branch's; both stamps are on the line `checkout`, the state `manual`. Started with
+`open` of the game's app, the wrapper renamed by hand to `mic-probe-1124d.app`. Output: `signin-restart-rl/rl1.log`.
+
+| Seconds after the start | What |
+|---|---|
+| 10 | macOS put the question, once in the whole run; it was never answered |
+| 48 | the hint |
+| 192 | the first Steam gone by itself |
+| 204 | "Starting Steam again…", the second Steam |
+| 386 | the second gone |
+| 399 | "Starting Steam again…", the third Steam |
+| 581 | the third gone |
+| 597 | "Steam did not sign in by itself": **9 min 57 s**, inside the window of 9 min 30 s to 11 min 15 s |
+
+Two restart lines in the launcher's log, with the message after them. **No Steam client was started with
+`-shutdown`** (0 in Steam's bootstrap log since the start; on 2026-11-24 at 01:16 there was one, and the message
+came at 6 min 30 s with that client's three minutes in it). Nothing of the prefix was up at any look from the
+message on (18 s of looks, then the watch's own count at 26 s), no lock, no crash marker, the name put back. The
+wait ended before its ten counted minutes because the third Steam had left and two restarts had been used.
+
+Not seen in this run: an answer. RL1 is still to come, under another name.
 
 ## Review corrections (check it 2026-11-24, pass 1)
 

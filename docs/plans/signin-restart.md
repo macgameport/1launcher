@@ -4,9 +4,27 @@ Written 2026-11-24 on the branch `signin-restart`, cut from `built-in-update` at
 second and third subjects; its first, keeping Steam from asking at all, is not here).
 
 > **Status: check-it'd 2026-11-24 — build-ready-with-fixes (pass 1, folded); R0b, the probe, ran the same night: `RELEASED`, so the build goes on.**
-> Nothing is built. The measurements in section 3 were taken on scratch copies under `/tmp/sr-plan/` with stub
-> programs: no Wine, no Steam, no game was started for this plan. The corrections of the check are folded
-> into the sections below and listed in "Review corrections" at the foot.
+> The measurements in section 3 were taken on scratch copies under `/tmp/sr-plan/` with stub programs: no Wine,
+> no Steam, no game was started for them. The corrections of the check are folded into the sections below and
+> listed in "Review corrections" at the foot.
+
+> **🔧 As-built (2026-11-24): partial — R0b passed; R1 to R4 built on the branch `signin-restart` (pushed, not merged,
+> not in `release`); RL1 to RL3 have not run.** Built by a builder agent from this plan; both launchers' changes
+> read by the session, and the gates run again by it: all 47 test files, and all 75 mutants of the three files of
+> section 7 red (`test-launch-feedback.sh` 1 to 28, `test-launcher-parity.sh` 1 to 36, `test-launcher-steam.sh`
+> 1 to 11). Deviations:
+> - **`start_steam` with no connection log prints one line** of bash's ("No such file or directory"): the failed
+>   `<` is reported before its `2>/dev/null` applies, as on the same line before this plan. RT3 asserts that one
+>   line and nothing else.
+> - **Feedback mutant 17's case runs 300 failing looks, not 100,000:** with the new `10#` line that mutant waits
+>   without end, where it used to end on an error.
+> - **One test file outside this change is intermittent:** `common/test-launcher-window.sh`, "--start of an app
+>   still alive", failed in 2 of 10 runs one after another with `open`'s error -600, and in none of 6 at once. The
+>   file and the window are the update branch's, unchanged. Not fixed here.
+>
+> **Verify against:** both launchers (the `launch-feedback` block, `start_steam`, the piece between
+> `# >>> stop-steam` and `# <<< stop-steam`), `common/test-launch-feedback.sh`, `common/test-launcher-parity.sh`
+> (rules 10 and 12), `common/test-launcher-steam.sh`.
 
 Words used below: **the block** is `launch-feedback`, the text both launchers hold byte for byte
 (`common/test-launcher-parity.sh`, rule 1). **A look** is one turn of `signin_wait`'s loop, every 3 s.

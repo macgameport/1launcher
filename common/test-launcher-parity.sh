@@ -19,12 +19,23 @@
 #   9. the find-wrapper blocks (how each launcher finds common/wrappers.sh, docs/plans/wrapper-names.md 3.2) differ
 #      by a byte, or a launcher does not set the three values the block reads just above it;
 #  10. a launcher does not call signin_wait exactly once, outside the block, with the number of its
-#      "Starting Steam and signing in…" step, a function it defines and steam_exe_up, with a die behind it that names the
-#      question from macOS; a launcher still holds a `seq 1 40` loop; or the hint in the block is not one
-#      plain literal of at most 62 characters (docs/plans/wrapper-names.md, W2 fold);
+#      "Starting Steam and signing in…" step, a function it defines, steam_exe_up and start_steam, with a die behind
+#      it that names the question from macOS; a launcher still holds a `seq 1 40` loop; or the hint in the block is
+#      not one plain literal of at most 62 characters (docs/plans/wrapper-names.md, W2 fold; signin-restart.md, 4.1);
 #  11. the update-notice blocks (the word that a new version of 1launcher is out, docs/plans/built-in-update.md
 #      3.6) differ by a byte, or a launcher does not hold its block exactly once, after its acquire_lock call
 #      and before its first step 1. What the block does is tested in common/test-update-notice.sh.
+#  12. (docs/plans/signin-restart.md, 4.2 and 4.4) a launcher does not define start_steam once, outside the block;
+#      its one line with `-silent -no-cef-sandbox`, comments apart, is not in that function or does not end
+#      `>/dev/null 2>&1 & disown`; no `BEFORE=` line or no `rm -f` of the `.crash` marker stands before it in the
+#      function; a line of the function, comments apart, holds `nohup`, `setsid`, `env `, `exec ` or `bash -c`
+#      (each strips DYLD_* from Steam); the branch that starts Steam does not call start_steam once, on a line
+#      of its own, between its step line and its signin_wait call; the restart text in the block is not one
+#      plain literal of at most 62 characters; or the launcher does not hold one pair of stop-steam markers
+#      with its one `-shutdown` line, comments apart, inside them, ending `& _sd=$!; disown` (never in the
+#      foreground) and directly under the line `if steam_exe_up || { sleep 1; steam_exe_up; }; then` (never sent
+#      to a Steam that is not there, and one false look does not leave a running Steam without its call).
+#      What the two pieces do is tested in common/test-launcher-steam.sh.
 # The lock functions are compared in common/test-launch-lock.sh.
 #   bash common/test-launcher-parity.sh            exit 0 = every rule holds; exit 2 = a file is missing
 #   MUTANT=1 ...    one byte changed in one copy of the launch-feedback block; must exit 1
@@ -55,6 +66,14 @@
 #   MUTANT=26 ...   the update-notice block moved above the acquire_lock call in one launcher; must exit 1
 #   MUTANT=27 ...   the update-notice block moved below the first step 1 in one launcher; must exit 1
 #   MUTANT=28 ...   the update-notice block taken out of both launchers; must exit 1
+#   MUTANT=29 ...   one launcher's signin_wait call without the fourth word (no restart); must exit 1
+#   MUTANT=30 ...   `nohup` put before the start line in one launcher; must exit 1
+#   MUTANT=31 ...   the `rm -f` of the .crash marker taken out of one start_steam; must exit 1
+#   MUTANT=32 ...   the `BEFORE=` line taken out of one start_steam; must exit 1
+#   MUTANT=33 ...   a second start line outside the function in one launcher; must exit 1
+#   MUTANT=34 ...   the restart text in the block made 63 characters, in both launchers; must exit 1
+#   MUTANT=35 ...   the `&` taken off one launcher's -shutdown call (the foreground again); must exit 1
+#   MUTANT=36 ...   one launcher's `if` over the -shutdown call made `if true; then`; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/launcher-parity-test.XXXX)"
@@ -107,15 +126,15 @@ case "${MUTANT:-0}" in
   14) mutate "$CS2" 's/^step 4 "Checking for a game update…"$/step 0 "Checking for a game update…"/' 'step 0 "Checking for a game update…"' ;;
   15) mutate "$SM" "s/^step 4 \"Checking for a game update…\"\$/step 4 \"$X63\"/" "step 4 \"$X63\"" ;;
   16) mutate "$CS2" 's|^APP=""; WRAPPER_RC=3$|APP=""; WRAPPER_RC=3; [ -f "$HOME/wrappers.sh" ] \&\& _l1w="$HOME"|' '[ -f "$HOME/wrappers.sh" ] && _l1w="$HOME"' ;;
-  17) mutate "$SM" 's/^  signin_wait 1 signed_in steam_exe_up || /  signin_wait 2 signed_in steam_exe_up || /' '  signin_wait 2 signed_in steam_exe_up || ' ;;
-  18) awk '/^  signin_wait 2 signed_in steam_exe_up \|\| / { print "  ok=0"; print "  for i in $(seq 1 40); do"; print "    if fresh_login && webhelper_up; then ok=1; break; fi"; print "    sleep 3"; print "  done" } { print }' "$CS2" > "$CS2.new" && mv "$CS2.new" "$CS2"
+  17) mutate "$SM" 's/^  signin_wait 1 signed_in steam_exe_up start_steam || /  signin_wait 2 signed_in steam_exe_up start_steam || /' '  signin_wait 2 signed_in steam_exe_up start_steam || ' ;;
+  18) awk '/^  signin_wait 2 signed_in steam_exe_up start_steam \|\| / { print "  ok=0"; print "  for i in $(seq 1 40); do"; print "    if fresh_login && webhelper_up; then ok=1; break; fi"; print "    sleep 3"; print "  done" } { print }' "$CS2" > "$CS2.new" && mv "$CS2.new" "$CS2"
       grep -q '^  for i in \$(seq 1 40); do$' "$CS2" || mutated ;;
   19) for f in "$CS2" "$SM"; do mutate "$f" "s/; step \"\\\$1\" \"Still signing in\\. [^\"]*\"; fi\$/; step \"\$1\" \"$X63\"; fi/" "; step \"\$1\" \"$X63\"; fi"; done ;;
   20) mutate "$SM" 's/ If macOS asked a question (whether wine64 may use the microphone, for one), answer it and start the game again\. Otherwise open Steam / Open Steam /' 'by itself. Open Steam in the ' ;;
   21) sed -i '' '/^signed_in() { /d' "$CS2"; grep -q '^signed_in() ' "$CS2" && mutated ;;
-  22) printf '%s\n' 'signin_wait 2 signed_in steam_exe_up || die "Steam did not auto-login. If macOS asked a question (whether wine64 may use the microphone, for one), answer it and relaunch."' >> "$CS2"; [ "$(grep -c '^ *signin_wait 2 signed_in steam_exe_up ' "$CS2")" = 2 ] || mutated ;;
+  22) printf '%s\n' 'signin_wait 2 signed_in steam_exe_up start_steam || die "Steam did not auto-login. If macOS asked a question (whether wine64 may use the microphone, for one), answer it and relaunch."' >> "$CS2"; [ "$(grep -c '^ *signin_wait 2 signed_in steam_exe_up start_steam ' "$CS2")" = 2 ] || mutated ;;
   23) for f in "$CS2" "$SM"; do mutate "$f" 's/; step "\$1" "Still signing in\./; step 2 "Still signing in./' '; step 2 "Still signing in.'; done ;;
-  24) mutate "$SM" 's/^  signin_wait 1 signed_in steam_exe_up || /  signin_wait 1 signed_in || /' '  signin_wait 1 signed_in || ' ;;
+  24) mutate "$SM" 's/^  signin_wait 1 signed_in steam_exe_up start_steam || /  signin_wait 1 signed_in start_steam || /' '  signin_wait 1 signed_in start_steam || ' ;;
   25) mutate "$CS2" 's/^unset _l1u _l1v _l1p$/unset _l1u _l1v _l1q/' 'unset _l1u _l1v _l1q' ;;
   26) move_notice "$SM" '^acquire_lock [0-9]'
       [ "$(grep -c '^# >>> update-notice (' "$SM")" = 1 ] && [ "$(line_of "$SM" '^# <<< update-notice$')" -lt "$(line_of "$SM" '^acquire_lock [0-9]')" ] || mutated ;;
@@ -125,6 +144,15 @@ case "${MUTANT:-0}" in
         grep -q '^# >>> update-notice (' "$f" || mutated
         sed -i '' '/^# >>> update-notice (/,/^# <<< update-notice$/d' "$f"; grep -q 'update-notice' "$f" && mutated
       done ;;
+  29) mutate "$CS2" 's/^  signin_wait 2 signed_in steam_exe_up start_steam || /  signin_wait 2 signed_in steam_exe_up || /' '  signin_wait 2 signed_in steam_exe_up || ' ;;
+  30) mutate "$SM" 's/^  "\$STEAM_WINE" "\$STEAM" -silent -no-cef-sandbox /  nohup "$STEAM_WINE" "$STEAM" -silent -no-cef-sandbox /' '  nohup "$STEAM_WINE" "$STEAM" -silent -no-cef-sandbox >/dev/null 2>&1 & disown' ;;
+  31) sed -i '' '/^  rm -f "\$WINEPREFIX\/drive_c\/Program Files (x86)\/Steam\/\.crash" 2>\/dev\/null$/d' "$CS2"; grep -q '^ *rm -f .*Steam/\.crash' "$CS2" && mutated ;;
+  32) sed -i '' '/^  BEFORE=\$(wc -l < "\$CL" 2>\/dev\/null || echo 0)$/d' "$SM"; grep -q '^  BEFORE=' "$SM" && mutated ;;
+  33) awk '{ print } /^  step 2 "Starting Steam and signing in…"$/ { print "  \"$WINE\" \"$STEAM\" -silent -no-cef-sandbox >/dev/null 2>&1 & disown" }' "$CS2" > "$CS2.new" && mv "$CS2.new" "$CS2"
+      [ "$(grep -c '^  "\$WINE" "\$STEAM" -silent -no-cef-sandbox >/dev/null 2>&1 & disown$' "$CS2")" = 2 ] || mutated ;;
+  34) for f in "$CS2" "$SM"; do mutate "$f" "s/^          step \"\\\$1\" \"Starting Steam again\\. [^\"]*\"\$/          step \"\$1\" \"$X63\"/" "          step \"\$1\" \"$X63\""; done ;;
+  35) mutate "$CS2" 's/^  "\$WINE" "\$STEAM" -shutdown >\/dev\/null 2>&1 & _sd=\$!; disown$/  "$WINE" "$STEAM" -shutdown >\/dev\/null 2>\&1/' '  "$WINE" "$STEAM" -shutdown >/dev/null 2>&1' ; grep -q -- '-shutdown >/dev/null 2>&1 & ' "$CS2" && mutated ;;
+  36) mutate "$SM" 's/^  if steam_exe_up || { sleep 1; steam_exe_up; }; then   # with no Steam of this prefix up, .*$/  if true; then/' '  if true; then' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 fails=0
@@ -309,9 +337,9 @@ for L in "$CS2" "$SM"; do
   tag="${L##*/}"
   outside "$L" | grep -v '^[[:space:]]*#' | grep -E '(^|[^A-Za-z0-9_])signin_wait([^A-Za-z0-9_(]|$)' > "$T/sw"
   check "10. $tag calls signin_wait once, outside the block" "$(wc -l < "$T/sw" | tr -d ' ')" 1
-  sn="$(sed -n 's/^ *signin_wait \([0-9][0-9]*\) \([A-Za-z_][A-Za-z0-9_]*\) steam_exe_up || .*/\1/p' "$T/sw")"
-  fn="$(sed -n 's/^ *signin_wait \([0-9][0-9]*\) \([A-Za-z_][A-Za-z0-9_]*\) steam_exe_up || .*/\2/p' "$T/sw")"
-  check "10. $tag: the call is signin_wait <number> <function> steam_exe_up || ..." "$(printf '%s\n' "$sn" | grep -c '^[0-9][0-9]*$'):$(printf '%s\n' "$fn" | grep -c .)" "1:1"
+  sn="$(sed -n 's/^ *signin_wait \([0-9][0-9]*\) \([A-Za-z_][A-Za-z0-9_]*\) steam_exe_up start_steam || .*/\1/p' "$T/sw")"
+  fn="$(sed -n 's/^ *signin_wait \([0-9][0-9]*\) \([A-Za-z_][A-Za-z0-9_]*\) steam_exe_up start_steam || .*/\2/p' "$T/sw")"
+  check "10. $tag: the call is signin_wait <number> <function> steam_exe_up start_steam || ..." "$(printf '%s\n' "$sn" | grep -c '^[0-9][0-9]*$'):$(printf '%s\n' "$fn" | grep -c .)" "1:1"
   check "10. $tag: the number is that of its one \"Starting Steam and signing in…\" step" \
     "$(calls "$L" | awk -F'\t' '$1 == "step" && $5 == "Starting Steam and signing in…" { print $3 }' | list)" "$sn"
   check "10. $tag defines that function once, outside the block" "$(outside "$L" | grep -c "^[[:space:]]*${fn:-?}() {")" 1
@@ -339,6 +367,34 @@ for L in "$CS2" "$SM"; do
         /^# <<< update-notice$/ { closes++; c = NR }
         END { print calls + 0 ":" opens + 0 ":" closes + 0 ":" (a && o > a ? "after" : "not after") ":" (c > o && s1 > c ? "before" : "not before") }' "$L")" \
     "1:1:1:after:before"
+done
+
+# --- 12. starting and stopping Steam (docs/plans/signin-restart.md, 4.2 and 4.4): one start line per launcher, in
+#         start_steam, which the first start and signin_wait's restarts both go through; one -shutdown line, in the
+#         background and only for a Steam that is up. What the pieces do: common/test-launcher-steam.sh
+code() { grep -v '^[[:space:]]*#'; }   # lines that are not comment lines
+for L in "$CS2" "$SM"; do
+  tag="${L##*/}"
+  check "12. $tag defines start_steam once, outside the block" "$(grep -c '^[[:space:]]*start_steam() {' "$L"):$(outside "$L" | grep -c '^start_steam() {')" "1:1"
+  awk '/^start_steam\(\) \{/ { p = 1 } p { print } p && /^\}$/ { exit }' "$L" > "$T/ss"
+  code < "$L" | grep -e '-silent -no-cef-sandbox' > "$T/starts"
+  check "12. $tag holds one start line, and it ends >/dev/null 2>&1 & disown" "$(wc -l < "$T/starts" | tr -d ' '):$(grep -c -- ' -silent -no-cef-sandbox >/dev/null 2>&1 & disown$' "$T/starts")" "1:1"
+  check "12. $tag: that line is the last of start_steam" "$(code < "$T/ss" | tail -n 2 | head -n 1)" "$(cat "$T/starts")"
+  check "12. $tag: a BEFORE= line and the rm -f of the .crash marker stand before it in the function" \
+    "$(code < "$T/ss" | awk '/-silent -no-cef-sandbox/ { exit } /^  BEFORE=\$\(wc -l < "\$CL" / { b++ } /^  rm -f "\$WINEPREFIX\/drive_c\/Program Files \(x86\)\/Steam\/\.crash"/ { r++ } END { print b + 0 ":" r + 0 }')" "1:1"
+  check "12. $tag: no line of start_steam holds nohup, setsid, env, exec or bash -c" \
+    "$(code < "$T/ss" | grep -cE '(^|[^A-Za-z0-9_])(nohup|setsid|env |exec |bash -c)')" 0
+  check "12. $tag: the branch that starts Steam calls start_steam once, on a line of its own, before the wait" \
+    "$(awk '/^[[:space:]]*step [0-9]+ "Starting Steam and signing in…"$/ { a = NR } /^[[:space:]]*start_steam$/ { n++; c = NR } /^[[:space:]]*signin_wait [0-9]/ { w = NR } END { print n + 0 ":" (a && c > a && w > c ? "between" : "not between") }' "$L")" "1:between"
+  again="$(block "$L" | sed -n 's/^          step "\$1" "\([^"\\]*\)"$/\1/p')"
+  check "12. $tag: the restart text in the block is one plain literal, sent with the caller's step number" "$(printf '%s\n' "$again" | grep -c .):$(block "$L" | grep -c 'Starting Steam again')" "1:1"
+  check "12. $tag: the restart text is no longer than 62 characters" "$([ "$(chars "$again")" -le 62 ] && echo yes || echo "$(chars "$again")")" yes
+  check "12. $tag holds one pair of stop-steam markers" "$(grep -c '^# >>> stop-steam$' "$L"):$(grep -c '^# <<< stop-steam$' "$L")" "1:1"
+  sed -n '/^# >>> stop-steam$/,/^# <<< stop-steam$/p' "$L" | code > "$T/stop"
+  check "12. $tag holds one -shutdown line, inside the markers, in the background with its process id kept" \
+    "$(code < "$L" | grep -c -- '-shutdown'):$(grep -c -- ' -shutdown >/dev/null 2>&1 & _sd=\$!; disown$' "$T/stop")" "1:1"
+  check "12. $tag: that line stands directly under if steam_exe_up || { sleep 1; steam_exe_up; }; then" \
+    "$(awk '/ -shutdown / { p = prev; sub(/[[:space:]]+#.*$/, "", p); sub(/^[[:space:]]+/, "", p); print (p == "if steam_exe_up || { sleep 1; steam_exe_up; }; then" ? "yes" : "no: " prev) } { prev = $0 }' "$T/stop")" yes
 done
 
 echo "$fails failure(s)"

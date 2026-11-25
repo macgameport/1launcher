@@ -3,10 +3,12 @@
 Getting **Surviving Mars: Relaunched** running on an Apple Silicon Mac, free: no CrossOver, and no other
 game of this project needed first.
 
-> **Status (2026-11-13).** The installer is new. On 2026-11-13 it made a wrapper from nothing on one Mac,
-> from its own downloads, and the game ran in it. In that run the game's files were copied in from another
-> wrapper on the same Mac instead of downloaded, and the last step, the game's app, was run on its own. It
-> has not yet been run on a Mac that holds nothing of this project. This note goes when it has.
+> **Status (2026-11-25).** The installer is new. On 2026-11-13 it made a wrapper from nothing on one Mac,
+> from its own downloads, and the game ran in it; in that run the game's files were copied in from another
+> wrapper on the same Mac instead of downloaded, and the last step, the game's app, was run on its own.
+> Since then it has been run whole on two Macs that already had the game (2026-11-16 and 2026-11-17), and
+> the game was started from the app or from 14unch3r and played. It has not yet been run from the first
+> step to the last on a Mac that holds nothing of this project. This note goes when it has.
 
 ## The quick way
 

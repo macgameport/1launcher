@@ -9,7 +9,7 @@ second and third subjects; its first, keeping Steam from asking at all, is not h
 > listed in "Review corrections" at the foot.
 
 > **🔧 As-built (2026-11-24): partial — R0b passed; R1 to R4 built on the branch `signin-restart` (pushed, not merged,
-> not in `release`); RL2 passed on the Studio the same night; RL1 and RL3 are to come.** Built by a builder agent from this plan; both launchers' changes
+> not in `release`); RL2 passed on the Studio the same night, and again on 2026-11-25; RL1 was tried twice then and not seen (answered too early, then not at all); RL1 and RL3 are to come.** Built by a builder agent from this plan; both launchers' changes
 > read by the session, and the gates run again by it: all 47 test files, and all 75 mutants of the three files of
 > section 7 red (`test-launch-feedback.sh` 1 to 28, `test-launcher-parity.sh` 1 to 36, `test-launcher-steam.sh`
 > 1 to 11). Deviations:
@@ -635,6 +635,26 @@ message on (18 s of looks, then the watch's own count at 26 s), no lock, no cras
 wait ended before its ten counted minutes because the third Steam had left and two restarts had been used.
 
 Not seen in this run: an answer. RL1 is still to come, under another name.
+
+## RL1 on the Studio (2026-11-25, 00:08 and 00:14): tried twice, not seen; both runs VOID as RL1
+
+James: "Yes, run RL1". Same setups and launchers as RL2; the wrapper renamed by hand, the game started with `open` of
+its app. Outputs: `signin-restart-rl/rl1b.log` and `rl1c.log`.
+
+- **00:08:59, `mic-probe-1124e`: answered too early.** macOS put the question at 00:09:15 and it was answered (allowed)
+  at 00:09:18, so the first Steam signed in and no restart was needed: `[2/5]` by 45 s, `[5/5]` by 61 s, the game's
+  log PASS, saves uploaded, nothing left, the name put back. A start with a fast answer is as before this plan.
+- **00:14:54, `mic-probe-1125a`: not answered at all.** The Studio's keyboard and mouse were last used at about
+  00:10:45 and its screen locked itself at 00:20:57. The same course as RL2, to within three seconds: the question
+  once (00:15:03), restarts at 204 s and 399 s, the message at **597 s**, 0 clients with `-shutdown`, nothing left.
+  A second run of RL2, and it passed.
+
+The watching script's own `taskkill` died (floating point exception) in the first run, so the game was closed by hand
+at 00:14:15 with `WINEMSYNC=1` and `WINEESYNC=1` set as the launcher sets them; the script now sets them. That they
+were the cause is likely and not proven.
+
+Not seen: an answer given to a Steam the launcher itself started again. RL1 is still to come, under a third name, and
+is started only when James says he is at the Studio and will leave the question until the spoken line.
 
 ## Review corrections (check it 2026-11-24, pass 1)
 

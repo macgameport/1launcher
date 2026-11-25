@@ -7,6 +7,10 @@ the pasted line installs it.
 
 ## Unreleased
 
+**S734M's icon is Steam's again.** The Windows Steam program holds three icons, and setup took the largest image of
+any of them, which was Steam with a microphone on it. It now takes the first, as Windows does. Run the installer
+again to have the app rebuilt.
+
 ## v0.3.0 (2026-11-24)
 
 **Setup renames the Wine wrappers in `~/Applications`** (docs/plans/wrapper-names.md). Spotlight offered them

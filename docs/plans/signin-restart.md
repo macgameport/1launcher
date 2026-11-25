@@ -9,7 +9,7 @@ second and third subjects; its first, keeping Steam from asking at all, is not h
 > listed in "Review corrections" at the foot.
 
 > **🔧 As-built (2026-11-24): built — R0b passed; R1 to R4 built on the branch `signin-restart`, merged into
-> `built-in-update` on 2026-11-25 (`d927504`; all 47 test files pass on the merge), and with that branch into `main` the same day (`5100244`; not in `release`; the comment on #32 that criterion 8 asks for is not posted); RL2 passed on the Studio the same night, and again on 2026-11-25; RL1 was tried twice then and not seen (answered too early, then not at all); RL3 passed for both games on 2026-11-25, and RL1 passed on a third try at 05:00 that day: every live step of section 8 that the merge waits for is done.** Built by a builder agent from this plan; both launchers' changes
+> `built-in-update` on 2026-11-25 (`d927504`; all 47 test files pass on the merge), and with that branch into `main` the same day (`5100244`), published in `v0.3.1` (`8678b48`; not in `release`; the comment on #32 that criterion 8 asks for is not posted); RL2 passed on the Studio the same night, and again on 2026-11-25; RL1 was tried twice then and not seen (answered too early, then not at all); RL3 passed for both games on 2026-11-25, and RL1 passed on a third try at 05:00 that day: every live step of section 8 that the merge waits for is done.** Built by a builder agent from this plan; both launchers' changes
 > read by the session, and the gates run again by it: all 47 test files, and all 75 mutants of the three files of
 > section 7 red (`test-launch-feedback.sh` 1 to 28, `test-launcher-parity.sh` 1 to 36, `test-launcher-steam.sh`
 > 1 to 11). Deviations:
@@ -21,6 +21,8 @@ second and third subjects; its first, keeping Steam from asking at all, is not h
 > - **One test file outside this change is intermittent:** `common/test-launcher-window.sh`, "--start of an app
 >   still alive", failed in 2 of 10 runs one after another with `open`'s error -600, and in none of 6 at once. The
 >   file and the window are the update branch's, unchanged. Not fixed here.
+> - **The changelog's words at the release:** the draft said an unanswered start ends "after a little over ten
+>   minutes"; RL2 measured 9 min 57 s, twice, so the `v0.3.1` section says "after about ten minutes".
 >
 > **Verify against:** both launchers (the `launch-feedback` block, `start_steam`, the piece between
 > `# >>> stop-steam` and `# <<< stop-steam`), `common/test-launch-feedback.sh`, `common/test-launcher-parity.sh`

@@ -7,6 +7,10 @@ the pasted line installs it.
 
 ## Unreleased
 
+**Cities: Skylines II: if the city is fuzzy since game version 1.6.4, set Upscaler to Disabled** (Options >
+Graphics). The game can have AMD FSR 3 on without your choosing it.
+The install guide's Play section says so too.
+
 ## v0.3.1 (2026-11-25)
 
 **14unch3r says when a new version is out, and one click updates** (docs/plans/built-in-update.md). At the foot

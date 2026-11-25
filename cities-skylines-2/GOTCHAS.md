@@ -3327,3 +3327,24 @@ asked: the runs after the renames of W2 and W3 (`docs/plans/wrapper-names.md`) w
   `AUTHREQ_SUBJECT` names `com.anthropic.claude-code` (a session) or the wrapper's `wine64` (an app).
 - **To test a question,** start the thing with `open` on an app: the game's own, or a scratch app whose program is a
   shell script of the same form (trash it afterwards, then `lsregister -u` it: the move registers it again).
+
+## 1.6.4 adds upscalers of its own, and one can be on with no key in `Settings.coc` (2026-11-25)
+
+Measured on the Studio (M5 Max, 1.6.4f1, the daily engine, the Fullscreen Window, a city saved in 1.6.2f1). The
+city was drawn and looked fuzzy. `Settings.coc` had Dynamic Resolution off and no upscaler key; Options > Graphics
+> Upscalers showed "AMD FSR 3", Quality "Quality", which nobody had chosen. Set to "Disabled", the game writes
+`"upscaler": "None"`, and the same spot is drawn in full.
+
+- **How it was seen:** in a capture of the 2560x1440 window (each game pixel is 2x2 on the 5K panel), the edge
+  strength repeated every 3 game pixels in both directions and in both halves (4.8 / 9.7 / 9.3 in x), and at no
+  other period: a 1.5x stretch, FSR's Quality ratio. With it disabled, period 3 reads 1.00 1.00 1.00.
+- **Not black:** a thread of 2026-11-11 on r/macgaming reports a black city on CrossOver with upscaling on. It was
+  not black here with FSR 3 on. Not tried: the other upscalers, the other engine (11.0), the mobile profile (whose
+  Dynamic Resolution is on), the MacBook.
+- **Inferred, not measured:** a hard grid is not what FSR's reconstruction should leave, so its pass may do little
+  more than a plain stretch on this stack. Frame rate with and without was not measured.
+- **`SceneFlow.log`'s "Current resolution" is the stored value, not the window's.** It reads 1920x1080 in most
+  runs since 2026-10-10 while `Player.log` says `Window resolution: 2560x1440`. Read `Player.log`.
+- **Rule:** after a game update, "Dynamic Resolution off" no longer means the game draws at full size: look for new
+  settings groups, and for a key that is absent because it stands at its default.
+- Outputs: the workspace, `city-164f1-20261125/`.

@@ -220,6 +220,12 @@ updating, even though the game is still running fine underneath. It's
 and is immune. (If you ever do get stuck in exclusive mode, you're not dead — the screen redraws
 one frame per alt-tab, so you can alt-tab your way to Options and switch modes.)
 
+**If the picture is fuzzy (game version 1.6.4 and later):** Options → Graphics → **Upscaler → Disabled**.
+1.6.4 added upscalers, and on the Mac this was seen on the game had AMD FSR 3 at Quality on without anyone
+choosing it: it draws the city at two thirds of the resolution and stretches it. If the city is black instead,
+which has been reported on CrossOver, try the same setting. Seen on one Mac (M5 Max, 2026-11-25), where the
+city was fuzzy with FSR 3 on, and not black.
+
 ---
 
 ## 6. Recommended: build the wine 11.16 engine (kills the alt-tab freeze)
@@ -556,6 +562,7 @@ back first, as above.
 | Black screen with a working cursor | The Coherent Gameface UI fix didn't apply. Re-run `bash scripts/setup.sh` and check its patch output, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |
 | Mods won't download ("Preparing 2%", IO errors) | The patches are not all in place. Run `bash scripts/setup.sh` again and read its last lines: it says how many patch scripts finished and names any that failed, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |
 | Screen freezes after alt-tab | Exclusive Fullscreen. Switch to Fullscreen Window (see step 5). |
+| City fuzzy, or black, since game version 1.6.4 | An upscaler is on. Options → Graphics → Upscaler → Disabled (see step 5). |
 | "IOEXCEPTION — Failed to read settings file with GUID ... Invalid handle to path [Unknown]" | **Cosmetic — press Continue.** The game asks for optional settings files that were never created; on Wine an absent file surfaces as an invalid handle instead of a clean not-found, so the game shows its error dialog. Your settings are still applied and saved. Most common right after changing graphics options or at boot. |
 | Mods show a ⚠ badge | Usually not a real conflict, and the same on Windows: it clears when you open that Options section. The section "Mod keybinding ⚠ badges" above says what it is and how to hide it. |
 | Second display goes black | Refresh-rate mismatch. Match both displays' refresh rates. |

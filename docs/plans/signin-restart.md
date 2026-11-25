@@ -9,7 +9,7 @@ second and third subjects; its first, keeping Steam from asking at all, is not h
 > listed in "Review corrections" at the foot.
 
 > **🔧 As-built (2026-11-24): partial — R0b passed; R1 to R4 built on the branch `signin-restart` (pushed, not merged,
-> not in `release`); RL2 passed on the Studio the same night, and again on 2026-11-25; RL1 was tried twice then and not seen (answered too early, then not at all); RL1 and RL3 are to come.** Built by a builder agent from this plan; both launchers' changes
+> not in `release`); RL2 passed on the Studio the same night, and again on 2026-11-25; RL1 was tried twice then and not seen (answered too early, then not at all); RL3 passed for both games on 2026-11-25; RL1 is to come.** Built by a builder agent from this plan; both launchers' changes
 > read by the session, and the gates run again by it: all 47 test files, and all 75 mutants of the three files of
 > section 7 red (`test-launch-feedback.sh` 1 to 28, `test-launcher-parity.sh` 1 to 36, `test-launcher-steam.sh`
 > 1 to 11). Deviations:
@@ -655,6 +655,29 @@ were the cause is likely and not proven.
 
 Not seen: an answer given to a Steam the launcher itself started again. RL1 is still to come, under a third name, and
 is started only when James says he is at the Studio and will leave the question until the spoken line.
+
+## RL3 on the Studio (2026-11-25, 01:39 to 01:51): passed for both games
+
+James's word ("rl3 for now"), nobody at the Studio. Both launchers installed there are this branch's, byte for byte
+(`cmp`). The wrappers were under their setup names, and macOS put no microphone question in the whole window (its
+privacy log: 0). Surviving Mars was started three times with `open` of its app, 80 s in the game each time, and closed
+by `taskkill` without `/F`; Cities: Skylines II once by `boot-verify.sh`, detached. The first Surviving Mars exit was
+watched once a second, which missed the call, so the watch was made about ten looks a second, and for the third it
+followed the call by its process id, so a changed command line could not hide it.
+
+| | Surviving Mars | Cities: Skylines II |
+|---|---|---|
+| Start | 44 s to step 5 each time; no hint line, no restart line | `MainMenu reached`; no hint line, no restart line |
+| Judge | `licence-wait-probe.sh --judge`: PASS three times | `VERDICT: PASS`, `GRACEFUL: yes` (`20261125-014226`) |
+| Exit | "Steam Cloud: saves uploaded." three times | "Residual Steam-family processes in this prefix: 0" |
+| Call to its own process gone | seen at one look, gone at the next: 0.1 s (second and third run; the third by process id) | 0.1 s (by command line) |
+| Call to `steam.exe` gone | 1.9 s, 1.4 s (second and third run) | 3.4 s |
+| `wineserver -k` | the launcher's condition did not hold (call and Steam both gone); none seen | one, 3.0 s after Steam was gone: the sweep at the end, not the fallback ("Steam still resident" was not printed) |
+| Left behind | no process of Wine, no lock, no crash marker | the same |
+
+The 60 s of 4.4 were not approached: no call outlived 0.2 s with Steam up, so there is nothing to fold. `bootstrap_log`
+has no client started with `-shutdown`. Not seen here: a call made while Steam is still uploading (Surviving Mars waits for the
+upload first; Cities: Skylines II does not, and its exit had no upload that was looked at).
 
 ## Review corrections (check it 2026-11-24, pass 1)
 

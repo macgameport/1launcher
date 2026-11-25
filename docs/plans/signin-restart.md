@@ -9,7 +9,7 @@ second and third subjects; its first, keeping Steam from asking at all, is not h
 > listed in "Review corrections" at the foot.
 
 > **🔧 As-built (2026-11-24): partial — R0b passed; R1 to R4 built on the branch `signin-restart` (pushed, not merged,
-> not in `release`); RL2 passed on the Studio the same night, and again on 2026-11-25; RL1 was tried twice then and not seen (answered too early, then not at all); RL3 passed for both games on 2026-11-25; RL1 is to come.** Built by a builder agent from this plan; both launchers' changes
+> not in `release`); RL2 passed on the Studio the same night, and again on 2026-11-25; RL1 was tried twice then and not seen (answered too early, then not at all); RL3 passed for both games on 2026-11-25, and RL1 passed on a third try at 05:00 that day: every live step of section 8 that the merge waits for is done.** Built by a builder agent from this plan; both launchers' changes
 > read by the session, and the gates run again by it: all 47 test files, and all 75 mutants of the three files of
 > section 7 red (`test-launch-feedback.sh` 1 to 28, `test-launcher-parity.sh` 1 to 36, `test-launcher-steam.sh`
 > 1 to 11). Deviations:
@@ -634,7 +634,7 @@ came at 6 min 30 s with that client's three minutes in it). Nothing of the prefi
 message on (18 s of looks, then the watch's own count at 26 s), no lock, no crash marker, the name put back. The
 wait ended before its ten counted minutes because the third Steam had left and two restarts had been used.
 
-Not seen in this run: an answer. RL1 is still to come, under another name.
+Not seen in this run: an answer. RL1 was still to come then (it passed on 2026-11-25, 05:00, below).
 
 ## RL1 on the Studio (2026-11-25, 00:08 and 00:14): tried twice, not seen; both runs VOID as RL1
 
@@ -653,8 +653,8 @@ The watching script's own `taskkill` died (floating point exception) in the firs
 at 00:14:15 with `WINEMSYNC=1` and `WINEESYNC=1` set as the launcher sets them; the script now sets them. That they
 were the cause is likely and not proven.
 
-Not seen: an answer given to a Steam the launcher itself started again. RL1 is still to come, under a third name, and
-is started only when James says he is at the Studio and will leave the question until the spoken line.
+Not seen: an answer given to a Steam the launcher itself started again. RL1 was still to come then, to
+be started only with James at the Studio, leaving the question until the spoken line (it passed at 05:00, below).
 
 ## RL3 on the Studio (2026-11-25, 01:39 to 01:51): passed for both games
 
@@ -678,6 +678,29 @@ followed the call by its process id, so a changed command line could not hide it
 The 60 s of 4.4 were not approached: no call outlived 0.2 s with Steam up, so there is nothing to fold. `bootstrap_log`
 has no client started with `-shutdown`. Not seen here: a call made while Steam is still uploading (Surviving Mars waits for the
 upload first; Cities: Skylines II does not, and its exit had no upload that was looked at).
+
+## RL1 on the Studio (2026-11-25, 05:00): passed
+
+James: "Yes, start RL1", at the Studio. Same setups and launchers as RL2 and RL3; the wrapper renamed by hand to
+`mic-probe-1125b.app`, the game started with `open` of its app, the spoken line at the restart. Output:
+`signin-restart-rl/rl1d.log`. Seconds after the start (05:00:30), as a watch of one look in 3 s saw them:
+
+| Seconds | What |
+|---|---|
+| 10 | macOS put the question, **once in the whole run** |
+| 48 | the hint |
+| 192 | the first Steam gone by itself; its webhelper gone by 195, so nothing of its family was seen at the restart |
+| 204 | "Starting Steam again…", the second Steam |
+| 278 | the question answered (allowed), 74 s after the second Steam was started; no second question |
+| 301 | the second Steam logged on, **23 s after the answer** |
+| 303 | `[2/5]` |
+| 319 | `[5/5]` |
+
+The game's own log: PASS (`licence-wait-probe.sh --judge`). In the launcher's log the hint once and the restart line
+once. **No Steam client was started with `-shutdown`** (0 in Steam's bootstrap log since the start). The watching
+script closed the game; "Steam Cloud: saves uploaded.", Steam down, no lock, no crash marker, the name put back.
+
+Not seen: an answer given to the third Steam (after a second restart), and the answer "Don't Allow" after a restart.
 
 ## Review corrections (check it 2026-11-24, pass 1)
 

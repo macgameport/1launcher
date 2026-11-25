@@ -2641,7 +2641,7 @@ rename on 2026-11-18 (P4) raised no question either: neither is explained.
   So no length of `L1_SIGNIN_SECS` helps while the question is open, and the Surviving Mars launcher's
   shutdown call costs three minutes more (Cities: Skylines II's launcher makes no such call there). The
   watch and its output: the Surviving Mars workspace, `probe-issue32/`.
-- **Built (`docs/plans/signin-restart.md`; its live steps are still to come):** while the wait lasts,
+- **Built (`docs/plans/signin-restart.md`; its live steps passed on the Studio, 2026-11-24 and 2026-11-25):** while the wait lasts,
   `signin_wait` starts again a Steam that was seen for 60 s and has left, at most twice and not in the wait's
   last 60 s, through each launcher's `start_steam`; and neither launcher sends `-shutdown` when no Steam of
   its prefix is up, nor runs it in the foreground.

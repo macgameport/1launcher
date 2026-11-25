@@ -3348,3 +3348,19 @@ city was drawn and looked fuzzy. `Settings.coc` had Dynamic Resolution off and n
 - **Rule:** after a game update, "Dynamic Resolution off" no longer means the game draws at full size: look for new
   settings groups, and for a key that is absent because it stands at its default.
 - Outputs: the workspace, `city-164f1-20261125/`.
+
+## macOS 28's "App Update Required" can name Python: the display-profile step starts Wine from it (2026-11-25)
+
+At a start on the Studio macOS put its notice for "Python" ("includes a component that will not open in macOS 28").
+Nothing is wrong with Python: `cs2-display-profile.sh` is a `python3` script that runs Wine (`reg`), and for those
+processes macOS names Python as responsible. macOS's log has it for two seconds at the start (`ecosystemd`, 87
+`GAME_CHECK` lines with the responsible bundle `org.python.python`, 16:44:07 and 16:44:08), between the launcher's
+start and Steam's. That bundle is Homebrew's Python, arm64 only, so the Intel component is Wine.
+
+- **Inferred, not tested:** it was new because this start was an `open` from a session's shell, whose PATH has
+  Homebrew first; a start by a click finds Apple's `python3`, whose bundle is another one. Whether that one brings
+  the same notice was not looked at.
+- **Seen the same day, one Mac:** the macOS Steam was running on the same account through the whole session and
+  nobody noticed a conflict. The wrapper's Steam stayed signed in from 16:44:47 to 17:08:50, and its log has no
+  line of a session replaced or of being signed in elsewhere. The cloud log at exit says "No launch record found" and no file upload
+  was seen in it. This is not a clearance: the rule of one Steam at a time stands.

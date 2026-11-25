@@ -7,13 +7,7 @@ the pasted line installs it.
 
 ## Unreleased
 
-**A start no longer ends because a question from macOS was left open** (docs/plans/signin-restart.md). After a
-wrapper is renamed macOS asks once more whether wine64 may use the microphone, and Steam gives up waiting for the
-answer after about three minutes. The launcher now starts Steam again, at most twice, and says so, so an answer
-within about nine minutes brings the game up from the same start. Left unanswered, the start ends after a little
-over ten minutes with the message it had. Before, Surviving Mars's message came about six and a half minutes after
-the start, three of them spent in a shutdown call that had itself become a Steam; that call is no longer sent when
-no Steam is running.
+## v0.3.1 (2026-11-25)
 
 **14unch3r says when a new version is out, and one click updates** (docs/plans/built-in-update.md). At the foot
 of its window 14unch3r shows a line when a newer version of 1launcher is out. A click shows what changed, and
@@ -34,6 +28,14 @@ Paste your line again instead.
 
 **By hand,** on a Mac with no 14unch3r: paste the installer line with the word `update` where the game's ID
 stands.
+
+**A start no longer ends because a question from macOS was left open** (docs/plans/signin-restart.md). After a
+wrapper is renamed macOS asks once more whether wine64 may use the microphone, and Steam gives up waiting for the
+answer after about three minutes. The launcher now starts Steam again, at most twice, and says so, so an answer
+within about nine minutes brings the game up from the same start. Left unanswered, the start ends after about
+ten minutes with the message it had. Before, Surviving Mars's message came about six and a half minutes after
+the start, three of them spent in a shutdown call that had itself become a Steam; that call is no longer sent when
+no Steam is running.
 
 **Two installer messages are fixed.** A version that does not exist was reported as "GitHub could not be
 reached"; the installer now says that GitHub has no such version. And a finished install is no longer warned

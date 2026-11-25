@@ -17,13 +17,14 @@ release that carries this raises the third number).
 > **🔧 As-built (2026-11-24): partial — steps U0 to U5 built on the branch `built-in-update`, merged into `main`
 > on 2026-11-25 (`5100244`, `--no-ff`, James: "Yes, merge to main"; all 48 test files pass on the merge; not tagged, not in `release`); of step U6, UL1, UL1b, UL1c, UL2 (the Studio) and UL3 (the MacBook) passed on
 > 2026-11-24 and are recorded below; UL4 (the first real
-> offer) can only come at the first release after the one that carries this, and UD5's rulesets are not set.**
+> offer) can only come at the first release after the one that carries this. UD5's two rulesets are set and active
+> since 2026-11-25 (below, "UD5's rulesets"), which is exit criterion 5.**
 > **Since 2026-11-25 this branch also holds `signin-restart`** (#32's launcher fix, `docs/plans/signin-restart.md`,
 > merged as `d927504`), so both go into `main` and into one release. The live steps above ran on launchers without it.
 > **What the merge binds (step U6):** `main` now holds `common/updates.sh`, so `release` can take a commit of `main`
 > from `5100244` on only as a tagged release (the gate's fifth question). The commits before it, `v0.2.0` and `v0.3.0`
 > among them, hold no such file and are asked nothing new.
-> Still to come, each on James's word: the rulesets, the tag, and `release`. UL1 found
+> Still to come, each on James's word: the tag and `release`. UL1 found
 > one defect, fixed in `b24a4f7`: the update sheet's notes opened in the middle of their text.
 > Commits: `fb0213e` (U0), `f234c3e` and `797b97e` (U1), `146f711` (U2), `0a93b3b` (U3), `df5a5a6` (U4),
 > `b9b5bfd` (U5), in the order U0, U1, U2, U4, U5, U3: U3 and U4 were built side by side on separate files,
@@ -1355,6 +1356,29 @@ output. Never start it under `nohup`.
 run (`bash <game>/scripts/setup.sh` from a checkout on `main`, with the game and Steam closed, puts a game
 back). Record the step in this file under a heading "UL3 on the MacBook", in the form of "UL2 on the Studio"
 above, with what was measured; `git pull --rebase` first, commit with `refs #34`, and push to this branch.
+
+## UD5's rulesets, set on 2026-11-25 (on James's word: "Yes, set them")
+
+Made with the project's GitHub login through GitHub's API, when the repository had none. Both read back as
+`enforcement: active`, `bypass_actors: []`, and "current user can bypass: never":
+
+| Ruleset | Applies to | Rules |
+|---|---|---|
+| 28070733, "release: no force push, no deletion" | `refs/heads/release` | `non_fast_forward`, `deletion` |
+| 28070734, "version and installer tags: no update, no deletion" | `refs/tags/v*`, `refs/tags/installer-*` | `update`, `deletion` |
+
+GitHub's own account of the rules on a branch (`rules/branches/<name>`) names both rules of 28070733 for `release`
+and none for `main`. The list of rulesets is readable without a login. To read them again:
+`gh api repos/macgameport/1launcher/rulesets/28070733` and `.../28070734`.
+
+Not tried, on purpose: a push that the rules should refuse. A refused force push or deletion would prove the rule,
+and one that went through would have moved or removed a published name. So what is shown is that GitHub holds the
+rules as active, not that it has refused anything yet.
+
+What follows for the work: making a new tag is not restricted, but **a tag once pushed can be neither moved nor
+deleted while the rule stands**, a mistyped one included; taking it away means an owner switching the ruleset off
+first. So the checks of `CLAUDE.md` § Releases come before the push of a tag, every time. The fast-forward
+`git push origin <commit>:release` is not affected.
 
 ## Review log
 

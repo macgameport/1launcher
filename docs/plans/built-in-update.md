@@ -1190,7 +1190,7 @@ was put back and is byte for byte `main`'s again (sha256 `a73ceab28f5b4888`, as 
 | 1, from the game's app at 08:15:52 | **The notice: as 3.6 has it.** The launcher's log has, as the session's first line, "1launcher v0.1.0 is out. Open the 14unch3r app to update.", before "[1/5] Starting Steam and signing in…"; `noted` then held `v0.1.0` and 1; `tried` was unchanged, so the look in the background asked GitHub nothing (it had been asked that morning). Whether macOS showed the notification, and whom it named as the sender, is James's to say. **Then the start stopped at step 3:** Steam logged on 28 s after the start, and the launcher's own check found a Steam Cloud conflict on `account.dat` and `account.dat.bak`, said so in its alert, shut Steam down, and ended when James answered. No game was started |
 | 2, at 08:22:09, after the conflict was cleared (below) and the branch's launcher put in place again | **The notice again.** One line of it in the launcher's log; `noted` then `v0.1.0` and 2; `tried` unchanged. The game ran and was closed 15 s after its window: exit `rc=0`, saves uploaded |
 | 3, at 08:23:23 | **No notice.** No such line in the log; `noted` unchanged at 2; `tried` unchanged. The game ran: `rc=0` |
-| 4, at 08:34:31, for James's eyes (he had been away from the screen at the first three, and asked for it again): `noted` moved aside, the branch's launcher in place once more | **The notice, and James saw the notification on screen ("I saw it").** One line of it in the log; `noted` then `v0.1.0` and 1. The game reached its menu and was closed there; saves uploaded. The launcher took about four minutes to end after the game's window, longer than at the other starts; why was not looked into. The original launcher was put back afterwards, byte for byte `main`'s |
+| 4, at 08:34:31, for James's eyes (he had been away from the screen at the first three, and asked for it again): `noted` moved aside, the branch's launcher in place once more | **The notice, and James saw the notification on screen ("I saw it").** One line of it in the log; `noted` then `v0.1.0` and 1. The game reached its menu and was closed there; saves uploaded. The original launcher was put back afterwards, byte for byte `main`'s |
 | 5, at 09:01:07, so that James could read the sender (`noted` was 1, so the notice was due once more) | **The notice; `noted` then 2.** James: "it had the script editor icon with no title". The game reached its menu; saves uploaded; the original launcher put back, byte for byte `main`'s |
 
 **Who macOS names as the sender: Script Editor.** James saw its icon on the notification, and the notification
@@ -1202,8 +1202,11 @@ it has never been allowed was not measured. What a click on the notification ope
 to decide, with the three of UL1:** whether a notice that looks like Script Editor's is good enough, or the
 notice should come from one of the project's own apps (not this plan's design).
 
-At starts 4 and 5 the launcher ended about three minutes after the game was closed, where the starts before
-them took about one. Not looked into; nothing was lost (both say "saves uploaded").
+**Corrected the same evening:** this record first said that at starts 4 and 5 the launcher took about three
+minutes longer to end. It did not. macOS's log has its last notification at 08:35:51 and 09:02:27, within three
+seconds of Steam's own "Shutdown" (08:35:48, 09:02:25). What waited was the session's watcher: its search for
+the launcher by name (`pgrep -f`) matched the session's own polling command in another shell, so it ran to its
+limit of 200 s (08:35:37 and 09:02:17, when the game was closed, plus 200 s are the seconds its two logs end).
 
 So the launcher gives the notice at the first two starts and not at the third, and its look in the background
 asked GitHub nothing in any of the three (it had been asked that morning). The watcher's own verdict on starts 2

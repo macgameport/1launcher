@@ -1277,7 +1277,8 @@ letter of the command.)
 
 **Seen, and not of the update:** S734M's icon on this Mac is Steam's with a microphone on it. The Windows
 `steam.exe` (5,774,488 bytes) holds three icon groups, and `cities-skylines-2/scripts/pe-icon.py`, which this
-branch does not change, takes the largest image of any group. Not fixed.
+branch does not change, takes the largest image of any group. Fixed on `main` the
+same evening (`2fcdb1a`), not on this branch; both sides add to `CHANGELOG.md`'s Unreleased, and the merge keeps both.
 
 **How the MacBook stands afterwards.** Both games and 14unch3r run the branch's code until a setup from another
 tree is run; its state is `manual`. The Studio may start Steam again.

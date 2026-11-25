@@ -4,7 +4,7 @@
 (2026-11-23) said needs-rework and the plan was reworked the same day; pass 1b, two fitted re-checks of the
 rework, said build-ready-with-fixes and is folded; pass 1c verified that fold. `wrapper-names` was merged into
 `main` on 2026-11-24 (`35f0eb8`, the commit of `v0.3.0`), `main` was merged into this branch, and pass 2 read
-every cite again against that tree: no blocker, ten corrections, folded ("Pass 2" at the foot). **Built through U5 on the branch on 2026-11-24** (as-built header below); the live steps of section 7 have not run, and nothing is merged or released.
+every cite again against that tree: no blocker, ten corrections, folded ("Pass 2" at the foot). **Built through U5 on the branch on 2026-11-24** (as-built header below); the live steps UL1, UL1b, UL1c and UL2 passed on the Studio and UL3 on the MacBook, all on 2026-11-24 (their records are at the foot), which is exit criterion 2; nothing is merged or released.
 The merge changed two things this plan leans on: `common/test-launcher-parity.sh` now has a rule 10 and mutants
 up to 24, so this plan's new rule is 11 and its mutants start at 25; and the launchers' shared block gained
 `signin_wait`, so its notice block sits in launchers that wait up to ten minutes for Steam's sign-in.
@@ -18,6 +18,8 @@ release that carries this raises the third number).
 > merged, not in `release`); of step U6, UL1, UL1b, UL1c, UL2 (the Studio) and UL3 (the MacBook) passed on
 > 2026-11-24 and are recorded below; UL4 (the first real
 > offer) can only come at the first release after the one that carries this, and UD5's rulesets are not set.**
+> Still to come, each on James's word: the rulesets, the merge into `main`, the tag, and `release`. UL1 found
+> one defect, fixed in `b24a4f7`: the update sheet's notes opened in the middle of their text.
 > Commits: `fb0213e` (U0), `f234c3e` and `797b97e` (U1), `146f711` (U2), `0a93b3b` (U3), `df5a5a6` (U4),
 > `b9b5bfd` (U5), in the order U0, U1, U2, U4, U5, U3: U3 and U4 were built side by side on separate files,
 > and U5's words were written while the window was still being built. U0 and the first part of U1 were built

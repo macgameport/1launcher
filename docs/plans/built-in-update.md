@@ -15,7 +15,8 @@ Tracking: issue #34 (opened 2026-11-23); the two defects of step U0 are on recor
 release that carries this raises the third number).
 
 > **🔧 As-built (2026-11-24): partial — steps U0 to U5 built on the branch `built-in-update` (pushed, not
-> merged, not in `release`); step U6 not started: no live step of section 7 has run, UL4 (the first real
+> merged, not in `release`); of step U6, UL1, UL1b, UL1c, UL2 (the Studio) and UL3 (the MacBook) passed on
+> 2026-11-24 and are recorded below; UL4 (the first real
 > offer) can only come at the first release after the one that carries this, and UD5's rulesets are not set.**
 > Commits: `fb0213e` (U0), `f234c3e` and `797b97e` (U1), `146f711` (U2), `0a93b3b` (U3), `df5a5a6` (U4),
 > `b9b5bfd` (U5), in the order U0, U1, U2, U4, U5, U3: U3 and U4 were built side by side on separate files,
@@ -1250,11 +1251,40 @@ in the real `_update` (made with its `installed/`, both mode 700): one stamp `in
 until a setup from another tree is run; its state is `manual`, so it asks GitHub nothing and is offered nothing.
 Cities: Skylines II is as it was (`v0.3.0`'s files, no stamp). Exit criterion 2 still wants UL3, the MacBook.
 
+## UL3 on the MacBook (2026-11-24, on James's word: "Yes, start"): passed, with one point resting on James's word
+
+The branch pushed at `ccddb80`. Before: the three wrappers under their marks and role names; nothing of Wine,
+Steam or a game running, no launch lock; no `_update`; 14unch3r with no `L1UpdateDir`; the deployed launchers at
+sha256 `e3a0d411…` (Cities: Skylines II) and `a73ceab2…` (Surviving Mars). The two stamps were written by hand as
+the brief says. The update was run in the app's Terminal panel under `script`, from an empty folder that is no
+checkout, with the four `L1_` names unset. (The first try ran nothing: an oh-my-zsh question took the first
+letter of the command.)
+
+| What | Result |
+|---|---|
+| The fetch | **Pass.** "1launcher at commit `ccddb804b4658d358d6d28bc17f9e978caf97ef7`", the pushed tip |
+| The installers | **Pass.** Cities: Skylines II's first (six steps `OK`, setup, 10 of 10 patch scripts without error), then Surviving Mars's (seven steps `OK`, setup). No question was asked, the Desktop shortcut's among them |
+| The closing block | **Pass.** "Cities: Skylines II: updated.", "Surviving Mars: Relaunched: updated.", "Everything is up to date: 1launcher v0.3.0." Exit 0 |
+| How long | 23 s from the start of the update to its exit |
+| The stamps and the state | **Pass.** Both: `built-in-update`, `v0.3.0`, the commit above, a time. `updates.sh` prints `manual`, `v0.3.0`, `-`, `built-in-update` |
+| What was deployed | **Pass.** `_update/updates.sh` and both launchers byte for byte the branch's; `update-dir` beside each launcher names `_update`; 14unch3r has `L1UpdateDir` |
+| The wrappers' Wine | every `ntdll.dll` in the three wrappers has the hash it had before, read after the update and after the starts |
+| Cities: Skylines II afterwards | **Pass.** `boot-verify.sh`, detached: run `20261124-192615`, menu reached, `GRACEFUL: yes`, `rc=0`, `VERDICT: PASS`; no notice line in the launcher's log |
+| Surviving Mars afterwards | **Pass.** James started it and closed it: 19:31:23, logon 9 s later, `rc=0`, "saves uploaded", no notice line. That it was started from its own app and reached its menu is James's word: the logs name neither, and the window was open for about 25 s |
+| The state `manual` asks nothing | **Pass.** After those starts and after 14unch3r's "Check for Updates…", `_update` holds `installed/` and `updates.sh` and nothing else. James's captures: three tiles and no line at the foot; "No update is offered on this Mac." and "A game here was set up from a named version. Paste its installer line from the guide to follow new versions again." |
+
+**Seen, and not of the update:** S734M's icon on this Mac is Steam's with a microphone on it. The Windows
+`steam.exe` (5,774,488 bytes) holds three icon groups, and `cities-skylines-2/scripts/pe-icon.py`, which this
+branch does not change, takes the largest image of any group. Not fixed.
+
+**How the MacBook stands afterwards.** Both games and 14unch3r run the branch's code until a setup from another
+tree is run; its state is `manual`. The Studio may start Steam again.
+
 ## UL3 on the MacBook: the brief for that Mac's session (handed over 2026-11-24, on James's word: "Yes, hand it over")
 
-Not run yet. This is UL2 again, on the MacBook, for both games. It is a live step: the session there asks James
-before it starts, and runs it with him at that Mac. The Studio starts no Steam until this step is recorded as
-done or put off.
+Run on 2026-11-24 and recorded above. This is UL2 again, on the MacBook, for both games. It is a live step: the session there asks James
+before it starts, and runs it with him at that Mac. The Studio was to start no Steam until this step
+was recorded as done or put off.
 
 **Before.** `git fetch`, and note the pushed tip of `built-in-update` (the commit the update must print).
 Nothing of Wine, Steam or either game running, and no launch lock in either wrapper. Write down, for the

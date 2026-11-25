@@ -229,7 +229,7 @@ lives in that game's `scripts/install.sh`; the template's pin stays in `common/m
 - **The bootstrap's first word is a Steam app ID**, digits only. Once it has the repository, fetched or
   the checkout it lies in, it finds the row of `common/games.tsv` whose first field is that ID and hands
   over to `<that row's folder>/scripts/install.sh`. Its second word is the ref, as today.
-- **There is no default game.** With no word, or a first word that is not digits, nothing is fetched and
+- **There is no default game.** (One exception since `docs/plans/built-in-update.md`, 3.4 and UD11: the word `update` names no game, and fetches the tree to run the installer of every game set up on the Mac.) With no word, or a first word that is not digits, nothing is fetched and
   it exits 2. From a checkout it prints that checkout's games that have an installer, each with its ID and
   title. Pasted or from the app, where there is no table yet, it prints the usage line and the front
   page's address, where the games and their IDs are listed. An ID with no row, or whose folder has no

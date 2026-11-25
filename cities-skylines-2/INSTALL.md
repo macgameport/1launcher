@@ -64,6 +64,19 @@ Good to know:
 - **Stopped part way?** Paste the line again. It carries on from the step it stopped at. Closing the
   window or pressing Control-C stops the installer only: Steam stays open. Pasting the line again on a
   finished install is also how to update: it fetches the current scripts and re-applies the fixes.
+- **Updates (from v0.3.1).** When a new version of 1launcher is out, 14unch3r says so at the foot of its
+  window, and the game's app says so in a notification. Click the line, read what changed, and click Update:
+  Terminal opens and runs the installer again for every game set up on this Mac. Nothing is installed until
+  you click Update. Pasting the installer line again does the same. On a Mac with no 14unch3r, paste the line
+  with the word `update` where the game's ID stands.
+- **What the check sends.** By itself at most once a day, when you open 14unch3r or start a game, this Mac
+  asks GitHub for one public file, the list of changes. GitHub sees this Mac's network address and the time,
+  as for any page. Nothing about you or your games is sent.
+- **To switch the check off:** `touch ~/Library/Application\ Support/1launcher/_update/off`. Delete that
+  file to switch it on again. With it off, update by pasting the installer line.
+- **If you pasted the line with a variable in front** (`CS2_PATCH_DIR=...` or `L1_KEEP_WRAPPER_NAMES=1`): do
+  not use Update in 14unch3r. It runs the installer without them, which moves the folder or renames the
+  wrappers. Paste your line again instead.
 - **What it downloads, and from whom.** The Wine engine and the wrapper it lives in are
   [Porting Kit](https://www.portingkit.com/)'s, fetched from their own pages on GitHub and checked against
   fixed checksums; Steam's installer comes from Valve; Rosetta and the Command Line Tools, if missing, come
@@ -501,9 +514,9 @@ wrapper. When a rename cannot be made safely for another reason (Steam open in t
 you buy something, say), it skips that one, says why, and tries again at its next run. A wrapper in
 `/Applications` is used where it is and never renamed. `bash scripts/setup.sh --check` says what a run would do.
 At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
-way. Answered within about a minute, Steam signs in as before and the game starts. If the start ends with "Steam
-did not auto-login", start the game again once the question is answered: with the question left open, Steam itself
-gives up after about three minutes, and the start ends then.
+way. From v0.3.1 an answer within about nine minutes still brings the game up: Steam itself gives up after about
+three, and the launcher starts it again and says so. If the start ends with "Steam did not auto-login" all the
+same, answer the question and start the game again.
 
 **What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
 made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find
@@ -537,7 +550,7 @@ back first, as above.
 
 | Symptom | What's happening |
 |---|---|
-| "Steam did not auto-login" | Either macOS asked a question and it was not answered in time (after a wrapper is renamed it asks again whether wine64 may use the microphone; with the question left open, Steam itself gives up after about three minutes and the launcher then stops): answer it and relaunch. Or the saved token expired: open Steam inside the wrapper, sign in until the library loads, then relaunch. |
+| "Steam did not auto-login" | Either macOS asked a question and it was not answered in time (after a wrapper is renamed it asks again whether wine64 may use the microphone; with the question left open, Steam itself gives up after about three minutes; the launcher starts it again, and stops after ten minutes): answer it and relaunch. Or the saved token expired: open Steam inside the wrapper, sign in until the library loads, then relaunch. |
 | No main menu after a fresh start, and `platform service integration failed` in the game's `SceneFlow.log` | The game started before Steam had confirmed your licence. Start it once from Terminal with a longer wait, `CS2_LICENCE_WAIT=45 bash "$HOME/Library/Application Support/1launcher/cities-skylines-2"/launch-cs2-dxmt11.sh`, and please open an issue: the default of 15 seconds rests on two Macs. |
 | Game exits immediately, launch fails with code 1 | A stale `.crash` marker from a force-kill. The launcher clears it automatically now; if it persists, delete `.../Steam/.crash` inside the prefix. |
 | Black screen with a working cursor | The Coherent Gameface UI fix didn't apply. Re-run `bash scripts/setup.sh` and check its patch output, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |

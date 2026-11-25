@@ -344,6 +344,10 @@ else
 fi
 }
 core_space() {
+# A finished install needs no room for a new one: nothing is said when a wrapper exists and the game is in it
+# (installed, or waiting for a game update). prefix_known is asked first: without a wrapper use_wrapper has
+# not run, and what game_state reads is unset.
+if prefix_known; then case "$(game_state)" in installed|update) return 0 ;; esac; fi
 FREE_KB="$(df -k "$HOME" 2>/dev/null | awk 'NR == 2 { print $4 }')"
 case "$FREE_KB" in ''|*[!0-9]*) ;; *)
   if [ "$((FREE_KB / 1024 / 1024))" -lt "$NEED_GB" ]; then

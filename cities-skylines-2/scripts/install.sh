@@ -110,6 +110,9 @@ for f in "$SETUP" "$GAME_ROOT/scripts/move-install.sh" "$GAME_ROOT/repatch.sh" "
          "$GAME_ROOT/../common/wrappers.sh" "$GAME_ROOT/../common/move-wrappers.sh"; do
   [ -e "$f" ] || { say "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
 done
+for f in "$GAME_ROOT/../common/updates.sh" "$GAME_ROOT/../common/games.tsv"; do   # setup's record of versions (docs/plans/built-in-update.md, 3.3)
+  [ -e "$f" ] || { say "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
+done
 set --
 [ "$YES" = 1 ] && set -- "$@" --yes
 [ "$DESKTOP" = 1 ] && set -- "$@" --desktop

@@ -68,6 +68,10 @@
 #   66 game_wrapper not asking the resolver's incomplete (WT11 (f))
 #   67 setup's unset of CS2_WRAPPER removed (WT11 (b))      68 an unset L1_WRAPPER_GIVEN read as "not given" (WT11 (d))
 #   69 --holders-skip not passed by setup (WT11 (g))        70 core_after_setup removed at this installer's call (WT11 (c))
+# Setup's record of versions (docs/plans/built-in-update.md, 3.3; UT5, also); must exit 1:
+#   74 the own-files loop for common/updates.sh and common/games.tsv dropped
+# The update, its parts joined (docs/plans/built-in-update.md, 3.4; UT7b); each must exit 1:
+#   75 l1u_stamp not called by setup    76 the driver's test of a stamp's line turned round
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -79,6 +83,7 @@
 #                                                 refused under a mutant and from a run with a failure
 # The transcript is compared under mutants 26, 27, 28 and 58 only: every other one must be caught by its own case.
 set -u
+unset L1_UPDATE_DIR L1_UPDATE L1_UPDATE_NOW L1_FETCHED_COMMIT   # the record of versions is the cases' own
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 LAUNCHER="$REPO/cities-skylines-2/launchers/launch-cs2-dxmt11.sh"
@@ -90,6 +95,7 @@ C="$R/common/install-core.sh"; cp "$REPO/common/install-core.sh" "$C"   # the sh
 : > "$R/cities-skylines-2/repatch.sh"; : > "$R/common/make-launcher-app.sh"
 : > "$R/common/paths.sh"; : > "$R/cities-skylines-2/scripts/move-install.sh"   # setup's own files (docs/plans/local-files-layout.md, 3.4)
 cp "$REPO/common/wrappers.sh" "$R/common/wrappers.sh"; : > "$R/common/move-wrappers.sh"   # the resolver, real; the mover, setup's (docs/plans/wrapper-names.md)
+: > "$R/common/updates.sh"; : > "$R/common/games.tsv"   # setup's record of versions (docs/plans/built-in-update.md, 3.3)
 mutate() {  # <sed expression> <grep that proves it applied>
   sed -i '' "$1" "$S" "$C"; cat "$S" "$C" | grep -q -- "$2" || { echo "REFUSED: mutant did not apply"; exit 2; }
 }
@@ -166,8 +172,13 @@ case "${MUTANT:-0}" in
   64) sed -i '' 's# --mark game "\$GAME_APPID"##g' "$C"; grep -q -- '--mark game' "$C" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   65) mutate 's#^export L1_WRAPPER_GIVEN$#: no export#' '^: no export$' ;;
   66) mutate 's#^W="\$(l1w_incomplete game "\$GAME_APPID")" || W=#W=#' '^W="\$HOME/Applications/\$(l1w_name' ;;
-  67|68|69) ;;   # applied below, to the real setup.sh of the WT11 copy
+  67|68|69|75|76) ;;   # applied below, to the real setup.sh of the WT11 copy (76: to the driver beside it)
   70) mutate 's#^core_after_setup \$?$#(exit $?)   \# no core_after_setup: the code kept, the lock not followed#' '^(exit \$?)   # no core_after_setup' ;;
+  # UT2 (docs/plans/built-in-update.md, U0): 71 silent for a finished install only; 72 silent for a stopped download too; 73 the wrapper not asked for first
+  71) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed) return 0 ;; esac; fi#' '^if prefix_known; then case "\$(game_state)" in installed) return 0 ;; esac; fi$' ;;
+  72) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed|update|partial) return 0 ;; esac; fi#' '^if prefix_known; then case "\$(game_state)" in installed|update|partial) return 0' ;;
+  73) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#case "$(game_state)" in installed|update) return 0 ;; esac#' '^case "\$(game_state)" in installed|update) return 0 ;; esac$' ;;
+  74) mutate 's#^for f in "\$GAME_ROOT/../common/updates.sh" "\$GAME_ROOT/../common/games.tsv"; do .*#for f in; do#' '^for f in; do$' ;;
 esac
 
 fails=0
@@ -485,8 +496,15 @@ newh; done_all; rc="$(STUB_PY_EXIT=1 run)"
 check "tools there, python3 broken: exit 1, Apple not asked" "$rc:$(calls 'XS --install')" "1:0"
 
 # --- step 3: the wrapper
+# UT2 (docs/plans/built-in-update.md, U0): the free-space caution is for an install that still has to download
 newh; done_all
-check "low space: a CAUTION line, and on" "$(STUB_DF_KB=50000000 run):$(said 'CAUTION: 47 GB free')" "0:1"
+check "low space on a finished install: no CAUTION, and on" "$(STUB_DF_KB=50000000 run):$(said 'CAUTION: ')" "0:0"
+newh; bash "$MKW" "$WR" steam game 6
+check "low space with a game update waiting: no CAUTION" "$(STUB_DF_KB=50000000 run):$(said 'CAUTION: ')" "0:0"
+newh; bash "$MKW" "$WR" steam game 1026; dl installed
+check "low space with a download that stopped: the CAUTION, and on" "$(STUB_DF_KB=50000000 run):$(said 'CAUTION: 47 GB free')" "0:1"
+newh; rc="$(STUB_DF_KB=50000000 STUB_MW_EXIT=1 run)"
+check "low space and no wrapper yet: the CAUTION, and no unbound variable" "$rc:$(said 'CAUTION: 47 GB free'):$(said 'unbound variable')" "1:1:0"
 newh; rc="$(STUB_MW_EXIT=1 run)"; check "make-wrapper fails: exit 1" "$rc" 1
 newh; rc="$(STUB_MW_EXIT=3 run)"; check "make-wrapper finds another build at work: exit 3" "$rc" 3
 newh; : > "$ST/game"; STUB_GAME_OTHER="$T/elsewhere"; export STUB_GAME_OTHER; dl installed
@@ -698,6 +716,12 @@ mv "$T/repatch.away" "$R/cities-skylines-2/repatch.sh"
 newh; done_all; mv "$R/common/paths.sh" "$T/paths.away"
 check "common/paths.sh gone: exit 4, setup not run, and no Rosetta offer made of it" "$(run):$(grep -c '^SETUP  via' "$CALLS"):$(said 'softwareupdate --install-rosetta'):$(calls SOFTWAREUPDATE):$(said "The installer's own files are gone")" "4:0:0:0:1"
 mv "$T/paths.away" "$R/common/paths.sh"
+# UT5, also (docs/plans/built-in-update.md, 3.3): the files of setup's record of versions are the installer's own too
+for gone in updates.sh games.tsv; do
+  newh; done_all; mv "$R/common/$gone" "$T/$gone.away"
+  check "common/$gone gone: exit 4 in the own-files words, setup not run" "$(run):$(grep -c '^SETUP  via' "$CALLS"):$(said "The installer's own files are gone")" "4:0:1"
+  mv "$T/$gone.away" "$R/common/$gone"
+done
 newh; done_all; mv "$R/cities-skylines-2/scripts/move-install.sh" "$T/mover.away"
 check "scripts/move-install.sh gone: exit 4, setup not run" "$(run):$(grep -c '^SETUP  via' "$CALLS")" "4:0"
 mv "$T/mover.away" "$R/cities-skylines-2/scripts/move-install.sh"
@@ -749,6 +773,7 @@ cp -R "$REPO/cities-skylines-2/scripts" "$REPO/cities-skylines-2/launchers" "$RE
 for f in "$REPO"/cities-skylines-2/patches/patch_*.py; do : > "$G2/patches/$(basename "$f")"; done
 cp "$S" "$G2/scripts/install.sh"; cp "$C" "$R2/common/install-core.sh"   # the copies under test: a mutant of either applies here too
 cp "$REPO/common/paths.sh" "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
+cp "$REPO/common/updates.sh" "$REPO/common/games.tsv" "$R2/common/"   # the real setup keeps its record of versions (docs/plans/built-in-update.md, 3.3)
 printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"; printf '#!/bin/bash\nexit 1\n' > "$T/wt11bin/xcrun"
 printf '#!/bin/bash\n[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"\nexit 0\n' > "$T/wt11bin/wprobe"
 # this Mac, the same on any Mac, so that the transcript does not depend on the one it runs on (as scripts/test-setup.sh has it)
@@ -761,6 +786,7 @@ case "${MUTANT:-0}" in
   67) sed -i '' 's#^\[ "\${CS2_VIA_INSTALLER:-0}" = 1 \] \&\& \[ "\${L1_WRAPPER_GIVEN:-}" = 0 \] \&\& unset CS2_WRAPPER$#: no unset#' "$S2"; grep -q '^: no unset$' "$S2" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   68) sed -i '' 's#\[ "\${L1_WRAPPER_GIVEN:-}" = 0 \] \&\& unset CS2_WRAPPER#[ "${L1_WRAPPER_GIVEN:-0}" = 0 ] \&\& unset CS2_WRAPPER#' "$S2"; grep -q 'L1_WRAPPER_GIVEN:-0' "$S2" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
   69) sed -i '' 's#a+=(--holders-skip --held-by "\$PPID")#a+=(--held-by "$PPID")#' "$S2"; grep -q -- '--holders-skip --held-by' "$S2" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  75) sed -i '' 's#^  l1u_stamp 949230 "\$REPO/\.\." \&\& return 0$#  return 0   \# no stamp#' "$S2"; grep -q '^  return 0   # no stamp$' "$S2" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
 esac
 run2() {   # [VAR=value ...] -- [install.sh arguments]: the WT11 copy; output in $H.out; echoes the exit code
   local envs=(); while [ "$1" != -- ]; do envs+=("$1"); shift; done; shift
@@ -782,9 +808,63 @@ check "WT11 the variable given by the caller: nothing renamed, and the line says
 oldw
 rc="$(env -u L1_WRAPPER_GIVEN HOME="$H" PATH="$T/wt11bin:$B:$PATH" L1_WMOVE_PROBE="$T/wt11bin/wprobe" CS2_VIA_INSTALLER=1 CS2_WRAPPER="$WR" bash "$S2" > "$H.out" 2>&1 < /dev/null; echo $?)"
 check "WT11 setup alone with CS2_VIA_INSTALLER=1, the variable set and L1_WRAPPER_GIVEN not set: nothing renamed" "$rc:$([ -d "$WR" ] && echo kept)" "0:kept"
+# what the root install.sh exports reaches the real setup through the installer: its stamp (docs/plans/built-in-update.md, 3.1)
+TAB="$(printf '\t')"
+oldw
+check "UT5 through the installer and the real setup: the stamp holds the line, no version (this tree has no changelog), the commit and the time" \
+  "$(run2 L1_FETCHED_REF=release L1_FETCHED_COMMIT=0123456789abcdef0123456789abcdef01234567 L1_UPDATE_NOW=1800000000 --):$(cat "$(HOME="$H" bash "$R2/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')/installed/949230" 2>/dev/null)" "0:release${TAB}-${TAB}0123456789abcdef0123456789abcdef01234567${TAB}1800000000"
 oldw
 check "WT11 a holder reported by the probe: the installer exits 0, one skip line, nothing renamed" \
   "$(run2 STUB_WHOLDERS=4242 --):$(said '^  skip: something of the wrapper.s Wine is still running'):$([ -d "$WR" ] && echo kept)" "0:1:kept"
+
+# --- UT7b (docs/plans/built-in-update.md, 3.4 and section 6): the parts joined. The root install.sh, pasted with
+#     the word update, fetches an archive of the WT11 copy (a stub curl serves it) and goes through the real
+#     driver, this installer and the real setup. The table's other game has a stub installer that keeps no
+#     record. The name of the fetch's temporary folder is replaced in what is compared with the transcript.
+HWT="$H"   # the last case's home: put back below, so that the closing case's part of the transcript stays as it was
+cp "$REPO/common/update-games.sh" "$R2/common/"; printf '%s\n' '# Changelog' '' '## Unreleased' '' '## v0.1.0 (2026-01-01)' '' 'One.' > "$R2/CHANGELOG.md"
+if [ "${MUTANT:-0}" = 76 ]; then
+  sed -i '' 's#^  if \[ "\$line" != "\$L1_FETCHED_REF" \]; then$#  if [ "$line" = "$L1_FETCHED_REF" ]; then#' "$R2/common/update-games.sh"
+  grep -q '^  if \[ "\$line" = "\$L1_FETCHED_REF" \]; then$' "$R2/common/update-games.sh" || { echo "REFUSED: mutant did not apply"; exit 2; }
+fi
+OTHER="$(awk -F'\t' '$1 == 3215050 { print $2 }' "$R2/common/games.tsv")"; mkdir -p "$R2/$OTHER/scripts" "$T/ut7bbin" "$T/ut7btmp"
+printf '#!/bin/bash\necho "SECOND args=$* update=${L1_UPDATE:-}" >> "$CALLS"\necho "  the other game.s installer (a stub) stops here"\nexit "${STUB_SECOND_EXIT:-0}"\n' > "$R2/$OTHER/scripts/install.sh"
+( cd "$T" && tar -czf "$T/ut7b.tar.gz" repo2 )
+cat > "$T/ut7bbin/curl" << X
+#!/bin/bash
+case " \$* " in *"/archive/"*) ;; *) exec "$B/curl" "\$@" ;; esac   # the archive of the repository; anything else is the installer's own
+echo "ARCHIVE \$*" >> "\$CALLS"
+out=""; while [ \$# -gt 0 ]; do case "\$1" in -o) out="\$2"; shift 2 ;; *) shift ;; esac; done
+cp "$T/ut7b.tar.gz" "\$out"; printf 200
+X
+chmod +x "$T/ut7bbin/curl"
+upd() {   # [VAR=value ...]: install.sh update, pasted; HOME=$H; output in $H.out; echoes the exit code
+  local rc
+  env -u CS2_WRAPPER -u L1_TRACE -u CS2_VIA_INSTALLER -u L1_WRAPPER_GIVEN HOME="$H" TMPDIR="$T/ut7btmp" PATH="$T/ut7bbin:$T/wt11bin:$B:$PATH" \
+    L1_KILL="$B/killrec" L1_WMOVE_PROBE="$T/wt11bin/wprobe" L1_UPDATE_NOW=1800000000 "$@" \
+    /bin/bash -c "$(cat "$REPO/install.sh")" 1launcher-install update > "$H.raw" 2>&1 < /dev/null; rc=$?
+  sed 's#1launcher-fetch\.[A-Za-z0-9]*#1launcher-fetch.X#g' "$H.raw" > "$H.out"; echo "$rc"
+}
+recorded() {   # a finished install whose record says release at v0.0.9, with the tree's version on offer
+  newh; done_all; UD="$(HOME="$H" bash "$R2/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"; mkdir -p "$UD/installed"
+  printf 'release\tv0.0.9\t-\t100\n' > "$UD/installed/949230"; printf 'v0.1.0\t200\n' > "$UD/offer"
+}
+state() { env HOME="$H" L1_UPDATE_DIR="$UD" bash "$R2/common/updates.sh" | cut -f1-3; }   # the tree's tool on this home's record
+recorded
+check "UT7b a finished install recorded at v0.0.9, v0.1.0 on offer: the state is ready" "$(state)" "ready${TAB}v0.0.9${TAB}v0.1.0"
+rc="$(upd)"
+check "UT7b install.sh update through the real driver, installer and setup: exit 0, the stamp holds the tree's version, and the deployed tool says current" \
+  "$rc:$(calls '^ARCHIVE .*/archive/refs/heads/release\.tar\.gz$'):$(cat "$UD/installed/949230" 2>/dev/null):$(env HOME="$H" bash "$UD/updates.sh" 2>/dev/null | cut -f1-3):$(ls -A "$T/ut7btmp" | wc -l | tr -d ' ')" \
+  "0:1:release${TAB}v0.1.0${TAB}-${TAB}1800000000:current${TAB}v0.1.0${TAB}v0.1.0:0"
+recorded; W2="$H/Applications/$(bash "$REPO/common/wrappers.sh" name game 3215050)"; bash "$MKW" "$W2"
+plutil -replace L1Role -string game-wrapper "$W2/Contents/Info.plist"; plutil -replace L1SteamAppID -integer 3215050 "$W2/Contents/Info.plist"
+mkdir -p "$W2/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"; : > "$W2/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark/Mars.exe"
+printf 'release\tv0.0.9\t-\t100\n' > "$UD/installed/3215050"
+rc="$(upd STUB_SECOND_EXIT=3)"
+check "UT7b with the second game's installer made to stop: exit 3, this game's stamp is new, the other's is old, and the state stays ready" \
+  "$rc:$(calls '^SECOND args= update=1$'):$(cut -f2 "$UD/installed/949230" 2>/dev/null):$(cut -f2 "$UD/installed/3215050" 2>/dev/null):$(state)" \
+  "3:1:v0.1.0:v0.0.9:ready${TAB}v0.0.9${TAB}v0.1.0"
+H="$HWT"
 check "no run reached the runaway guard" "$(cat "$T/runaway" 2>/dev/null | wc -l | tr -d ' ')" 0
 # --- the transcript: what the installer printed in every case above, against what it printed when last recorded
 GOLD="$HERE/test-install.golden"

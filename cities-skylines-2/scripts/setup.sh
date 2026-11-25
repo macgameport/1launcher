@@ -13,7 +13,8 @@
 #   bash scripts/setup.sh --mac-only   # check this Mac only (Apple Silicon, Rosetta, macOS), then stop
 #
 # Read from the environment by scripts/install.sh's runs: CS2_VIA_INSTALLER=1 (the caution question was
-# asked already; two lines speak of the installer) and L1_FETCHED_REF=<ref> (the checkout is a temporary copy).
+# asked already; two lines speak of the installer) and L1_FETCHED_REF=<ref> (the checkout is a temporary copy),
+# with L1_FETCHED_COMMIT beside it; and L1_UPDATE=1, set by an update: the Desktop question is not asked.
 #
 # What it does:
 #   1. verifies the wrapper, Steam and the game are where they should be
@@ -26,6 +27,10 @@
 #      shortfall is a fix not out yet for this build of the game, setup finishes, says so, and exits 5
 #   4. builds "Cities Skylines II.app" in ~/Applications with the game's own icon, then 14unch3r.app,
 #      the window that lists every game set up on this Mac (common/make-launcher-app.sh)
+#   5. records which version this was (docs/plans/built-in-update.md, 3.1 and 3.3): common/updates.sh is copied
+#      into the folder `bash common/paths.sh` prints as L1_UPDATE_DIR, a file update-dir beside the launcher names
+#      that folder, and at the end, for exit 0 and exit 5, one line is written to its installed/949230. A run
+#      that only checks, or that is given a folder to install into, touches nothing of that folder
 set -u
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -63,14 +68,22 @@ while [ $# -gt 0 ]; do
     *) echo "unknown option: $1 (try --help)"; exit 2 ;;
   esac
 done
+# the record of which version this game was set up from (docs/plans/built-in-update.md, 3.1 and 3.3): a run with
+# --check, --mac-only or --dest touches nothing of it
+RECORD=1
+if [ "$CHECK_ONLY" = 1 ] || [ "$MAC_ONLY" = 1 ] || [ -n "$DEST" ]; then RECORD=0; fi
 
 # --- setup's own files (docs/plans/local-files-layout.md, 3.1): the rule for where the files go, and the script
 #     that moves an older install. A --mac-only run needs neither and is outside the check: scripts/install.sh
 #     reads that run's exit 1 as "Rosetta is missing".
 PATHS="$REPO/../common/paths.sh"; MOVER="$REPO/scripts/move-install.sh"
 RESOLVER="$REPO/../common/wrappers.sh"; WMOVER="$REPO/../common/move-wrappers.sh"   # docs/plans/wrapper-names.md
+UPDATES="$REPO/../common/updates.sh"; GAMES="$REPO/../common/games.tsv"               # docs/plans/built-in-update.md, 3.3
 if [ "$MAC_ONLY" = 0 ]; then
   for f in "$PATHS" "$MOVER" "$RESOLVER" "$WMOVER"; do
+    [ -f "$f" ] || { echo "  !! setup's own files are missing ($(tilde "$f")). Open the installer again, or run setup from a whole checkout."; exit 1; }
+  done
+  for f in "$UPDATES" "$GAMES"; do   # a loop of its own: the one above is as older tests know it
     [ -f "$f" ] || { echo "  !! setup's own files are missing ($(tilde "$f")). Open the installer again, or run setup from a whole checkout."; exit 1; }
   done
 fi
@@ -133,6 +146,7 @@ if [ "$MAC_ONLY" = 0 ]; then
   [ -n "${CS2_PATCH_DIR:-}" ] && [ "$CS2_PATCH_DIR" != "$RUNTIME" ] && NAMED=1
   [ "$L1_ROOTS_SET" = 1 ] && NAMED=1
   [ -n "$DEST" ] || DEST="$CS2_DATA"
+  [ "$RECORD" = 1 ] && . "$UPDATES"   # the l1u_* functions; L1_UPDATE_DIR is paths.sh's
 fi
 # three voices, as the other route-dependent lines below
 WDECLINE_VAR='L1_KEEP_WRAPPER_NAMES=1'
@@ -336,6 +350,16 @@ own_folder() {   # <folder>: 0 when it is a real folder of this user's that grou
   case "$(stat -f %Lp "$1")" in *[2367]?|*[2367]) return 1 ;; esac
   return 0
 }
+# the record's folder, the one that holds it, and installed/ in it are each the user's own too, tested here, before
+# any folder is made: a folder that fails stops setup before anything of the record is written
+# (docs/plans/built-in-update.md, 3.3 item 2)
+if [ "$RECORD" = 1 ]; then
+  for d in "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installed"; do
+    if [ -e "$d" ] || [ -L "$d" ]; then
+      own_folder "$d" || { echo "  !! $(tilde "$d") is not a folder of your own that only you can write to; setup will not keep its record of versions there."; exit 1; }
+    fi
+  done
+fi
 case "$DEST/" in "$L1_DATA_ROOT"/*)
   for d in "$L1_DATA_ROOT" "$DEST" "$DEST/patches"; do
     if [ -e "$d" ] || [ -L "$d" ]; then
@@ -346,6 +370,32 @@ case "$DEST/" in "$L1_DATA_ROOT"/*)
     [ -d "$d" ] || { mkdir -p "$d" && chmod go-w "$d"; } || { echo "  !! $(tilde "$d") could not be made."; exit 1; }
   done ;;
 esac
+# the record's folders are made after the runtime folder's (docs/plans/built-in-update.md, 3.3 item 2)
+if [ "$RECORD" = 1 ]; then
+  for d in "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installed"; do
+    [ -d "$d" ] || { mkdir -p "$d" && chmod go-w "$d"; } || { echo "  !! $(tilde "$d") could not be made."; exit 1; }
+  done
+fi
+# the record's two copies are written beside their place and renamed over it, never written in place (as
+# surviving-mars-relaunched/scripts/setup.sh writes every copy): a launcher may be reading the tool
+put() {   # <from> <to>
+  local tmp="$2.new.$$"
+  if cp "$1" "$tmp" && chmod 755 "$tmp" && mv -f "$tmp" "$2"; then return 0; fi
+  rm -f "$tmp"; echo "  !! $(tilde "$2") could not be written."; exit 1
+}
+put_line() {   # <one line> <to>
+  local tmp="$2.new.$$"
+  if printf '%s\n' "$1" > "$tmp" && chmod 644 "$tmp" && mv -f "$tmp" "$2"; then return 0; fi
+  rm -f "$tmp"; echo "  !! $(tilde "$2") could not be written."; exit 1
+}
+# the stamp (docs/plans/built-in-update.md, 3.3 item 5): called when the work is done, after the exit for problems,
+# so for exit 0 and exit 5 and for no other. A stamp that cannot be written is said, and changes no exit code.
+stamp_step() {
+  [ "$RECORD" = 1 ] || return 0
+  l1u_stamp 949230 "$REPO/.." && return 0
+  echo "  !! This version could not be recorded ($(tilde "$L1_UPDATE_DIR/installed/949230")). 14unch3r will not offer updates for this game."
+  return 0
+}
 
 # ---------------------------------------------------------------- install
 echo
@@ -365,6 +415,12 @@ mkdir -p "$DEST/patches" && cp "$REPO"/patches/*.py "$DEST/patches/" 2>/dev/null
 rm -rf "$DEST/patches/_vendor" && cp -R "$REPO/patches/_vendor" "$DEST/patches/_vendor" \
   && echo "  patches/_vendor (dnfile and pefile, which the patch scripts use)"
 cp "$RESOLVER" "$DEST/" && echo "  wrappers.sh (how the launcher finds the game's wrapper)"
+# the record's tool, and beside the launcher the line that names its folder: here, before the window is built, so
+# that a first setup already gives a window that finds the tool (docs/plans/built-in-update.md, 3.3 items 3 and 4)
+if [ "$RECORD" = 1 ]; then
+  put "$UPDATES" "$L1_UPDATE_DIR/updates.sh"
+  put_line "$L1_UPDATE_DIR" "$DEST/update-dir"
+fi
 
 # ---------------------------------------------------------------- the wrappers' names (docs/plans/wrapper-names.md, 3.4)
 # After the copies, so that a wrapper renamed here is found by the launcher just deployed even if setup fails later.
@@ -509,6 +565,7 @@ desktop_step() {
   if [ "$DESKTOP" = 1 ]; then _look=1
   elif [ "$ASSUME_YES" = 0 ] && [ -t 0 ]; then _look=1; _ask=1
   fi
+  [ "${L1_UPDATE:-}" = 1 ] && [ "$_ask" = 1 ] && { _look=0; _ask=0; }   # an update: nobody is watching for this question
   _state=unlooked
   if [ "$_look" = 1 ]; then _state=$("$WINDOW_PROG" --alias "$WINDOW_APP" "$HOME/Desktop/14unch3r" 2>/dev/null); fi
   if [ "$_state" = none ]; then
@@ -581,6 +638,26 @@ move_blocks() {
   return 0
 }
 
+# the closing words of the record (docs/plans/built-in-update.md, 3.3 item 6):
+# every other game that is set up on this Mac (a wrapper with the game's program in it, looked for with the game's
+# wrapper variable unset: one left in the environment must not decide what is set up) and has no stamp
+unrecorded_games() {
+  local id w title
+  [ "$RECORD" = 1 ] || return 0
+  for id in $(l1w_games); do
+    [ "$id" = 949230 ] && continue
+    l1w_row game "$id" || continue
+    w="$( [ -z "$L1W_VAR" ] || unset "$L1W_VAR"; l1w_find game "$id" 2>/dev/null )" || continue
+    l1w_program "$w" "$L1W_PROGRAM" || continue
+    l1u_stamp_of "$id" > /dev/null && continue
+    title="$(awk -F'\t' -v id="$id" '$1 == id { print $3; exit }' "$GAMES" 2>/dev/null)"
+    [ -n "$title" ] || continue
+    echo
+    echo "$title was set up by an older version. Paste its installer line once, so that it gets updates too."
+  done
+  return 0
+}
+
 ADD_ONE="To add one:  bash scripts/setup.sh --desktop"
 AFTER_UPDATE="re-run  bash scripts/setup.sh  (updates reset the patched DLLs)."
 if [ "${CS2_VIA_INSTALLER:-0}" = 1 ]; then
@@ -593,6 +670,7 @@ if [ "$problems" -gt 0 ]; then
   echo "=== setup finished with $problems problem(s): see the lines marked !! above ==="
   exit 1
 fi
+stamp_step
 desktop_step
 
 echo
@@ -612,6 +690,7 @@ After a game update: $AFTER_UPDATE
 Troubleshooting: INSTALL.md, then GOTCHAS.md.
 DONE
 move_blocks; rename_blocks
+unrecorded_games
 if [ "$NOFIX" = 1 ]; then
   echo
   echo "=== setup finished, but not every Mac fix is out yet for this build of the game: see the lines marked >> above ==="

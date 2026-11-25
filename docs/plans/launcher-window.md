@@ -423,7 +423,7 @@ For each line whose app id has no `game` row, the window asks whether the accoun
   An address that does not start `https://github.com/` drops the row.
 - **A game that is set up is never hidden** (D7). A shared library or a second account can make a game
   playable without its package being in this file, and Steam decides the licence at launch.
-- The window sends nothing anywhere. No test fixture is copied or cut from a real `packageinfo.vdf`: the
+- The window sends nothing anywhere. (Ended by `docs/plans/built-in-update.md`, 3.10 and UD12, from the release that carries it: the window runs `_update/updates.sh`, which asks GitHub for one public file, at most once a day and when "Check for Updates…" is chosen.) No test fixture is copied or cut from a real `packageinfo.vdf`: the
   tests write their own. A Mac with no game set up has no prefix to read and so shows no offer.
 
 ### 2.6 The icon

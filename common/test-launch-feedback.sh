@@ -24,6 +24,16 @@
 #   MUTANT=16 ...  signin_wait does not start its count again when Steam is back; must exit 1
 #   MUTANT=17 ...  signin_wait takes a limit of four digits or more as it is; must exit 1
 #   MUTANT=18 ...  signin_wait returns the test's own code after the limit; must exit 1
+#   MUTANT=19 ...  signin_wait starts again a Steam that was seen for less than 60 s; must exit 1
+#   MUTANT=20 ...  signin_wait starts Steam again without counting (a third restart); must exit 1
+#   MUTANT=21 ...  signin_wait starts Steam again with less than 60 s of the wait left; must exit 1
+#   MUTANT=22 ...  signin_wait forgets at a restart that Steam was seen (waits on for one that never comes); must exit 1
+#   MUTANT=23 ...  signin_wait does not start its count of the time Steam was seen again at a restart; must exit 1
+#   MUTANT=24 ...  signin_wait goes on when the start word fails; must exit 1
+#   MUTANT=25 ...  signin_wait says nothing at a restart; must exit 1
+#   MUTANT=26 ...  signin_wait starts Steam again when it was given no start word; must exit 1
+#   MUTANT=27 ...  signin_wait takes a limit with a leading zero as it stands (090 is an error in arithmetic); must exit 1
+#   MUTANT=28 ...  signin_wait does not start its count of the time Steam is gone again at a restart; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/launch-feedback-test.XXXX)"
@@ -55,11 +65,21 @@ for g in "${GAMES[@]}"; do
     11) mutate "$L" 's/^    if \[ "\$hinted" = 0 \] && \[ "\$t" -ge 45 \]; then /    if [ "$t" -ge 45 ]; then /' '    if [ "$t" -ge 45 ]; then hinted=1; step "$1" "Still signing in.' ;;
     12) mutate "$L" 's/^  local limit="\${L1_SIGNIN_SECS:-600}" t=0 /  local limit="${L1_SIGNIN_SECS:-120}" t=0 /' '  local limit="${L1_SIGNIN_SECS:-120}" t=0 ' ;;
     13) mutate "$L" 's/; step "\$1" "Still signing in\./; step 2 "Still signing in./' '; step 2 "Still signing in.' ;;
-    14) mutate "$L" 's/^      elif \[ "\$seen" = 1 \]; then gone=/      else gone=/' '      else gone=$((gone + 3)); [ "$gone" -ge 15 ] && return 1; fi' ;;
-    15) mutate "$L" 's/; \[ "\$gone" -ge 15 \] && return 1; fi$/; fi/' '      elif [ "$seen" = 1 ]; then gone=$((gone + 3)); fi' ;;
-    16) mutate "$L" 's/^      if "\$3"; then seen=1; gone=0$/      if "$3"; then seen=1/' '      if "$3"; then seen=1' ;;
+    14) sed -i '' 's/^      elif \[ "\$seen" = 1 \]; then$/      else/' "$L"; grep -q '^      elif \[ "\$seen" = 1 \]; then$' "$L" && mutated ;;
+    15) mutate "$L" 's/^        if \[ "\$gone" -ge 15 \]; then$/        if false; then/' '        if false; then' ;;
+    16) mutate "$L" 's/^      if "\$3"; then seen=1; gone=0; lived=/      if "$3"; then seen=1; lived=/' '      if "$3"; then seen=1; lived=$((lived + 3))' ;;
     17) mutate "$L" "s/^  case \"\$limit\" in ''|\*\[!0-9\]\*|????\*) limit=600 ;; esac$/  case \"\$limit\" in ''|*[!0-9]*) limit=600 ;; esac/" "  case \"\$limit\" in ''|*[!0-9]*) limit=600 ;; esac" ;;
     18) awk '/^  "\$2" && return 0$/ { print "  \"$2\""; getline; next } { print }' "$L" > "$L.new" && mv "$L.new" "$L"; grep -q '^  "\$2"$' "$L" || mutated ;;
+    19) mutate "$L" 's/^          \[ -n "\${4:-}" \] && \[ "\$lived" -ge 60 \] && /          [ -n "${4:-}" ] \&\& /' '          [ -n "${4:-}" ] && [ "$again" -lt 2 ] && ' ;;
+    20) mutate "$L" 's/ && \[ "\$lived" -ge 60 \] && \[ "\$again" -lt 2 \] && / \&\& [ "$lived" -ge 60 ] \&\& /' ' && [ "$lived" -ge 60 ] && [ $((limit - t)) -ge 60 ] || return 1' ;;
+    21) mutate "$L" 's/ && \[ "\$again" -lt 2 \] && \[ \$((limit - t)) -ge 60 \] || return 1$/ \&\& [ "$again" -lt 2 ] || return 1/' ' && [ "$again" -lt 2 ] || return 1' ;;
+    22) mutate "$L" 's/^          again=\$((again + 1)); gone=0; lived=0$/          again=$((again + 1)); gone=0; lived=0; seen=0/' '          again=$((again + 1)); gone=0; lived=0; seen=0' ;;
+    23) sed -i '' 's/^          again=\$((again + 1)); gone=0; lived=0$/          again=$((again + 1)); gone=0/' "$L"; grep -q '^          again=\$((again + 1)); gone=0$' "$L" || mutated ;;
+    24) sed -i '' 's/^          "\$4" || return 1$/          "$4"/' "$L"; grep -q '^          "\$4"$' "$L" || mutated ;;
+    25) sed -i '' '/^          step "\$1" "Starting Steam again\./d' "$L"; grep -q 'Starting Steam again' "$L" && mutated ;;
+    26) mutate "$L" 's/^          \[ -n "\${4:-}" \] && \[ "\$lived" -ge 60 \] && /          [ "$lived" -ge 60 ] \&\& /' '          [ "$lived" -ge 60 ] && [ "$again" -lt 2 ] && ' ;;
+    27) mutate "$L" 's/^  limit=\$((10#\$limit))$/  limit=$((limit))/' '  limit=$((limit))' ;;
+    28) sed -i '' 's/^          again=\$((again + 1)); gone=0; lived=0$/          again=$((again + 1)); lived=0/' "$L"; grep -q '^          again=\$((again + 1)); lived=0$' "$L" || mutated ;;
     *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
   esac
   {
@@ -180,7 +200,9 @@ for g in "${GAMES[@]}"; do
   drive "$B" "$SW" N=20 "${P}_QUIET=1"; a=$(posts)
   drive "$B" "$SW" N=20 "${P}_QUIET=1" "${P}_PANEL=1"
   check "$tag sign-in wait: its hint is a step (1 pop-up with no window, 0 with it)" "$a:$(posts)" "1:0"
-  signcase "never, L1_SIGNIN_SECS of twenty digits: counts as 600"     100000 1 201 600 1 45 L1_SIGNIN_SECS=99999999999999999999
+  # (300 failing polls here, not 100000: a limit of twenty digits taken as it stands is a wait without end)
+  signcase "never, L1_SIGNIN_SECS of twenty digits: counts as 600"     300    1 201 600 1 45 L1_SIGNIN_SECS=99999999999999999999
+  signcase "never, L1_SIGNIN_SECS=090: 1 after 90 s, not an octal error" 100000 1 31  90  1 45 L1_SIGNIN_SECS=090
   drive "$B" 'bad() { return 2; }; signin_wait 4 bad; echo "rc:$?"' L1_SIGNIN_SECS=6
   check "$tag sign-in wait: a test that returns 2 gives 1 after the limit" "$(tail -1 "$T/out")" "rc:1"
   # --- the third word: is Steam there? GONE lists the looks at which it is not.
@@ -194,6 +216,52 @@ for g in "${GAMES[@]}"; do
   alivecase "Steam never seen: waited for until the limit"             100000 "1 2 3 4 5 6 7 8 9 10 11"   1 11 30 L1_SIGNIN_SECS=30
   alivecase "Steam gone 9 s, back, gone 6 s: waited for until the limit" 100000 "3 4 5 8 9"               1 11 30 L1_SIGNIN_SECS=30
   alivecase "Steam gone 6 s, back, then signed in: 0"                   6      "3 4"                       0 7  18
+  alivecase "Steam seen 60 s, then gone for 15 s, no fourth word: 1 at once" 100000 "21 22 23 24 25"       1 25 72
+  check "$tag   ...and no restart line" "$(grep -c 'Starting Steam again' "$T/out")" 0
+  # --- the fourth word: how to start Steam again (docs/plans/signin-restart.md, 4.1). The word given here counts
+  #     its calls, prints the look at which each came, and returns SRC. A look is one poll, every 3 s.
+  SR='c=0; s=0; polled() { c=$((c + 1)); [ "$c" -gt "$N" ]; }; up() { case " $GONE " in *" $c "*) return 1 ;; esac; return 0; }; again() { s=$((s + 1)); echo "start at look $c"; return "${SRC:-0}"; }; signin_wait 4 polled up again; echo "rc:$? polls:$c starts:$s"'
+  AGAIN='[4/5] Starting Steam again. If macOS asks a question, answer it…'
+  looks() { seq "$1" "$2" | tr '\n' ' '; }   # <first> <last>: those looks, as a list
+  startcase() {   # <name> <polls that fail first> <looks at which Steam is gone> <rc> <polls> <starts> <the looks of the starts, - for none> <restart lines> <seconds slept> [NAME=value ...]
+    local name="$1" nfail="$2" gone="$3" want="rc:$4 polls:$5 starts:$6 at:$7 lines:$8 slept:$9 other:0 stderr:0"; shift 9
+    drive "$B" "$SR" "N=$nfail" "GONE=$gone" "$@"
+    check "$tag sign-in wait, $name" \
+      "$(tail -1 "$T/out") at:$(awk '/^start at look / { a = a (a == "" ? "" : ",") $4 } END { print (a == "" ? "-" : a) }' "$T/out") lines:$(grep -cxF -- "$AGAIN" "$T/out") slept:$(awk '{ s += $1 } END { print s + 0 }' "$T/sleeps") other:$(grep -v -e '^start at look ' -e '^rc:' "$T/out" | grep -vxF -e "$HINT" -e "$AGAIN" | wc -l | tr -d ' ') stderr:$(wc -c < "$T/err" | tr -d ' ')" \
+      "$want"
+  }
+  startcase "seen 20 looks, gone 5: started again once at that look, as step 4, then signed in: 0" \
+    30 "$(looks 21 25)" 0 31 1 25 1 90
+  check "$tag   ...and the restart line comes before the start word is called" "$(grep -n -e '^start at look ' -e 'Starting Steam again' "$T/out" | sed 's/^[0-9]*://; s/ .*//' | tr '\n' ' ')" "[4/5] start "
+  startcase "seen 19 looks, gone 5: 1 at once, not started again" \
+    100000 "$(looks 20 24)" 1 24 0 - 0 69
+  startcase "three departures of a Steam seen 20 looks each: started again twice, 1 at the third" \
+    100000 "$(looks 21 25)$(looks 46 50)$(looks 71 75)" 1 75 2 25,50 2 222
+  startcase "57 s of the wait left: 1 at once, not started again" \
+    100000 "$(looks 21 25)" 1 25 0 - 0 72 L1_SIGNIN_SECS=129
+  startcase "60 s of the wait left: started again, and waited for until the limit" \
+    100000 "$(looks 21 25)" 1 45 1 25 1 132 L1_SIGNIN_SECS=132
+  startcase "started again and never seen for 5 looks: 1, one start" \
+    100000 "$(looks 21 400)" 1 30 1 25 1 87
+  startcase "started again, seen 10 looks and gone: 1, no second start" \
+    100000 "$(looks 21 25)$(looks 36 400)" 1 40 1 25 1 117
+  startcase "the start word returns 1: 1 at once, after its one line" \
+    100000 "$(looks 21 25)" 1 25 1 25 1 72 SRC=1
+  startcase "started again, first seen at the fourth look after it: the wait goes on, then signed in: 0, one start" \
+    40 "$(looks 21 25)$(looks 26 28)" 0 41 1 25 1 120
+  startcase "L1_SIGNIN_SECS=090 with the third and fourth words, Steam up and never signed in: 1 after 90 s" \
+    100000 "" 1 31 0 - 0 90 L1_SIGNIN_SECS=090
+  startcase "L1_SIGNIN_SECS=090, Steam seen 20 looks and gone 5: 18 s are left, 1 at once, not started again" \
+    100000 "$(looks 21 25)" 1 25 0 - 0 72 L1_SIGNIN_SECS=090
+  tot=""
+  for k in $(seq 1 40); do
+    drive "$B" "$SR" N=100000 "GONE=$(looks $((k + 1)) 400)" L1_SIGNIN_SECS=120
+    tot="$tot$(sed -n 's/^rc:\([0-9]*\) polls:[0-9]* starts:\([0-9]*\)$/\1\2/p' "$T/out")$(grep -c 'Starting Steam again' "$T/out")$(wc -c < "$T/err" | tr -d ' ') "
+  done
+  check "$tag sign-in wait, L1_SIGNIN_SECS=120, Steam leaving after each of 1 to 40 looks: 1, never started again" "$tot" "$(printf '1000 %.0s' $(seq 1 40))"
+  drive "$B" "$SR" N=30 "GONE=$(looks 21 25)" "${P}_QUIET=1"; a=$(grep -cxF 'Starting Steam again. If macOS asks a question, answer it…' "$T/osa")
+  drive "$B" "$SR" N=30 "GONE=$(looks 21 25)" "${P}_QUIET=1" "${P}_PANEL=1"
+  check "$tag sign-in wait: its restart line is a step (1 pop-up with no window, 0 with it)" "$a:$(grep -cxF 'Starting Steam again. If macOS asks a question, answer it…' "$T/osa"):$(posts)" "1:0:0"
 done
 
 echo "$fails failure(s)"

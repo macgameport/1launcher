@@ -15,7 +15,9 @@ the simpler answer is to run the game in CrossOver. What transfers to any setup 
 - `scripts/install.sh` — the installer ([INSTALL.md](INSTALL.md)): seven steps from nothing to the game's
   app, each skipped when done, on the installer core this repository's games share
   (`../common/install-core.sh`). `scripts/setup.sh` is its last step, and the way to update: it puts the
-  launcher and the click helper in the game's state folder and builds the app to run that copy.
+  launcher and the click helper in the game's state folder and builds the app to run that copy. From
+  v0.3.1 it also records which version the game was set up from, so that 14unch3r can say when a newer one
+  is out and run the installer again in one click ([INSTALL.md](INSTALL.md), "Updates").
 - `tools/fetch-d3dmetal.sh` — fetches the pinned archive that holds Apple's D3DMetal 3.0 from Gcenx's
   release page, takes the six pieces out, and checks them: Apple's signature on the framework and the
   library, a fixed SHA-256 on each of the four DLLs.

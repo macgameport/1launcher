@@ -1,8 +1,11 @@
 #!/bin/bash
 # test-make-launcher-app.sh -- common/make-launcher-app.sh builds 14unch3r.app (docs/plans/launcher-window.md,
 # 2.3 and 2.6; W6; docs/plans/launcher-window-look.md, W13). Every build goes into a scratch folder, from a scratch copy of common/ that a mutant may
-# edit, with HOME at a scratch folder. The built program is only asked for --folders, --list and --icon: the
-# window itself is never opened. No game, no Steam, no Wine.
+# edit, with HOME at a scratch folder. The built program is only asked for --folders, --list, --icon and
+# --update-tool: the window itself is never opened. No game, no Steam, no Wine. The key L1UpdateDir
+# (docs/plans/built-in-update.md, 3.3 and 3.5; UT8) is built from a fourth scratch common/, the only one that holds
+# paths.sh, with L1_UPDATE_DIR at scratch folders: the builder writes it only when the update tool is deployed
+# there, and the window's --update-tool reads what the builder wrote.
 #   bash common/test-make-launcher-app.sh            exit 0 = every case passed; exit 2 = swiftc is missing,
 #                                                    which is not a pass: nothing was tested
 #   MUTANT=1 ...   the app is built straight into the target, not in a build folder; must exit 1
@@ -13,9 +16,11 @@
 #   MUTANT=6 ...   the name check is dropped (a name starting with - builds); must exit 1
 #   MUTANT=7 ...   CFBundleIconFile is written when the icon failed; must exit 1
 #   MUTANT=8 ...   the small drawing used for no size; must exit 1
+#   MUTANT=9 ...   the key L1UpdateDir written when the tool is absent; must exit 1
+#   MUTANT=10 ...  the window reading another key than the builder writes; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-for f in make-launcher-app.sh launcher-window.swift games.tsv; do
+for f in make-launcher-app.sh launcher-window.swift games.tsv paths.sh; do
   [ -f "$HERE/$f" ] || { echo "REFUSED: common/$f not found"; exit 2; }
 done
 xcrun -f swiftc >/dev/null 2>&1 || { echo "REFUSED: swiftc is missing (install the Xcode Command Line Tools); nothing was tested"; exit 2; }
@@ -41,6 +46,9 @@ case "${MUTANT:-0}" in
   7) sed -i '' 's|^if \[ "\$ICON_OK" = 1 \]; then plutil -replace CFBundleIconFile|if true; then plutil -replace CFBundleIconFile|' "$BUILDER"
      grep -q '^if true; then plutil -replace CFBundleIconFile' "$BUILDER" || mutated ;;
   8) drop "$BUILDER" '"$EXE" --icon "$B/icon-small.png" small' ;;
+  9) sed -i '' 's|^  if \[ -n "\$UPDATE_DIR" \] && \[ -f "\$UPDATE_DIR/updates.sh" \] && \[ ! -L "\$UPDATE_DIR/updates.sh" \]; then$|  if [ -n "$UPDATE_DIR" ]; then|' "$BUILDER"
+     grep -q '^  if \[ -n "\$UPDATE_DIR" \]; then$' "$BUILDER" || mutated ;;
+  10) sed -i '' 's|return text(d\["L1UpdateDir"\])$|return text(d["L1UpdateFolder"])|' "$SRC"; grep -q 'return text(d\["L1UpdateFolder"\])$' "$SRC" || mutated ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 
@@ -150,6 +158,46 @@ grep -q 'if rest.count == 2 || !drawIcon' "$T/nosmall/common/launcher-window.swi
 : > "$T/sips.log"; rc=$(HOME="$T/home" PATH="$T/rec:$PATH" /bin/bash "$T/nosmall/common/make-launcher-app.sh" --dest "$T/ns" > "$T/out" 2>&1; echo $?)
 check "the small form cannot be drawn: all ten from the full one, and the icon is still packed" \
   "$rc:$(sources | tr ' ' '\n' | grep -c '<icon.png$'):$(px CFBundleIconFile "$T/ns/14unch3r.app")" "0:10:14unch3r.icns"
+
+# --- the update tool's folder (docs/plans/built-in-update.md, 3.3 and 3.5; UT8). The builder reads the folder from
+# common/paths.sh beside it, so these builds come from a scratch common/ that holds it; the tool is an empty stub,
+# and nothing calls it: --update-tool only says where the window would look.
+# where paths.sh puts the folder under a home with nothing set: taken from paths.sh, never spelled here
+# (common/test-paths.sh, LT14, lists the files that may spell a root)
+UPD3="$(env -u L1_DATA_ROOT -u L1_WORK_ROOT -u L1_UPDATE_DIR HOME="$T/home3" bash "$HERE/paths.sh" 2>/dev/null | sed -n 's/^L1_UPDATE_DIR=//p')"
+case "$UPD3" in "$T/home3/"*/_update) ;; *) echo "REFUSED: paths.sh gave no update folder under the scratch home"; exit 2 ;; esac
+mkdir -p "$T/upd/common" "$T/u1" "$T/u2" "$T/u3" "$T/u4" "$UPD3"
+cp "$BUILDER" "$SRC" "$T/repo/common/games.tsv" "$HERE/paths.sh" "$T/upd/common/"
+printf '#!/bin/bash\nexit 0\n' > "$T/u1/updates.sh"
+cp "$T/u1/updates.sh" "$T/u4/updates.sh"; cp "$T/u1/updates.sh" "$UPD3/updates.sh"
+ln -s "$T/u1/updates.sh" "$T/u3/updates.sh"
+mku() {   # <update folder or -> <dest> [<home>]: a build with L1_UPDATE_DIR at the folder (-: not set); echoes the exit code
+  if [ "$1" = - ]; then
+    env -u L1_UPDATE_DIR HOME="${3:-$T/home}" /bin/bash "$T/upd/common/make-launcher-app.sh" --dest "$2" > "$T/out" 2>&1
+  else
+    HOME="${3:-$T/home}" L1_UPDATE_DIR="$1" /bin/bash "$T/upd/common/make-launcher-app.sh" --dest "$2" > "$T/out" 2>&1
+  fi
+  echo $?
+}
+ut() { local a="$1"; shift; "$a/14unch3r.app/Contents/MacOS/launcher-window" --update-tool ${1+"$@"} 2>&1; }
+rc=$(mku "$T/u1" "$T/k1")
+check "the update tool is deployed: L1UpdateDir holds its folder, the plist lints, and --update-tool from inside the app prints the tool" \
+  "$rc:$(px L1UpdateDir "$T/k1/14unch3r.app"):$(plutil -lint "$T/k1/14unch3r.app/Contents/Info.plist" >/dev/null 2>&1 && echo lint):$(ut "$T/k1")" "0:$T/u1:lint:$T/u1/updates.sh"
+rc=$(mku "$T/u2" "$T/k2")
+check "the tool is absent at the build: built, no key, and --update-tool prints -" "$rc:$(px L1UpdateDir "$T/k2/14unch3r.app"):$(ut "$T/k2")" "0::-"
+cp "$T/u1/updates.sh" "$T/u2/updates.sh"
+check "  ...deployed after that build: still -, until the window is built again" "$(ut "$T/k2")" "-"
+rc=$(mku "$T/u3" "$T/k3")
+check "the tool is a link: no key, and -" "$rc:$(px L1UpdateDir "$T/k3/14unch3r.app"):$(ut "$T/k3")" "0::-"
+rc=$(mku - "$T/k4" "$T/home3")
+check "L1_UPDATE_DIR not set: the folder is the one paths.sh gives, under that HOME, and its space survives" \
+  "$rc:$(px L1UpdateDir "$T/k4/14unch3r.app"):$(ut "$T/k4")" \
+  "0:$UPD3:$UPD3/updates.sh"
+check "--update-dir wins over the key; a relative one, and one that holds a link, give -" \
+  "$(ut "$T/k1" --update-dir "$T/u4")|$(cd "$T" && ut "$T/k1" --update-dir u4)|$(ut "$T/k1" --update-dir "$T/u3")" "$T/u4/updates.sh|-|-"
+mv "$T/u1/updates.sh" "$T/u1/gone.sh"
+check "the key names a folder whose tool is gone: -" "$(px L1UpdateDir "$T/k1/14unch3r.app"):$(ut "$T/k1")" "$T/u1:-"
+check "no paths.sh beside the builder, as in every build further up: no key, and -" "$(px L1UpdateDir "$A"):$(ut "$D")" ":-"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

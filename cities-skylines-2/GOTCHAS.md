@@ -2639,9 +2639,20 @@ rename on 2026-11-18 (P4) raised no question either: neither is explained.
   running, **came up as a Steam client of its own** and sat in the same wait for 3 min 1 s; the launcher
   waited on it in the foreground, so its "Steam did not sign in by itself" came 6 min 30 s after the start.
   So no length of `L1_SIGNIN_SECS` helps while the question is open, and the Surviving Mars launcher's
-  shutdown call costs three minutes more (Cities: Skylines II's launcher makes no such call there). Not
-  built: start Steam again while the wait lasts, and never send `-shutdown` when no Steam of the prefix is
-  up. The watch and its output: the Surviving Mars workspace, `probe-issue32/`.
+  shutdown call costs three minutes more (Cities: Skylines II's launcher makes no such call there). The
+  watch and its output: the Surviving Mars workspace, `probe-issue32/`.
+- **Built (`docs/plans/signin-restart.md`; its live steps passed on the Studio, 2026-11-24 and 2026-11-25):** while the wait lasts,
+  `signin_wait` starts again a Steam that was seen for 60 s and has left, at most twice and not in the wait's
+  last 60 s, through each launcher's `start_steam`; and neither launcher sends `-shutdown` when no Steam of
+  its prefix is up, nor runs it in the foreground.
+- ⚠ **A call put in the background is not bounded unless its own process is waited for.** With only
+  `steam_exe_up` to look at, the first look comes before the client the call became holds the prefix, the
+  loop ends at once, and nothing ends the client (measured with stubs: 2 s, and one process left). So the
+  launchers keep the call's process id, give that process 60 s, and only then look for Steam; `wineserver -k`
+  runs when Steam is still up or the call is still there, and a plain TERM goes to the call if it is.
+- ⚠ **A limit with a leading zero is an error in arithmetic.** `L1_SIGNIN_SECS=090` passes a test for one to
+  three digits, and `$((limit - t))` then prints "value too great for base" and abandons the whole list
+  `signin_wait ... || die`: neither the wait's 1 nor the `die` happens. `limit=$((10#$limit))` first.
 - A path that has been answered is not asked again, a rename back to it included.
 
 
@@ -3303,3 +3314,16 @@ has the same order (the address cleared at `+0xbb`, the entry's next read again 
 - **Rule:** before a clean run of a test that works by stopping a thread is taken as a result, show that the
   thread can be stopped at the place that matters on that build. The scratch variant and its outputs are in the
   workspace, `probe-issue30/` (`rip/`, `rip-*.txt`, `run-1116-*.txt`).
+
+## A program started from a Claude session is not asked what macOS would ask a player (2026-11-24)
+
+**A permission question (the microphone, for one) is put to the RESPONSIBLE process, and for anything started from
+a session's shell that is Claude.** Claude already has the microphone, so Wine started that way is never asked and
+signs in at once; started from a game's app, `wine64` is responsible and is asked after every rename. It voided one
+probe of issue #32, and it means a clean `boot-verify.sh` run from a session says nothing about what a player is
+asked: the runs after the renames of W2 and W3 (`docs/plans/wrapper-names.md`) were started that way.
+
+- **Tell:** in `/usr/bin/log show --predicate 'process == "tccd" AND eventMessage CONTAINS "AUTHREQ"'`, the request's
+  `AUTHREQ_SUBJECT` names `com.anthropic.claude-code` (a session) or the wrapper's `wine64` (an app).
+- **To test a question,** start the thing with `open` on an app: the game's own, or a scratch app whose program is a
+  shell script of the same form (trash it afterwards, then `lsregister -u` it: the move registers it again).

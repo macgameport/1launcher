@@ -24,7 +24,7 @@ case "${MUTANT:-0}" in
 esac
 pass=0; fail=0
 check() { if [ "$2" = "$3" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: $1"; echo "   got:  $2"; echo "   want: $3"; fi; }
-CLEAN="env -u L1_DATA_ROOT -u L1_WORK_ROOT -u CS2_PATCH_DIR -u CS2_WORK_DIR -u SM_STATE -u SM_WORK -u CS2_DATA -u CS2_WORK -u L1_ROOTS_SET"
+CLEAN="env -u L1_DATA_ROOT -u L1_WORK_ROOT -u CS2_PATCH_DIR -u CS2_WORK_DIR -u SM_STATE -u SM_WORK -u CS2_DATA -u CS2_WORK -u L1_ROOTS_SET -u L1_UPDATE_DIR"
 AS="Library/Application Support/1launcher"; DV="Library/Developer/1launcher"
 get() { h="$1"; k="$2"; shift 2; $CLEAN HOME="$h" "$@" bash "$P" 2>/dev/null | sed -n "s/^$k=//p"; }
 state() {   # <home> [env...]: CS2_DATA|CS2_WORK with the home as ~
@@ -59,7 +59,7 @@ for hh in h1 h2; do   # sourced twice in one shell, and again in a child that in
   check "sourced twice and in a child, under set -eu ($hh)" "$out" same
 done
 check "sourcing prints nothing and exports nothing" "$($CLEAN HOME="$T/h1" bash -c '. "$1"; env | grep -c "^CS2_DATA=\|^L1_DATA_ROOT="' _ "$P" 2>&1)" "0"
-check "run, it prints six KEY=value lines" "$($CLEAN HOME="$T/h1" bash "$P" | grep -c '^[A-Z0-9_]*=/')" 6
+check "run, it prints seven KEY=value lines" "$($CLEAN HOME="$T/h1" bash "$P" | grep -c '^[A-Z0-9_]*=/')" 7
 w="$(get "$T/h1" CS2_WORK env)"; s="$(get "$T/h1" SM_WORK env)"
 sp=none; case "$w$s" in *" "*) sp=space ;; esac
 check "the default CS2_WORK and SM_WORK have no space" "$sp" none
@@ -69,8 +69,9 @@ h="$T/h1"
 check "SM_STATE and SM_WORK at their defaults" "$(get "$h" SM_STATE env)|$(get "$h" SM_WORK env)" "$h/$AS/surviving-mars-relaunched|$h/$DV/surviving-mars-relaunched"
 check "SM_STATE and SM_WORK overridden" "$(get "$h" SM_STATE env SM_STATE=/tmp/s)|$(get "$h" SM_WORK env SM_WORK=/tmp/w)" "/tmp/s|/tmp/w"
 check "SM_* are outside the old-install rule" "$(get "$T/h2" SM_STATE env)" "$T/h2/$AS/surviving-mars-relaunched"
-check "both roots set to scratch folders, in a home with an old install: all six follow" "$($CLEAN HOME="$T/h2" L1_DATA_ROOT="$T/D" L1_WORK_ROOT="$T/W" bash "$P" | tr '\n' ' ')" \
-  "L1_DATA_ROOT=$T/D L1_WORK_ROOT=$T/W CS2_DATA=$T/D/cities-skylines-2 CS2_WORK=$T/W/cities-skylines-2 SM_STATE=$T/D/surviving-mars-relaunched SM_WORK=$T/W/surviving-mars-relaunched "
+check "both roots set to scratch folders, in a home with an old install: all seven follow" "$($CLEAN HOME="$T/h2" L1_DATA_ROOT="$T/D" L1_WORK_ROOT="$T/W" bash "$P" | tr '\n' ' ')" \
+  "L1_DATA_ROOT=$T/D L1_WORK_ROOT=$T/W CS2_DATA=$T/D/cities-skylines-2 CS2_WORK=$T/W/cities-skylines-2 SM_STATE=$T/D/surviving-mars-relaunched SM_WORK=$T/W/surviving-mars-relaunched L1_UPDATE_DIR=$T/D/_update "
+check "L1_UPDATE_DIR at its default, and overridden (docs/plans/built-in-update.md, 3.1)" "$(get "$h" L1_UPDATE_DIR env)|$(get "$h" L1_UPDATE_DIR env L1_UPDATE_DIR=/tmp/u)" "$h/$AS/_update|/tmp/u"
 
 # --- LT2: the .command wrapper, which carries the rule inline
 stub() { mkdir -p "$1"; printf '#!/bin/bash\necho "$0"\n' > "$1/launch-cs2-dxmt11.sh"; }

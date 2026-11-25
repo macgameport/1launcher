@@ -68,6 +68,19 @@ Good to know:
 - **Stopped part way?** Paste the line again. It carries on from the step it stopped at. Closing the
   window or pressing Control-C stops the installer only: Steam stays open. Pasting the line again on a
   finished install is also how to update.
+- **Updates (from v0.3.1).** When a new version of 1launcher is out, 14unch3r says so at the foot of its
+  window, and the game's app says so in a notification. Click the line, read what changed, and click Update:
+  Terminal opens and runs the installer again for every game set up on this Mac. Nothing is installed until
+  you click Update. Pasting the installer line again does the same. On a Mac with no 14unch3r, paste the line
+  with the word `update` where the game's ID stands.
+- **What the check sends.** By itself at most once a day, when you open 14unch3r or start a game, this Mac
+  asks GitHub for one public file, the list of changes. GitHub sees this Mac's network address and the time,
+  as for any page. Nothing about you or your games is sent.
+- **To switch the check off:** `touch ~/Library/Application\ Support/1launcher/_update/off`. Delete that
+  file to switch it on again. With it off, update by pasting the installer line.
+- **If you pasted the line with a variable in front** (`CS2_PATCH_DIR=...` or `L1_KEEP_WRAPPER_NAMES=1`): do
+  not use Update in 14unch3r. It runs the installer without them, which moves the folder or renames the
+  wrappers. Paste your line again instead.
 - **If you use mods from Paradox Mods.** A new install starts with them switched off, and through Steam
   Cloud they are then switched off on your other install too. At its first start the game asks again for
   its two agreements and for your Paradox account, and warns that the mods could not be loaded. Log in,
@@ -150,9 +163,9 @@ may still list files and web pages before the game's app; that order is Spotligh
 renames the wrapper: nothing is copied. It says what it renamed. It stops, and changes nothing, while the game or
 another launch or install is using the wrapper; when the rename cannot be made safely for another reason, it skips
 it, says why, and tries again at its next run. At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
-way. Answered within about a minute, Steam signs in as before and the game starts. If the start ends with "Steam
-did not sign in by itself", start the game again once the question is answered: with the question left open, Steam
-itself gives up after about three minutes, and the message comes some minutes after that.
+way. From v0.3.1 an answer within about nine minutes still brings the game up: Steam itself gives up after about
+three, and the launcher starts it again and says so. If the start ends with "Steam did not sign in by itself" all
+the same, answer the question and start the game again.
 
 **What stops working until you point it at the new name:** anything of yours that names the old path: a Dock
 item made from the wrapper, an alias, a saved command. The game's app and 14unch3r find the wrapper whatever its
@@ -195,8 +208,11 @@ To clear one, with the game and this wrapper's Steam closed:
 
 Measured on 2026-11-07 with one save deleted and the rest equal to the cloud's: Steam fetched all ten
 cloud files in 22 seconds, with no conflict, and the deleted save came back byte for byte. What Steam
-does with a file that differs from the cloud's when its record is gone has not been measured, which is
-why step 2 deletes those files as well.
+does with a file that differs from the cloud's when its record is gone was not measured then, which is
+why step 2 deletes those files as well. Measured on 2026-11-24, with a conflict on two files cleared this
+way: Steam fetched the cloud's copy of both with no conflict, added two saves that only the cloud had, and
+**replaced one save that differed from the cloud's with the cloud's newer copy.** So a save changed on
+this Mac and never uploaded can be lost at step 3: the copy made in step 1 is what keeps it.
 
 ## Uninstall
 

@@ -92,10 +92,15 @@ cat > "$C" <<'EOS'
 trap 'rm -f "$0"; rmdir "$(dirname "$0")" 2>/dev/null' EXIT
 clear
 echo "Fetching the installer from github.com/macgameport/1launcher ..."
-S="$(curl --proto '=https' --tlsv1.2 -fsSL "https://raw.githubusercontent.com/macgameport/1launcher/@REF@/install.sh")"; rc=$?
-if [ "$rc" = 0 ]; then
+# The script is fetched into a file beside this one and never taken from curl's standard output, where the
+# answer's code (-w) would become its last line. The answer is judged by that code, not by which non-zero
+# exit curl gave (for a 404: 56 over HTTP/2, 22 over HTTP/1.1).
+F="$(dirname "$0")/.1launcher-fetch.$$"
+code="$(curl --proto '=https' --tlsv1.2 -sSL -o "$F" -w '%{http_code}' "https://raw.githubusercontent.com/macgameport/1launcher/@REF@/install.sh")"; rc=$?
+S="$(cat "$F" 2>/dev/null)"; rm -f "$F"
+if [ "$rc" = 0 ] && [ "$code" = 200 ]; then
   /bin/bash -c "$S" 1launcher-install @APPID@ "@REF@"
-elif [ "$rc" = 22 ]; then
+elif [ "$code" = 404 ]; then
   echo "This installer has been withdrawn or has moved. The current one is at:"
   echo "  https://github.com/macgameport/1launcher"
 else

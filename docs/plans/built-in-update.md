@@ -18,6 +18,8 @@ release that carries this raises the third number).
 > merged, not in `release`); of step U6, UL1, UL1b, UL1c, UL2 (the Studio) and UL3 (the MacBook) passed on
 > 2026-11-24 and are recorded below; UL4 (the first real
 > offer) can only come at the first release after the one that carries this, and UD5's rulesets are not set.**
+> **Since 2026-11-25 this branch also holds `signin-restart`** (#32's launcher fix, `docs/plans/signin-restart.md`,
+> merged as `d927504`), so both go into `main` and into one release. The live steps above ran on launchers without it.
 > Still to come, each on James's word: the rulesets, the merge into `main`, the tag, and `release`. UL1 found
 > one defect, fixed in `b24a4f7`: the update sheet's notes opened in the middle of their text.
 > Commits: `fb0213e` (U0), `f234c3e` and `797b97e` (U1), `146f711` (U2), `0a93b3b` (U3), `df5a5a6` (U4),

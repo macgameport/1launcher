@@ -438,3 +438,23 @@ so no launcher re-assert is needed.
 - **Shipped:** `README.md` § Performance (machine-labelled), AGW draft second footnote, GOTCHAS 2026-10-16.
   **Still open:** P3's vsync decision (by feel) and D4 (second display unplugged).
 
+## 1.6.4 on the Mac Studio: the upscaler, shadows and anti-aliasing (2026-11-25)
+
+Not a benchmark: one reading each of Metal's counter (`CS2_HUD=1`), read off a capture of a suburb
+(Amasa, saved in 1.6.2f1) in the Fullscreen Window, 2560x1440, 60 Hz, vsync on, Level of Detail 0.25, upscaler
+disabled, the simulation running. The camera moved a little between captures, so trust the order more than the gaps.
+Each row's settings were read from `Settings.coc` at the time.
+
+| Shadows | Anti-aliasing | FPS | GPU | Frame interval |
+|---|---|---|---|---|
+| High (map 4096) | TAA | 54.96 | 18.39 ms | 18.19 ms |
+| **Medium (2048)** | **TAA** | **58.54** | **17.34 ms** | **17.08 ms** |
+| Medium (2048) | SMAA High | 55.81 | 17.97 ms | 17.92 ms |
+
+- **Kept (James): Medium + TAA.** Low shadows (1024, terrain shadows off) were the daily driver's; their edges were
+  seen stair-stepped on the road. Low was not read with the counter.
+- **Seen, cause not known:** the thin dark line along a kerb is a hard dashed line with SMAA and with TAA, before and
+  after a fresh start, and tower crane masts are drawn with gaps (Level of Detail 0.25 is a guess). No same-camera
+  comparison of None, SMAA and TAA was made, so whether anti-aliasing changes the picture on 1.6.4 is open.
+- **FSR 3 at Quality** was on by itself before this and is not in the table: its frame rate was not read. GOTCHAS,
+  2026-11-25. Outputs: the workspace, `city-164f1-20261125/`.

@@ -95,6 +95,11 @@ Every number is labelled with its machine; the full method and every run are in
 display profile sets it), Dynamic Resolution **Disabled**, Anti-aliasing **High SMAA**, Level of Detail **0.25**,
 mip bias **0**, VSync **on**, Maximum frame latency **2** (the default); the rest as in the results doc's lean block.
 
+**Since game version 1.6.4** there is one more setting to check: **Upscaler → Disabled** (AMD FSR 3 can be on
+without your choosing it, and draws the city at two thirds of the resolution). On the Mac Studio the owner's
+choice since 2026-11-25 is shadows **Medium** and anti-aliasing **TAA** in place of Low and High SMAA
+([the three readings](docs/perf-pass-results.md#164-on-the-mac-studio-the-upscaler-shadows-and-anti-aliasing-2026-11-25)).
+
 **What was measured and did not help** (Mac Studio, 2026-10-12…15): a DXMT frame cap at 30 or 60, Maximum frame
 latency 1 (**−13 %** — leave it at 2), and Unity `boot.config` tuning (job-worker count, allocator sizes). On the
 Studio a benchmark frame takes ~21 ms while the CPU work the game measures takes ~14 ms; making that work cheaper

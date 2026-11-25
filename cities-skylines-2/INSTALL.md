@@ -514,9 +514,9 @@ wrapper. When a rename cannot be made safely for another reason (Steam open in t
 you buy something, say), it skips that one, says why, and tries again at its next run. A wrapper in
 `/Applications` is used where it is and never renamed. `bash scripts/setup.sh --check` says what a run would do.
 At the first start after the rename macOS may ask once more whether wine64 may use the microphone. Answer it, either
-way. Answered within about a minute, Steam signs in as before and the game starts. If the start ends with "Steam
-did not auto-login", start the game again once the question is answered: with the question left open, Steam itself
-gives up after about three minutes, and the start ends then.
+way. From v0.3.1 an answer within about nine minutes still brings the game up: Steam itself gives up after about
+three, and the launcher starts it again and says so. If the start ends with "Steam did not auto-login" all the
+same, answer the question and start the game again.
 
 **What stops working until you point it at the new name:** anything of yours that names an old path: a Dock item
 made from a wrapper, an alias, a saved command, a Porting Kit entry. The game's app, 14unch3r and S734M.app find
@@ -550,7 +550,7 @@ back first, as above.
 
 | Symptom | What's happening |
 |---|---|
-| "Steam did not auto-login" | Either macOS asked a question and it was not answered in time (after a wrapper is renamed it asks again whether wine64 may use the microphone; with the question left open, Steam itself gives up after about three minutes and the launcher then stops): answer it and relaunch. Or the saved token expired: open Steam inside the wrapper, sign in until the library loads, then relaunch. |
+| "Steam did not auto-login" | Either macOS asked a question and it was not answered in time (after a wrapper is renamed it asks again whether wine64 may use the microphone; with the question left open, Steam itself gives up after about three minutes; the launcher starts it again, and stops after ten minutes): answer it and relaunch. Or the saved token expired: open Steam inside the wrapper, sign in until the library loads, then relaunch. |
 | No main menu after a fresh start, and `platform service integration failed` in the game's `SceneFlow.log` | The game started before Steam had confirmed your licence. Start it once from Terminal with a longer wait, `CS2_LICENCE_WAIT=45 bash "$HOME/Library/Application Support/1launcher/cities-skylines-2"/launch-cs2-dxmt11.sh`, and please open an issue: the default of 15 seconds rests on two Macs. |
 | Game exits immediately, launch fails with code 1 | A stale `.crash` marker from a force-kill. The launcher clears it automatically now; if it persists, delete `.../Steam/.crash` inside the prefix. |
 | Black screen with a working cursor | The Coherent Gameface UI fix didn't apply. Re-run `bash scripts/setup.sh` and check its patch output, or see [When a fix is not out yet](#when-a-fix-is-not-out-yet). |

@@ -64,7 +64,8 @@
 #   "Account storage loaded" (10/10 of those runs, 7 of 23 at 45 s); cause not identified, README.
 # SM_UPDATE=ask|apply|skip -> what to do when Steam has a game update waiting (default ask; see 2b).
 # L1_SIGNIN_SECS=<s> -> how long to wait for Steam's sign-in, 0 to 999 (default 600: a question from macOS can
-#   hold it; tools/licence-wait-probe.sh sets 120).
+#   hold it; within that time a Steam that leaves is started again, at most twice; tools/licence-wait-probe.sh
+#   sets 120).
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SM_STATE="${SM_STATE:-$HOME/Library/Application Support/1launcher/surviving-mars-relaunched}"
@@ -135,20 +136,34 @@ licence_wait() {   # <step> <seconds as set, may be empty> <default>: the wait a
     if [ "$w" -gt 15 ]; then sleep 15; w=$((w - 15)); else sleep "$w"; w=0; fi
   done
 }
-signin_wait() {   # <step> <test> [<alive>]: wait for Steam's sign-in; 0 = signed in, 1 = not
+signin_wait() {   # <step> <test> [<alive> [<start>]]: wait for Steam's sign-in; 0 = signed in, 1 = not
   # After 45 s the step line says what may be holding Steam up: a question from macOS (after a rename it
   # asks again whether wine64 may use the microphone), or its check of a wrapper not opened for a long time.
-  # The wait is L1_SIGNIN_SECS (600; a value that is not one to three digits counts as 600). With <alive>
-  # given, it ends early once Steam was seen and has then been gone for 15 s in a row: no answer brings back
-  # a Steam that died. A Steam not seen yet is waited for: macOS can hold its first process for minutes.
-  local limit="${L1_SIGNIN_SECS:-600}" t=0 hinted=0 seen=0 gone=0
+  # The wait is L1_SIGNIN_SECS (600; a value that is not one to three digits counts as 600, and 090 is 90:
+  # read as it stands, a leading zero is an error in the arithmetic below). With <alive>
+  # given, a Steam that was seen and has then been gone for 15 s in a row counts as gone. With <start> given
+  # too, it is then started again through that word and the wait goes on: Steam gives up by itself about
+  # three minutes into a question left open, and an answer brings back only a Steam that is running. That
+  # is done at most twice, only for a Steam that had been seen for 60 s since it was last started, and only
+  # with 60 s of the wait left; otherwise, and with no <start>, the wait ends early with 1. A Steam not seen
+  # yet is waited for: macOS can hold its first process for minutes (docs/plans/signin-restart.md).
+  local limit="${L1_SIGNIN_SECS:-600}" t=0 hinted=0 seen=0 gone=0 lived=0 again=0
   case "$limit" in ''|*[!0-9]*|????*) limit=600 ;; esac
+  limit=$((10#$limit))
   while [ "$t" -lt "$limit" ]; do
     "$2" && return 0
     if [ "$hinted" = 0 ] && [ "$t" -ge 45 ]; then hinted=1; step "$1" "Still signing in. If macOS asks a question, answer it…"; fi
     if [ -n "${3:-}" ]; then
-      if "$3"; then seen=1; gone=0
-      elif [ "$seen" = 1 ]; then gone=$((gone + 3)); [ "$gone" -ge 15 ] && return 1; fi
+      if "$3"; then seen=1; gone=0; lived=$((lived + 3))
+      elif [ "$seen" = 1 ]; then
+        gone=$((gone + 3))
+        if [ "$gone" -ge 15 ]; then
+          [ -n "${4:-}" ] && [ "$lived" -ge 60 ] && [ "$again" -lt 2 ] && [ $((limit - t)) -ge 60 ] || return 1
+          again=$((again + 1)); gone=0; lived=0
+          step "$1" "Starting Steam again. If macOS asks a question, answer it…"
+          "$4" || return 1
+        fi
+      fi
     fi
     sleep 3; t=$((t + 3))
   done
@@ -356,28 +371,38 @@ signin_outcome() {
     else if (/Eval complete/ && r == "") r = "current"
   } END { print (r == "" ? "none" : r) }'
 }
+# >>> stop-steam
 stop_steam() {
-  "$STEAM_WINE" "$STEAM" -shutdown >/dev/null 2>&1
-  for _ in $(seq 1 20); do steam_exe_up || break; sleep 1; done
-  steam_exe_up && "$ENGINE/bin/wineserver" -k >/dev/null 2>&1
+  _sd=""
+  if steam_exe_up || { sleep 1; steam_exe_up; }; then   # with no Steam of this prefix up, the call itself becomes a Steam client (issue #32)
+    "$STEAM_WINE" "$STEAM" -shutdown >/dev/null 2>&1 & _sd=$!; disown
+    for _ in $(seq 1 60); do kill -0 "$_sd" 2>/dev/null || { _sd=""; break; }; sleep 1; done
+    [ -z "$_sd" ] && for _ in $(seq 1 20); do steam_exe_up || break; sleep 1; done
+  fi
+  { steam_exe_up || [ -n "$_sd" ]; } && "$ENGINE/bin/wineserver" -k >/dev/null 2>&1
   sleep 2
+  [ -n "$_sd" ] && kill -0 "$_sd" 2>/dev/null && kill "$_sd" 2>/dev/null   # the call still there: plain TERM, never -9
   _strays="$(steam_family)"
   [ -n "$_strays" ] && kill $_strays 2>/dev/null   # plain TERM, never -9
 }
+# <<< stop-steam
 
 signed_in() { tail -n +$((BEFORE + 1)) "$CL" 2>/dev/null | grep -qE "LogOnResponse.*'OK'|\[Logged On" && steam_exe_up; }
+start_steam() {   # start this prefix's Steam in the background: the first start, and the sign-in wait's restarts
+  BEFORE=$(wc -l < "$CL" 2>/dev/null || echo 0)
+  rm -f "$WINEPREFIX/drive_c/Program Files (x86)/Steam/.crash" 2>/dev/null
+  # never nohup/env/setsid here: macOS strips DYLD_* and wine loses its fonts (cs2, 2026-08-30)
+  "$STEAM_WINE" "$STEAM" -silent -no-cef-sandbox >/dev/null 2>&1 & disown
+}
 STARTED=0
 if steam_exe_up; then
   step 1 "Steam is already running…"
 else
   step 1 "Starting Steam and signing in…"
   STARTED=1
-  BEFORE=$(wc -l < "$CL" 2>/dev/null || echo 0)
-  rm -f "$WINEPREFIX/drive_c/Program Files (x86)/Steam/.crash" 2>/dev/null
-  # never nohup/env/setsid here: macOS strips DYLD_* and wine loses its fonts (cs2, 2026-08-30)
-  "$STEAM_WINE" "$STEAM" -silent -no-cef-sandbox >/dev/null 2>&1 & disown
+  start_steam
   # A Steam left up after a failed sign-in would be "reused" by the next launch, skipping this check.
-  signin_wait 1 signed_in steam_exe_up || { stop_steam; die "Steam did not sign in by itself. If macOS asked a question (whether wine64 may use the microphone, for one), answer it and start the game again. Otherwise open Steam in the $(basename "$APP" .app) wrapper, sign in, then launch again."; }
+  signin_wait 1 signed_in steam_exe_up start_steam || { stop_steam; die "Steam did not sign in by itself. If macOS asked a question (whether wine64 may use the microphone, for one), answer it and start the game again. Otherwise open Steam in the $(basename "$APP" .app) wrapper, sign in, then launch again."; }
   licence_wait 2 "${SM_LICENCE_WAIT:-}" 15
 fi
 

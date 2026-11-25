@@ -14,7 +14,7 @@ findings of every pass and where each went are at the foot ("Review corrections"
 
 > **🔧 As-built (2026-11-24): partial — W1 built on the branch `wrapper-names` (pushed, not merged, not in
 > `release`); W2 run on the Studio; W2b (the sign-in wait) built (`5d23ddf`) and its live step passed there; W3 passed on the MacBook on 2026-11-24 with findings (#28, #32); W3b done the same day (merged into `main` as
-> `35f0eb8`, `v0.3.0` cut on it); W4: `release` moved on 2026-11-25, straight from `v0.1.0` to `v0.3.1` (`8678b48`), so the folder move went with it as WD8 says, and James was told so in the question; W4's last sentence, the pasted line run on the Studio, is still to come.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
+> `35f0eb8`, `v0.3.0` cut on it); W4: `release` moved on 2026-11-25, straight from `v0.1.0` to `v0.3.1` (`8678b48`), so the folder move went with it as WD8 says, and James was told so in the question; the pasted line of each game, run on the Studio the same day, renamed nothing and exited 0 (`docs/plans/built-in-update.md`, "The pasted line on the Studio"), which is exit criterion 6.** Commits: `32de2b5` (1.1, the resolver), `9cf6365` (1.2, the mover),
 > `5d8d263` and `6e9a3cf` (1.3 to 1.5: makers, installers, launchers, setups, the other readers, 14unch3r),
 > `78328e1`, `e9f7431`, `0fc680a` (the new cases: WT4b, WT11, WT14 to WT17), `422b183` (the tests that read a
 > real wrapper), `a2f935d` (1.6, the 19 research scripts), `11c1fd1` (1.7, the release gate, and WT12's list), and

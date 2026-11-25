@@ -24,7 +24,8 @@ release that carries this raises the third number).
 > **What the merge binds (step U6):** `main` now holds `common/updates.sh`, so `release` can take a commit of `main`
 > from `5100244` on only as a tagged release (the gate's fifth question). The commits before it, `v0.2.0` and `v0.3.0`
 > among them, hold no such file and are asked nothing new.
-> Still to come: a look at one installed Mac set up from `release` (section 10), on James's word, and UL4 at the next release. UL1 found
+> **The Studio was set up from `release` the same day** by the pasted line of each game (below, "The pasted line on the Studio"): its state is `current`.
+> Still to come: UL4 at the next release, and the MacBook's two pasted lines. UL1 found
 > one defect, fixed in `b24a4f7`: the update sheet's notes opened in the middle of their text.
 > Commits: `fb0213e` (U0), `f234c3e` and `797b97e` (U1), `146f711` (U2), `0a93b3b` (U3), `df5a5a6` (U4),
 > `b9b5bfd` (U5), in the order U0, U1, U2, U4, U5, U3: U3 and U4 were built side by side on separate files,
@@ -1356,6 +1357,29 @@ output. Never start it under `nohup`.
 run (`bash <game>/scripts/setup.sh` from a checkout on `main`, with the game and Steam closed, puts a game
 back). Record the step in this file under a heading "UL3 on the MacBook", in the form of "UL2 on the Studio"
 above, with what was measured; `git pull --rebase` first, commit with `refs #34`, and push to this branch.
+
+## The pasted line on the Studio after `release` moved (2026-11-25, on James's word: "Yes, run it"): passed
+
+The look at one installed Mac that section 10 asks for after a move of `release`; it is also the last sentence of
+wrapper-names' W4 and the live half of local-files-layout's LT24. Before: both stamps on the line `checkout` at
+`v0.3.0`, the state `manual`; nothing of Wine running, no lock. Each game's line was run as the guides give it (the
+script fetched from `release`, compared byte for byte with `v0.3.1`'s, then `/bin/bash -c "<it>" 1launcher-install
+<app ID>`), with its standard input closed, from `/tmp`. Outputs and the two lists of hashes:
+`<workspace>/release-v031-studio/`.
+
+| What | Result |
+|---|---|
+| Surviving Mars (3215050) | exit 0 in 6 s. "1launcher at commit `8678b48…`"; seven steps, every one `OK`; setup built the game's app, the panel and 14unch3r. No question asked, nothing renamed |
+| Cities: Skylines II (949230) | exit 0 in 11 s. Six steps `OK`; `data:` and `work:` name the two `~/Library` folders, no `move:` line; "wrapper: nothing to rename", twice; 10 of 10 patch scripts, every one "already patched"; the three apps built |
+| What changed on disk | Of 268 hashed files (everything under the project's `Application Support` folder but saves and run logs, the four apps in `~/Applications`, each wrapper's `Info.plist`, `ntdll.dll`, `win32u.dll` and `winemac.so`, the game's 183 managed DLLs and its cohtml plugin): **three**. The two stamps, and S734M's icon, which is Steam's again (looked at: no microphone). The launchers, the patch scripts, the patched game files and the wrappers are byte for byte what RL3 ran, so no game was started again. Surviving Mars's `ntdll.dll` (issue #30's) has the hash it had |
+| The installed files against the tag | both launchers and `_update/updates.sh` equal `v0.3.1`'s |
+| The stamps | both `release`, `v0.3.1`, the commit above |
+| The state | before any check `unknown`, installed `v0.3.1`. `updates.sh --refresh`: one request, `fetched`, the state **`current`**, offered `v0.3.1`; `offer`, `tried` and `notes.md` written, `notes.md` equal to the tag's `CHANGELOG.md`; nothing to show in the notes. A second `--refresh` at once: `skipped`, no request |
+| 14unch3r, in its text modes | three tiles, 444 by 172, no line at the foot; the menu's answer "1launcher v0.3.1 is the newest version." |
+| LT24's live half | `bash cities-skylines-2/scripts/setup.sh --check` from the checkout: exit 0, the two folders named, no `move:` line, "(--check: stopping before making changes)"; `~/cs2-patch` does not exist; both stamps as they were |
+
+Not seen, and not to be seen before the next release: an offer (UL4). Not done: the MacBook's two lines. Running
+beside it: one `ipcserver` of the Mac's own Steam app, whose client was not open; nothing of the project touches it.
 
 ## UD5's rulesets, set on 2026-11-25 (on James's word: "Yes, set them")
 

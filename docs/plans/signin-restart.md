@@ -3,7 +3,7 @@
 Written 2026-11-24 on the branch `signin-restart`, cut from `built-in-update` at `8b1e71e`. Issue #32 (its
 second and third subjects; its first, keeping Steam from asking at all, is not here).
 
-> **Status: check-it'd 2026-11-24 — build-ready-with-fixes (pass 1, folded); R0b, the probe, comes before any code.**
+> **Status: check-it'd 2026-11-24 — build-ready-with-fixes (pass 1, folded); R0b, the probe, ran the same night: `RELEASED`, so the build goes on.**
 > Nothing is built. The measurements in section 3 were taken on scratch copies under `/tmp/sr-plan/` with stub
 > programs: no Wine, no Steam, no game was started for this plan. The corrections of the check are folded
 > into the sections below and listed in "Review corrections" at the foot.
@@ -564,6 +564,34 @@ Only one is open.
 
 Settled here and passed by the check: 60 s seen, two restarts, 60 s left, no sweep of webhelpers, the final
 messages unchanged, 60 s for the call's own process.
+
+## R0b on the Studio (2026-11-24, on James's word: "Yes, start it", with him there): `RELEASED`
+
+`probe-restart.sh` in the Surviving Mars workspace's `probe-issue32/` (output `restart-2.log`). The wrapper was
+renamed by hand to `mic-probe-1124c.app`, its launch lock held, Steam alone started with the launcher's environment
+and start line, and the name put back.
+
+| When | What |
+|---|---|
+| 21:05:23 | the first Steam started |
+| 21:05:32 | its connectivity test began; macOS put the question, once |
+| 21:08:34 | the first Steam gone by itself, 191 s after its start, the question still open |
+| 21:08:46 | the second Steam started, the same way |
+| 21:08:47 | its connectivity test began and stood |
+| 21:09:25 | James answered (the one request, `authValue=2`) |
+| 21:09:26 | the second Steam's test went on, one second later |
+| 21:09:51 | it had signed in, 65 s after its start |
+
+**So an answer releases a Steam that was started after the question was put, and macOS does not ask again.**
+4.5's line needs no change. Afterwards: no Steam, no lock, no crash marker, three marked wrappers.
+
+**A first run, the same evening, was VOID, and why matters to every instrument here.** Started from a Claude
+session's shell (`restart-1.log`, `mic-probe-1124b.app`), Steam signed in at once: macOS's privacy log names the
+session's program (`com.anthropic.claude-code`) as the responsible process, which already had the microphone, and
+put no question. Started by an app of the form the games' apps have, `wine64` itself is responsible and is asked.
+So **RL1 and RL2 start the game from its app and never from a session's shell**, and the boot-verify runs of W2
+and W3 (`docs/plans/wrapper-names.md`), started from sessions, could not have met the question for Cities:
+Skylines II: its first start from its own app after the rename may still ask.
 
 ## Review corrections (check it 2026-11-24, pass 1)
 

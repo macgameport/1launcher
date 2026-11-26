@@ -812,7 +812,7 @@ enum Look {
     static func footSpoken(_ version: String) -> String { "1launcher \(version) is out, shows what changed" }
     static func out(_ version: String) -> String { "1launcher \(version) is out." }
     static func has(_ version: String) -> String { "This Mac has \(version)." }
-    static let updateText = "Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there."
+    static let updateText = "Update opens Terminal and runs the installer again for 14unch3r and each game set up here. It may ask you a question there."
     static let notNow = "Not Now", update = "Update", ok = "OK"
     static let notesLabel = "What changed"
     static let notesAddress = "What changed: https://github.com/macgameport/1launcher/blob/release/CHANGELOG.md"
@@ -826,8 +826,8 @@ enum Look {
     static let noneMessage = "This Mac is not yet set up for updates."
     static let noneText = "Paste each game's installer line once more. After that, 14unch3r says when a new version is out."
     static let manualMessage = "No update is offered on this Mac."
-    static let checkoutText = "Its games were set up from a checkout. Update with git pull, then run each game's setup."
-    static let namedText = "A game here was set up from a named version. Paste its installer line from the guide to follow new versions again."
+    static let checkoutText = "14unch3r or a game here was set up from a checkout. Update with git pull, then run install.sh launcher and each game's setup."
+    static let namedText = "14unch3r or a game here was set up from a named version. Paste the installer line from the guide again to follow new versions."
     static let unreadMessage = "The list of versions could not be read from GitHub."
     static let unreadText = "Check the network and try again later."
     static func newest(_ version: String) -> String { "1launcher \(version) is the newest version." }

@@ -24,6 +24,14 @@
 #   MUTANT=17 ..  the test of the record's folder dropped (step 2)
 #   MUTANT=18 ..  the match of the lock's target dropped
 #   MUTANT=19 ..  "No game is set up" said beside a failure
+# 14unch3r's own step (docs/plans/launcher-first-install.md, 3.5; LFT4); each must exit 1:
+#   MUTANT=20 ..  the launcher's installer run every time (at the fetched version too)
+#   MUTANT=21 ..  a launcher on another line run anyway
+#   MUTANT=22 ..  "No game is set up" said after the launcher was updated
+#   MUTANT=23 ..  the launcher's failure not counted
+#   MUTANT=24 ..  the launcher's stamp kept when the app is gone and no game is set up
+#   MUTANT=25 ..  a current launcher with no game made exit 3
+#   MUTANT=26 ..  the app's test made true for an absent app
 # The file `updates.sh --open` writes; each must exit 1:
 #   MUTANT=12 ..  `release` made `main` in the address it fetches
 #   MUTANT=16 ..  the fetched file run whatever the answer's code
@@ -61,6 +69,14 @@ case "${MUTANT:-0}" in
   17) mutate 's#^if ! l1u_own; then$#if false; then#' '^if false; then$' ;;
   18) mutate 's#^  if ! \[\[ "\$h" =~ \$PIDFORM \]\] || ! kill -0 "\$h" 2>/dev/null; then$#  if ! kill -0 "$h" 2>/dev/null; then#' '^  if ! kill -0 "\$h" 2>/dev/null; then$' ;;
   19) mutate 's#^elif \[ "\$SETUP" = 0 \] && \[ "\$FAILED" = 0 \]; then$#elif [ "$SETUP" = 0 ]; then#' '^elif \[ "\$SETUP" = 0 \]; then$' ;;
+  20) mutate 's#^  if \[ "\$ver" = "\$T" \]; then CURRENT=1; return 0; fi .*#  : run every time#' '^  : run every time$' ;;
+  21) mutate 's#^  if \[ "\$line" != "\$L1_FETCHED_REF" \]; then   \# 14unch3r follows another line$#  if false; then   \# 14unch3r#' '^  if false; then   # 14unch3r$' ;;
+  22) mutate 's#^  SETUP=\$((SETUP + 1))   \# from here on .*#  : not counted as set up#' '^  : not counted as set up$'
+      mutate 's#^  RAN=\$((RAN + 1))   \# 14unch3r.s installer ran$#  : not counted as run#' '^  : not counted as run$' ;;
+  23) mutate 's#^    \*) closing "!! 14unch3r: not rebuilt (exit \$rc)\. Its lines above say why\."; FAILED=\$((FAILED + 1)) ;;$#    *) closing "!! 14unch3r: not rebuilt (exit $rc). Its lines above say why." ;;#' '^    \*) closing "!! 14unch3r: not rebuilt (exit \$rc)\. Its lines above say why\." ;;$' ;;
+  24) mutate 's#^    rm -f "\$L1_UPDATE_DIR/launcher"; return 0$#    return 0#' '^    return 0$' ;;
+  25) mutate 's#^  SETUP=\$((SETUP + 1))   \# from here on .*#  : not counted as set up#' '^  : not counted as set up$' ;;
+  26) mutate 's#^  \[ -d "\$a" \] \&\& \[ ! -L "\$a" \] || return 1$#  [ -e "$a" ] || [ -L "$a" ] || return 0#' '^  \[ -e "\$a" \] || \[ -L "\$a" \] || return 0$' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 bash -n "$D" && bash -n "$U" || { echo "REFUSED: the mutant does not parse"; exit 2; }
@@ -89,7 +105,15 @@ game="$(basename "$(cd "$(dirname "$0")/.." && pwd)")"
 IFS= read -r line
 echo "INSTALLER $game args=$* argc=$# update=${L1_UPDATE:-} ref=${L1_FETCHED_REF:-} cs2w=${CS2_WRAPPER-unset} input=$line" >> "$CALLS"
 echo "the installer of $game ran"
+# a game whose setup rebuilt the window writes the launcher stamp at the tree version, as the real setups do
+[ -f "$EXITS/$game.lstamp" ] && printf "release\\tv0.3.0\\t-\\t100\\n" > "$L1_UPDATE_DIR/launcher"
 exit "$(cat "$EXITS/$game" 2>/dev/null || echo 0)"'
+# the tree's installer of the launcher: a recorder (docs/plans/launcher-first-install.md, 3.5; LFT4)
+LREC='#!/bin/bash
+echo "LAUNCHER args=$* argc=$# update=${L1_UPDATE:-} ref=${L1_FETCHED_REF:-}" >> "$CALLS"
+echo "the installer of the launcher ran"
+exit "$(cat "$EXITS/launcher" 2>/dev/null || echo 0)"'
+printf '%s\n' "$LREC" > "$TREE/common/install-launcher.sh"
 for g in first-game second-game unknown-game bad-id; do
   mkdir -p "$TREE/$g/scripts"; printf '%s\n' "$REC" > "$TREE/$g/scripts/install.sh"
 done
@@ -207,6 +231,66 @@ check "the row of a set-up game given the folder ../x: nothing run outside the t
 table
 newh
 check "no game set up: its sentence, exit 3, nothing run" "$(drv):$(grep -c '^INSTALLER' "$CALLS"):$(said "$NOGAME"):$(said "$NOTALL")" "3:0:1:0"
+
+# --- LFT4 (docs/plans/launcher-first-install.md, 3.5): 14unch3r itself, after the games. Its stamp is the file
+# `launcher` of the record's folder; its app is ~/Applications/14unch3r.app with the builder's identifier.
+lstamp() { printf '%s\t%s\t-\t100\n' "${1:-release}" "${2:-v0.2.0}" > "$UD/launcher"; }   # [line] [version]
+app() {   # [link|wrapper|foreign]: 14unch3r.app in the scratch home's Applications, or something else at its path
+  local a="$H/Applications/14unch3r.app" id=local.1launcher.window
+  [ "${1:-}" = foreign ] && id=com.example.other
+  if [ "${1:-}" = link ]; then mkdir -p "$H/elsewhere.app/Contents"; a="$H/elsewhere.app"; fi
+  mkdir -p "$a/Contents/MacOS"
+  printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>CFBundleIdentifier</key><string>%s</string></dict></plist>\n' "$id" > "$a/Contents/Info.plist"
+  [ "${1:-}" = wrapper ] && mkdir -p "$a/Contents/SharedSupport"
+  [ "${1:-}" = link ] && ln -s "$a" "$H/Applications/14unch3r.app"
+  return 0
+}
+lran() { grep -c '^LAUNCHER' "$CALLS"; }
+lkept() { [ -e "$UD/launcher" ] && echo kept || echo removed; }
+newh; app; lstamp release v0.0.9
+rc="$(drv)"
+check "LFT4 the launcher's stamp on release at an older version, its app, and no game: its installer is run once, with no argument, under L1_UPDATE=1; exit 0" \
+  "$rc:$(lran):$(grep -c '^LAUNCHER args= argc=0 update=1 ref=release$' "$CALLS"):$(ran)" "0:1:1:"
+check "LFT4 ...a heading before its lines, its closing line, and everything is up to date" \
+  "$(grep -n -e '^=== 14unch3r ===$' -e '^the installer of the launcher ran$' -e '^14unch3r: updated\.$' -e "$UPTODATE" "$T/out" | cut -d: -f2- | tr '\n' '|'):$(said "$NOGAME"):$(lock)" \
+  "=== 14unch3r ===|the installer of the launcher ran|14unch3r: updated.|Everything is up to date: 1launcher v0.3.0.|:0:none"
+newh; app; lstamp release v0.3.0
+check "LFT4 the same with the stamp at the tree's version: the installer is not run, nothing is said of 14unch3r, the same closing line, exit 0" \
+  "$(drv):$(lran):$(said '14unch3r'):$(said "$UPTODATE"):$(said "$NOGAME")" "0:0:0:1:0"
+newh; app; first; stamp 949230; lstamp release v0.2.0; : > "$EXITS/first-game.lstamp"
+check "LFT4 a game's setup stamped the launcher at the tree's version: the game's installer ran and the launcher's did not; exit 0" \
+  "$(drv):$(ran):$(lran):$(cut -f2 "$UD/launcher"):$(said "$UPTODATE")" "0:first-game :0:v0.3.0:1"
+newh; app; first; stamp 949230; lstamp release v0.2.0
+check "LFT4 a game updated and the launcher's stamp still older: the launcher's installer runs after the game's" \
+  "$(drv):$(grep -oE '^(INSTALLER [^ ]*|LAUNCHER)' "$CALLS" | tr '\n' '|'):$(said "$UPTODATE")" "0:INSTALLER first-game|LAUNCHER|:1"
+newh; app; lstamp release v0.9.0
+check "LFT4 a launcher's stamp newer than the tree: left, its sentence, exit 3" \
+  "$(drv):$(lran):$(said '^14unch3r is at v0\.9\.0, newer than what GitHub sent (v0\.3\.0)\. Left as it is\.$'):$(said "$NOTALL"):$(lkept)" "3:0:1:1:kept"
+newh; app; lstamp checkout v0.2.0
+check "LFT4 a launcher's stamp on checkout: left, its sentence, exit 3" \
+  "$(drv):$(lran):$(said '^14unch3r: set up from checkout, so it is left as it is\.$'):$(said "$NOTALL"):$(lkept)" "3:0:1:1:kept"
+newh; app; first; stamp 949230 checkout v0.2.0
+check "LFT4 the app there and no launcher's stamp, its game left (a Mac from before this version): nothing is said of the launcher, and its installer is not run" \
+  "$(drv):$(lran):$(said '14unch3r'):$(said '^First Game: set up from checkout'):$(lkept)" "3:0:0:1:removed"
+newh; lstamp release v0.0.9
+check "LFT4 a launcher's stamp, no app and no game: the stamp removed, nothing run, no game is set up, exit 3" \
+  "$(drv):$(lran):$(lkept):$(said "$NOGAME"):$(said '14unch3r')" "3:0:removed:1:0"
+for kind in link wrapper foreign; do
+  newh; app "$kind"; lstamp release v0.0.9
+  check "LFT4 the app's test: at the app's path a $kind counts as no app: the stamp removed, the installer not run" \
+    "$(drv):$(lran):$(lkept):$(said "$NOGAME")" "3:0:removed:1"
+done
+newh; first; stamp 949230; lstamp release v0.2.0
+check "LFT4 a launcher's stamp with no app beside a game that is set up: not removed, and its installer runs" \
+  "$(drv):$(ran):$(lran):$(lkept)" "0:first-game :1:kept"
+newh; app; first; stamp 949230; lstamp release v0.2.0; exits launcher=1
+check "LFT4 the launcher's installer failing: exit 1, the closing block names 14unch3r as not rebuilt, and the game before it was still run" \
+  "$(drv):$(ran):$(lran):$(said '^!! 14unch3r: not rebuilt (exit 1)\. Its lines above say why\.$'):$(said '^First Game: updated\.$'):$(said "$NOTALL"):$(said "$UPTODATE"):$(lock)" "1:first-game :1:1:1:1:0:none"
+newh; app; lstamp release v0.0.9; exits launcher=3
+check "LFT4 the launcher's installer stopping (exit 3): left, said, exit 3" \
+  "$(drv):$(lran):$(said '^14unch3r: its installer stopped\. Its lines above say why\.$'):$(said "$NOTALL")" "3:1:1:1"
+check "LFT4 a source gate: the identifier the driver tests for is the builder's ID=" \
+  "$(sed -n 's/^WINDOW_ID="\(.*\)"$/\1/p' "$HERE/update-games.sh")" "$(sed -n 's/^ID="\(.*\)"$/\1/p' "$HERE/make-launcher-app.sh")"
 
 # --- UT7: what stops the whole run before any installer
 newh; first; stamp 949230; offer v0.4.0

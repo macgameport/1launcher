@@ -872,7 +872,7 @@ sheet() { "$P" --update-sheet --update-dir "$@" 2>&1; }
 : > "$RDY/args.log"
 check "UT8 sheet: message, text with the installed version, the buttons Not Now then Update, and the notes line by line" "$(sheet "$RDY" "$Gd/1-0")" \
 "message${TAB}1launcher v0.4.0 is out.
-text${TAB}This Mac has v0.3.0. Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there.
+text${TAB}This Mac has v0.3.0. Update opens Terminal and runs the installer again for 14unch3r and each game set up here. It may ask you a question there.
 button${TAB}Not Now
 button${TAB}Update
 note${TAB}v0.4.0 (2026-12-01)
@@ -883,7 +883,7 @@ check "UT8 ...the tool was asked for the state and then for --notes, and nothing
 NOV=$(tool nov "ready${TAB}-${TAB}v0.4.0${TAB}-")
 check "UT8 sheet: with - as the installed version the first sentence is absent; with no notes, the one line with the address" \
   "$(sheet "$NOV" "$Gd/1-0" | grep '^text\|^note')" \
-"text${TAB}Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there.
+"text${TAB}Update opens Terminal and runs the installer again for 14unch3r and each game set up here. It may ask you a question there.
 note${TAB}What changed: https://github.com/macgameport/1launcher/blob/release/CHANGELOG.md"
 sleep 300 & LIVE8=$!; disown; KEEP="$KEEP $LIVE8"
 pz=$(prefix ut8-zulu); pa=$(prefix ut8-alpha); pq=$(prefix ut8-quiet)
@@ -920,9 +920,9 @@ check "UT8 menu row 1: off" "$(umenu "$(tool off "off${TAB}-${TAB}-${TAB}-")" sk
 check "UT8 menu row 2: none" "$(umenu "$(tool none "none${TAB}-${TAB}v0.4.0${TAB}-")" skipped)" \
   "alert${TAB}This Mac is not yet set up for updates.${TAB}Paste each game's installer line once more. After that, 14unch3r says when a new version is out."
 check "UT8 menu row 3: manual, from a checkout" "$(umenu "$(tool checkout "manual${TAB}v0.3.0${TAB}-${TAB}checkout")" skipped)" \
-  "alert${TAB}No update is offered on this Mac.${TAB}Its games were set up from a checkout. Update with git pull, then run each game's setup."
+  "alert${TAB}No update is offered on this Mac.${TAB}14unch3r or a game here was set up from a checkout. Update with git pull, then run install.sh launcher and each game's setup."
 check "UT8 menu row 4: manual, any other line" "$(umenu "$(tool named "manual${TAB}v0.2.0${TAB}v0.4.0${TAB}v0.2.0")" skipped)" \
-  "alert${TAB}No update is offered on this Mac.${TAB}A game here was set up from a named version. Paste its installer line from the guide to follow new versions again."
+  "alert${TAB}No update is offered on this Mac.${TAB}14unch3r or a game here was set up from a named version. Paste the installer line from the guide again to follow new versions."
 check "UT8 menu row 5: ready gives the sheet, after a failed fetch too" "$(umenu "$RDY" fetched)|$(umenu "$RDY" failed)" "sheet|sheet"
 UNK=$(tool unknown "unknown${TAB}v0.4.0${TAB}-${TAB}-")
 check "UT8 menu row 6: current with a failed fetch; unknown; no answer to the refresh; an answer that is no state" \

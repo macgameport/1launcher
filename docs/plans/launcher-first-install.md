@@ -260,16 +260,27 @@
 >     first comment (LF5a), the header line for `off` (LF4b), the three sentences of `Look` (LF3). (3) The
 >     changelog's words are the build's: nobody has read them.
 >   - *Gates.* At `c766c21`: links exit 0, identifiers at 9, `bash -n` on the changed scripts, the new test
->     file and its seven mutants. Every test file of the repository on LF6's tree was running when
->     this was written.
-> - **The sweep of every mutant on one frozen commit (LFT9).** Running when this was written, at `36980b8`
->   (LF6's commit and, after it, the one line of the window test's mutant 88): every mutant of the eleven test
->   files the build touched, 477 in all. Until it is in, exit criterion 1 is not met.
+>     file and its seven mutants. Every test file of the repository at `36980b8` (LF6's tree and the one
+>     line of mutant 88): 49 of 50 exit 0, and the one is `common/test-paths.sh`, which fails on `main` alike.
+> - **The sweep of every mutant on one frozen commit (LFT9).** At `36980b8` (LF6's commit and, after it, the
+>   one line of the window test's mutant 88), in a worktree of its own: every mutant of the eleven test files
+>   the build touched, 477 in all. **475 exit 1; the other two are the retired ones, which exit 2 and say so.**
+>   By file, red of all: `common/test-updates.sh` 36 of 36, `common/test-update-games.sh` 32 of 32,
+>   `common/test-bootstrap.sh` 27 of 27, `common/test-install-launcher.sh` 16 of 16,
+>   `common/test-game-contract.sh` 7 of 7, `common/test-make-launcher-app.sh` 13 of 13,
+>   `common/test-launcher-window.sh` 112 of 113, `cities-skylines-2/scripts/test-install.sh` 90 of 90,
+>   `surviving-mars-relaunched/scripts/test-install.sh` 46 of 46, `cities-skylines-2/scripts/test-setup.sh`
+>   65 of 66, `surviving-mars-relaunched/scripts/test-setup.sh` 31 of 31. Retired, by name: the window test's
+>   mutant 27, "an offer for a game that has an app" (retired by LF5a; its header says where the case went),
+>   and mutant 36 of Cities: Skylines II's `scripts/test-setup.sh` (retired 2026-11-21, before this build:
+>   the list it patched is gone, and `common/test-wrappers.sh` MUTANT=4 holds the case). One run ended in a
+>   timeout, mutant 4 of that file, which is a loop on purpose. The sweep is the tests' half of exit
+>   criterion 1; the live steps are the rest of section 8.
 > - **Not measured:** everything section 6 lists under "Not tested, and said so". No step has met a compiler
 >   older than Swift 6.4. No sheet, no Terminal window and no real install has been seen: those are the live
 >   steps of section 7, each on James's word.
 > - **A flake to know of.** In `common/test-launcher-window.sh` the cases that start a fixture app through
->   LaunchServices failed in eight mutant runs that went three or four at a time ("_LSOpenURLsWithCompletionHandler()
+>   LaunchServices failed in ten mutant runs that went three or four at a time, two of them in the sweep above (mutants 68 and 102) ("_LSOpenURLsWithCompletionHandler()
 >   failed"), each time beside the mutant's own failure: no mutant was red by them alone. They did not fail in
 >   any run of the file by itself.
 

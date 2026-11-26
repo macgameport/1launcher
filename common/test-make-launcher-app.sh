@@ -246,7 +246,12 @@ check "LFT12 the built window, asked with its bundle's table and the scratch App
   "$(HOME="$JH" "$JW" --list --games "$JT" "$JH/Applications" 2>&1 | awk -F'\t' '$1 == "offer" && $3 == "not-set-up" { n++ } END { print n + 0 }'):$(HOME="$JH" "$JW" --list --games "$JT" "$JH/Applications" 2>&1 | grep -c .)" \
   "$(grep -vc '^#' "$HERE/games.tsv"):$(grep -vc '^#' "$HERE/games.tsv")"
 check "LFT12 ...and --grid gives each of those tiles a line that ends with its letters" \
-  "$(HOME="$JH" "$JW" --grid --games "$JT" - "$JH/Applications" 2>&1 | awk -F'\t' '$1 == "tile" { printf "%s ", $NF }')" "icon=initials:CS icon=initials:SM "
+  "$(HOME="$JH" "$JW" --grid --games "$JT" - "$JH/Applications" 2>&1 | awk -F'\t' '$1 == "tile" { printf "%s ", $15 }')" "icon=initials:CS icon=initials:SM "
+# LFT12's last case (LF5b): the window that was installed from nothing can install. Its own tool, at the record's
+# folder its builder wrote into it, says unknown, so a click on a game asks.
+check "LFT12 the built window, with its own table and its own record's folder: a click on the first tile gives ask-install, and its words say that a click installs" \
+  "$(HOME="$JH" "$JW" --act start --games "$JT" --update-dir "$JU" - "$JH/Applications" 2>&1 | cut -f2):$(HOME="$JH" "$JW" --grid --games "$JT" --update-dir "$JU" - "$JH/Applications" 2>&1 | awk -F'\t' '$1 == "tile" { print $14 }' | sort -u)" \
+  "ask-install:Not set up. Click to install."
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

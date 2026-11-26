@@ -10,11 +10,12 @@
 // 1launcher is out, its sheet, and the menu item; all of it only when the update tool is deployed).
 //
 //   launcher-window [--games <tsv>] [--update-dir <dir>] [<folder>...]   the window; with no folder, those of --folders
-//   launcher-window --list [--games <tsv>] <folder>...      one line per row: role, app id or -, state,
+//   launcher-window --list [--games <tsv>] [--update-dir <dir>] <folder>...   one line per row: role, app id or -, state,
 //                                                           title, path; tab-separated, no headings. With
 //                                                           --games, one offer row for every game of the table
 //                                                           that has no app here: not-set-up, begun (one
-//                                                           wrapper carries its marker) or owned
+//                                                           wrapper carries its marker) or owned; and with
+//                                                           --update-dir, installing (the install's lock)
 //   launcher-window --default <last app id or -> <folder>... the path of the row selected at open, or nothing
 //   launcher-window --second <app path> <folder>...         go, or ask<TAB><title of the game in use>
 //   launcher-window --start <app path> [new]                started, or failed<TAB><sentence>; exit 0 or 1
@@ -31,6 +32,9 @@
 //   launcher-window --update-open --update-dir <dir>        runs the tool with --open: quit, or failure<TAB>message<TAB>sentence
 //   launcher-window --update-answer <first|second|escape>   open or nothing: what a button of the update's sheet does
 //   launcher-window --update-tool [--update-dir <dir>]      the update tool's path, or -; with no option, from L1UpdateDir
+//   launcher-window --install-sheet <name> --games <tsv> <app id> <folder>...   one of the install's sheets: message, text, buttons
+//   launcher-window --install-answer <name> <first|second|third|escape>   open, guide, start or nothing: what a button of that sheet does
+//   launcher-window --install-open --update-dir <dir> <app id>   runs the tool with --install: quit, or failure<TAB>sentence
 // Every mode but the window prints and returns before any window is made; --grid and --act build the window's
 // own grid, with no window. Any other use prints a usage line and exits 2. Tests: common/test-launcher-window.sh.
 //
@@ -44,9 +48,10 @@
 import AppKit
 
 enum Role: String { case game, steam, offer }
-// The last three are an offer's (docs/plans/launcher-first-install.md, 3.7): owned is "not set up, and a cache of
-// Steam's says the account has the game"; begun is "no app, and exactly one wrapper carries the game's marker".
-enum State: String { case busy, absent, ready, unknown, owned, notSetUp = "not-set-up", begun }
+// The last four are an offer's (docs/plans/launcher-first-install.md, 3.7): owned is "not set up, and a cache of
+// Steam's says the account has the game"; begun is "no app, and exactly one wrapper carries the game's marker";
+// installing is "no app, the install's lock is live, and the file beside it names this game".
+enum State: String { case busy, absent, ready, unknown, owned, notSetUp = "not-set-up", begun, installing }
 
 struct Row {
     let role: Role
@@ -170,6 +175,34 @@ func lockHeldByLiveProcess(_ prefix: String) -> Bool {
 }
 
 // From files alone, with no process matching. A Steam app is never busy: nothing locks the store wrapper.
+// The install's lock (docs/plans/launcher-first-install.md, 3.8), by the rule common/updates.sh holds in shell
+// (l1u_lock_live); one set of fixtures tests both. It is the link `installing` in the record's folder: live when
+// its target is a process number, that process answers, and the link is not older than the Mac's last start
+// (after a restart a number left in a link can be some other process's). A start that cannot be read leaves the
+// first two parts to decide. Which game: the file installing-game beside it, read only while the link is live,
+// as a plain file that is not a link, its one line matched whole as an app id; absent or not matching, it names
+// no game. Never a wrapper's .launcher.lock: a game that is starting holds that too, and it lies in a folder
+// other accounts can write to.
+func lastStart() -> Int? {
+    var tv = timeval(), size = MemoryLayout<timeval>.size
+    guard sysctlbyname("kern.boottime", &tv, &size, nil, 0) == 0, tv.tv_sec > 0 else { return nil }
+    return tv.tv_sec
+}
+func installLock(_ dir: String) -> (live: Bool, game: Int?) {
+    let lock = dir + "/installing"
+    var st = stat()
+    guard lstat(lock, &st) == 0, (st.st_mode & S_IFMT) == S_IFLNK else { return (false, nil) }
+    guard let t = try? fm.destinationOfSymbolicLink(atPath: lock) else { return (false, nil) }
+    guard !t.isEmpty, t.count <= 10, t.utf8.first != 0x30, t.utf8.allSatisfy({ $0 >= 0x30 && $0 <= 0x39 }) else { return (false, nil) }
+    guard let pid = Int32(t), kill(pid, 0) == 0 else { return (false, nil) }
+    if let start = lastStart(), st.st_mtimespec.tv_sec < start { return (false, nil) }
+    guard let data = readPlainFile(dir + "/installing-game", limit: 64) else { return (true, nil) }
+    var line = String(decoding: data, as: UTF8.self)
+    if line.hasSuffix("\n") { line.removeLast() }
+    guard !line.isEmpty, line.count <= 10, line.utf8.first != 0x30, line.utf8.allSatisfy({ $0 >= 0x30 && $0 <= 0x39 }) else { return (true, nil) }
+    return (true, lastID(line))
+}
+
 func state(of r: Row) -> State {
     guard let p = r.prefix else { return .unknown }
     let marker = r.role == .steam ? p + steamDir + "/steam.exe" : p + steamDir + "/steamapps/appmanifest_\(r.appID ?? 0).acf"
@@ -177,7 +210,14 @@ func state(of r: Row) -> State {
     return fm.fileExists(atPath: marker) ? .ready : .absent
 }
 
-func secondLine(_ r: Row) -> String {
+func secondLine(_ r: Row, tool: Bool = false) -> String {
+    if r.role == .offer, tool {   // the tooltip's sentence of a tile that installs (3.7); with no tool, the lines below
+        switch r.state {
+        case .installing: return "Installing in Terminal."
+        case .begun: return "Install not finished. Click to carry on."
+        default: return "Not set up on this Mac. Click to install."
+        }
+    }
     switch (r.state, r.role) {
     case (_, .offer): return "Not set up on this Mac. Opens the set-up guide."
     case (.busy, _): return "In use: starting, running or closing"
@@ -463,7 +503,7 @@ func askOwned(_ id: Int, _ files: [String]) -> String {
     return ["owned", "not-owned", "unknown"].contains(word) ? word : "unknown"
 }
 
-struct Ported { let id: Int; let title: String; let address: String }
+struct Ported { let id: Int; let folder: String; let title: String; let address: String }
 
 // common/games.tsv: app id, folder, title and set-up guide address, tab-separated, one line per game. A line
 // starting # is passed over, and so is one that is not four fields with a whole-number id and a title.
@@ -474,7 +514,7 @@ func portedGames(_ path: String) -> [Ported] {
         if line.hasPrefix("#") { continue }
         let f = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
         guard f.count == 4, let id = lastID(f[0]), !f[2].isEmpty else { continue }
-        out.append(Ported(id: id, title: oneLine(f[2]), address: f[3]))
+        out.append(Ported(id: id, folder: oneLine(f[1]), title: oneLine(f[2]), address: f[3]))
     }
     return out
 }
@@ -520,7 +560,7 @@ func offerRows(_ table: String, _ rows: [Row]) -> [Row] {
 // table and the folders' marked wrappers, so the window has them at its first reload. A game with exactly one
 // wrapper that carries its marker is begun: its install was started and its setup never finished. With none, or
 // with two marked alike, it is not set up. A guide address must start https://github.com/, as for offerRows.
-func tableOffers(_ table: String, _ folders: [String], _ rows: [Row]) -> [Row] {
+func tableOffers(_ table: String, _ folders: [String], _ rows: [Row], installing: Int? = nil) -> [Row] {
     let have = Set(rows.compactMap { $0.role == .game ? $0.appID : nil })
     var listed: [(String, [String])] = []
     for f in folders.map(absolute) {
@@ -535,7 +575,7 @@ func tableOffers(_ table: String, _ folders: [String], _ rows: [Row]) -> [Row] {
             for w in markedPaths(f, names, role: .game, appID: g.id) { wrappers.insert(realPath(w) ?? w) }
         }
         out.append(Row(role: .offer, appID: g.id, title: g.title, sortTitle: g.title, path: g.address, key: "offer \(g.id)",
-                       prefix: nil, state: wrappers.count == 1 ? .begun : .notSetUp))
+                       prefix: nil, state: g.id == installing ? .installing : wrappers.count == 1 ? .begun : .notSetUp))
     }
     return ordered(out)
 }
@@ -554,7 +594,7 @@ func withOwnership(_ offers: [Row], _ owned: [Row]) -> [Row] {
 func usage() -> Never {
     FileHandle.standardError.write(Data("""
     usage: launcher-window [--games <tsv>] [--update-dir <dir>] [<folder>...]   the window
-           launcher-window --list [--games <tsv>] <folder>...
+           launcher-window --list [--games <tsv>] [--update-dir <dir>] <folder>...
            launcher-window --default <last app id or -> <folder>...
            launcher-window --second <app path> <folder>...
            launcher-window --start <app path> [new]
@@ -571,6 +611,9 @@ func usage() -> Never {
            launcher-window --update-open --update-dir <dir>
            launcher-window --update-answer <first|second|escape>
            launcher-window --update-tool [--update-dir <dir>]
+           launcher-window --install-sheet <name> --games <tsv> <app id> <folder>...
+           launcher-window --install-answer <name> <first|second|third|escape>
+           launcher-window --install-open --update-dir <dir> <app id>
 
     """.utf8))
     exit(2)
@@ -775,6 +818,94 @@ func sheetAnswer(_ button: NSApplication.ModalResponse) -> String {
     button == .alertSecondButtonReturn ? "open" : "nothing"
 }
 
+// What a click on a tile does (docs/plans/launcher-first-install.md, 3.7): one pure function, as sheetAnswer is
+// for the update. --act prints its name, and the window does what it says. For a game that is not set up, the
+// first line that applies, in this order and no other: no tool, the guide, as an offer always did; the state
+// manual; the state ready; an install running; a game in use; else the question. For a row that has an app:
+// today's question when a game is in use, then the question about a running install, whose Steam a start
+// would take offline; else the start. `busy` is the title of the game in use, if any: for an offer any game in
+// use, for an app the one blocker() names.
+enum Click: Equatable {
+    case start, guide, tellManual, tellUpdateFirst, tellInstalling, tellQuitFirst(String), askInstall, askBusy(String), askInstallRunning
+    var name: String {
+        switch self {
+        case .start: return "start"
+        case .guide: return "guide"
+        case .tellManual: return "tell-manual"
+        case .tellUpdateFirst: return "tell-update-first"
+        case .tellInstalling: return "tell-installing"
+        case .tellQuitFirst: return "tell-quit-first"
+        case .askInstall: return "ask-install"
+        case .askBusy: return "ask"
+        case .askInstallRunning: return "ask-install-running"
+        }
+    }
+}
+func clickAnswer(_ r: Row, state: UpdateState?, tool: Bool, busy: String?, installing: Bool) -> Click {
+    if r.role == .offer {
+        guard tool else { return .guide }
+        if state?.word == "manual" { return .tellManual }
+        if state?.word == "ready" { return .tellUpdateFirst }
+        if installing { return .tellInstalling }
+        if let title = busy { return .tellQuitFirst(title) }
+        return .askInstall
+    }
+    if let title = busy { return .askBusy(title) }
+    if installing { return .askInstallRunning }
+    return .start
+}
+
+// The words of a sheet of the install, by its name; none for a name that is no sheet. `folder` is the game's
+// folder in the table, for the sheet that names a checkout's command; `busy` the title of the game in use.
+func installSheet(_ name: String, title: String, begun: Bool, folder: String, busy: String?) -> SheetWords? {
+    let short = [Look.ok, Look.readGuide]
+    switch name {
+    case "ask-install":
+        return SheetWords(message: Look.installAsk(title, begun: begun), text: Look.installText,
+                          buttons: [Look.notNow, begun ? Look.carryOn : Look.install, Look.readGuide], notes: nil)
+    case "tell-manual": return SheetWords(message: Look.notFromHere(title), text: Look.notFromHereText(folder), buttons: short, notes: nil)
+    case "tell-update-first": return SheetWords(message: Look.updateFirst, text: Look.updateFirstText, buttons: short, notes: nil)
+    case "tell-installing": return SheetWords(message: Look.installRunning, text: Look.installRunningText, buttons: short, notes: nil)
+    case "tell-quit-first":
+        return SheetWords(message: Look.quitFirst(busy ?? title), text: Look.quitFirstInstall(busy ?? title), buttons: short, notes: nil)
+    case "ask-install-running":
+        return SheetWords(message: Look.installRunning, text: Look.startAnywayText(title), buttons: [Look.dontStart, Look.startAnyway], notes: nil)
+    default: return nil
+    }
+}
+
+// What a button of one of those sheets does: only the second button of the sheet that asks gives open, and its
+// third the guide; a short sheet's second button gives the guide, and no button of one gives open; the second
+// button of the question about a running install gives start. The first button, which is also what Escape
+// gives, is always nothing.
+func installAnswer(_ sheet: String, _ button: String) -> String {
+    switch (sheet, button) {
+    case ("ask-install", "second"): return "open"
+    case ("ask-install", "third"): return "guide"
+    case ("tell-manual", "second"), ("tell-update-first", "second"), ("tell-installing", "second"), ("tell-quit-first", "second"): return "guide"
+    case ("ask-install-running", "second"): return "start"
+    default: return "nothing"
+    }
+}
+func buttonName(_ r: NSApplication.ModalResponse) -> String {
+    r == .alertSecondButtonReturn ? "second" : r == .alertThirdButtonReturn ? "third" : "first"
+}
+
+// After --install: opened, and the window quits as after a start; failed<TAB><sentence>, and that sentence is
+// shown; anything else (an older tool's usage error, no answer, the time limit, a crash) is one sentence.
+func afterInstall(_ output: String?) -> AfterOpen {
+    let line = (output ?? "").split(separator: "\n", omittingEmptySubsequences: false).first.map(String.init) ?? ""
+    let f = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+    if f.first == "opened" { return .quit }
+    if f.first == "failed", f.count >= 2, !f[1].isEmpty { return .failure(f[1]) }
+    return .failure(Look.installNoAnswer)
+}
+// The install itself: the tool writes the file Terminal runs and hands it over. Called on two lines only: by
+// --install-open, and by the window after installAnswer said open. The id is a row's app id, a number.
+func openInstall(_ tool: String, _ id: Int) -> AfterOpen {
+    afterInstall(askUpdate(tool, ["--install", String(id)], limit: 10))
+}
+
 // The tool in a folder, or none: the folder is an absolute path, and updates.sh in it is a regular file and not
 // a link. None means no update parts at all.
 func updateTool(_ dir: String) -> String? {
@@ -853,6 +984,22 @@ enum Look {
     static let initialsAlpha: CGFloat = 0.88
     static let initialsFont = NSFont.systemFont(ofSize: 22, weight: .semibold)
     static let initialsPad: CGFloat = 5
+
+    // The install from a tile (docs/plans/launcher-first-install.md, 3.7): every sentence of its sheets is here.
+    static func installAsk(_ title: String, begun: Bool) -> String { begun ? "Carry on installing \(title) now?" : "Install \(title) now?" }
+    static let installText = "Terminal opens and runs the game's installer, fetched now from GitHub; it may also bring a newer 14unch3r. It says first what the game needs, and may ask you a question there. It waits while you sign in to Steam and the game downloads. You can stop it at any time; open 14unch3r and click the game again to carry on."
+    static let install = "Install", carryOn = "Carry On", readGuide = "Read the Guide"
+    static func notFromHere(_ title: String) -> String { "\(title) is not installed from this window on this Mac." }
+    static func notFromHereText(_ folder: String) -> String { "14unch3r or a game here was set up from a checkout or a named version. From a checkout: bash \(folder)/scripts/install.sh. Otherwise paste the game's line from its guide." }
+    static let updateFirst = "Update 1launcher first."
+    static let updateFirstText = "A newer version is out. Click the line at the foot of this window to update, then click the game again."
+    static let installRunning = "An install is running in Terminal."
+    static let installRunningText = "Only one install runs at a time. Its Terminal window shows how far it is; click this game again when it has finished."
+    static func quitFirstInstall(_ title: String) -> String { "Installing a game needs Steam, and only one Steam at a time can use your account. Quit \(title), then click the game again." }
+    static func startAnywayText(_ title: String) -> String { "Starting \(title) now takes the installer's Steam offline, and the download stops until the installer is opened again. Wait for the install to finish, or start anyway." }
+    static let dontStart = "Don't Start", startAnyway = "Start Anyway"
+    static let installNotOpened = "The install did not open."
+    static let installNoAnswer = "This Mac's update tool could not start the install. Paste the game's installer line from its guide."
 
     // The update parts (docs/plans/built-in-update.md, 3.5). The foot line has the label's look: labelFont, white
     // at labelAlpha, labelH high, labelAbove below the last row; so the grid grows by 24 points with it. Its hit
@@ -1016,12 +1163,27 @@ func shownTitle(_ r: Row) -> [String] {
 }
 
 // The second line as a tile shows it (2.4): three sentences are shortened there. The full one is VoiceOver's.
-func shownSecond(_ r: Row) -> String {
+func shownSecond(_ r: Row, tool: Bool = false) -> String {
+    if r.role == .offer, tool {
+        switch r.state {
+        case .installing: return "Installing in Terminal."
+        case .begun: return "Install not finished. Click to carry on."
+        case .owned: return "In your Steam library. Click to install."
+        default: return "Not set up. Click to install."
+        }
+    }
     if r.role == .offer { return "Not set up. Opens its guide." }
     if r.state == .absent { return r.role == .steam ? "Windows Steam not found" : "Not installed in Steam" }
     return secondLine(r)
 }
-func spoken(_ r: Row) -> String {
+func spoken(_ r: Row, tool: Bool = false) -> String {
+    if r.role == .offer, tool {
+        switch r.state {
+        case .installing: return "\(r.title), installing in Terminal"
+        case .begun: return "\(r.title), install not finished, asks before it carries on"
+        default: return "\(r.title), not set up on this Mac, asks before it installs"
+        }
+    }
     if r.role == .offer { return "\(r.title), not set up on this Mac, opens the set-up guide in your browser" }
     let second = secondLine(r)
     return second.isEmpty ? r.title : "\(r.title), \(second)"
@@ -1142,18 +1304,20 @@ final class TileView: NSView {
     var selected = false { didSet { if selected != oldValue { needsDisplay = true } } }
     var hovered = false { didSet { if hovered != oldValue { needsDisplay = true } } }
 
-    init(_ r: Row, frame: NSRect, cell: (Int, Int)) {
+    let tip: String   // the tooltip's sentence, which --grid prints
+
+    init(_ r: Row, frame: NSRect, cell: (Int, Int), tool: Bool = false) {   // tool: the update tool is there, so an offer installs
         row = r
         self.cell = cell
         title = shownTitle(r)
-        let s = shownSecond(r)
+        let s = shownSecond(r, tool: tool)
         second = s.isEmpty ? [] : wrap(s, Look.secondFont, most: Look.secondLines)
+        tip = secondLine(r, tool: tool)
         super.init(frame: frame)
         setAccessibilityElement(true)
         setAccessibilityRole(.button)
-        setAccessibilityLabel(spoken(r))
-        let full = secondLine(r)
-        toolTip = full.isEmpty ? r.title : r.title + "\n" + full
+        setAccessibilityLabel(spoken(r, tool: tool))
+        toolTip = tip.isEmpty ? r.title : r.title + "\n" + tip
     }
     required init?(coder: NSCoder) { fatalError() }
     override var isFlipped: Bool { true }
@@ -1249,6 +1413,7 @@ final class GridView: NSView {
     var selection: Int? = nil
     var armed: String? = nil   // the key of the tile a press armed
     var footState: UpdateState? = nil   // what the foot line is drawn from at the next show: the caller sets it
+    var installs = false                // the update tool is there, so an offer's words say that a click installs: the caller sets it
     var foot: FootView? = nil
     var footArmed = false      // a press armed the foot line
     var labelAt: NSPoint? = nil
@@ -1282,7 +1447,7 @@ final class GridView: NSView {
         let line = footText(footState)
         let l = gridLayout(apps, offers, foot: line)
         tiles.forEach { $0.removeFromSuperview() }
-        tiles = (apps + offers).enumerated().map { TileView($1, frame: l.frames[$0], cell: l.cells[$0]) }
+        tiles = (apps + offers).enumerated().map { TileView($1, frame: l.frames[$0], cell: l.cells[$0], tool: installs) }
         for t in tiles { t.grid = self; addSubview(t) }
         foot?.removeFromSuperview()
         foot = nil
@@ -1557,9 +1722,12 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
     guard more.count >= 2 else { usage() }
     let folders = Array(more.dropFirst())
     let found = rows(in: folders)
-    let offers = table.map { withOwnership(tableOffers($0, folders, found), offerRows($0, found)) } ?? []
+    let lock: (live: Bool, game: Int?) = updateDir.map(installLock) ?? (false, nil)   // the install's lock: read only with --update-dir
+    let offers = table.map { withOwnership(tableOffers($0, folders, found, installing: lock.game), offerRows($0, found)) } ?? []
     let last = lastID(more[0])
     let grid = makeGrid()
+    let hasTool = updateDir.flatMap(updateTool) != nil
+    grid.installs = hasTool
     // The foot line, as the window draws it from the tool's first answer: asked only when --update-dir is given.
     grid.footState = updateDir.flatMap(updateTool).flatMap { askUpdate($0, Call.state.0, limit: Call.state.1) }.flatMap(updateState)
     grid.show(rows: found, offers: offers, last: last)
@@ -1576,7 +1744,8 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
                  grid.selection == i ? "selected" : "-", dim(t.row) ? "dim" : "-", t.accessibilityRole()?.rawValue ?? "-",
                  t.accessibilityLabel() ?? "-", t.accessibilityHelp().flatMap { $0.isEmpty ? nil : $0 }.map(oneLine) ?? "-",
                  String(t.title.count), t.title.joined(separator: " | "), t.second.isEmpty ? "-" : t.second.joined(separator: " "),
-                 { if case .initials(let letters) = tileIcon(t.row) { return "icon=initials:" + letters } else { return "icon=app" } }()])
+                 { if case .initials(let letters) = tileIcon(t.row) { return "icon=initials:" + letters } else { return "icon=app" } }(),
+                 "tip=" + (t.tip.isEmpty ? "-" : t.tip)])
         }
         if let f = grid.foot, let r = grid.footRect {
             out(["foot", num(r.minX), num(r.minY), num(r.width), num(r.height), f.line, f.accessibilityRole()?.rawValue ?? "-", f.accessibilityLabel() ?? "-"])
@@ -1631,6 +1800,8 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
         } else if s.hasPrefix("axfocus:"), let t = tileNumber(s) {
             t.setAccessibilityFocused(true)
             word = selected()
+        } else if s == "start" {   // what a click or Return on the selected tile does
+            _ = grid.perform(.start)
         } else if s == "block" || s == "unblock" {
             blocked = s == "block"
             word = selected()
@@ -1638,7 +1809,15 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
             grid.show(rows: found, offers: offers, last: last)
             word = selected()
         } else { usage() }
-        if let r = started { word = ["start", r.path] } else if quit { word = ["quit"] } else if footed { word = ["sheet", "update"] }
+        if let r = started {   // the name clickAnswer gives, as the window would act on it; a path, an address or a title after it
+            let busy = r.role == .offer ? found.first(where: { $0.role == .game && $0.state == .busy }) : blocker(r, found)
+            let click = clickAnswer(r, state: grid.footState, tool: hasTool, busy: busy?.title, installing: lock.live)
+            switch click {
+            case .start, .guide: word = [click.name, r.path]
+            case .tellQuitFirst(let title), .askBusy(let title): word = [click.name, title]
+            default: word = [click.name]
+            }
+        } else if quit { word = ["quit"] } else if footed { word = ["sheet", "update"] }
         let focus = grid.tiles.firstIndex { $0.isAccessibilityFocused() }.map { String($0 + 1) } ?? "-"
         out([s] + word + ["focus", focus, "offset", num(grid.offset)])
     }
@@ -1665,10 +1844,12 @@ if let mode = args.first, mode.hasPrefix("-"), mode != "--games", mode != "--upd
     let rest = Array(args.dropFirst())
     switch mode {
     case "--list":
-        let (table, folders) = gamesOption(rest)
+        let (table, afterTable) = gamesOption(rest)
+        let (dir, folders) = updateOption(afterTable)
         guard !folders.isEmpty else { usage() }
         let found = rows(in: folders)
-        for r in found + (table.map { withOwnership(tableOffers($0, folders, found), offerRows($0, found)) } ?? []) {
+        let beingInstalled = dir.map(installLock)?.game   // without --update-dir no row is installing
+        for r in found + (table.map { withOwnership(tableOffers($0, folders, found, installing: beingInstalled), offerRows($0, found)) } ?? []) {
             print([r.role.rawValue, r.appID.map(String.init) ?? "-", r.state.rawValue, r.title, r.path].joined(separator: "\t"))
         }
     case "--default":
@@ -1742,6 +1923,32 @@ if let mode = args.first, mode.hasPrefix("-"), mode != "--games", mode != "--upd
                                                               "escape": .alertFirstButtonReturn]   // Escape: as the key monitor ends a sheet
         guard rest.count == 1, let b = buttons[rest[0]] else { usage() }
         print(sheetAnswer(b))
+    case "--install-sheet":
+        // <name> --games <tsv> <app id> <folder>...: the words of that sheet for that game, as the window would show them
+        guard let name = rest.first else { usage() }
+        let (table, more) = gamesOption(Array(rest.dropFirst()))
+        guard let t = table, more.count >= 2, let id = lastID(more[0]) else { usage() }
+        let folders = Array(more.dropFirst()), found = rows(in: folders)
+        let game = portedGames(t).first(where: { $0.id == id })
+        let offer = tableOffers(t, folders, found).first(where: { $0.appID == id })
+        let app = found.first(where: { $0.role == .game && $0.appID == id })
+        let busy = found.first(where: { $0.role == .game && $0.state == .busy })
+        guard let title = app?.title ?? game?.title,
+              let words = installSheet(name, title: title, begun: offer?.state == .begun, folder: game?.folder ?? "-", busy: busy?.title) else { usage() }
+        print("message\t\(words.message)")
+        print("text\t\(words.text)")
+        for b in words.buttons { print("button\t\(b)") }
+    case "--install-answer":
+        guard rest.count == 2, ["first", "second", "third", "escape"].contains(rest[1]),
+              installSheet(rest[0], title: "-", begun: false, folder: "-", busy: nil) != nil else { usage() }
+        print(installAnswer(rest[0], rest[1] == "escape" ? "first" : rest[1]))   // Escape: as the key monitor ends a sheet
+    case "--install-open":
+        let (dir, more) = updateOption(rest)
+        guard let d = dir, more.count == 1, let id = lastID(more[0]) else { usage() }
+        switch updateTool(d).map({ openInstall($0, id) }) ?? afterInstall(nil) {
+        case .quit: print("quit")
+        case .failure(let why): print("failure\t\(why)")
+        }
     case "--update-tool":
         let (dir, more) = updateOption(rest)
         guard more.isEmpty else { usage() }
@@ -1769,6 +1976,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuI
     enum Sheet { case none, question(NSWindow), failure(NSWindow) }
     var appRows: [Row] = []
     var owned: [Row] = []   // what a cache of Steam's says the account has, when its answer has come (askOffers)
+    var installing: (live: Bool, game: Int?) = (false, nil)   // the install's lock, as reload() last read it
     var sheet = Sheet.none
     var starting = false
     var opened = false
@@ -1886,9 +2094,12 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuI
     // The selection stays on the same app when it is still listed.
     func reload() {
         appRows = rows(in: readFrom)
-        // every game of the table that has no app here, from files alone (3.7): they are there at the first reload
-        let offers = gamesTable.map { withOwnership(tableOffers($0, readFrom, appRows), owned) } ?? []
+        // every game of the table that has no app here, from files alone (3.7): they are there at the first reload.
+        // The install's lock is read here too: when the window opens, each time it becomes the active app, and at a click.
+        installing = updateFolder.map(installLock) ?? (false, nil)
+        let offers = gamesTable.map { withOwnership(tableOffers($0, readFrom, appRows, installing: installing.game), owned) } ?? []
         grid.footState = held
+        grid.installs = tool != nil
         grid.show(rows: appRows, offers: offers, last: appID(UserDefaults.standard.object(forKey: "lastAppID")))
         empty.isHidden = !grid.tiles.isEmpty
         scroll.isHidden = grid.tiles.isEmpty
@@ -1916,10 +2127,100 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuI
     @objc func startChosen(_ sender: Any?) {
         guard !starting, case .none = sheet else { return }
         guard let picked = chosen else { return }
-        if picked.role == .offer { launch(picked, new: false); return }
-        reload()
-        guard let r = appRows.first(where: { $0.key == picked.key }) else { NSSound.beep(); return }
-        if let b = blocker(r, appRows) { ask(about: b, starting: r) } else { launch(r, new: r.state == .busy) }
+        reload()   // the states and the install's lock, read again at the click
+        guard let r = grid.tiles.first(where: { $0.row.key == picked.key })?.row else { NSSound.beep(); return }
+        let busy = r.role == .offer ? appRows.first(where: { $0.role == .game && $0.state == .busy }) : blocker(r, appRows)
+        let click = clickAnswer(r, state: held, tool: tool != nil, busy: busy?.title, installing: installing.live)
+        switch click {
+        case .start: launch(r, new: r.state == .busy)
+        case .guide: launch(r, new: false)
+        case .askBusy: if let b = busy { ask(about: b, starting: r) }
+        case .askInstallRunning: askRunning(r)
+        case .askInstall: askInstall(r)
+        case .tellManual, .tellUpdateFirst, .tellInstalling, .tellQuitFirst: tellInstall(click.name, r, busy: busy?.title)
+        }
+    }
+
+    // The words of one of the install's sheets for a row: the game's folder comes from the bundle's table.
+    func words(_ name: String, _ r: Row, busy: String? = nil) -> SheetWords? {
+        let folder = gamesTable.flatMap { t in portedGames(t).first(where: { $0.id == r.appID }) }?.folder ?? "-"
+        return installSheet(name, title: r.title, begun: r.state == .begun, folder: folder, busy: busy)
+    }
+
+    // The sheet that asks before an install: three buttons, the safe one first and the default. Nothing runs
+    // before its answer. Escape gives the first button, as in every sheet (the monitor).
+    func askInstall(_ r: Row) {
+        guard let w = words("ask-install", r) else { return }
+        let a = NSAlert()
+        a.alertStyle = .informational
+        a.messageText = w.message
+        a.informativeText = w.text
+        for b in w.buttons { a.addButton(withTitle: b) }
+        sheet = .question(a.window)
+        a.beginSheetModal(for: window) { answer in
+            self.sheet = .none
+            switch installAnswer("ask-install", buttonName(answer)) {
+            case "open": self.install(r)
+            case "guide": self.launch(r, new: false)
+            default: break
+            }
+        }
+    }
+
+    // After a yes: the tool is asked to open the install, off the main thread as for the update, and the window
+    // quits when it answers opened. Any other answer is a sentence, with the guide one click away.
+    func install(_ r: Row) {
+        guard let tool = tool, let id = r.appID else { return }
+        starting = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let after = openInstall(tool, id)
+            DispatchQueue.main.async {
+                if case .failure(let why) = after {
+                    self.starting = false
+                    self.tellGuide(Look.installNotOpened, why, r)
+                    return
+                }
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
+    // A sheet with two buttons, "OK" the first and the default, and "Read the Guide", which opens the row's address.
+    func tellGuide(_ message: String, _ text: String, _ r: Row, as name: String = "tell-installing") {
+        let a = NSAlert()
+        a.alertStyle = .informational
+        a.messageText = message
+        a.informativeText = text
+        a.addButton(withTitle: Look.ok)
+        a.addButton(withTitle: Look.readGuide)
+        sheet = .failure(a.window)   // Return and Escape both end it as its first button
+        a.beginSheetModal(for: window) { answer in
+            self.sheet = .none
+            if installAnswer(name, buttonName(answer)) == "guide", r.role == .offer { self.launch(r, new: false) }
+        }
+    }
+    func tellInstall(_ name: String, _ r: Row, busy: String?) {
+        guard let w = words(name, r, busy: busy) else { return }
+        tellGuide(w.message, w.text, r, as: name)
+    }
+
+    // Before a set-up game or the Steam app is started while an install runs: the question a busy game gets,
+    // with the same two buttons.
+    func askRunning(_ r: Row) {
+        guard let w = words("ask-install-running", r) else { return }
+        let a = NSAlert()
+        a.alertStyle = .warning
+        a.messageText = w.message
+        a.informativeText = w.text
+        for b in w.buttons { a.addButton(withTitle: b) }
+        sheet = .question(a.window)
+        a.beginSheetModal(for: window) { answer in
+            self.sheet = .none
+            guard installAnswer("ask-install-running", buttonName(answer)) == "start" else { return }
+            self.reload()
+            let now = self.appRows.first(where: { $0.key == r.key }) ?? r
+            self.launch(now, new: now.state == .busy)
+        }
     }
 
     func ask(about b: Row, starting r: Row) {

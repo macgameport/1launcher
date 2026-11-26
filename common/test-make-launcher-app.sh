@@ -24,6 +24,7 @@
 #   MUTANT=11 ...  the launcher's installer makes the record's folders and the tool's copy after the build (no
 #                  L1UpdateDir in the first window); must exit 1
 #   MUTANT=12 ...  the minimum macOS in the Info.plist left at 13.0; must exit 1
+#   MUTANT=13 ...  the table of games not copied into the bundle (LFT12's listing case, with LF5a); must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 for f in make-launcher-app.sh launcher-window.swift games.tsv paths.sh install-launcher.sh updates.sh tools.sh; do
@@ -67,6 +68,7 @@ open(p, "w").write(s)
 PY
       bash -n "$INSTALLER" || mutated ;;
   12) sed -i '' 's|<string>14.0</string>$|<string>13.0</string>|' "$BUILDER"; grep -q '<key>LSMinimumSystemVersion</key>  <string>13.0</string>$' "$BUILDER" || mutated ;;
+  13) drop "$BUILDER" 'cp "$GAMES" "$NEW/Contents/Resources/games.tsv"' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 
@@ -238,6 +240,13 @@ check "LFT12 ...the built app's L1UpdateDir is the scratch record's folder, and 
 check "LFT12 ...its Info.plist gives the minimum macOS as 14.0, and lints" "$(px LSMinimumSystemVersion "$JA"):$(plutil -lint "$JA/Contents/Info.plist" >/dev/null 2>&1 && echo lint)" "14.0:lint"
 check "LFT12 ...the launcher's stamp follows release, and the deployed tool says unknown: the Mac is not manual" \
   "$(cut -f1,2 "$JU/launcher" 2>/dev/null):$(HOME="$JH" bash "$JU/updates.sh" | cut -f1,2)" "release	v0.4.2:unknown	v0.4.2"
+# LFT12's listing case (LF5a): the window that was installed from nothing lists the games of its own bundle's table
+JT="$JA/Contents/Resources/games.tsv"; JW="$JA/Contents/MacOS/launcher-window"
+check "LFT12 the built window, asked with its bundle's table and the scratch Applications: one offer row for each row of the tree's table, each not-set-up" \
+  "$(HOME="$JH" "$JW" --list --games "$JT" "$JH/Applications" 2>&1 | awk -F'\t' '$1 == "offer" && $3 == "not-set-up" { n++ } END { print n + 0 }'):$(HOME="$JH" "$JW" --list --games "$JT" "$JH/Applications" 2>&1 | grep -c .)" \
+  "$(grep -vc '^#' "$HERE/games.tsv"):$(grep -vc '^#' "$HERE/games.tsv")"
+check "LFT12 ...and --grid gives each of those tiles a line that ends with its letters" \
+  "$(HOME="$JH" "$JW" --grid --games "$JT" - "$JH/Applications" 2>&1 | awk -F'\t' '$1 == "tile" { printf "%s ", $NF }')" "icon=initials:CS icon=initials:SM "
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

@@ -2,7 +2,9 @@
 // common/make-launcher-app.sh compiles it into 14unch3r.app/Contents/MacOS/launcher-window. A row is an app
 // whose Info.plist carries L1Role: each game's own app and the Steam app, as their builders write them. A
 // start opens that app with /usr/bin/open, as a double-click does, and the window quits: the app keeps its
-// own process tree, consent records and progress window. Plans: docs/plans/launcher-window.md, 2.2 and 2.5, and
+// own process tree, consent records and progress window. A game of the bundle's table (common/games.tsv) that has
+// no such app is a row too, an offer: a grey tile with the game's initials, drawn by this program
+// (docs/plans/launcher-first-install.md, 3.7 and 3.10). Plans: docs/plans/launcher-window.md, 2.2 and 2.5, and
 // docs/plans/launcher-window-look.md (the tiles, the mark, the icon, the SVG and the Desktop alias), and
 // docs/plans/built-in-update.md, 3.5 (the update parts: a line at the foot of the grid when a newer version of
 // 1launcher is out, its sheet, and the menu item; all of it only when the update tool is deployed).
@@ -10,7 +12,9 @@
 //   launcher-window [--games <tsv>] [--update-dir <dir>] [<folder>...]   the window; with no folder, those of --folders
 //   launcher-window --list [--games <tsv>] <folder>...      one line per row: role, app id or -, state,
 //                                                           title, path; tab-separated, no headings. With
-//                                                           --games, offers too, asked as the window asks
+//                                                           --games, one offer row for every game of the table
+//                                                           that has no app here: not-set-up, begun (one
+//                                                           wrapper carries its marker) or owned
 //   launcher-window --default <last app id or -> <folder>... the path of the row selected at open, or nothing
 //   launcher-window --second <app path> <folder>...         go, or ask<TAB><title of the game in use>
 //   launcher-window --start <app path> [new]                started, or failed<TAB><sentence>; exit 0 or 1
@@ -38,10 +42,11 @@
 // The list is not a boundary of trust: whoever can put an app into ~/Applications can also edit the
 // unsigned shims already there, and a start goes through LaunchServices as a double-click does.
 import AppKit
-import UniformTypeIdentifiers
 
 enum Role: String { case game, steam, offer }
-enum State: String { case busy, absent, ready, unknown, owned }
+// The last three are an offer's (docs/plans/launcher-first-install.md, 3.7): owned is "not set up, and a cache of
+// Steam's says the account has the game"; begun is "no app, and exactly one wrapper carries the game's marker".
+enum State: String { case busy, absent, ready, unknown, owned, notSetUp = "not-set-up", begun }
 
 struct Row {
     let role: Role
@@ -213,7 +218,7 @@ func titled(_ rows: [Row]) -> [Row] {
 // carries a marker in its Info.plist (docs/plans/wrapper-names.md, 3.1 and 3.9): L1Role game-wrapper with the game's
 // L1SteamAppID, or steam-wrapper. The one app in the same folder that carries the row's marker gives the prefix;
 // with none or two, nothing does. Nothing is run from the wrapper: its Info.plist is read as every app's is.
-func markedWrapper(_ folder: String, _ names: [String], role: Role, appID want: Int?) -> String? {
+func markedPaths(_ folder: String, _ names: [String], role: Role, appID want: Int?) -> [String] {
     var hits: [String] = []
     for name in names where name.lowercased().hasSuffix(".app") && !hasControl(name) {
         let path = (folder == "/" ? "" : folder) + "/" + name
@@ -225,6 +230,10 @@ func markedWrapper(_ folder: String, _ names: [String], role: Role, appID want: 
         if role == .steam, mark == "steam-wrapper" { hits.append(path) }
         if role == .game, mark == "game-wrapper", let id = want, appID(d["L1SteamAppID"]) == id { hits.append(path) }
     }
+    return hits
+}
+func markedWrapper(_ folder: String, _ names: [String], role: Role, appID want: Int?) -> String? {
+    let hits = markedPaths(folder, names, role: role, appID: want)
     return hits.count == 1 ? hits[0] + "/Contents/SharedSupport/prefix" : nil
 }
 
@@ -504,6 +513,42 @@ func offerRows(_ table: String, _ rows: [Row]) -> [Row] {
     return ordered(zip(asked, answers.words).filter { $0.1 == "owned" }.map { g, _ in
         Row(role: .offer, appID: g.id, title: g.title, sortTitle: g.title, path: g.address, key: "offer \(g.id)", prefix: nil, state: .owned)
     })
+}
+
+// The games that are not set up (docs/plans/launcher-first-install.md, 3.7): one offer row for every game of the
+// table that has no game row, whether or not Steam says the account owns it. They are made from files alone, the
+// table and the folders' marked wrappers, so the window has them at its first reload. A game with exactly one
+// wrapper that carries its marker is begun: its install was started and its setup never finished. With none, or
+// with two marked alike, it is not set up. A guide address must start https://github.com/, as for offerRows.
+func tableOffers(_ table: String, _ folders: [String], _ rows: [Row]) -> [Row] {
+    let have = Set(rows.compactMap { $0.role == .game ? $0.appID : nil })
+    var listed: [(String, [String])] = []
+    for f in folders.map(absolute) {
+        if let names = try? fm.contentsOfDirectory(atPath: f) { listed.append((f, names)) }
+    }
+    var out: [Row] = [], seen = Set<Int>()
+    for g in portedGames(table) {
+        guard !have.contains(g.id), !seen.contains(g.id), g.address.hasPrefix("https://github.com/") else { continue }
+        seen.insert(g.id)
+        var wrappers = Set<String>()   // one wrapper reached by two spellings of a folder is one
+        for (f, names) in listed {
+            for w in markedPaths(f, names, role: .game, appID: g.id) { wrappers.insert(realPath(w) ?? w) }
+        }
+        out.append(Row(role: .offer, appID: g.id, title: g.title, sortTitle: g.title, path: g.address, key: "offer \(g.id)",
+                       prefix: nil, state: wrappers.count == 1 ? .begun : .notSetUp))
+    }
+    return ordered(out)
+}
+
+// What a cache of Steam's changes (offerRows asks it): a game that is not set up, and that the account has,
+// reads owned. No tile appears, goes or moves by it.
+func withOwnership(_ offers: [Row], _ owned: [Row]) -> [Row] {
+    let ids = Set(owned.compactMap { $0.appID })
+    return offers.map { r in
+        var r = r
+        if r.state == .notSetUp, let id = r.appID, ids.contains(id) { r.state = .owned }
+        return r
+    }
 }
 
 func usage() -> Never {
@@ -798,7 +843,16 @@ enum Look {
     static let startOnPress = false
     static let noGames = "No games are set up on this Mac yet."
     static let readme = "https://github.com/macgameport/1launcher/blob/main/README.md"
-    static let label = "You also own"
+    static let label = "Not set up on this Mac"
+
+    // The placeholder of a game that is not set up (docs/plans/launcher-first-install.md, 3.10): the body of the
+    // app's own icon, in its place and with its two whites, and the game's initials where the mark is. The radius
+    // is of 1,024, as iconBody is; iconBitmap keeps its own literals, so the app's icon does not move with these.
+    static let initialsTop: CGFloat = 0.32, initialsBottom: CGFloat = 0.13
+    static let initialsRadius: CGFloat = 185
+    static let initialsAlpha: CGFloat = 0.88
+    static let initialsFont = NSFont.systemFont(ofSize: 22, weight: .semibold)
+    static let initialsPad: CGFloat = 5
 
     // The update parts (docs/plans/built-in-update.md, 3.5). The foot line has the label's look: labelFont, white
     // at labelAlpha, labelH high, labelAbove below the last row; so the grid grows by 24 points with it. Its hit
@@ -972,8 +1026,67 @@ func spoken(_ r: Row) -> String {
     let second = secondLine(r)
     return second.isEmpty ? r.title : "\(r.title), \(second)"
 }
-// Grey tiles (2.4, D23): what cannot start as it is.
+// Grey tiles (2.4, D23): what cannot start as it is. An offer is grey by its placeholder, which is drawn in grey
+// at full strength; a set-up game or a Steam app that is absent is grey by greyed() at Look.dimAlpha.
 func dim(_ r: Row) -> Bool { r.role == .offer || r.state == .absent }
+
+// The placeholder (docs/plans/launcher-first-install.md, 3.10). The letters of a title: the first two initials.
+// A word's initial is its first letter or digit, made upper case; a word with neither gives none ("&"); a word
+// after the first that is only a number, in digits or in the capitals I, V and X, gives none ("II", "2"). The
+// title is a label: the letters are worked out each time and stored nowhere.
+func initials(_ title: String) -> String {
+    var out = ""
+    for (i, word) in title.split(whereSeparator: { $0.isWhitespace }).enumerated() where out.count < 2 {
+        let core = word.filter { $0.isLetter || $0.isNumber }
+        guard let first = core.first else { continue }
+        if i > 0, core.allSatisfy({ $0.isNumber }) || core.allSatisfy({ "IVX".contains($0) }) { continue }
+        if let upper = String(first).uppercased().first { out.append(upper) }
+    }
+    return out
+}
+// Which picture a tile draws: its app's own icon, or the placeholder with these letters. The drawing and
+// --grid both ask this, so what a test reads is what the window draws.
+enum TileIcon { case app, initials(String) }
+func tileIcon(_ r: Row) -> TileIcon { r.role == .offer ? .initials(initials(r.sortTitle)) : .app }
+// The placeholder's square in a picture of that rectangle: iconBody's place, scaled from its 1,024
+func placeholderSquare(_ rect: NSRect) -> NSRect {
+    let k = rect.width / 1024
+    return NSRect(x: rect.minX + iconBody.minX * k, y: rect.minY + iconBody.minY * k, width: iconBody.width * k, height: iconBody.height * k)
+}
+// The body alone, into the current context, whose y runs up: the rounded square, lighter at its top
+func drawPlaceholderBody(in rect: NSRect) {
+    let r = Look.initialsRadius * rect.width / 1024
+    let shape = NSBezierPath(roundedRect: placeholderSquare(rect), xRadius: r, yRadius: r)
+    NSGradient(starting: NSColor(white: Look.initialsTop, alpha: 1), ending: NSColor(white: Look.initialsBottom, alpha: 1))?.draw(in: shape, angle: -90)
+}
+// The letters as drawn, and their rectangle in a picture of that rectangle: centred in the square on one line,
+// and drawn smaller, in proportion, when they are wider than the square less the pad at each side.
+func placeholderLetters(_ letters: String, in rect: NSRect) -> (NSAttributedString, NSRect) {
+    let square = placeholderSquare(rect), room = square.width - 2 * Look.initialsPad
+    func drawn(_ font: NSFont) -> NSAttributedString {
+        NSAttributedString(string: letters, attributes: [.font: font, .foregroundColor: NSColor(white: 1, alpha: Look.initialsAlpha)])
+    }
+    var text = drawn(Look.initialsFont)
+    let w = text.size().width
+    if w > room, w > 0, let smaller = NSFont(descriptor: Look.initialsFont.fontDescriptor, size: Look.initialsFont.pointSize * room / w) {
+        text = drawn(smaller)
+    }
+    let size = text.size()
+    return (text, NSRect(x: square.midX - size.width / 2, y: square.midY - size.height / 2, width: size.width, height: size.height))
+}
+// The picture of a game that is not set up, Look.icon points a side, drawn from the title's letters and from
+// constants alone, at the screen's own scale each time: no bitmap is kept, and no file or request is behind it.
+func placeholderIcon(_ title: String) -> NSImage {
+    let letters = initials(title)
+    return NSImage(size: NSSize(width: Look.icon, height: Look.icon), flipped: false) { rect in
+        drawPlaceholderBody(in: rect)
+        if !letters.isEmpty {
+            let (text, at) = placeholderLetters(letters, in: rect)
+            text.draw(at: at.origin)
+        }
+        return true
+    }
+}
 
 // Plan 2.7: what a key does. The window's monitor and --act both ask this; the arrows are the grid's keyDown.
 enum KeyAction: String { case start, quit, endSheet = "end-sheet", pass }
@@ -1073,10 +1186,14 @@ final class TileView: NSView {
                 line.stroke()
             }
         }
-        let image = row.role == .offer ? NSWorkspace.shared.icon(for: .applicationBundle) : NSWorkspace.shared.icon(forFile: row.path)
-        let grey = dim(row)
-        (grey ? greyed(image) : image).draw(in: iconRect, from: .zero, operation: .sourceOver, fraction: grey ? Look.dimAlpha : 1,
-                                            respectFlipped: true, hints: nil)
+        switch tileIcon(row) {
+        case .app:   // the app's own icon; grey, through greyed() at dimAlpha, only when it cannot start as it is
+            let image = NSWorkspace.shared.icon(forFile: row.path), grey = dim(row)
+            (grey ? greyed(image) : image).draw(in: iconRect, from: .zero, operation: .sourceOver, fraction: grey ? Look.dimAlpha : 1,
+                                                respectFlipped: true, hints: nil)
+        case .initials:   // the placeholder: grey by its own constants, painted at full strength (3.10)
+            placeholderIcon(row.sortTitle).draw(in: iconRect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+        }
         if selected {
             let w = min(title.map { plain($0, Look.titleFont).size().width }.max() ?? 0, Look.textW).rounded(.up)
             Look.pill.setFill()
@@ -1148,7 +1265,7 @@ final class GridView: NSView {
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
         setAccessibilityLabel("Games")
-        setAccessibilityHelp("Click a game, or press Return, to start it.")
+        setAccessibilityHelp("Click a game, or press Return, to start it or set it up.")
     }
     required init?(coder: NSCoder) { fatalError() }
     override var isFlipped: Bool { true }
@@ -1180,7 +1297,8 @@ final class GridView: NSView {
         setFrameSize(l.size)
         armed = nil   // a reload disarms
         selection = nil
-        let pick = tiles.firstIndex { $0.row.key == keep } ?? defaultRow(apps, last: last).flatMap { d in tiles.firstIndex { $0.row.key == d.key } }
+        // with no app at all the first offer is selected, so that the keys reach a tile on a Mac with the launcher alone
+        let pick = tiles.firstIndex { $0.row.key == keep } ?? (defaultRow(apps, last: last) ?? offers.first).flatMap { d in tiles.firstIndex { $0.row.key == d.key } }
         if let i = pick { select(i, announce: tiles[i].row.key != keep) } else { offset = 0 }
         window?.invalidateCursorRects(for: self)
         needsDisplay = true
@@ -1350,6 +1468,34 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
     (alpha + (1 - alpha) * b.0, alpha + (1 - alpha) * b.1, alpha + (1 - alpha) * b.2)
 }
 
+// --grid's line `paint initials` (docs/plans/launcher-first-install.md, 3.10): the lowest ratio of the letters'
+// colour against the placeholder's body under them, over every tile that draws a placeholder with letters; or -
+// when none does. The body is drawn with no letters into a bitmap of its own, a pixel to a point.
+@MainActor func initialsRatio(_ grid: GridView) -> String {
+    var lowest: CGFloat? = nil
+    let side = Int(Look.icon), box = NSRect(x: 0, y: 0, width: Look.icon, height: Look.icon)
+    for t in grid.tiles {
+        guard case .initials(let letters) = tileIcon(t.row), !letters.isEmpty else { continue }
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8, samplesPerPixel: 4,
+                                         hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+              let ctx = NSGraphicsContext(bitmapImageRep: rep), let data = rep.bitmapData else { continue }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = ctx
+        drawPlaceholderBody(in: box)
+        NSGraphicsContext.restoreGraphicsState()
+        let at = placeholderLetters(letters, in: box).1
+        for y in max(0, Int(at.minY.rounded(.down)))..<min(side, Int(at.maxY.rounded(.up))) {
+            for x in max(0, Int(at.minX.rounded(.down)))..<min(side, Int(at.maxX.rounded(.up))) {
+                let p = data + (side - 1 - y) * rep.bytesPerRow + x * 4   // the bitmap's rows run down, the picture's y up
+                let b = (CGFloat(p[0]) / 255, CGFloat(p[1]) / 255, CGFloat(p[2]) / 255)
+                let r = ratio(white(Look.initialsAlpha, over: b), b)
+                if lowest == nil || r < lowest! { lowest = r }
+            }
+        }
+    }
+    return lowest.map { String(format: "%.2f", $0) } ?? "-"
+}
+
 // --grid's paint lines (section 4): the real background at the window's size, bar included, and the lowest ratio
 // of each kind of text over every pixel under any rectangle of that kind.
 @MainActor func paintLines(_ grid: GridView) -> [String] {
@@ -1386,6 +1532,7 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
     lines.append(["paint", "title", lowest(grid.tiles.map { inGrid($0, $0.titleRect) }, 1)].joined(separator: "\t"))
     lines.append(["paint", "second", lowest(grid.tiles.filter { !$0.second.isEmpty }.map { inGrid($0, $0.secondRect) }, Look.secondAlpha)].joined(separator: "\t"))
     lines.append(["paint", "label", lowest([grid.labelRect, grid.footRect].compactMap { $0 }, Look.labelAlpha)].joined(separator: "\t"))
+    lines.append(["paint", "initials", initialsRatio(grid)].joined(separator: "\t"))
     if Look.outlineWidth > 0, let i = grid.selection {
         let px = under([inGrid(grid.tiles[i], grid.tiles[i].plateRect)])
         let onBack = px.map { ratio(white(Look.outlineAlpha, over: $0), $0) }.min() ?? 0
@@ -1408,8 +1555,9 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
     let (table, afterTable) = gamesOption(rest)
     let (updateDir, more) = updateOption(afterTable)
     guard more.count >= 2 else { usage() }
-    let found = rows(in: Array(more.dropFirst()))
-    let offers = table.map { offerRows($0, found) } ?? []
+    let folders = Array(more.dropFirst())
+    let found = rows(in: folders)
+    let offers = table.map { withOwnership(tableOffers($0, folders, found), offerRows($0, found)) } ?? []
     let last = lastID(more[0])
     let grid = makeGrid()
     // The foot line, as the window draws it from the tool's first answer: asked only when --update-dir is given.
@@ -1427,7 +1575,8 @@ func white(_ alpha: CGFloat, over b: (CGFloat, CGFloat, CGFloat)) -> (CGFloat, C
             out(["tile", String(t.cell.0), String(t.cell.1), num(t.frame.minX), num(t.frame.minY), t.row.role.rawValue,
                  grid.selection == i ? "selected" : "-", dim(t.row) ? "dim" : "-", t.accessibilityRole()?.rawValue ?? "-",
                  t.accessibilityLabel() ?? "-", t.accessibilityHelp().flatMap { $0.isEmpty ? nil : $0 }.map(oneLine) ?? "-",
-                 String(t.title.count), t.title.joined(separator: " | "), t.second.isEmpty ? "-" : t.second.joined(separator: " ")])
+                 String(t.title.count), t.title.joined(separator: " | "), t.second.isEmpty ? "-" : t.second.joined(separator: " "),
+                 { if case .initials(let letters) = tileIcon(t.row) { return "icon=initials:" + letters } else { return "icon=app" } }()])
         }
         if let f = grid.foot, let r = grid.footRect {
             out(["foot", num(r.minX), num(r.minY), num(r.width), num(r.height), f.line, f.accessibilityRole()?.rawValue ?? "-", f.accessibilityLabel() ?? "-"])
@@ -1519,7 +1668,7 @@ if let mode = args.first, mode.hasPrefix("-"), mode != "--games", mode != "--upd
         let (table, folders) = gamesOption(rest)
         guard !folders.isEmpty else { usage() }
         let found = rows(in: folders)
-        for r in found + (table.map { offerRows($0, found) } ?? []) {
+        for r in found + (table.map { withOwnership(tableOffers($0, folders, found), offerRows($0, found)) } ?? []) {
             print([r.role.rawValue, r.appID.map(String.init) ?? "-", r.state.rawValue, r.title, r.path].joined(separator: "\t"))
         }
     case "--default":
@@ -1619,7 +1768,7 @@ final class LauncherWindow: NSWindow {
 final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation {
     enum Sheet { case none, question(NSWindow), failure(NSWindow) }
     var appRows: [Row] = []
-    var offers: [Row] = []
+    var owned: [Row] = []   // what a cache of Steam's says the account has, when its answer has come (askOffers)
     var sheet = Sheet.none
     var starting = false
     var opened = false
@@ -1715,7 +1864,7 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuI
         DispatchQueue.global(qos: .utility).async {
             let o = offerRows(table, found)
             DispatchQueue.main.async {
-                self.offers = o
+                self.owned = o
                 if !o.isEmpty { self.reload() }
             }
         }
@@ -1737,9 +1886,10 @@ final class Launcher: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuI
     // The selection stays on the same app when it is still listed.
     func reload() {
         appRows = rows(in: readFrom)
-        let have = Set(appRows.compactMap { $0.role == .game ? $0.appID : nil })
+        // every game of the table that has no app here, from files alone (3.7): they are there at the first reload
+        let offers = gamesTable.map { withOwnership(tableOffers($0, readFrom, appRows), owned) } ?? []
         grid.footState = held
-        grid.show(rows: appRows, offers: offers.filter { !have.contains($0.appID ?? 0) }, last: appID(UserDefaults.standard.object(forKey: "lastAppID")))
+        grid.show(rows: appRows, offers: offers, last: appID(UserDefaults.standard.object(forKey: "lastAppID")))
         empty.isHidden = !grid.tiles.isEmpty
         scroll.isHidden = grid.tiles.isEmpty
         fit()

@@ -221,10 +221,11 @@ and is immune. (If you ever do get stuck in exclusive mode, you're not dead — 
 one frame per alt-tab, so you can alt-tab your way to Options and switch modes.)
 
 **If the picture is fuzzy (game version 1.6.4 and later):** Options → Graphics → **Upscaler → Disabled**.
-1.6.4 added upscalers, and on the Mac this was seen on the game had AMD FSR 3 at Quality on without anyone
+1.6.4 added upscalers, and on the Mac where this was seen the game had AMD FSR 3 at Quality on without anyone
 choosing it: it draws the city at two thirds of the resolution and stretches it. If the city is black instead,
 which has been reported on CrossOver, try the same setting. Seen on one Mac (M5 Max, 2026-11-25), where the
-city was fuzzy with FSR 3 on, and not black.
+city was fuzzy with FSR 3 on, and not black. **Do not choose AMD FSR 4 or Intel XeSS 3:** on this setup they do
+nothing, and anti-aliasing stops working ([what each setting costs](docs/graphics-settings.md)).
 
 ---
 

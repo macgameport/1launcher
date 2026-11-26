@@ -54,6 +54,7 @@ S="$G/scripts/install.sh"; CORE="$R/common/install-core.sh"
 cp "$HERE/scripts/install.sh" "$S"; cp "$REPO/common/install-core.sh" "$CORE"
 : > "$G/launch-relaunched.sh"; : > "$G/make-app.sh"; : > "$G/tools/frame-fix.exe"; : > "$R/common/make-launcher-app.sh"
 cp "$REPO/common/wrappers.sh" "$R/common/wrappers.sh"; : > "$R/common/move-wrappers.sh"   # the resolver, real; the mover, setup's
+cp "$REPO/common/tools.sh" "$R/common/tools.sh"   # the ask and the wait for Apple's tools, real: the core reads it (docs/plans/launcher-first-install.md, 3.2)
 : > "$R/common/paths.sh"; : > "$R/common/updates.sh"; : > "$R/common/games.tsv"   # setup's record of versions (docs/plans/built-in-update.md, 3.3)
 
 py() { python3 -I - "$@"; }
@@ -442,7 +443,7 @@ R2="$T/repo2"; G2="$R2/surviving-mars-relaunched"; mkdir -p "$R2/common" "$G2/sc
 cp "$S" "$G2/scripts/install.sh"; cp "$CORE" "$R2/common/install-core.sh"   # the copies under test: their mutants apply here too
 cp "$HERE/scripts/setup.sh" "$G2/scripts/"; cp "$HERE/launch-relaunched.sh" "$HERE/make-app.sh" "$G2/"; cp "$HERE/tools/frame-fix.exe" "$G2/tools/"
 cp "$G/tools/fetch-d3dmetal.sh" "$G/tools/make-engine.sh" "$G2/tools/"
-cp "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
+cp "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R/common/tools.sh" "$R2/common/"
 cp "$REPO/common/paths.sh" "$REPO/common/updates.sh" "$REPO/common/games.tsv" "$R2/common/"   # the real setup keeps its record of versions
 printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"
 S2="$G2/scripts/setup.sh"

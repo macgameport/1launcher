@@ -28,10 +28,15 @@ CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAKE_WRAPPER="$CORE_DIR/make-wrapper.sh"
 [ -f "$CORE_DIR/wrappers.sh" ] || { echo "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
 . "$CORE_DIR/wrappers.sh"
+# the ask and the wait for Apple's Command Line Tools, shared with the launcher's installer
+# (docs/plans/launcher-first-install.md, 3.2): tools_ask and tools_wait, which core_tools calls
+[ -f "$CORE_DIR/tools.sh" ] || { echo "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
+. "$CORE_DIR/tools.sh"
 STEAM_URLS="https://cdn.fastly.steamstatic.com/client/installer/SteamSetup.exe https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 STEAM_TESTED_SHA=7d3654531c32d941b8cae81c4137fc542172bfa9635f169cb392f245a0a12bcb
 POLL=5            # seconds between looks at Steam and the download
 TOOLS_POLLS=720   # 60 minutes for Apple's Command Line Tools
+TOOLS_PART_POLLS=24   # and two more for the part a game needs of them: Apple's package may still be writing its files
 STUCK_POLLS=12    # a Steam with no client for 60 s is stuck at its box
 GONE_POLLS=3      # Steam gone for this many polls in a row is gone (its updater replaces itself)
 START_POLLS=120   # ten minutes for one start of Steam to bring its client up
@@ -330,16 +335,10 @@ if xcode-select -p > /dev/null 2>&1; then   # first: without the tools, running 
   say "OK"
 elif [ "$CHECK" = 1 ]; then say "missing: the installer would ask Apple for them"
 else
-  xcode-select --install > /dev/null 2>&1
-  say "A box from Apple has opened; it may be behind this window. Press Install, then Agree."
-  say "The download comes from Apple and can take 10 minutes or more. This window goes on by itself when it is done."
-  i=0
-  until xcode-select -p > /dev/null 2>&1; do
-    i=$((i + 1))
-    [ "$i" -gt "$TOOLS_POLLS" ] && { say "Apple's Command Line Tools are not installed yet."; exit 4; }
-    sleep "$POLL"
-  done
-  tools_ok || { say "!! Apple's Command Line Tools are installed, but their $TOOLS_PART does not run. Reinstall them, then open the installer again."; exit 1; }
+  tools_ask   # common/tools.sh: the request, and what it says when Apple took it and when not
+  _tw=0; tools_wait tools_ok || _tw=$?
+  [ "$_tw" = 1 ] && { say "Apple's Command Line Tools are not installed yet."; exit 4; }
+  [ "$_tw" = 0 ] || { say "!! Apple's Command Line Tools are installed, but their $TOOLS_PART does not run. Reinstall them, then open the installer again."; exit 1; }
   say "OK"
 fi
 }

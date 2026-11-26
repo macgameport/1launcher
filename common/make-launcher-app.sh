@@ -112,7 +112,7 @@ cat > "$PL" << 'PLIST'
     <key>CFBundleExecutable</key>      <string>launcher-window</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleVersion</key>         <string>1.0</string>
-    <key>LSMinimumSystemVersion</key>  <string>13.0</string>
+    <key>LSMinimumSystemVersion</key>  <string>14.0</string>
     <key>NSHighResolutionCapable</key> <true/>
     <key>CFBundleAlternateNames</key>
     <array>

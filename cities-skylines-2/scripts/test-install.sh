@@ -72,6 +72,10 @@
 #   74 the own-files loop for common/updates.sh and common/games.tsv dropped
 # The update, its parts joined (docs/plans/built-in-update.md, 3.4; UT7b); each must exit 1:
 #   75 l1u_stamp not called by setup    76 the driver's test of a stamp's line turned round
+# The ask and the wait for Apple's tools, common/tools.sh, read by the core (docs/plans/launcher-first-install.md,
+# 3.2; LFT11); each must exit 1:
+#   77 the two minutes dropped (the part tried once)    78 tools.sh left out of the core's test of its own files
+#   79 the request's exit code thrown away (the first words said after a request that was not taken)
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -96,6 +100,10 @@ C="$R/common/install-core.sh"; cp "$REPO/common/install-core.sh" "$C"   # the sh
 : > "$R/common/paths.sh"; : > "$R/cities-skylines-2/scripts/move-install.sh"   # setup's own files (docs/plans/local-files-layout.md, 3.4)
 cp "$REPO/common/wrappers.sh" "$R/common/wrappers.sh"; : > "$R/common/move-wrappers.sh"   # the resolver, real; the mover, setup's (docs/plans/wrapper-names.md)
 : > "$R/common/updates.sh"; : > "$R/common/games.tsv"   # setup's record of versions (docs/plans/built-in-update.md, 3.3)
+TL="$R/common/tools.sh"; cp "$REPO/common/tools.sh" "$TL"   # the ask and the wait for Apple's tools, real: the core reads it (LFT11)
+tmutate() {  # <sed expression> <grep that proves it applied>: a mutant of the tree's copy of common/tools.sh
+  sed -i '' "$1" "$TL"; grep -q -- "$2" "$TL" || { echo "REFUSED: mutant did not apply"; exit 2; }
+}
 mutate() {  # <sed expression> <grep that proves it applied>
   sed -i '' "$1" "$S" "$C"; cat "$S" "$C" | grep -q -- "$2" || { echo "REFUSED: mutant did not apply"; exit 2; }
 }
@@ -179,6 +187,9 @@ case "${MUTANT:-0}" in
   72) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed|update|partial) return 0 ;; esac; fi#' '^if prefix_known; then case "\$(game_state)" in installed|update|partial) return 0' ;;
   73) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#case "$(game_state)" in installed|update) return 0 ;; esac#' '^case "\$(game_state)" in installed|update) return 0 ;; esac$' ;;
   74) mutate 's#^for f in "\$GAME_ROOT/../common/updates.sh" "\$GAME_ROOT/../common/games.tsv"; do .*#for f in; do#' '^for f in; do$' ;;
+  77) tmutate 's#^    \[ "\$j" -gt "\$TOOLS_PART_POLLS" \] \&\& return 2$#    return 2#' '^    return 2$' ;;
+  78) mutate 's#^\[ -f "\$CORE_DIR/tools.sh" \] || { echo .*#: no test of tools.sh#' '^: no test of tools.sh$' ;;
+  79) tmutate 's#^  xcode-select --install > /dev/null 2>&1 || rc=\$?$#  xcode-select --install > /dev/null 2>\&1 || true#' '^  xcode-select --install > /dev/null 2>&1 || true$' ;;
 esac
 
 fails=0
@@ -352,10 +363,11 @@ cat > "$B/xcode-select" << 'X'
 case "$1" in
   -p) if [ -n "${STUB_NO_TOOLS:-}" ] && [ ! -f "$ST/tools" ]; then echo "XS -p fail" >> "$CALLS"; exit 2; fi
       echo "XS -p ok" >> "$CALLS"; echo /Library/Developer/CommandLineTools ;;
-  --install) echo "XS --install" >> "$CALLS"; : > "$ST/tools-pending" ;;
+  --install) echo "XS --install" >> "$CALLS"; : > "$ST/tools-pending"; exit "${STUB_XS_INSTALL_EXIT:-0}" ;;
 esac
 X
-printf '#!/bin/bash\necho "PY" >> "$CALLS"; exit "${STUB_PY_EXIT:-0}"\n' > "$B/python3"
+# python3: with STUB_PY_FAILS=<n> its first n calls of a home fail, as a part of Apple's tools still being written does
+printf '#!/bin/bash\necho "PY" >> "$CALLS"\nif [ -n "${STUB_PY_FAILS:-}" ]; then n=$(( $(cat "$ST/pys" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$ST/pys"; [ "$n" -le "$STUB_PY_FAILS" ] && exit 1; fi\nexit "${STUB_PY_EXIT:-0}"\n' > "$B/python3"
 printf '#!/bin/bash\necho "ROUTE $*" >> "$CALLS"; [ -n "${STUB_ROUTE_FAIL:-}" ] && exit 1\necho "   route to: default"; echo "  interface: ${STUB_IFACE:-en0}"\n' > "$B/route"
 printf '#!/bin/bash\necho "CAFF $*" >> "$CALLS"\n' > "$B/caffeinate"
 printf '#!/bin/bash\necho "KILL $*" >> "$CALLS"; rm -f "$ST/steam" "$ST/helper"\n' > "$B/killrec"
@@ -494,6 +506,19 @@ check "  ...they never arrive: exit 4" "$rc" 4
 sed -i '' 's/^TOOLS_POLLS=3 /TOOLS_POLLS=720 /' "$C"
 newh; done_all; rc="$(STUB_PY_EXIT=1 run)"
 check "tools there, python3 broken: exit 1, Apple not asked" "$rc:$(calls 'XS --install')" "1:0"
+# LFT11 (docs/plans/launcher-first-install.md, 3.2): the ask and the wait are common/tools.sh's, which the core reads
+newh; done_all; rc="$(STUB_NO_TOOLS=1 STUB_PY_FAILS=2 run)"
+check "LFT11 the tools arrive, python3 fails at two polls and runs at the third: the install goes on" "$rc:$(calls '^PY$'):$(grep -c '^SETUP  via=1' "$CALLS")" "0:3:1"
+newh; done_all; sed -i '' 's/^TOOLS_PART_POLLS=24 /TOOLS_PART_POLLS=3 /' "$C"; rc="$(STUB_NO_TOOLS=1 STUB_PY_EXIT=1 run)"
+check "LFT11 ...python3 never runs: after the settle exit 1, the core's sentence, setup not run" "$rc:$(said 'but their python3 does not run\. Reinstall them, then open the installer again\.$'):$(calls '^PY$'):$(grep -c '^SETUP  via' "$CALLS")" "1:1:4:0"
+sed -i '' 's/^TOOLS_PART_POLLS=3 /TOOLS_PART_POLLS=24 /' "$C"
+newh; done_all; rc="$(STUB_NO_TOOLS=1 STUB_XS_INSTALL_EXIT=1 run)"
+check "LFT11 the request answering 1: the other words are said and the first are not, and the wait still runs" \
+  "$rc:$(said "Apple's box could not be opened from here\. It may be open already"):$(said 'A box from Apple has opened'):$(grep -c '^SETUP  via=1' "$CALLS")" "0:1:0:1"
+check "LFT11 the settle is two minutes: TOOLS_PART_POLLS=24 stands in the core, on the line after TOOLS_POLLS" "$(grep -A1 '^TOOLS_POLLS=720 ' "$C" | tail -n 1 | grep -c '^TOOLS_PART_POLLS=24 ')" 1
+newh; done_all; mv "$TL" "$T/tools.away"
+check "LFT11 common/tools.sh gone: exit 4 in the own-files words, setup not run" "$(run):$(grep -c '^SETUP  via' "$CALLS"):$(said "The installer's own files are gone"):$(grep -cE 'command not found|No such file' "$H.out")" "4:0:1:0"
+mv "$T/tools.away" "$TL"
 
 # --- step 3: the wrapper
 # UT2 (docs/plans/built-in-update.md, U0): the free-space caution is for an install that still has to download
@@ -774,6 +799,7 @@ for f in "$REPO"/cities-skylines-2/patches/patch_*.py; do : > "$G2/patches/$(bas
 cp "$S" "$G2/scripts/install.sh"; cp "$C" "$R2/common/install-core.sh"   # the copies under test: a mutant of either applies here too
 cp "$REPO/common/paths.sh" "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
 cp "$REPO/common/updates.sh" "$REPO/common/games.tsv" "$R2/common/"   # the real setup keeps its record of versions (docs/plans/built-in-update.md, 3.3)
+cp "$TL" "$R2/common/tools.sh"   # the copy under test: a mutant of it applies here too
 printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"; printf '#!/bin/bash\nexit 1\n' > "$T/wt11bin/xcrun"
 printf '#!/bin/bash\n[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"\nexit 0\n' > "$T/wt11bin/wprobe"
 # this Mac, the same on any Mac, so that the transcript does not depend on the one it runs on (as scripts/test-setup.sh has it)

@@ -18,9 +18,15 @@
 #   MUTANT=8 ...   the small drawing used for no size; must exit 1
 #   MUTANT=9 ...   the key L1UpdateDir written when the tool is absent; must exit 1
 #   MUTANT=10 ...  the window reading another key than the builder writes; must exit 1
+# The real parts joined (docs/plans/launcher-first-install.md, 3.4; LFT12): the tree's real
+# common/install-launcher.sh runs the real builder in a scratch home, with stubs only for xcode-select, sw_vers
+# and open, and the window it built is asked where its tool is.
+#   MUTANT=11 ...  the launcher's installer makes the record's folders and the tool's copy after the build (no
+#                  L1UpdateDir in the first window); must exit 1
+#   MUTANT=12 ...  the minimum macOS in the Info.plist left at 13.0; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-for f in make-launcher-app.sh launcher-window.swift games.tsv paths.sh; do
+for f in make-launcher-app.sh launcher-window.swift games.tsv paths.sh install-launcher.sh updates.sh tools.sh; do
   [ -f "$HERE/$f" ] || { echo "REFUSED: common/$f not found"; exit 2; }
 done
 xcrun -f swiftc >/dev/null 2>&1 || { echo "REFUSED: swiftc is missing (install the Xcode Command Line Tools); nothing was tested"; exit 2; }
@@ -29,6 +35,7 @@ trap 'rm -rf "$T"' EXIT
 mkdir -p "$T/repo/common" "$T/home/Applications"
 cp "$HERE/make-launcher-app.sh" "$HERE/launcher-window.swift" "$HERE/games.tsv" "$T/repo/common/"
 BUILDER="$T/repo/common/make-launcher-app.sh"; SRC="$T/repo/common/launcher-window.swift"
+INSTALLER="$T/installer.sh"; cp "$HERE/install-launcher.sh" "$INSTALLER"   # LFT12's copy, which mutant 11 edits
 
 mutated() { echo "REFUSED: mutant did not apply"; exit 2; }
 drop() {   # <file> <fixed text>: delete the one line that holds it
@@ -49,6 +56,17 @@ case "${MUTANT:-0}" in
   9) sed -i '' 's|^  if \[ -n "\$UPDATE_DIR" \] && \[ -f "\$UPDATE_DIR/updates.sh" \] && \[ ! -L "\$UPDATE_DIR/updates.sh" \]; then$|  if [ -n "$UPDATE_DIR" ]; then|' "$BUILDER"
      grep -q '^  if \[ -n "\$UPDATE_DIR" \]; then$' "$BUILDER" || mutated ;;
   10) sed -i '' 's|return text(d\["L1UpdateDir"\])$|return text(d["L1UpdateFolder"])|' "$SRC"; grep -q 'return text(d\["L1UpdateFolder"\])$' "$SRC" || mutated ;;
+  11) python3 -I - "$INSTALLER" << 'PY' || mutated
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = "# --- 3. the record's folders, made"; b = "# --- 4. the wait for Apple's tools"; c = "# --- 7. the launcher's own stamp"
+assert s.count(a) == 1 and s.count(b) == 1 and s.count(c) == 1
+i = s.index(a); j = s.index(b); blk = s[i:j]; s = s[:i] + s[j:]
+k = s.index(c); s = s[:k] + blk + s[k:]
+open(p, "w").write(s)
+PY
+      bash -n "$INSTALLER" || mutated ;;
+  12) sed -i '' 's|<string>14.0</string>$|<string>13.0</string>|' "$BUILDER"; grep -q '<key>LSMinimumSystemVersion</key>  <string>13.0</string>$' "$BUILDER" || mutated ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 
@@ -198,6 +216,28 @@ check "--update-dir wins over the key; a relative one, and one that holds a link
 mv "$T/u1/updates.sh" "$T/u1/gone.sh"
 check "the key names a folder whose tool is gone: -" "$(px L1UpdateDir "$T/k1/14unch3r.app"):$(ut "$T/k1")" "$T/u1:-"
 check "no paths.sh beside the builder, as in every build further up: no key, and -" "$(px L1UpdateDir "$A"):$(ut "$D")" ":-"
+
+# --- LFT12 (docs/plans/launcher-first-install.md, 3.4): the real parts joined. The launcher's real installer, the
+# real builder and the window it builds, in a scratch home. Only xcode-select, sw_vers and open are stubs: the
+# compiler is this Mac's. Run with L1_FETCHED_REF=release, so that the Mac is not manual. Without this case a
+# window that was installed from nothing and cannot find its tool would pass every other test.
+J="$T/join"; JH="$T/jhome"; mkdir -p "$J/common" "$JH" "$T/jbin"
+cp "$BUILDER" "$SRC" "$HERE/games.tsv" "$HERE/paths.sh" "$HERE/updates.sh" "$HERE/tools.sh" "$J/common/"
+cp "$INSTALLER" "$J/common/install-launcher.sh"
+printf '%s\n' '# Changelog' '' '## Unreleased' '' '## v0.4.2 (2026-11-24)' '' 'Words.' > "$J/CHANGELOG.md"
+printf '#!/bin/bash\ncase "$1" in -p) echo /Library/Developer/CommandLineTools ;; *) echo "XS $*" >> "%s/jcalls"; exit 1 ;; esac\n' "$T" > "$T/jbin/xcode-select"
+printf '#!/bin/bash\necho 27.2.1\n' > "$T/jbin/sw_vers"
+printf '#!/bin/bash\necho "OPEN $*" >> "%s/jcalls"\n' "$T" > "$T/jbin/open"
+chmod +x "$T/jbin"/*; : > "$T/jcalls"
+JU="$JH/Library/Application Support/1launcher/_update"; JA="$JH/Applications/14unch3r.app"
+rc=$(env -u L1_UPDATE_DIR -u L1_UPDATE -u L1_DATA_ROOT -u L1_FETCHED_COMMIT HOME="$JH" PATH="$T/jbin:$PATH" L1_FETCHED_REF=release /bin/bash "$J/common/install-launcher.sh" > "$T/jout" 2>&1; echo $?)
+check "LFT12 the launcher's installer with the real builder: exit 0, the app built in the scratch home, open called once with it, Apple not asked" \
+  "$rc:$([ -x "$JA/Contents/MacOS/launcher-window" ] && echo built):$(grep -c "^OPEN $JA\$" "$T/jcalls"):$(grep -c '^XS ' "$T/jcalls")" "0:built:1:0"
+check "LFT12 ...the built app's L1UpdateDir is the scratch record's folder, and --update-tool from inside it prints the deployed tool" \
+  "$(px L1UpdateDir "$JA"):$(HOME="$JH" "$JA/Contents/MacOS/launcher-window" --update-tool 2>&1)" "$JU:$JU/updates.sh"
+check "LFT12 ...its Info.plist gives the minimum macOS as 14.0, and lints" "$(px LSMinimumSystemVersion "$JA"):$(plutil -lint "$JA/Contents/Info.plist" >/dev/null 2>&1 && echo lint)" "14.0:lint"
+check "LFT12 ...the launcher's stamp follows release, and the deployed tool says unknown: the Mac is not manual" \
+  "$(cut -f1,2 "$JU/launcher" 2>/dev/null):$(HOME="$JH" bash "$JU/updates.sh" | cut -f1,2)" "release	v0.4.2:unknown	v0.4.2"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

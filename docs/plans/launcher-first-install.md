@@ -1,7 +1,10 @@
 # The launcher first: one pasted line installs 14unch3r, and its window installs the games
 
-**Status: check-it'd 2026-11-26 — needs-rework (pass 2). Reworked twice on 2026-11-26; the second fold has NOT
-been checked; a fitted third pass comes before any build.** Draft written 2026-11-25. No build may start from
+**Status: check-it'd 2026-11-26 — needs-rework (pass 3). Reworked twice on 2026-11-26; the third pass found two
+faults of the second fold, each cured by one sentence, and James then changed one decision (the picture of a game
+that is not installed is drawn by the program, not fetched). Neither is folded yet: the block "Third-pass
+re-check" near the foot says what the third fold must do, and where it disagrees with the sections above, it is
+right. A fitted fourth pass comes before any build.** Draft written 2026-11-25. No build may start from
 this file until it is checked again and carries a verdict that allows it. Nothing below is built. Sections 1 to
 14 hold the corrected design: every blocker and every item of pass 1 (the section "Review corrections" near the
 foot) and of pass 2 (its block "Second-pass re-check") is folded into them, and each says where. **The second
@@ -2361,12 +2364,76 @@ the fitted third pass reads it. The choices the fold had to make are RC21 to RC2
 - **Struck:** 3.1's "the README does not yet name the view" (it does, `README.md:97`).
   Folded (rework 2): 3.1.
 
+### Third-pass re-check (2026-11-26, pass 3): needs-rework, narrowly; and one decision changed
+
+One reviewer on Fable, fitted to the second fold (`446ef08`). Every item of the second-pass block was traced to
+its sections, its step, its test and mutant, its live step and its exit criterion; about 75 of the second fold's
+citations were opened and all hold. The labels are each defined once, and the order of steps is stated the same
+way in all four places. Two faults fail a step or a test as written; the session read both in the code.
+**Nothing below is folded into sections 1 to 14 yet.**
+
+**The decision James changed (2026-11-26, after pass 2):** "Maybe we should just include a placeholder icon in
+the repo", and of the two ways put to him, "The first": **a game that is not installed shows a placeholder drawn
+by the program, one per game: a greyed tile with the game's initials, in the window's own style. No image file,
+and nothing fetched from Valve.** The game's real icon appears once the game is set up, taken from the game's own
+program as today. This replaces his choice of earlier that day (the icon fetched from Steam's public artwork).
+What it removes from sections 1 to 14: `common/game-art.tsv`, `common/fetch-art.sh` and every call of it (the
+launcher's installer, both setups, the driver), the folder `_update/art`, the probe LP4, the test row for the
+fetch, the contract's row for a game's art, the request to Valve and its lines in section 9, the guides and the
+changelog, and the decisions the reworks made about the fetch. What it adds: a function that draws the
+placeholder from the game's title (the rule for the initials, written out, with the three titles the project
+knows as its examples: "Cities: Skylines II", "Surviving Mars: Relaunched", "Workers & Resources: Soviet
+Republic"), drawn in the window's own greys by the rule a greyed tile has; a field of `--grid` that names what a
+tile draws, so a test can read it; a test with its mutants; a capture at a live step.
+
+**Faults of the second fold**
+
+1. **LFL9 cannot pass as written** (a step in the update's UL1 form that shows the five sheets). The window
+   chains a refresh after the state at every open (`common/launcher-window.swift:1831-1835`); with a stamp on
+   `release` and no `tried`, the tool fetches `release`'s changelog and writes `tried`, `offer` and `notes.md`
+   (`common/updates.sh:212-225`). So "the scratch `_update` holds only what was written by hand" fails, its first
+   state is not `unknown`, and its fourth state's `offer` is replaced. **Paste into the fixture:** "It also holds
+   `tried` with the present time (`date +%s`), written by hand before the first open: the window's refresh then
+   fetches and writes nothing (`common/updates.sh:216-219`), state 1 stays `unknown`, and state 4 keeps its
+   `offer`."
+2. **LFT6's cases are not split between LF5a and LF5b.** `--list` prints no second line
+   (`common/launcher-window.swift:1523`), and LF5a builds today's words, yet the listing cases assigned to LF5a
+   expect "In your Steam library. Click to install."; one case alone carries "with LF5b". **Paste into LFT6:**
+   "With LF5b: the second line of `owned`; in `--grid`, each state's words with `--update-dir`; `--act return`;
+   and everything from 'The click' to the end of this row. Every other case is LF5a's, with today's guide words
+   for every offer." LF5a then reads "Tests LFT6 (every case not marked 'with LF5b')".
+
+**Smaller, same fold**
+
+- Criterion 11 wants "the seconds from the paste to Apple's box", which the rewritten LFL7 does not take: after
+  "The installer's first lines." add "The seconds from the installer's first line to Apple's box.", and give the
+  criterion the same words.
+- The fallback release's criterion for captures names a begun-install capture that only LFL2b takes, and the
+  fallback does not run LFL2b: a begun tile is then held by the tests alone, and the as-built header says it was
+  not captured.
+- LF2's tests gain "LFT12 but its listing case and its last case"; LF5a keeps the listing case
+  (`LSMinimumSystemVersion` would otherwise first be tested two steps after it is set).
+- LFL9 says "double-click": a tile acts on one click (`common/launcher-window.swift:1217`).
+- "Every sentence names the holder's process" is true of what an installer or the driver prints in Terminal, not
+  of the tool's answers to the window; say which, and say whether the driver's own line
+  (`common/update-games.sh:60`) changes.
+- LFL7 cannot read "whether a standard account is asked for an administrator" (the account is an
+  administrator's): "whether an administrator is asked for a password; a standard account stays not known".
+- The fallback's LF6 takes `installing` and `installing-game` out of `CLAUDE.md` again, since LF1 put them there
+  and the fallback has no lock.
+- LFL7 adds: "If macOS shows nothing at the paste, that is recorded, and the as-built header names the paste
+  warning as unmeasured."
+- A citation: `caffeinate` is at `:297`, not `:296-297`.
+- Moot with the changed decision: the pass's note that the pictures' file ran twice in an update with only the
+  launcher.
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |
 |---|---|---|---|---|---|---|
 | 2026-11-26 | 1 | architecture, security, correctness, builder, design, platform facts, test plan | seven agents in two batches, read-only; the builder ran the gates and typed two steps into a scratch tree; platform facts compiled the window with the Command Line Tools alone; every blocker read again by the session | Fable 5.2 | `93868e3` | needs-rework |
 | 2026-11-26 | 2, on the rework | correctness with a build on paper; security; architecture, tests, live steps and words | three agents, read-only; each blocker read again in the plan by the session | Fable 5.2 | `a36692b` | needs-rework, narrowly: three blockers of the fold |
+| 2026-11-26 | 3, fitted to the second fold | one reviewer: every item traced to section, step, test, live step and criterion; the fold's citations opened | one agent, read-only; both faults read again in the code by the session | Fable 5.2 | `446ef08` | needs-rework, narrowly: two faults of the fold, each one sentence |
 
 Key paths this plan depends on: `install.sh`, `common/games.tsv`,
 `common/install-core.sh`, `common/updates.sh`, `common/update-games.sh`, `common/make-launcher-app.sh`,

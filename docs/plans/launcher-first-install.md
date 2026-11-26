@@ -1,7 +1,8 @@
 # The launcher first: one pasted line installs 14unch3r, and its window installs the games
 
-> **🔧 As-built (2026-11-26): partial — LF0 and LF1 are built on the branch `launcher-first-install`. Nothing is
-> merged, nothing is released, and no live step has been run.** Tracking: #35. Built on macOS 27 only (3.2).
+> **🔧 As-built (2026-11-26): partial — LF0, LF1, LF2 and LF3 are built on the branch `launcher-first-install`.
+> Nothing is merged, nothing is released, and no live step has been run.** Tracking: #35. Built on macOS 27 only
+> (3.2). Each step has its own block below: its commits, what the build chose, its tests and its gates.
 >
 > - **LF0** (`8fe37eb`): the probe LP1, met in full (section 7).
 > - **LF1, the launcher's own stamp** (`d3e2dc5`, then `ec1db31`). `d3e2dc5` names `launcher`, `installing` and
@@ -43,17 +44,82 @@
 >   `common/test-paths.sh`, fails on `main` at `346c3b1` in the same way and for nothing of this plan:
 >   `surviving-mars-relaunched/tools/load-probe.sh` (`4641f4e`, 2026-11-26) spells a root and is not in that
 >   test's list of thirteen files. It is left for a fix of its own on `main`.
-> - **Not measured:** everything section 6 lists under "Not tested, and said so". No step has met a compiler
->   older than Swift 6.4.
-> - **Verify against:** `common/updates.sh` (`_l1u_stamp_to`, `_l1u_stamp_ok`, `_l1u_stamps`,
+> - **Verify against (LF1):** `common/updates.sh` (`_l1u_stamp_to`, `_l1u_stamp_ok`, `_l1u_stamps`,
 >   `l1u_stamp_launcher`, `l1u_stamp_of_launcher`); `cities-skylines-2/scripts/setup.sh` and
 >   `surviving-mars-relaunched/scripts/setup.sh` (`launcher_stamp`, `launcher_stays`); `common/test-updates.sh`
 >   ("LFT3"); both `scripts/test-setup.sh` ("LFT5").
+> - **LF2, the tools file, the launcher's installer without its lock, and the word** (`be68346`).
+>   `common/tools.sh` (`tools_ask`, `tools_wait`), read by `common/install-core.sh` for its tools stage, with
+>   `TOOLS_PART_POLLS=24`; `common/install-launcher.sh`, every line of 3.4 that is not marked "(LF4a)": it names
+>   no function of a lock; the root `install.sh`'s word `launcher`, in a branch of its own; the builder's
+>   `LSMinimumSystemVersion` of `14.0`.
+>   - *What the build chose.* (1) The root `install.sh`'s header says in this step that `launcher` is a second
+>     first word that is not a number: section 10 gives that correction to LF6, and the word's usage line
+>     could not be written without it. (2) Sentences the plan does not give, which nobody has read: "launcher
+>     takes no option: `<x>` (usage: install.sh launcher [`<ref>`])", after update's own; in the launcher's
+>     installer "install-launcher.sh takes no argument: `<x>` (usage: install.sh launcher [`<ref>`])",
+>     "`<folder>` could not be made." and "`<file>` could not be written.", after the setups' own. (3) The
+>     launcher's installer says no opening line of its own: with the tools there its first line is "Building
+>     14unch3r. This can take a minute; nothing is printed meanwhile.", and the builder's own lines follow it
+>     as they come. (4) A stamp that cannot be written after a build that worked is said with LF1's sentence
+>     and does not change exit 0. (5) The compiler's version is read by one pattern, `Swift version <a>.<b>`
+>     with up to four digits each.
+>   - *The transcript.* `cities-skylines-2/scripts/test-install.golden` was recorded again on purpose. Read
+>     line by line: 89 lines are new, the five LFT11 cases with their output; 38 more differ only in the
+>     number of a scratch home, which moved by four. **No line the installer printed before this step
+>     changed**, though section 4 expected the core's change to show: the two lines `tools_ask` says when
+>     Apple took the request are the core's old ones, word for word.
+>   - *Of the choices James has not reviewed, LF2 was shaped by* RC6 and RC24 (the tools file, the settle of
+>     two minutes, a stale folder stops at once and is not asked about, the record's folders looked at among
+>     the refusals), RC7 (a request that was not taken says other words and the wait goes on), RC8 (below
+>     Swift 5.9 is exit 3), RC11 (from a checkout a ref is judged and not used), RC16 (the Mac is not kept
+>     awake), and RC13 and RC27's words (the stop below macOS 14, the three cautions, "Done. 14unch3r is
+>     rebuilt.").
+>   - *Tests.* LFT1 in `common/test-bootstrap.sh` (97 cases; mutants 20 to 27); LFT2 in the new
+>     `common/test-install-launcher.sh` (63 cases; mutants 1 to 13; its three "with LF4a" mutants wait for
+>     that step); LFT11 in Cities: Skylines II's `scripts/test-install.sh` (mutants 77 to 79), Surviving Mars's
+>     having only the real `common/tools.sh` in its scratch trees; LFT12's first case in
+>     `common/test-make-launcher-app.sh` (mutants 11 and 12). **Each new mutant was applied and seen red.**
+>     The sweep at `be68346`, every mutant of each file touched: `common/test-bootstrap.sh` 27 of 27 red,
+>     `common/test-install-launcher.sh` 13 of 13, Cities: Skylines II's `scripts/test-install.sh` 79 of 79,
+>     Surviving Mars's 41 of 41, `common/test-make-launcher-app.sh` 12 of 12. No run ended in a timeout.
+>   - *Gates at `be68346`.* Links exit 0, identifiers at the residual of 9, `bash -n` on the ten changed
+>     scripts, and every test file run: 48 of 49 exit 0, `common/test-paths.sh` being the one, as before.
+>   - *Verify against:* `install.sh` (the three blocks that test `launcher`), `common/install-launcher.sh`,
+>     `common/tools.sh`, `common/install-core.sh` (`core_tools`), `common/make-launcher-app.sh` (the plist),
+>     and the four test files above.
+> - **LF3, the update** (`226f56d`). `common/update-games.sh`: `launcher_app`, its own test that the app is
+>   there, and `the_launcher`, the step after the walk of the games, with the closing block and exit codes of
+>   3.5. `Look.updateText`, `Look.checkoutText` and `Look.namedText` say the sentences of 3.5 and section 10.
+>   No look at an install's lock.
+>   - *What the build chose.* (1) A stamp that is removed (no app, no game) is removed without a line of its
+>     own; "No game is set up on this Mac." follows. (2) A launcher that is current, and so not run, gets no
+>     closing line of its own either; the block's last line speaks for it. (3) The closing lines the plan
+>     does not word: "14unch3r: updated.", "14unch3r: its installer stopped. Its lines above say why." and
+>     "!! 14unch3r: not rebuilt (exit `<n>`). Its lines above say why.", after a game's own; and the heading
+>     "=== 14unch3r ===". (4) From its step on, the driver's count `SETUP` holds 14unch3r with the games, so
+>     that the two lines the older mutants are anchored on (the `elif` of the closing block, the exit code)
+>     keep their text. (5) Three of the launcher's lines carry a comment at their end, which tells them from
+>     a game's lines of the same words: mutants 7 and 15 of `common/test-update-games.sh` and 76 of Cities:
+>     Skylines II's `scripts/test-install.sh` match a game's line to its end.
+>   - *Of the choices James has not reviewed, LF3 was shaped by* RC10 (a failed build is counted, exit 1) and
+>     RC18 (the driver's sentence for a game with no record keeps its text).
+>   - *Tests.* LFT4 in `common/test-update-games.sh` (80 cases; mutants 20 to 26, each applied and seen red,
+>     and with them all 26 of that file); `common/test-launcher-window.sh` expects the three sentences.
+>     Mutant 76 of Cities: Skylines II's `scripts/test-install.sh` and 41 of Surviving Mars's, which mutate
+>     the driver, are red at `226f56d`. The window test's whole sweep is run once, with LF5a, on the tree
+>     that holds both steps' changes to that file.
+>   - *Gates.* Links exit 0, identifiers at the residual of 9, `bash -n` on the changed scripts, and every test file
+>     at `226f56d`: 48 of 49 exit 0, `common/test-paths.sh` being the one, as before.
+>   - *Verify against:* `common/update-games.sh` (`launcher_app`, `the_launcher`, the closing block),
+>     `common/launcher-window.swift` (`Look`), `common/test-update-games.sh` ("LFT4").
+> - **Not measured:** everything section 6 lists under "Not tested, and said so". No step has met a compiler
+>   older than Swift 6.4.
 
 **Status: check-it'd 2026-11-26 — build-ready-with-fixes (pass 4), the fixes folded. The build began on
-James's word the same day: LF0 and LF1 are built (the as-built note above); the rest is not.** Draft written 2026-11-25; checked four times on 2026-11-26 and
+James's word the same day: LF0 to LF3 are built (the as-built note above); the rest is not.** Draft written 2026-11-25; checked four times on 2026-11-26 and
 reworked three times: pass 1 (seven lenses) and passes 2 and 3 said needs-rework, each for faults of the fold
-before it; pass 4, fitted to the third fold, found no blocker. Of what is below, only LF0 and LF1 are built. Sections 1 to
+before it; pass 4, fitted to the third fold, found no blocker. Of what is below, only LF0 to LF3 are built. Sections 1 to
 14 hold the corrected design: every blocker and every item of pass 1 (the section "Review corrections" near the
 foot), of pass 2 (its block "Second-pass re-check"), of pass 3 (its block "Third-pass re-check") and of pass 4
 (its block "Fourth-pass re-check") is folded
@@ -1267,7 +1333,7 @@ fails on its transcript.
   `common/install-launcher.sh`, every line of 3.4 that is not marked "(LF4a)"; the root `install.sh`'s word
   `launcher` and the one new line for the empty word; the builder's `LSMinimumSystemVersion` of `14.0`. Tests
   LFT1, LFT2 (all but its cases marked "with LF4a"), LFT11, and LFT12 but its listing case and its last case:
-  so the minimum in the `Info.plist` is tested in the step that sets it. Neither setup and neither game's
+  so the minimum in the `Info.plist` is tested in the step that sets it. **Done 2026-11-26** (the as-built note). Neither setup and neither game's
   installer is touched by this step. **The step ends with the transcript recorded again:** the core changed, so
   `GOLDEN=record bash cities-skylines-2/scripts/test-install.sh` is run on purpose, and the difference between
   the old `test-install.golden` and the new is read line by line and named in the commit: every changed line
@@ -1275,7 +1341,7 @@ fails on its transcript.
 - **LF3. The update.** `common/update-games.sh`'s step for the launcher: its own test that the app is there,
   the stamp's rules, and the closing block. `Look.updateText`, `Look.checkoutText` and `Look.namedText`
   (section 10). No look at an install's lock yet. Test LFT4 (all but its case and its mutant marked "with
-  LF4a").
+  LF4a"). **Done 2026-11-26** (the as-built note).
 - **LF5a. The listing.** Every game of the table is a tile from the first `reload()`, in the states not set
   up and begun, made by `tableOffers`; the placeholder of 3.10 (`initials`, `placeholderIcon`, `tileIcon`, the
   six constants, the tile's new field in `--grid` and the line `paint initials`); the group's label; the

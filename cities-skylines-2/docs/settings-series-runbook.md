@@ -118,7 +118,7 @@ row in [`images/AUDIT.md`](images/AUDIT.md).
 - **Not that a setting "took" because it is in the file.** FSR 4 and XeSS 3 stayed in `Settings.coc` on the
   Studio and the picture came out with no anti-aliasing at all: the edge numbers showed it, the file did not.
 
-## 6. The MacBook: the first session, step by step (series A run 2026-11-26; series B still to run)
+## 6. The MacBook: the first session, step by step (series A and series B run 2026-11-26)
 
 For the session on the MacBook. Do the steps in order; each has a stop rule. Nothing here changes an engine, a
 launcher, a wrapper or a save, and nothing is posted anywhere. The person's `Settings.coc` is put back by the

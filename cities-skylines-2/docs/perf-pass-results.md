@@ -577,9 +577,12 @@ its own charger (the battery read 98 % during the series and 100 % after it), li
 read back after a graceful exit, the game's window the only one in front (checked in the window list after the first
 cycle). **16 cycles, none void; no cell lacks a key.**
 
-**The base** is this Mac's settings as found: shadows Low (map 1024, terrain shadows off), SMAA High, upscaler None,
-Level of Detail 0.25, and Dynamic Resolution on at a fixed 0.5 (not adaptive), which is the laptop profile's. It read
-**23.56 to 24.76 FPS** (five runs; four of them 24.71 to 24.76).
+**The base** is the script's (shadows Medium, map 2048 with terrain shadows; TAA; upscaler None; Level of Detail 0.25),
+with Dynamic Resolution as this Mac had it: on at a fixed 0.5 (not adaptive), which is the laptop profile's. It read
+**23.56 to 24.76 FPS** (five runs; four of them 24.71 to 24.76). *Corrected 2026-11-26, after series B:* this section
+first said the base was this Mac's settings as found (shadows Low, SMAA High). The script sets shadows, anti-aliasing,
+Level of Detail and the upscaler in every cell and reads them back after the run; it leaves only Dynamic Resolution and
+the display mode as found. The measurements are unchanged.
 
 "Hard edges" is as in the Studio's table, at 30 / 50 / 70 s, with the probe's step 1 (the captures are 3024 wide, the
 window's size). `period3` read 0.99 to 1.01 in every capture of every cell.
@@ -610,15 +613,71 @@ window's size). `period3` read 0.99 to 1.01 in every capture of every cell.
   test may not fit a Retina window drawn at its device size, or the scaling may not be a plain 1.5. Do not read the flat
   numbers as "drawn at full size".
 - **Edges are hardest with Dynamic Resolution on and FSR 3 off** (0.69 at 30 s against 0.45 to 0.53 for the others),
-  with SMAA in every cell. The Studio's SMAA High read 0.28 to 0.37 at 2560x1440 with no scaling; the difference here
-  is consistent with a picture drawn at half size and stretched, but that was not measured directly.
+  with TAA in every cell. The Studio's TAA read 0.07 to 0.13 at 2560x1440 with no scaling. Series B (below) found that
+  on this Mac anti-aliasing does not change the edge numbers at all, which fits a picture drawn at half size and
+  stretched with sharpening; that was not measured directly.
 
-**Not measured here:** shadows, anti-aliasing, clouds, Level of Detail and the effects, one at a time (series B). Its
-first run on 2026-11-26 is not a result: it ran on a 15 W charger, the battery went from 100 % to 7 %, and from its
-28th cycle every cell, base included, read about 5 FPS. It is to be run again on the MacBook's own charger. Nor: heat
-over a long session, 120 Hz with vsync on, or play in a real city.
+**Not measured here:** shadows, anti-aliasing, clouds, Level of Detail and the effects, one at a time; that is series B,
+below. Nor: heat over a long session, 120 Hz with vsync on, or play in a real city.
 
 **Against the Studio** (section 5 of the runbook: not by percentage alone). The base settings differ (the Studio's
 base is shadows Medium, TAA, no Dynamic Resolution, at 2560x1440), so the frame rates are not put side by side. What can
 be said: the MacBook's benchmark sits near 25 FPS at its laptop profile, and the one lever that moves it is the drawn
 size.
+
+## The MacBook, series B on 1.6.4f1 (2026-11-26, 13:15 to 15:48): shadows, anti-aliasing, clouds, Level of Detail, effects
+
+**Method.** As series A (folder `settings-20261126-131532`, runbook section 6, step 5, with captures), on a 60 W charger
+(not the MacBook's own); the battery read 85 to 88 % and rose through the series. The game's window was the only one in
+front (checked after the first cycle). **33 cycles (the twelve cells and the base, twice over), none void; no cell lacks
+a key; Settings.coc put back.** Two earlier starts that day are not results: one stopped by hand for a commute, one on a
+15 W charger that drained the battery to 7 %, after which every cell read about 5 FPS.
+
+**The base** is series A's: shadows Medium (2048, terrain shadows), TAA, upscaler None, Level of Detail 0.25, Dynamic
+Resolution on at a fixed 0.5. Read back from the first cycle's file: `TAA`, `2048`, terrain shadows `true`.
+
+**The base runs fall into two groups:** six read 24.74 to 24.82 FPS (CPU about 21.2 ms), three read 23.09 to 23.29
+(cycles 9, 17 and 25; CPU about 24.3 ms, GPU about 41 ms). Why was not found: they do not follow one cell, and the last
+base read 24.82. So the script's own "vs base" column, which averages the base runs either side of a cell, is not used
+here; every cell is put against the six base runs of the first group (mean **24.79**). Read the percentages as that, and
+note that a base like the second group's would make every cell look about 7 % better.
+
+| Setting changed | FPS (each run) | vs 24.79 | Hard edges 30 / 50 / 70 s |
+|---|---|---|---|
+| **base** (shadows Medium, TAA) | six runs 24.74 to 24.82; three 23.09 to 23.29 | | 0.67 / 0.49 / 0.43 |
+| Shadows Low (1024, no terrain shadows) | 27.38, 27.69 | +10.4 %, +11.7 % | 0.73 / 0.44 / 0.31 |
+| Shadows High (4096) | 21.87, 22.65 | −11.8 %, −8.6 % | 0.60 / 0.49 / 0.46 |
+| Shadows off | 27.77, 27.81 | +12.0 %, +12.2 % | 0.70 / 0.47 / 0.33 |
+| Anti-aliasing none | 24.73, 24.79 | −0.2 %, 0.0 % | 0.70 / 0.46 / 0.45 |
+| Anti-aliasing FXAA | 24.78, 24.80 | 0.0 %, 0.0 % | 0.68 / 0.48 / 0.46 |
+| Anti-aliasing SMAA High | 24.73, 24.81 | −0.2 %, +0.1 % | 0.71 / 0.47 / 0.29 |
+| Volumetric clouds off | 25.63, 25.54 | +3.4 %, +3.0 % | 0.62 / 0.49 / 0.49 |
+| Level of Detail 0.35 | 23.34, 23.37 | −5.8 %, −5.7 % | 0.65 / 0.47 / 0.45 |
+| Level of Detail 0.50 | 21.44, 21.49 | −13.5 %, −13.3 % | 0.69 / 0.44 / 0.34 |
+| Fog off | 24.93, 25.09 | +0.6 %, +1.2 % | 0.53 / 0.43 / 0.47 |
+| Ambient occlusion off | 24.80, 24.87 | 0.0 %, +0.3 % | 0.69 / 0.48 / 0.40 |
+| Reflections off | 24.99, 25.05 | +0.8 %, +1.0 % | 0.63 / 0.50 / 0.49 |
+
+The edge numbers are the means of each cell's captures (two per second mark; nine for the base). `period3` read 0.99 to
+1.01 in all 132 captures.
+
+**What it says**
+
+- **Shadows carry the cost.** Low gives back 10 to 12 %, nearly all of what turning shadows off gives (12 %); High costs
+  9 to 12 %. On the Studio Low was worth 5.5 % and High cost 7.2 %. The two Shadows High runs differ by 3.6 %, so that
+  cell needs a third run before its size is quoted (runbook section 4).
+- **Anti-aliasing is free here and changes nothing the probe sees.** None, FXAA, SMAA High and TAA read within 0.2 % of
+  each other, and their hard edges are the same (0.67 to 0.71 at 30 s). On the Studio, with no scaling, the same four
+  methods differed sevenfold in hard edges (none 0.65, TAA 0.07 to 0.13). *Inferred, not measured:* with Dynamic
+  Resolution at 0.5 the picture is stretched and sharpened (Contrast Adaptive Sharpen) after anti-aliasing, and that
+  step sets the edges.
+- **Level of Detail costs as it rises:** 0.35 costs about 6 %, 0.50 about 13 %. Keep 0.25.
+- **Volumetric clouds off gives 3 %** (the Studio: 4.3 % for the same cell). The distant clouds were not tried here.
+- **Fog, ambient occlusion and reflections are each within about 1 %**, inside what two runs of one cell can tell apart.
+- **This Mac's own settings as found** (shadows Low, SMAA High, Dynamic Resolution 0.5) are the Shadows Low cell but for
+  the anti-aliasing, which costs nothing here: about 27.5 FPS in the benchmark. That is inferred from two cells; no run
+  was made at exactly those settings.
+
+**Still to run:** a third run each of Shadows High and of series A's FSR 3 Quality and FSR 3 Performance with Dynamic
+Resolution off. **Not measured:** shadows Low with clouds off together (on the Studio the gains added up a little short
+of their sum), the distant clouds alone, the cause of the low base runs, and heat, 120 Hz or a real city.

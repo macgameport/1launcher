@@ -28,6 +28,9 @@
 #   MUTANT=21 ..  --open not asking the state first (a file written and opened when no update waits); must exit 1
 #   MUTANT=22 ..  `opened` said when Terminal could not be opened; must exit 1
 #   MUTANT=23 ..  L1_CURL written into the update's file unmatched; must exit 1
+# (24 and 25: docs/plans/launcher-first-install.md, 3.5; LFT3, the stamp.)
+#   MUTANT=24 ..  the launcher's stamp left out of the state; must exit 1
+#   MUTANT=25 ..  the launcher's stamp read without its match; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 T="$(mktemp -d /tmp/updates-test.XXXX)"
@@ -62,6 +65,8 @@ case "${MUTANT:-0}" in
   21) mutate 's#^  if \[ "\$L1U_WORD" != ready \]; then printf .failed.t%s.n. "No update is waiting\."; return 0; fi$#  :#' '^  :$' ;;
   22) mutate 's#^  if ! "\${L1_OPEN:-/usr/bin/open}" -a Terminal "\$f" > /dev/null 2>&1; then$#  "${L1_OPEN:-/usr/bin/open}" -a Terminal "$f" > /dev/null 2>\&1; if false; then#' '-a Terminal "\$f" > /dev/null 2>&1; if false; then$' ;;
   23) mutate 's#^  \[\[ "\${L1_CURL:-}" =~ \$_L1U_PROG \]\] && curl="\$L1_CURL"$#  [ -n "${L1_CURL:-}" ] \&\& curl="$L1_CURL"#' '^  \[ -n "\${L1_CURL:-}" \] && curl="\$L1_CURL"$' ;;
+  24) mutate 's#^  if _l1u_stamp_ok "\$L1_UPDATE_DIR/launcher"; then printf .*#  :#' '^  :$' ;;
+  25) mutate 's#^  if _l1u_stamp_ok "\$L1_UPDATE_DIR/launcher"; then printf #  if _l1u_read "$L1_UPDATE_DIR/launcher" 4; then printf #' '^  if _l1u_read "\$L1_UPDATE_DIR/launcher" 4; then printf ' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 bash -n "$S" || { echo "REFUSED: the mutant does not parse"; exit 2; }
@@ -191,6 +196,59 @@ check "an installed/ the group can write: 1, nothing written" "$(st true):$(ls -
 fresh; stamp 949230 release v0.2.0; stamp 3215050 checkout v0.3.0
 check "l1u_stamp_of: the line and the version of a game's stamp; 1 for a game with none, and for a name that is no ID" \
   "$(fn l1u_stamp_of 949230):$(fn l1u_stamp_of 3215050):$(fn l1u_stamp_of 777; echo "rc=$?"):$(fn l1u_stamp_of '../x'; echo "rc=$?")" "release${TAB}v0.2.0:checkout${TAB}v0.3.0:rc=1:rc=1"
+
+# --- LFT3 (docs/plans/launcher-first-install.md, 3.5): 14unch3r's own stamp, the file `launcher`, counts in the
+# state as a game's does, is read by the same match, and has a writer and a reader of its own
+lstamp() { printf '%s\t%s\t%s\t%s\n' "$1" "$2" "${3:--}" "${4:-100}" > "$U/launcher"; }   # <line> <version> [commit] [time]
+fresh; lstamp release v0.2.0
+check "LFT3 the launcher's stamp alone, on release, with no offer: unknown" "$(tool)" "unknown${TAB}v0.2.0$TAB-$TAB-"
+check "LFT3 ...and a refresh calls curl, once" "$(tool --refresh | cut -f1,5):$(calls)" "ready${TAB}fetched:1"
+fresh; lstamp release v0.2.0; offer v0.3.0
+check "LFT3 ...with a newer offer: ready" "$(tool)" "ready${TAB}v0.2.0${TAB}v0.3.0$TAB-"
+fresh; lstamp release v0.3.0; offer v0.3.0
+check "LFT3 ...with the offer at its version: current" "$(tool)" "current${TAB}v0.3.0${TAB}v0.3.0$TAB-"
+fresh; lstamp checkout v0.3.0; offer v0.4.0
+check "LFT3 ...on checkout: manual, with the detail checkout, and nothing is fetched" "$(tool):$(tool --refresh --now | cut -f5):$(calls)" "manual${TAB}v0.3.0${TAB}v0.4.0${TAB}checkout:skipped:0"
+fresh; lstamp release v0.2.0; stamp 949230 release v0.3.0; stamp 3215050 release v0.4.0; offer v0.3.0
+check "LFT3 beside game stamps at a higher version: the installed version is the launcher's, and the offer is ready" "$(tool)" "ready${TAB}v0.2.0${TAB}v0.3.0$TAB-"
+fresh; lstamp release v0.4.0; stamp 949230 release v0.3.0; offer v0.3.0
+check "LFT3 ...beside a game at a lower version: the game's, and current" "$(tool)" "current${TAB}v0.3.0${TAB}v0.3.0$TAB-"
+fresh; lstamp checkout v0.3.0; stamp 949230 release v0.3.0; offer v0.4.0
+check "LFT3 a launcher built from a checkout beside a game on release: manual" "$(tool)" "manual${TAB}v0.3.0${TAB}v0.4.0${TAB}checkout"
+fresh; stamp 4 v0.1.0 v0.1.0; lstamp other v0.2.0
+check "LFT3 manual's detail is a game's line before the launcher's: its row comes after the games'" "$(tool | cut -f1,4)" "manual${TAB}v0.1.0"
+fresh; lstamp release v0.2.0; offer v0.3.0; : > "$U/off"
+check "LFT3 the file off: off, with the launcher's stamp there too" "$(tool)" "off$TAB-${TAB}v0.3.0$TAB-"
+fresh; lstamp release v0.2.0 "$HEX" 55; stamp 949230 checkout v0.3.0
+check "LFT3 l1u_stamp_of_launcher: its line and its version, whatever the games' stamps say" "$(fn l1u_stamp_of_launcher; echo "rc=$?")" "release${TAB}v0.2.0
+rc=0"
+check "LFT3 ...and l1u_stamp_of still takes an app ID and nothing else" "$(fn l1u_stamp_of launcher; echo "rc=$?")" "rc=1"
+fresh
+check "LFT3 ...with no such file: nothing, and 1" "$(fn l1u_stamp_of_launcher; echo "rc=$?")" "rc=1"
+passed() {   # <name>: the launcher file as the caller left it counts for nothing, to the state and to the reader
+  check "LFT3 a launcher file that $1: passed over, the state is none, the reader says 1, nothing ran" \
+    "$(tool):$(fn l1u_stamp_of_launcher; echo "rc=$?"):$([ -e "$T/ran8" ] && echo ran || echo none)" "none$TAB-${TAB}v0.3.0$TAB-:rc=1:none"
+}
+fresh; offer v0.3.0; printf 'release\tv0.2.0\t-\t100\n' > "$T/real-launcher"; ln -s "$T/real-launcher" "$U/launcher"; passed "is a link"
+fresh; offer v0.3.0; printf 'release\tv0.2.0\t-\t100\nrelease\tv0.2.0\t-\t100\n' > "$U/launcher"; passed "has two lines"
+fresh; offer v0.3.0; printf 'release\tv0.2.0\t-\t100\textra\n' > "$U/launcher"; passed "has five fields"
+fresh; offer v0.3.0; printf 'release\ta[$(touch %s/ran8)]\t-\t100\n' "$T" > "$U/launcher"; passed "has a version that would run a command"
+fresh; offer v0.3.0; printf 'release\tv0.2.0\tnot-a-commit\t100\n' > "$U/launcher"; passed "has a commit that is no commit"
+fresh; offer v0.3.0; printf 'release\tv0.2.0\t-\ta[$(touch %s/ran8)]\n' "$T" > "$U/launcher"; passed "has a time that would run a command"
+fresh; offer v0.3.0; mkdir "$U/launcher"; passed "is a folder"
+# the writer
+stl() { ( export L1_UPDATE_DIR="$U" L1_UPDATE_NOW="$NOW"; "$@"; . "$S"; l1u_stamp_launcher "$T/tree"; echo "rc=$?" ); }
+fresh
+check "LFT3 l1u_stamp_launcher from a checkout: the line checkout, the tree's version, no commit, the time" "$(stl true):$(cat "$U/launcher")" "rc=0:checkout${TAB}v0.3.0$TAB-$TAB$NOW"
+check "LFT3 ...in the record's folder itself, nothing in installed/, nothing left beside it" "$(ls -A "$U" | tr '\n' ' '):$(ls -A "$U/installed" | wc -l | tr -d ' ')" "installed launcher :0"
+check "LFT3 ...and the state is then manual" "$(tool)" "manual${TAB}v0.3.0$TAB-${TAB}checkout"
+fresh
+check "LFT3 ...from a fetch: the ref and the commit" "$(stl export L1_FETCHED_REF=release L1_FETCHED_COMMIT=$HEX):$(cat "$U/launcher")" "rc=0:release${TAB}v0.3.0$TAB$HEX$TAB$NOW"
+check "LFT3 ...what it wrote is read back: unknown at that version" "$(tool):$(fn l1u_stamp_of_launcher)" "unknown${TAB}v0.3.0$TAB-$TAB-:release${TAB}v0.3.0"
+fresh
+check "LFT3 ...a ref that is not a line: 1, nothing written" "$(stl export 'L1_FETCHED_REF=a b'):$(ls -A "$U" | tr '\n' ' ')" "rc=1:installed "
+fresh; chmod 770 "$U"
+check "LFT3 ...an _update the group can write: 1, nothing written" "$(stl true):$(ls -A "$U" | tr '\n' ' ')" "rc=1:installed "
 
 # --- UT4: the refresh: when curl is called, and with what
 OPTS="CURL -q --proto =https --tlsv1.2 -sS --max-time 10 --max-filesize 1048576 -o $U/.fetch.[A-Za-z0-9]* -w %{http_code} https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/CHANGELOG.md"

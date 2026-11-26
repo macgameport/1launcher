@@ -72,6 +72,11 @@
 #   MUTANT=60 ...  the own-files loop for common/updates.sh and common/games.tsv dropped; must exit 1
 #   MUTANT=61 ...  updates.sh deployed after the window is built; must exit 1
 #   MUTANT=62 ...  the closing words about a game set up by an older version dropped; must exit 1
+# (63 to 66: docs/plans/launcher-first-install.md, 3.5; LFT5.)
+#   MUTANT=63 ...  the launcher's stamp written when the window's builder skipped the build; must exit 1
+#   MUTANT=64 ...  the launcher's stamp written for another destination (--dest); must exit 1
+#   MUTANT=65 ...  the "14unch3r stays at" line said with no older stamp; must exit 1
+#   MUTANT=66 ...  the "14unch3r stays at" line said for a stamp at this tree's own version; must exit 1
 # The window builder is a recording stub beside the scratch repo, at $T/common, where setup.sh looks for it.
 set -u
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -154,6 +159,11 @@ case "${MUTANT:-0}" in
   61) mutate 's#^  put "\$UPDATES" "\$L1_UPDATE_DIR/updates.sh"$#  : deployed later#' '^  : deployed later$'
       mutate 's|^\# S734M.app, the Windows Steam, names its wrapper.s path: rebuilt when it is there, .*|[ "$RECORD" = 1 ] \&\& put "$UPDATES" "$L1_UPDATE_DIR/updates.sh"|' '^\[ "\$RECORD" = 1 \] && put "\$UPDATES" "\$L1_UPDATE_DIR/updates.sh"$' ;;
   62) mutate 's#^unrecorded_games$#: no closing words#' '^: no closing words$' ;;
+  63) mutate 's#^    echo "  window: not built (see the line above)"$#    launcher_stamp; echo "  window: not built (see the line above)"#' '^    launcher_stamp; echo "  window: not built (see the line above)"$' ;;
+  64) perl -0pi -e 's/\nlauncher_stamp\(\) \{\n  \[ "\$RECORD" = 1 \] \|\| return 0\n/\nlauncher_stamp() {\n  [ "\$RECORD" = 1 ] || . "\$UPDATES"\n/' "$S"
+      grep -q '^  \[ "\$RECORD" = 1 \] || \. "\$UPDATES"$' "$S" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  65) mutate 's#^  old="\$(l1u_stamp_of_launcher)" || return 0$#  old="$(l1u_stamp_of_launcher)" || old=v0.0.0#' '^  old="\$(l1u_stamp_of_launcher)" || old=v0\.0\.0$' ;;
+  66) mutate 's#^  \[ "\$old" != - \] \&\& l1u_newer "\$tree" "\$old" || return 0$#  [ "$old" != - ] || return 0#' '^  \[ "\$old" != - \] || return 0$' ;;
   43) perl -0pi -e 's/\nclose_modes\(\) \{[^\n]*\n/\nclose_modes() { chmod go-w "\$DATA" 2>\/dev\/null; [ -d "\$DATA\/patches" ] \&\& chmod go-w "\$DATA\/patches"; return 0; }\n/' "$R/scripts/move-install.sh"
       grep -q '^close_modes() { chmod go-w "\$DATA" 2' "$R/scripts/move-install.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
 esac
@@ -774,6 +784,53 @@ check "UT5 check-deploy.sh after a run: the tool and update-dir are found and id
 mv "$H/$UPD/updates.sh" "$T/tool.aside"; echo elsewhere > "$H/$INST/update-dir"
 check "UT5 ...without the tool, and with update-dir naming another folder: absent, and differs" \
   "$($CLEAN HOME="$H" bash "$CDT/common/check-deploy.sh" 2>/dev/null | grep -cE '^  (absent:  _update/updates\.sh|differs: update-dir)$')" 2
+
+# --- 14unch3r's own stamp (docs/plans/launcher-first-install.md, 3.5; LFT5): the file `launcher` of the record's
+# folder, written on the line after a build of the window that worked, and by nothing else
+LSTAMP="$UPD/launcher"
+lstampof() { cat "$1/$LSTAMP" 2>/dev/null; }
+lsum() { if [ -e "$1/$LSTAMP" ]; then shasum < "$1/$LSTAMP" | cut -c1-12; else echo none; fi; }
+older() { mkdir -p "$1/$UPD/installed"; printf 'release\t%s\t%s\t100\n' "$2" "$HEX" > "$1/$LSTAMP"; }   # <home> <version>
+STAYS='^  14unch3r stays at v0\.0\.9\. It will go on offering this update until it can be built: the line above says why\.$'
+NOLSTAMP="^  !! 14unch3r's version could not be recorded (~/$LSTAMP)\. It may go on offering an update it already has\.\$"
+H="$T/l1"; home "$H"
+check "LFT5 a setup whose window builder exits 0: the launcher's stamp holds checkout, the tree's version, no commit and the time" \
+  "$(RUN_ENV="L1_UPDATE_NOW=$NOW" run "$H"):$(lstampof "$H")" "0:checkout${TAB}$VER${TAB}-${TAB}$NOW"
+check "LFT5 ...nothing is said of a version that stays or of a stamp not written, and nothing written beside a place is left" \
+  "$(said "$H" '14unch3r stays at'):$(said "$H" 'could not be recorded'):$(find "$H/$UPD" -name '.put.*' | wc -l | tr -d ' ')" "0:0:0"
+check "LFT5 with L1_FETCHED_REF=release and L1_FETCHED_COMMIT: it holds release and that commit, and the state is unknown at the tree's version" \
+  "$(L1_FETCHED_REF=release RUN_ENV="L1_UPDATE_NOW=$NOW2 L1_FETCHED_COMMIT=$HEX" run "$H"):$(lstampof "$H"):$(stateof "$H")" "0:release${TAB}$VER${TAB}$HEX${TAB}$NOW2:unknown${TAB}$VER${TAB}-${TAB}-"
+# --check, --mac-only and --dest write nothing of it (the window's builder is still run under --dest, and exits 0)
+before="$(snapu "$H")"; : > "$WINDOW_CALLS"
+check "LFT5 --check, --mac-only and --dest on that home: the launcher's stamp and every other file of the record as they were" \
+  "$(RUN_ENV="L1_UPDATE_NOW=$NOW" run "$H" --check):$(RUN_ENV="L1_UPDATE_NOW=$NOW" run "$H" --mac-only):$(RUN_ENV="L1_UPDATE_NOW=$NOW" run "$H" --dest "$H/other"):$(snapu "$H"):$(lstampof "$H" | cut -f4)" "0:0:0:$before:$NOW2"
+check "LFT5 ...the builder was run by the --dest run, and nothing is said of the launcher's version" "$(lines "$WINDOW_CALLS"):$(said "$H" 'could not be recorded'):$(said "$H" 'command not found')" "1:0:0"
+H="$T/l1b"; home "$H"
+check "LFT5 --dest on a new install: the builder exits 0 and no launcher's stamp is written" "$(run "$H" --dest "$H/other"):$(has "$H/$UPD"):$(said "$H" 'could not be recorded')" "0:no:0"
+# a build that failed leaves an older stamp as it is, and says so; the setup's exit code and the game's own stamp are as ever
+for rc in 3 1; do
+  H="$T/l2-$rc"; home "$H"; older "$H" v0.0.9; old="$(lsum "$H")"
+  check "LFT5 the window builder exits $rc with an older launcher stamp there: exit 0, that stamp byte for byte, the game's own stamp written" \
+    "$(L1_FETCHED_REF=release RUN_ENV="L1_UPDATE_NOW=$NOW STUB_WINDOW_RC=$rc" run "$H"):$([ "$(lsum "$H")" = "$old" ] && echo same):$(stampof "$H" | cut -f1,2,4)" "0:same:release${TAB}$VER${TAB}$NOW"
+  check "LFT5 ...the line that 14unch3r stays at its version is said once, right after the not-built line, and setup completes" \
+    "$(said "$H" "$STAYS"):$(grep -A1 '^  window: not built (see the line above)$' "$H.out" | tail -n 1 | grep -c "$STAYS"):$(said "$H" '^=== setup complete ===$'):$(said "$H" 'setup finished with')" "1:1:1:0"
+  check "LFT5 ...and the installed version stays the launcher's older one" "$(stateof "$H")" "unknown${TAB}v0.0.9${TAB}-${TAB}-"
+done
+H="$T/l3"; home "$H"
+check "LFT5 the same with no older stamp: no launcher's stamp, no such line, the game's own stamp written" \
+  "$(RUN_ENV="L1_UPDATE_NOW=$NOW STUB_WINDOW_RC=3" run "$H"):$(has "$H/$LSTAMP"):$(said "$H" '14unch3r stays at'):$(stampof "$H" | cut -f2,4)" "0:no:0:$VER${TAB}$NOW"
+H="$T/l4"; home "$H"; older "$H" "$VER"; old="$(lsum "$H")"
+check "LFT5 a stamp at this tree's own version and a build that failed: the stamp as it was, and no such line (no update is held back)" \
+  "$(STUB_WINDOW_RC=3 run "$H"):$([ "$(lsum "$H")" = "$old" ] && echo same):$(said "$H" '14unch3r stays at')" "0:same:0"
+H="$T/l5"; home "$H"; older "$H" v0.0.9; old="$(lsum "$H")"; cp "$T/CHANGELOG.md" "$T/nocommon/"   # that tree has a version too
+check "LFT5 no window builder in the checkout, with an older stamp there: the stamp as it was, and the line said once" \
+  "$(SETUP_REPO="$T/nocommon/repo" run "$H"):$([ "$(lsum "$H")" = "$old" ] && echo same):$(said "$H" "$STAYS")" "0:same:1"
+H="$T/l6"; home "$H"; older "$H" v0.0.9; old="$(lsum "$H")"
+check "LFT5 a build that worked replaces an older stamp, and says nothing of staying" \
+  "$(L1_FETCHED_REF=release RUN_ENV="L1_UPDATE_NOW=$NOW" run "$H"):$(lstampof "$H" | cut -f1,2,4):$(said "$H" '14unch3r stays at')" "0:release${TAB}$VER${TAB}$NOW:0"
+H="$T/l7"; home "$H"
+check "LFT5 a launcher's stamp that cannot be written (a fetched ref that is no line): said once, no stamp, and setup's exit code is kept" \
+  "$(L1_FETCHED_REF='a b' run "$H"):$(said "$H" "$NOLSTAMP"):$(has "$H/$LSTAMP"):$(said "$H" '^=== setup complete ===$')" "0:1:no:1"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

@@ -3,6 +3,7 @@
 # from, and which version is on offer (docs/plans/built-in-update.md, 3.1 and 3.2). Everything it keeps is in
 # one folder, L1_UPDATE_DIR (common/paths.sh: <data root>/_update):
 #   installed/<Steam app ID>   the stamp: the line the game follows, the version, the commit, the time
+#   launcher                   14unch3r's own stamp, in the same form (docs/plans/launcher-first-install.md, 3.5)
 #   offer                      the version `release` held at the last fetch that worked, and its time
 #   tried                      the time of the last attempt to fetch, whether it worked or not
 #   notes.md                   CHANGELOG.md as last fetched
@@ -19,6 +20,7 @@
 #                                      failed TAB <one sentence>. It refuses unless the state is ready
 #   bash updates.sh --version-of <f>   that file's version, or nothing
 # Sourced, the functions a caller uses: l1u_own, l1u_stamp <app ID> <tree root>, l1u_stamp_of <app ID>,
+# l1u_stamp_launcher <tree root>, l1u_stamp_of_launcher,
 # l1u_state, l1u_version_of <file>, l1u_newer <x> <y>, l1u_refresh [--now], l1u_notes, l1u_noted, l1u_open.
 # Run, it uses L1_UPDATE_DIR if set and otherwise the folder it lies in, which for the deployed copy is the
 # folder itself. Every call exits 0 when it could answer and says the outcome in its output. The options and
@@ -27,7 +29,9 @@
 #
 # The words of the state line, in this order: off (the file `off` exists) | none (no stamp) | manual (a stamp
 # follows a line that is not `release`; <detail> is that line) | unknown (no offer yet) | ready (the offer is
-# newer than the lowest installed version) | current. A field with no value is `-`.
+# newer than the lowest installed version) | current. A field with no value is `-`. 14unch3r's stamp counts as a
+# game's does: a Mac with the launcher alone has a state, and the lowest version among it and the games is the
+# installed one.
 #
 # Every value read from the folder is matched whole before it is used, and nothing in it is ever read with
 # `.` or eval: under bash 3.2 a value such as a[$(cmd)] in an arithmetic place runs cmd. A file that is a
@@ -127,11 +131,10 @@ _l1u_put() {
   rm -f "$t" 2>/dev/null; return 1
 }
 
-# <app ID> <tree root>: writes installed/<app ID>: the line (L1_FETCHED_REF, or `checkout` when the tree was
+# <file> <tree root>: writes a stamp to that file: the line (L1_FETCHED_REF, or `checkout` when the tree was
 # not fetched), the tree's version, the commit (L1_FETCHED_COMMIT) and the time. Returns 1 when it could not.
-l1u_stamp() {
-  local PATH=/usr/bin:/bin:/usr/sbin:/sbin id="$1" tree="$2" line=checkout ver commit=- now
-  [[ "$id" =~ $_L1U_ID ]] || return 1
+_l1u_stamp_to() {
+  local PATH=/usr/bin:/bin:/usr/sbin:/sbin f="$1" tree="$2" line=checkout ver commit=- now
   l1u_own || return 1
   if [ -n "${L1_FETCHED_REF:-}" ]; then
     [[ "$L1_FETCHED_REF" =~ $_L1U_LINE ]] || return 1
@@ -142,22 +145,39 @@ l1u_stamp() {
   # the commit belongs to a fetch: one left in the environment says nothing about a checkout
   [ "$line" != checkout ] && [[ "${L1_FETCHED_COMMIT:-}" =~ $_L1U_COMMIT ]] && commit="$L1_FETCHED_COMMIT"
   now="$(_l1u_now)"; [[ "$now" =~ $_L1U_TIME ]] || return 1
-  _l1u_put "$L1_UPDATE_DIR/installed/$id" "$line"$'\t'"$ver"$'\t'"$commit"$'\t'"$now"
+  _l1u_put "$f" "$line"$'\t'"$ver"$'\t'"$commit"$'\t'"$now"
+}
+# <app ID> <tree root>: writes that game's stamp, installed/<app ID>. Returns 1 when it could not.
+l1u_stamp() {
+  [[ "$1" =~ $_L1U_ID ]] || return 1
+  _l1u_stamp_to "$L1_UPDATE_DIR/installed/$1" "$2"
+}
+# <tree root>: writes 14unch3r's own stamp, the file `launcher` (docs/plans/launcher-first-install.md, 3.5): for
+# whoever has just built the window from that tree, and only after a build that worked. Returns 1 when it could not.
+l1u_stamp_launcher() { _l1u_stamp_to "$L1_UPDATE_DIR/launcher" "$1"; }
+
+# <file>: 0 when it is a stamp that counts: one line of four fields, each matched whole. Its line and its version
+# are left in _l1u_a and _l1u_b.
+_l1u_stamp_ok() {
+  _l1u_read "$1" 4 || return 1
+  [[ "$_l1u_a" =~ $_L1U_LINE ]] && _l1u_is_version "$_l1u_b" || return 1
+  [ "$_l1u_c" = - ] || [[ "$_l1u_c" =~ $_L1U_COMMIT ]] || return 1
+  [[ "$_l1u_d" =~ $_L1U_TIME ]]
 }
 
 # The stamps that count, one per line in the order of the app IDs as numbers: <id> TAB <line> TAB <version>.
 # In installed/, a name that is not an app ID, a link, a folder and a file that fails its match are passed over.
+# After the games, 14unch3r's own stamp when it counts: a row whose first field is the word `launcher` where a
+# game's row has its app ID.
 _l1u_stamps() {
   local PATH=/usr/bin:/bin:/usr/sbin:/sbin f id
   for f in "$L1_UPDATE_DIR/installed"/*; do
     id="${f##*/}"
     [[ "$id" =~ $_L1U_ID ]] || continue
-    _l1u_read "$f" 4 || continue
-    [[ "$_l1u_a" =~ $_L1U_LINE ]] && _l1u_is_version "$_l1u_b" || continue
-    [ "$_l1u_c" = - ] || [[ "$_l1u_c" =~ $_L1U_COMMIT ]] || continue
-    [[ "$_l1u_d" =~ $_L1U_TIME ]] || continue
+    _l1u_stamp_ok "$f" || continue
     printf '%s\t%s\t%s\n' "$id" "$_l1u_a" "$_l1u_b"
   done | sort -n
+  if _l1u_stamp_ok "$L1_UPDATE_DIR/launcher"; then printf 'launcher\t%s\t%s\n' "$_l1u_a" "$_l1u_b"; fi
 }
 
 # <app ID>: prints "<line> TAB <version>" of that game's stamp and returns 0; returns 1 when it has no stamp
@@ -171,6 +191,13 @@ l1u_stamp_of() {
 $(_l1u_stamps)
 EOF
   return 1
+}
+
+# prints "<line> TAB <version>" of 14unch3r's own stamp and returns 0; returns 1 when it has no stamp that counts.
+# (l1u_stamp_of takes an app ID and nothing else.)
+l1u_stamp_of_launcher() {
+  _l1u_stamp_ok "$L1_UPDATE_DIR/launcher" || return 1
+  printf '%s\t%s\n' "$_l1u_a" "$_l1u_b"
 }
 
 # the offered version, or nothing: `offer` is one line, the version and the time of the fetch

@@ -81,6 +81,9 @@
 #   82 not released on a signal                83 the core's look at `updating` dropped
 #   84 the core's look made before its take    85 the game file not written
 #   86 the lock taken under --check            87 L1_UPDATE=1 believed with no live `updating`
+# An install from 14unch3r, its parts joined (the same plan, 3.8; LFT8); each must exit 1:
+#   88 the written file made to run update     89 the lock left behind (in the fetched tree's core)
+#   90 the setup's launcher stamp dropped
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -975,6 +978,52 @@ rc="$(upd STUB_SECOND_EXIT=3)"
 check "UT7b with the second game's installer made to stop: exit 3, this game's stamp is new, the other's is old, and the state stays ready" \
   "$rc:$(calls '^SECOND args= update=1$'):$(cut -f2 "$UD/installed/949230" 2>/dev/null):$(cut -f2 "$UD/installed/3215050" 2>/dev/null):$(state)" \
   "3:1:v0.1.0:v0.0.9:ready${TAB}v0.0.9${TAB}v0.1.0"
+# --- LFT8 (docs/plans/launcher-first-install.md, 3.8 and section 6): an install from 14unch3r, the parts joined.
+#     The fixture: the record at the default place under the scratch home (anywhere else the tool refuses), a
+#     marked wrapper of the game with no app (a begun install), the launcher's stamp alone on release at v0.0.9,
+#     and the offer at v0.0.9, so the state is current and the tool opens. The offer is then raised to the tree's
+#     version, as a daily check would have found it, and the written file is run: through the root install.sh
+#     (a stub curl serves it, and the archive of the WT11 copy), this installer and the real setup.
+case "${MUTANT:-0}" in
+  88) sed -i '' 's#^  /bin/bash -c "\$S" 1launcher-install "\$ID"; rc=\$?$#  /bin/bash -c "$S" 1launcher-install update; rc=$?#' "$R2/common/updates.sh"
+      grep -q '^  /bin/bash -c "\$S" 1launcher-install update; rc=\$?$' "$R2/common/updates.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  89) sed -i '' 's#^  \[ "\${INSTALL_LOCK:-0}" = 1 \] && l1u_lock_release installing .*#  : not released#' "$R2/common/install-core.sh"
+      grep -q '^  : not released$' "$R2/common/install-core.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  90) sed -i '' '/^    launcher_stamp$/d' "$G2/scripts/setup.sh"
+      grep -q '^    launcher_stamp$' "$G2/scripts/setup.sh" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+esac
+mkdir -p "$T/lft8bin" "$T/lft8tmp"; ( cd "$T" && tar -czf "$T/lft8.tar.gz" repo2 )
+cat > "$T/lft8bin/curl" << X
+#!/bin/bash
+case " \$* " in
+  *"/refs/heads/release/install.sh "*) echo "ROOTSCRIPT \$*" >> "\$CALLS"; src="$REPO/install.sh" ;;
+  *"/archive/"*) echo "ARCHIVE \$*" >> "\$CALLS"; src="$T/lft8.tar.gz" ;;
+  *) exec "$B/curl" "\$@" ;;   # anything else is the installer's own
+esac
+out=""; while [ \$# -gt 0 ]; do case "\$1" in -o) out="\$2"; shift 2 ;; *) shift ;; esac; done
+cp "\$src" "\$out"; printf 200
+X
+printf '#!/bin/bash\n{ printf "OPEN"; for a in "$@"; do printf "|%%s" "$a"; done; echo; } >> "$CALLS"\n' > "$T/lft8bin/open"
+chmod +x "$T/lft8bin/curl" "$T/lft8bin/open"
+newh; done_all; UD="$(HOME="$H" bash "$R2/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"; mkdir -p "$UD/installed"
+printf 'release\tv0.0.9\t-\t100\n' > "$UD/launcher"; printf 'v0.0.9\t200\n' > "$UD/offer"; cp "$R2/common/updates.sh" "$UD/updates.sh"
+check "LFT8 the fixture: a begun install (a marked wrapper, no app), the launcher's stamp alone on release at v0.0.9, that version on offer: the state is current" \
+  "$(state):$([ -e "$H/Applications/Cities Skylines II.app" ] && echo app || echo no-app):$(HOME="$H" bash "$R2/common/wrappers.sh" find game 949230 > /dev/null 2>&1 && echo marked)" "current${TAB}v0.0.9${TAB}v0.0.9:no-app:marked"
+: > "$CALLS"
+ans="$(env HOME="$H" TMPDIR="$T/lft8tmp" L1_UPDATE_DIR="$UD" L1_CURL="$T/lft8bin/curl" L1_OPEN="$T/lft8bin/open" bash "$UD/updates.sh" --install 949230 2>&1)"
+CMD8="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
+check "LFT8 the deployed tool, asked to install the game: opened, and Terminal was handed one file" "$ans:$(grep -c '^OPEN|-a|Terminal|' "$CALLS"):$([ -x "$CMD8" ] && echo file)" "opened:1:file"
+printf 'v0.1.0\t300\n' > "$UD/offer"   # as a daily check would have found it since
+env -u CS2_WRAPPER -u L1_TRACE -u CS2_VIA_INSTALLER -u L1_WRAPPER_GIVEN HOME="$H" TMPDIR="$T/lft8tmp" PATH="$T/lft8bin:$T/wt11bin:$B:$PATH" \
+  L1_KILL="$B/killrec" L1_WMOVE_PROBE="$T/wt11bin/wprobe" L1_UPDATE_NOW=1800000000 TERM=xterm "$CMD8" > "$H.raw" 2>&1 < /dev/null; rc=$?
+# (TERM is given, so that the file's clear prints the same whatever terminal runs this test; its codes are taken out below)
+sed -e 's#1launcher-fetch\.[A-Za-z0-9]*#1launcher-fetch.X#g' -e 's#1launcher-install\.[A-Za-z0-9]*#1launcher-install.X#g' -e $'s/\033\\[[0-9;]*[A-Za-z]//g' "$H.raw" > "$H.out"
+check "LFT8 the written file, run: the root install.sh is fetched, then the archive of release, and the game's line runs this installer and the real setup; exit 0, its closing line last" \
+  "$rc:$(calls '^ROOTSCRIPT .*/refs/heads/release/install\.sh$'):$(calls '^ARCHIVE .*/archive/refs/heads/release\.tar\.gz$'):$(tail -n 1 "$H.out")" "0:1:1:Installed. Open 14unch3r to play. You can close this window."
+check "LFT8 ...the game's stamp and the launcher's stamp both hold release and the tree's version, and the state is current (with the launcher's stamp left at v0.0.9 it would be ready)" \
+  "$(cut -f1,2 "$UD/installed/949230" 2>/dev/null):$(cut -f1,2 "$UD/launcher" 2>/dev/null):$(state)" "release${TAB}v0.1.0:release${TAB}v0.1.0:current${TAB}v0.1.0${TAB}v0.1.0"
+check "LFT8 ...no lock is left, no file names a game, the game's app is there, and the temporary folders are empty" \
+  "$([ -e "$UD/installing" ] || [ -L "$UD/installing" ] && echo left || echo none):$([ -e "$UD/installing-game" ] && echo left || echo none):$([ -e "$H/Applications/Cities Skylines II.app" ] && echo app):$(ls -A "$T/lft8tmp" | wc -l | tr -d ' ')" "none:none:app:0"
 H="$HWT"
 check "no run reached the runaway guard" "$(cat "$T/runaway" 2>/dev/null | wc -l | tr -d ' ')" 0
 # --- the transcript: what the installer printed in every case above, against what it printed when last recorded

@@ -36,6 +36,11 @@
 #   MUTANT=27 ..  the look at `installing` dropped
 #   MUTANT=28 ..  the look at `installing` made before the take of `updating`
 #   MUTANT=29 ..  the line that removes a stale `updating` dropped
+# The file `updates.sh --install <ID>` writes (the same plan, 3.8; LFT3); each must exit 1:
+#   MUTANT=30 ..  `release` made `main` in the address it fetches
+#   MUTANT=31 ..  a second word passed to the installer
+#   MUTANT=32 ..  the installer run after a fetch that failed
+# (Mutants 12 and 16 change the same lines in both written files, the update's and the install's.)
 # (Mutant 18 drops the match of a lock's target in the driver's take and, since LF4a, in the one rule of
 # common/updates.sh too: the line that removes a stale `updating` asks that rule first.)
 # The file `updates.sh --open` writes; each must exit 1:
@@ -53,6 +58,14 @@ cp "$HERE/update-games.sh" "$D"; cp "$HERE/updates.sh" "$U"
 cp "$HERE/paths.sh" "$HERE/wrappers.sh" "$TREE/common/"
 mutate() {  # <sed expression> <grep that proves it applied>: in the driver or in updates.sh
   sed -i '' "$1" "$D" "$U"; cat "$D" "$U" | grep -q -- "$2" || { echo "REFUSED: mutant did not apply"; exit 2; }
+}
+inst() {   # <fixed text> <new text>: its first occurrence in the install's written file (updates.sh, after --install's marker)
+  OLD="$1" NEW="$2" python3 -I - "$U" << 'PY' || { echo "REFUSED: mutant did not apply"; exit 2; }
+import os, sys
+p = sys.argv[1]; s = open(p).read()
+i = s.index("# Written by 1launcher (updates.sh --install)"); j = s.index(os.environ["OLD"], i)
+open(p, "w").write(s[:j] + os.environ["NEW"] + s[j + len(os.environ["OLD"]):])
+PY
 }
 case "${MUTANT:-0}" in
   0) ;;
@@ -97,6 +110,9 @@ open(p, "w").write(s)
 PY
       ;;
   29) mutate 's#^l1u_lock_live updating || rm -f "\$LOCK" 2>/dev/null .*#: a stale lock is left#' '^: a stale lock is left$' ;;
+  30) inst '1launcher/refs/heads/release/install.sh)"; rc=$?' '1launcher/refs/heads/main/install.sh)"; rc=$?' ;;
+  31) inst '/bin/bash -c "$S" 1launcher-install "$ID"; rc=$?' '/bin/bash -c "$S" 1launcher-install "$ID" release; rc=$?' ;;
+  32) inst 'if [ "$rc" = 0 ] && [ "$code" = 200 ]; then' 'if true; then' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 bash -n "$D" && bash -n "$U" || { echo "REFUSED: the mutant does not parse"; exit 2; }
@@ -368,7 +384,7 @@ C
 printf '#!/bin/bash\n{ printf "OPEN"; for a in "$@"; do printf "|%%s" "$a"; done; echo; } >> "$CALLS"\nexit "${STUB_OPEN_EXIT:-0}"\n' > "$T/bin/open"
 chmod +x "$T/bin/curl" "$T/bin/open"
 export SERVED="$T/served.sh"
-printf '%s\n' 'echo "BOOT zero=$0 one=${1-} argc=$#" >> "$CALLS"' 'printf "%s" "$BASH_EXECUTION_STRING" > "$CALLS.text"' 'echo "a line of the update"' 'exit "${STUB_UPDATE_EXIT:-0}"' > "$SERVED"
+printf '%s\n' 'echo "BOOT zero=$0 one=${1-} argc=$#" >> "$CALLS"' 'printf "%s" "$BASH_EXECUTION_STRING" > "$CALLS.text"' 'echo "a line of the update"' '[ -z "${STUB_SERVED_SLEEP:-}" ] || /bin/sleep "$STUB_SERVED_SLEEP"' 'exit "${STUB_UPDATE_EXIT:-0}"' > "$SERVED"
 ADDR='https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/install.sh'
 opened() {   # [VAR=value ...]: --open in the state ready; its answer in $T/open.out, the file's path in CMD
   newh; stamp 949230; offer v0.3.0; rm -rf "$T/tmp"; mkdir -p "$T/tmp"
@@ -423,6 +439,65 @@ done
 opened STUB_OPEN_EXIT=1
 check "Terminal could not be opened: failed and a sentence, exit 0 all the same, nothing left in TMPDIR" \
   "$(cut -f1 "$T/open.out"):$(cut -f2 "$T/open.out" | grep -c .):$(ls -A "$T/tmp" | wc -l | tr -d ' ')" "failed:1:0"
+
+# --- LFT3 (docs/plans/launcher-first-install.md, 3.8): the file `updates.sh --install <ID>` writes, run as Terminal
+# would run it. The record is at the default place under the scratch home: anywhere else the tool refuses.
+asked() {   # [VAR=value ...]: --install 949230 with the launcher's stamp alone on release; its answer in $T/open.out, the file's path in CMD
+  newh; IUD="$H/Library/Application Support/1launcher/_update"; mkdir -p "$IUD/installed"; chmod 700 "$IUD" "$IUD/installed"
+  printf 'release\tv0.3.0\t-\t100\n' > "$IUD/launcher"; rm -rf "$T/tmp"; mkdir -p "$T/tmp"
+  env HOME="$H" TMPDIR="$T/tmp" L1_UPDATE_DIR="$IUD" L1_UPDATE_NOW="$NOW" L1_CURL="$T/bin/curl" L1_OPEN="$T/bin/open" "$@" bash "$U" --install 949230 > "$T/open.out" 2>&1
+  CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
+}
+iplace() { case "$CMD" in "$T/tmp/1launcher-install."??????"/Install with 1launcher.command") echo there ;; esac; }
+gone() { if [ -e "$CMD" ]; then echo left; else echo gone; fi; }
+CLOSE0='^Installed\. Open 14unch3r to play\. You can close this window\.$'
+CLOSE5='^A Mac fix is not out yet for this build of the game: the lines above say more\.$'
+CLOSE3='^Not finished\. To carry on, open 14unch3r and click the game again\. You can close this window\.$'
+CLOSE1='^The install did not finish: the lines above say why\. To try again, open 14unch3r and click the game\.$'
+NOREACH='^GitHub could not be reached\. Check the network, then open 14unch3r and click the game again\.$'
+asked
+check "LFT3 --install: opened, and L1_OPEN got -a Terminal and the path of one file in a new folder of TMPDIR" \
+  "$(cat "$T/open.out"):$(grep -c '^OPEN|-a|Terminal|' "$CALLS"):$(iplace):$(ls -A "$T/tmp" | wc -l | tr -d ' ')" "opened:1:there:1"
+rc="$(cmd)"
+check "LFT3 the file, run: curl called once with exactly these options, the body into a file beside it" \
+  "$(grep -c '^CURL' "$CALLS"):$(grep -c "^CURL -q --proto =https --tlsv1.2 -sSL -o $(dirname "$CMD")/.1launcher-fetch.[0-9]* -w %{http_code} $ADDR\$" "$CALLS")" "1:1"
+check "LFT3 ...what it fetched is run with \$0 1launcher-install and the ID, one word and nothing after it" "$(grep -c '^BOOT zero=1launcher-install one=949230 argc=1$' "$CALLS")" 1
+check "LFT3 ...and is byte for byte what was served" "$(cat "$CALLS.text" 2>/dev/null)" "$(cat "$SERVED")"
+check "LFT3 ...exit 0, the closing line after the installer's lines, and the file and its folder are gone" \
+  "$rc:$(grep -n -e '^a line of the update$' -e "$CLOSE0" "$T/cmd.out" | cut -d: -f2- | tr '\n' '|'):$(gone):$(ls -A "$T/tmp" | wc -l | tr -d ' ')" \
+  "0:a line of the update|Installed. Open 14unch3r to play. You can close this window.|:gone:0"
+asked; rc="$(cmd STUB_UPDATE_EXIT=5)"
+check "LFT3 the installer's exit 5: the file exits 5, says a Mac fix is not out yet, and then that it is installed" \
+  "$rc:$(grep -n -e "$CLOSE5" -e "$CLOSE0" "$T/cmd.out" | cut -d: -f2- | cut -c1-9 | tr '\n' '|'):$(gone)" "5:A Mac fix|Installed|:gone"
+for x in 3 4 129 130 143; do
+  asked; rc="$(cmd STUB_UPDATE_EXIT=$x)"
+  check "LFT3 the installer's exit $x: the file exits $x and says it is not finished and how to carry on" "$rc:$(csaid "$CLOSE3"):$(csaid "$CLOSE0"):$(csaid "$CLOSE1"):$(gone)" "$x:1:0:0:gone"
+done
+for x in 1 2; do
+  asked; rc="$(cmd STUB_UPDATE_EXIT=$x)"
+  check "LFT3 the installer's exit $x: the file exits $x and says the install did not finish" "$rc:$(csaid "$CLOSE1"):$(csaid "$CLOSE3"):$(csaid "$CLOSE0"):$(gone)" "$x:1:0:0:gone"
+done
+for answer in "000 6" "404 0" "404 56" "500 0" "200 18"; do
+  asked; rc="$(cmd STUB_CODE="${answer% *}" STUB_EXIT="${answer#* }")"
+  check "LFT3 the fetch answering ${answer% *} with curl's exit ${answer#* }: the installer is not run, its one sentence, exit 1, the file and its folder gone" \
+    "$rc:$(csaid "$NOREACH"):$(grep -c '^BOOT' "$CALLS"):$(csaid "$CLOSE0"):$(gone):$(ls -A "$T/tmp" | wc -l | tr -d ' ')" "1:1:0:0:gone:0"
+done
+asked; : > "$CALLS"
+env HOME="$H" TMPDIR="$T/tmp" STUB_SERVED_SLEEP=1 "$CMD" > "$T/cmd.out" 2>&1 < /dev/null & hp=$!
+i=0; until grep -q '^BOOT' "$CALLS" 2>/dev/null || [ "$i" -gt 100 ]; do /bin/sleep 0.1; i=$((i + 1)); done
+kill -HUP "$hp" 2>/dev/null; wait "$hp" 2>/dev/null; rc=$?
+check "LFT3 a hangup while the installer runs: exit 129, no closing line, and the file and its folder are gone" "$rc:$(csaid "$CLOSE0"):$(gone):$(ls -A "$T/tmp" | wc -l | tr -d ' ')" "129:0:gone:0"
+ODD="$T/an odd's \$(touch $T/ranX) place"; mkdir -p "$ODD/home/Library/Application Support/1launcher/_update/installed" "$ODD/tmp" "$ODD/home/Applications"
+chmod 700 "$ODD/home/Library/Application Support/1launcher/_update" "$ODD/home/Library/Application Support/1launcher/_update/installed"
+printf 'release\tv0.3.0\t-\t100\n' > "$ODD/home/Library/Application Support/1launcher/_update/launcher"; : > "$CALLS"
+check "LFT3 with HOME and TMPDIR under a folder whose name holds a space, a quote and \$(touch X): it opens" \
+  "$(env HOME="$ODD/home" TMPDIR="$ODD/tmp" L1_UPDATE_DIR="$ODD/home/Library/Application Support/1launcher/_update" L1_CURL="$T/bin/curl" L1_OPEN="$T/bin/open" bash "$U" --install 949230 2>&1)" opened
+CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"; : > "$CALLS"
+rc="$(env HOME="$ODD/home" TMPDIR="$ODD/tmp" "$CMD" > "$T/cmd.out" 2>&1 < /dev/null; echo $?)"
+check "LFT3 ...and runs: the installer got the ID, the closing line is said, the file and its folder are gone, and nothing named X was made" \
+  "$rc:$(grep -c '^BOOT zero=1launcher-install one=949230 argc=1$' "$CALLS"):$(csaid "$CLOSE0"):$(gone):$(ls -A "$ODD/tmp" | wc -l | tr -d ' '):$([ -e "$T/ranX" ] && echo ran || echo none)" "0:1:1:gone:0:none"
+mkdir -p "$T/desk2"; echo precious > "$T/desk2/other.txt"; asked; cp "$CMD" "$T/desk2/x.command"; CMD="$T/desk2/x.command"; rc="$(cmd)"
+check "LFT3 copied beside another file and run: only itself is removed" "$rc:$(cat "$T/desk2/other.txt" 2>/dev/null):$(gone)" "0:precious:gone"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

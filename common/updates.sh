@@ -8,7 +8,8 @@
 #   tried                      the time of the last attempt to fetch, whether it worked or not
 #   notes.md                   CHANGELOG.md as last fetched
 #   noted                      the version the launchers last announced, and how often (1 or 2)
-#   off                        if it exists, nothing is ever fetched (made by hand)
+#   off                        if it exists, the daily check is switched off (made by hand). An update or an
+#                              install the player clicks still fetches: that is the player's own act
 #   installing                 the lock of a running install (docs/plans/launcher-first-install.md, 3.8): a link
 #                              whose target is the installer's process number, as `updating` is the update's
 #   installing-game            beside it, one line: the Steam app ID of the game being installed
@@ -21,12 +22,14 @@
 #   bash updates.sh --noted            the offered version, at most twice for one version (for a launcher)
 #   bash updates.sh --open             opened, after it wrote the update's file and handed it to Terminal; or
 #                                      failed TAB <one sentence>. It refuses unless the state is ready
+#   bash updates.sh --install <ID>     opened, after it wrote one game's install file and handed it to Terminal;
+#                                      or failed TAB <one sentence> (docs/plans/launcher-first-install.md, 3.8)
 #   bash updates.sh --version-of <f>   that file's version, or nothing
 # Sourced, the functions a caller uses: l1u_own, l1u_stamp <app ID> <tree root>, l1u_stamp_of <app ID>,
 # l1u_stamp_launcher <tree root>, l1u_stamp_of_launcher,
 # l1u_state, l1u_version_of <file>, l1u_newer <x> <y>, l1u_refresh [--now], l1u_notes, l1u_noted, l1u_open,
-# and the one rule for the two locks: l1u_lock_live <name>, l1u_lock_take <name>, l1u_lock_release <name>,
-# for the names installing and updating.
+# l1u_install <Steam app ID>, and the one rule for the two locks: l1u_lock_live <name>, l1u_lock_take <name>,
+# l1u_lock_release <name>, for the names installing and updating.
 # Run, it uses L1_UPDATE_DIR if set and otherwise the folder it lies in, which for the deployed copy is the
 # folder itself. Every call exits 0 when it could answer and says the outcome in its output. The options and
 # the output lines are a contract between versions on one Mac: a later version may add an option or a field
@@ -44,6 +47,11 @@
 # The update's file (--open; plan 3.4) is "Update 1launcher.command" in a new temporary folder. It holds
 # constants only, but for curl's path; it fetches the root install.sh of `release` into a file beside itself,
 # runs it with the one word update, says in one line what happened, and removes itself and its folder.
+# The install's file (--install; docs/plans/launcher-first-install.md, 3.8) is "Install with 1launcher.command",
+# written the same way. It holds constants only, but for curl's path and the game's Steam app ID, matched whole
+# as a number before it is written; it takes no lock and names no folder. It fetches the root install.sh of
+# `release` and runs it with that one ID: the published line for that game, word for word, so an install from
+# 14unch3r and an install from the guide are one path from there on.
 # Test variables: L1_UPDATE_DIR; L1_UPDATE_NOW, an epoch that stands for now; L1_CURL (default /usr/bin/curl)
 # and L1_OPEN (default /usr/bin/open), the two programs a test replaces. L1_CURL is written into the update's
 # file only when it is a plain absolute path, and /usr/bin/curl otherwise. L1_SYSCTL (default /usr/sbin/sysctl)
@@ -449,6 +457,84 @@ EOS
   echo opened
 }
 
+# The record's default place, spelled here because the deployed copy has no paths.sh beside it. A test holds this
+# spelling equal to the two lines of common/paths.sh that give it (the data root's default, and /_update in it).
+_l1u_default_dir() { printf '%s\n' "$HOME/Library/Application Support/1launcher/_update"; }
+
+# <Steam app ID>: one game's install, started from 14unch3r (docs/plans/launcher-first-install.md, 3.8). Prints
+# `opened` after it wrote "Install with 1launcher.command" into a new temporary folder and handed it to Terminal,
+# or `failed` TAB one sentence, with nothing written and Terminal not opened. It refuses, in this order: an ID
+# that is not a whole number; the state manual; the state off with a stamp on a line that is not `release`
+# (there the state word hides the stamps, so their lines are judged here); a record that is not at the default
+# place (the installer the file starts keeps its record there, and would write its lock and its stamps where
+# this tool and its window do not look); the state ready (update first); a live `updating`; a live
+# `installing`; a record folder that is not the player's own. The states none, unknown, current and off open.
+l1u_install() {
+  local PATH=/usr/bin:/bin:/usr/sbin:/sbin id="${1:-}" d f curl=/usr/bin/curl row line rest here there
+  local manual="14unch3r or a game here was set up from a checkout or a named version. From a checkout, run the game's scripts/install.sh; otherwise paste the game's line from its guide."
+  if ! [[ "$id" =~ $_L1U_ID ]]; then printf 'failed\t%s\n' "That is not a game's Steam app ID."; return 0; fi
+  _l1u_state
+  if [ "$L1U_WORD" = manual ]; then printf 'failed\t%s\n' "$manual"; return 0; fi
+  if [ "$L1U_WORD" = off ]; then
+    while IFS=$'\t' read -r row line rest; do
+      [ -n "$row" ] || continue
+      if [ "$line" != release ]; then printf 'failed\t%s\n' "$manual"; return 0; fi
+    done <<EOF
+$(_l1u_stamps)
+EOF
+  fi
+  here="$(cd "$L1_UPDATE_DIR" 2>/dev/null && pwd -P)"; there="$(cd "$(_l1u_default_dir)" 2>/dev/null && pwd -P)"
+  if [ -z "$here" ] || [ "$here" != "$there" ]; then printf 'failed\t%s\n' "$manual"; return 0; fi
+  if [ "$L1U_WORD" = ready ]; then printf 'failed\t%s\n' "A newer 1launcher is out. Update first, then click the game again."; return 0; fi
+  if l1u_lock_live updating; then printf 'failed\t%s\n' "An update is running in Terminal. Wait for it to finish, then click the game again."; return 0; fi
+  if l1u_lock_live installing; then printf 'failed\t%s\n' "An install is running in Terminal. Its Terminal window shows how far it is."; return 0; fi
+  if ! l1u_own; then
+    printf 'failed\t%s\n' "This Mac's record of versions is not a folder of your own that only you can write to. In Terminal: chmod go-w \"$L1_UPDATE_DIR\", then try again."; return 0
+  fi
+  [[ "${L1_CURL:-}" =~ $_L1U_PROG ]] && curl="$L1_CURL"
+  d="$(mktemp -d "${TMPDIR:-/tmp}/1launcher-install.XXXXXX" 2>/dev/null)" \
+    || d="$(mktemp -d /tmp/1launcher-install.XXXXXX 2>/dev/null)" \
+    || { printf 'failed\t%s\n' "A temporary folder could not be made. Restart the Mac, then click the game again."; return 0; }
+  f="$d/Install with 1launcher.command"
+  if ! { printf '%s\n' '#!/bin/bash' "CURL='$curl'" "ID='$id'"; cat << 'EOS'
+# Written by 1launcher (updates.sh --install): one game, set up by its published line. It removes itself and its
+# folder when it exits; a closed window ends it by the same way out.
+F="$(dirname "$0")/.1launcher-fetch.$$"
+trap 'rm -f "$0" "$F"; rmdir "$(dirname "$0")" 2>/dev/null' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+clear
+echo "Fetching the installer from github.com/macgameport/1launcher ..."
+code="$("$CURL" -q --proto '=https' --tlsv1.2 -sSL -o "$F" -w '%{http_code}' https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/install.sh)"; rc=$?
+S="$(cat "$F" 2>/dev/null)"; rm -f "$F"
+if [ "$rc" = 0 ] && [ "$code" = 200 ]; then
+  /bin/bash -c "$S" 1launcher-install "$ID"; rc=$?
+  echo
+  if [ "$rc" = 0 ]; then echo "Installed. Open 14unch3r to play. You can close this window."
+  elif [ "$rc" = 5 ]; then
+    echo "A Mac fix is not out yet for this build of the game: the lines above say more."
+    echo "Installed. Open 14unch3r to play. You can close this window."
+  elif [ "$rc" = 3 ] || [ "$rc" = 4 ] || [ "$rc" -gt 128 ]; then
+    echo "Not finished. To carry on, open 14unch3r and click the game again. You can close this window."
+  else echo "The install did not finish: the lines above say why. To try again, open 14unch3r and click the game."; fi
+  exit "$rc"
+fi
+echo
+echo "GitHub could not be reached. Check the network, then open 14unch3r and click the game again."
+exit 1
+EOS
+  } > "$f" 2>/dev/null || ! chmod 755 "$f" 2>/dev/null; then
+    rm -f "$f"; rmdir "$d" 2>/dev/null
+    printf 'failed\t%s\n' "The install's file could not be written. Restart the Mac, then click the game again."; return 0
+  fi
+  if ! "${L1_OPEN:-/usr/bin/open}" -a Terminal "$f" > /dev/null 2>&1; then
+    rm -f "$f"; rmdir "$d" 2>/dev/null
+    printf 'failed\t%s\n' "Terminal could not be opened for the install."; return 0
+  fi
+  echo opened
+}
+
 if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
   if [ -z "${L1_UPDATE_DIR:-}" ]; then L1_UPDATE_DIR="$(cd "$(/usr/bin/dirname "$0")" && pwd)"; fi
   case "${1:-}" in
@@ -460,7 +546,8 @@ if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
     --noted) l1u_noted ;;
     --version-of) l1u_version_of "${2:-}" || true ;;
     --open) l1u_open ;;
-    *) echo "usage: updates.sh [--refresh [--now] | --notes | --noted | --open | --version-of <file>]" >&2; exit 2 ;;
+    --install) l1u_install "${2:-}" ;;
+    *) echo "usage: updates.sh [--refresh [--now] | --notes | --noted | --open | --install <Steam app ID> | --version-of <file>]" >&2; exit 2 ;;
   esac
   exit 0
 fi

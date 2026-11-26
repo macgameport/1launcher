@@ -37,6 +37,9 @@
 #    40 l1u_stamp not called by setup            41 the driver's test of a stamp's line turned round
 #    The install's lock, taken by the core (docs/plans/launcher-first-install.md, 3.8; LFT13):
 #    42 the lock not taken                       43 the game file not written
+#    An install from 14unch3r, its parts joined (the same plan, 3.8; LFT8):
+#    44 the written file made to run update      45 the lock left behind (in the fetched tree's core)
+#    46 the setup's launcher stamp dropped
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -125,7 +128,7 @@ PY
   31) sed -i '' 's|W="\$(l1w_incomplete game "\$GAME_APPID")" \|\| W=|W=|' "$S" ;;
   32) sed -i '' 's| --mark game "\$GAME_APPID"||g' "$CORE" ;;
   33) sed -i '' 's|^core_after_setup \$?$|(exit $?)|' "$S" ;;
-  34|35|40|41) ;;   # applied below, to the real setup.sh of the WT11 copy (41: to the driver beside it)
+  34|35|40|41|44|45|46) ;;   # applied below, to the real setup.sh of the WT11 copy (41: to the driver beside it; 44 to 46: to that copy's files, for LFT8)
   # UT2 (docs/plans/built-in-update.md, U0): 36 silent for a finished install only; 37 silent for a game that is
   # only partly there too; 38 the wrapper not asked for first
   36) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed) return 0 ;; esac; fi#' "$CORE" ;;
@@ -146,7 +149,7 @@ PY
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
-  case "$M" in 34|35|40|41) ;; *) cmp -s "$HERE/scripts/install.sh" "$S" && cmp -s "$REPO/common/install-core.sh" "$CORE" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;; esac
+  case "$M" in 34|35|40|41|44|45|46) ;; *) cmp -s "$HERE/scripts/install.sh" "$S" && cmp -s "$REPO/common/install-core.sh" "$CORE" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;; esac
   bash -n "$S" && bash -n "$CORE" || { echo "REFUSED: mutant $M does not parse"; exit 2; }
 fi
 
@@ -544,6 +547,50 @@ rc=$(upd STUB_SECOND_EXIT=3)
 check "UT7b with the second game's installer made to stop: exit 3, this game's stamp is new, the other's is old, and the state stays ready" \
   "$rc:$(c '^SECOND args= update=1$'):$(cut -f2 "$UD/installed/3215050" 2>/dev/null):$(cut -f2 "$UD/installed/949230" 2>/dev/null):$(state)" \
   "3:1:v0.1.0:v0.0.9:ready${TAB}v0.0.9${TAB}v0.1.0"
+rm -rf "$HOME/Applications"/*.app "$HOME/Library"
+
+# --- LFT8 (docs/plans/launcher-first-install.md, 3.8 and section 6): an install from 14unch3r, the parts joined.
+#     The fixture: the record at the default place under the scratch home, a marked wrapper of the game with no
+#     app (a begun install), the launcher's stamp alone on release at v0.0.9, and the offer at v0.0.9, so the
+#     state is current and the tool opens. The offer is then raised to the tree's version, as a daily check
+#     would have found it, and the written file is run: through the root install.sh (a stub curl serves it, and
+#     the archive of the WT11 copy), this installer and the real setup.
+case "$M" in
+  44) sed -i '' 's#^  /bin/bash -c "\$S" 1launcher-install "\$ID"; rc=\$?$#  /bin/bash -c "$S" 1launcher-install update; rc=$?#' "$R2/common/updates.sh"
+      grep -q '^  /bin/bash -c "\$S" 1launcher-install update; rc=\$?$' "$R2/common/updates.sh" || { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+  45) sed -i '' 's#^  \[ "\${INSTALL_LOCK:-0}" = 1 \] && l1u_lock_release installing .*#  : not released#' "$R2/common/install-core.sh"
+      grep -q '^  : not released$' "$R2/common/install-core.sh" || { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+  46) sed -i '' 's#"built: one window that lists every game"; launcher_stamp ;;$#"built: one window that lists every game" ;;#' "$G2/scripts/setup.sh"
+      grep -q 'launcher_stamp ;;$' "$G2/scripts/setup.sh" && { echo "REFUSED: mutant $M did not apply"; exit 2; } ;;
+esac
+mkdir -p "$T/bin4"; ( cd "$T" && tar -czf "$T/lft8.tar.gz" repo2 )
+cat > "$T/bin4/curl" << X
+#!/bin/bash
+case " \$* " in
+  *"/refs/heads/release/install.sh "*) echo "ROOTSCRIPT \$*" >> "\$CALLS"; src="$REPO/install.sh" ;;
+  *) echo "ARCHIVE \$*" >> "\$CALLS"; src="$T/lft8.tar.gz" ;;
+esac
+out=""; while [ \$# -gt 0 ]; do case "\$1" in -o) out="\$2"; shift 2 ;; *) shift ;; esac; done
+cp "\$src" "\$out"; printf 200
+X
+printf '#!/bin/bash\n{ printf "OPEN"; for a in "$@"; do printf "|%%s" "$a"; done; echo; } >> "$CALLS"\n' > "$T/bin4/open"
+chmod +x "$T/bin4/curl" "$T/bin4/open"
+world; mkwrap "$NEWW" 3.0 steam game mark
+mkdir -p "$UD/installed"; printf 'release\tv0.0.9\t-\t100\n' > "$UD/launcher"; printf 'v0.0.9\t200\n' > "$UD/offer"; cp "$R2/common/updates.sh" "$UD/updates.sh"
+check "LFT8 the fixture: a begun install (a marked wrapper, no app), the launcher's stamp alone on release at v0.0.9, that version on offer: the state is current" \
+  "$(state):$([ -e "$HOME/Applications/Surviving Mars Relaunched.app" ] && echo app || echo no-app)" "current${TAB}v0.0.9${TAB}v0.0.9:no-app"
+: > "$CALLS"
+ans="$(env L1_UPDATE_DIR="$UD" L1_CURL="$T/bin4/curl" L1_OPEN="$T/bin4/open" bash "$UD/updates.sh" --install 3215050 2>&1)"
+CMD8="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
+check "LFT8 the deployed tool, asked to install the game: opened, and Terminal was handed one file" "$ans:$(grep -c '^OPEN|-a|Terminal|' "$CALLS"):$([ -x "$CMD8" ] && echo file)" "opened:1:file"
+printf 'v0.1.0\t300\n' > "$UD/offer"   # as a daily check would have found it since
+env -u SM_WRAPPER -u L1_WRAPPER_GIVEN PATH="$T/bin4:$T/bin2:$PATH" L1_WMOVE_PROBE="$T/bin/wprobe" L1_UPDATE_NOW=1800000000 TERM=xterm "$CMD8" < /dev/null > "$T/out" 2>&1; rc=$?
+check "LFT8 the written file, run: the root install.sh is fetched, then the archive of release, and the game's line runs this installer and the real setup; exit 0, its closing line last" \
+  "$rc:$(c '^ROOTSCRIPT .*/refs/heads/release/install\.sh$'):$(c '^ARCHIVE .*/archive/refs/heads/release\.tar\.gz$'):$(tail -n 1 "$T/out")" "0:1:1:Installed. Open 14unch3r to play. You can close this window."
+check "LFT8 ...the game's stamp and the launcher's stamp both hold release and the tree's version, and the state is current (with the launcher's stamp left at v0.0.9 it would be ready)" \
+  "$(cut -f1,2 "$UD/installed/3215050" 2>/dev/null):$(cut -f1,2 "$UD/launcher" 2>/dev/null):$(state)" "release${TAB}v0.1.0:release${TAB}v0.1.0:current${TAB}v0.1.0${TAB}v0.1.0"
+check "LFT8 ...no lock is left, no file names a game, the game's app is there, and no temporary folder is left" \
+  "$([ -e "$UD/installing" ] || [ -L "$UD/installing" ] && echo left || echo none):$([ -e "$UD/installing-game" ] && echo left || echo none):$([ -e "$HOME/Applications/Surviving Mars Relaunched.app" ] && echo app):$(tmpleft)" "none:none:app:0"
 rm -rf "$HOME/Applications"/*.app "$HOME/Library"
 
 echo "$fails failure(s)"

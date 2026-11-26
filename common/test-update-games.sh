@@ -32,6 +32,12 @@
 #   MUTANT=24 ..  the launcher's stamp kept when the app is gone and no game is set up
 #   MUTANT=25 ..  a current launcher with no game made exit 3
 #   MUTANT=26 ..  the app's test made true for an absent app
+# The install's lock (the same plan, 3.8; LFT4's cases "with LF4a"); each must exit 1:
+#   MUTANT=27 ..  the look at `installing` dropped
+#   MUTANT=28 ..  the look at `installing` made before the take of `updating`
+#   MUTANT=29 ..  the line that removes a stale `updating` dropped
+# (Mutant 18 drops the match of a lock's target in the driver's take and, since LF4a, in the one rule of
+# common/updates.sh too: the line that removes a stale `updating` asks that rule first.)
 # The file `updates.sh --open` writes; each must exit 1:
 #   MUTANT=12 ..  `release` made `main` in the address it fetches
 #   MUTANT=16 ..  the fetched file run whatever the answer's code
@@ -39,7 +45,8 @@ set -u
 unset L1_UPDATE_DIR L1_UPDATE L1_UPDATE_NOW L1_FETCHED_REF L1_FETCHED_COMMIT L1_DATA_ROOT L1_CURL L1_OPEN CS2_WRAPPER SM_WRAPPER
 HERE="$(cd "$(dirname "$0")" && pwd)"
 T="$(mktemp -d /tmp/update-games-test.XXXX)"
-trap 'rm -rf "$T"' EXIT
+LIVE=""
+trap '[ -n "$LIVE" ] && { kill "$LIVE" 2>/dev/null; wait "$LIVE" 2>/dev/null; }; rm -rf "$T"' EXIT
 TREE="$T/tree"; mkdir -p "$TREE/common" "$T/bin" "$T/tmp" "$T/exits"
 D="$TREE/common/update-games.sh"; U="$TREE/common/updates.sh"
 cp "$HERE/update-games.sh" "$D"; cp "$HERE/updates.sh" "$U"
@@ -67,7 +74,8 @@ case "${MUTANT:-0}" in
   15) mutate 's#^  if l1u_newer "\$ver" "\$T"; then$#  if false; then#' '^  if false; then$' ;;
   16) mutate 's#^if \[ "\$rc" = 0 \] && \[ "\$code" = 200 \]; then$#if true; then#' '^if true; then$' ;;
   17) mutate 's#^if ! l1u_own; then$#if false; then#' '^if false; then$' ;;
-  18) mutate 's#^  if ! \[\[ "\$h" =~ \$PIDFORM \]\] || ! kill -0 "\$h" 2>/dev/null; then$#  if ! kill -0 "$h" 2>/dev/null; then#' '^  if ! kill -0 "\$h" 2>/dev/null; then$' ;;
+  18) mutate 's#^  if ! \[\[ "\$h" =~ \$PIDFORM \]\] || ! kill -0 "\$h" 2>/dev/null; then$#  if ! kill -0 "$h" 2>/dev/null; then#' '^  if ! kill -0 "\$h" 2>/dev/null; then$'
+      mutate 's#^  \[\[ "\$h" =~ \$_L1U_ID \]\] || return 1$#  : no match of the target#' '^  : no match of the target$' ;;
   19) mutate 's#^elif \[ "\$SETUP" = 0 \] && \[ "\$FAILED" = 0 \]; then$#elif [ "$SETUP" = 0 ]; then#' '^elif \[ "\$SETUP" = 0 \]; then$' ;;
   20) mutate 's#^  if \[ "\$ver" = "\$T" \]; then CURRENT=1; return 0; fi .*#  : run every time#' '^  : run every time$' ;;
   21) mutate 's#^  if \[ "\$line" != "\$L1_FETCHED_REF" \]; then   \# 14unch3r follows another line$#  if false; then   \# 14unch3r#' '^  if false; then   # 14unch3r$' ;;
@@ -77,6 +85,18 @@ case "${MUTANT:-0}" in
   24) mutate 's#^    rm -f "\$L1_UPDATE_DIR/launcher"; return 0$#    return 0#' '^    return 0$' ;;
   25) mutate 's#^  SETUP=\$((SETUP + 1))   \# from here on .*#  : not counted as set up#' '^  : not counted as set up$' ;;
   26) mutate 's#^  \[ -d "\$a" \] \&\& \[ ! -L "\$a" \] || return 1$#  [ -e "$a" ] || [ -L "$a" ] || return 0#' '^  \[ -e "\$a" \] || \[ -L "\$a" \] || return 0$' ;;
+  27) mutate 's#^if l1u_lock_live installing; then$#if false; then#' '^if false; then$' ;;
+  28) python3 -I - "$D" << 'PY' || { echo "REFUSED: mutant did not apply"; exit 2; }
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = "if l1u_lock_live installing; then\n"; b = "l1u_lock_live updating || rm -f"
+assert s.count(a) == 1 and s.count(b) == 1
+i = s.index(a); j = s.index("fi\n", i) + 3; blk = s[i:j]; s = s[:i] + s[j:]
+k = s.index(b); s = s[:k] + blk + s[k:]
+open(p, "w").write(s)
+PY
+      ;;
+  29) mutate 's#^l1u_lock_live updating || rm -f "\$LOCK" 2>/dev/null .*#: a stale lock is left#' '^: a stale lock is left$' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 bash -n "$D" && bash -n "$U" || { echo "REFUSED: the mutant does not parse"; exit 2; }
@@ -319,6 +339,21 @@ newh; first; stamp 949230; chmod 770 "$UD"
 check "an _update the group can write: the same, nothing run, no lock written" "$(drv):$(grep -c '^INSTALLER' "$CALLS"):$(said "$NOREC"):$(lock)" "3:0:1:none"
 newh; first; stamp 949230; chmod 770 "$UD/installed"
 check "an installed/ the group can write: the same" "$(drv):$(grep -c '^INSTALLER' "$CALLS"):$(said "$NOREC")" "3:0:1"
+
+# --- LFT4, with LF4a (docs/plans/launcher-first-install.md, 3.8): an update stops while an install runs, and a
+# lock left by a restart does not stop it
+/bin/sleep 300 & LIVE=$!
+newh; first; stamp 949230; ln -s "$LIVE" "$UD/installing"
+check "LFT4 a live installing: exit 3 with its sentence and the process, no installer run, updating gone afterwards, the install's lock untouched" \
+  "$(drv):$(grep -c '^INSTALLER' "$CALLS"):$(said "^An install is running in another Terminal window (process $LIVE)\. Wait for it to finish, then update again\.\$"):$(lock):$(readlink "$UD/installing")" "3:0:1:none:$LIVE"
+newh; first; stamp 949230; ln -s "$dead" "$UD/installing"
+check "LFT4 a dead installing does not stop the update" "$(drv):$(ran):$(lock)" "0:first-game :none"
+newh; first; stamp 949230; ln -s "$LIVE" "$UD/installing"; touch -h -t 202001010000 "$UD/installing"
+check "LFT4 ...nor one older than the Mac's last start, its target a live process" "$(drv):$(ran)" "0:first-game "
+newh; first; stamp 949230; ln -s "$LIVE" "$UD/updating"; touch -h -t 202001010000 "$UD/updating"
+check "LFT4 an updating older than the Mac's last start, its target a live process: removed, the update runs, and no lock is left" "$(drv):$(ran):$(lock)" "0:first-game :none"
+check "LFT4 a source gate: the take of updating stands before the look at installing" \
+  "$(awk '/^if ! take_lock; then$/ { t = NR } /^if l1u_lock_live installing; then$/ { l = NR } END { print (t > 0 && l > t) ? "take first" : t ":" l }' "$D")" "take first"
 
 # --- UT7: the file `updates.sh --open` writes
 cat > "$T/bin/curl" << 'C'

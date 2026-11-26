@@ -32,6 +32,14 @@ MAKE_WRAPPER="$CORE_DIR/make-wrapper.sh"
 # (docs/plans/launcher-first-install.md, 3.2): tools_ask and tools_wait, which core_tools calls
 [ -f "$CORE_DIR/tools.sh" ] || { echo "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
 . "$CORE_DIR/tools.sh"
+# the install's lock (docs/plans/launcher-first-install.md, 3.8): its rule is common/updates.sh's, and the record's
+# folder, where the lock lies, is the one folder common/paths.sh names. Only that folder is taken from paths.sh,
+# and it is not exported: each setup this runs reads paths.sh for itself.
+for _f in paths.sh updates.sh; do
+  [ -f "$CORE_DIR/$_f" ] || { echo "The installer's own files are gone (macOS clears old temporary files)."; exit 4; }
+done
+L1_UPDATE_DIR="$( . "$CORE_DIR/paths.sh" 2>/dev/null; printf '%s' "$L1_UPDATE_DIR" )"
+. "$CORE_DIR/updates.sh"
 STEAM_URLS="https://cdn.fastly.steamstatic.com/client/installer/SteamSetup.exe https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 STEAM_TESTED_SHA=7d3654531c32d941b8cae81c4137fc542172bfa9635f169cb392f245a0a12bcb
 POLL=5            # seconds between looks at Steam and the download
@@ -76,6 +84,7 @@ die() { echo "  !! $1"; exit 3; }       # acquire_lock's: the game started meanw
 on_exit() {
   local rc=$?
   [ -n "${LOCK:-}" ] && release_lock
+  [ "${INSTALL_LOCK:-0}" = 1 ] && l1u_lock_release installing   # the install's lock, under a mark of its own
   case "$END" in
     quiet) ;;
     signal) echo; echo "Stopped. Open the installer again: it carries on from here." ;;
@@ -269,7 +278,42 @@ other_steam() {   # a Steam for Windows that is not this prefix's: its wrapper's
 }
 
 # --- the stages, in the order a game calls them; each takes its step number
-core_begin() {   # the opening lines, the wrapper chosen, the running-game refusal, caffeinate
+# One install at a time, whatever the game (docs/plans/launcher-first-install.md, 3.8): each install starts a
+# Steam, and one Steam at a time can use an account. The lock is the link `installing` in the record's folder,
+# taken here and let go by on_exit at every exit; a pasted line and an install started from 14unch3r both come
+# through here. Under an update the driver holds `updating` for the whole run and has already looked, so no
+# lock is taken: but L1_UPDATE=1 is believed only while an update's lock is live. An install and an update keep
+# out of each other's way: each takes its own lock first and then looks at the other's, so of two that start
+# together at least one stops. The record's folders are made here when they are not there (a game's line
+# pasted on a Mac with nothing has none yet), by the setups' own rule; one that is not the player's own stops
+# the install here, before anything is downloaded.
+install_lock() {
+  local d who=""
+  if [ "${L1_UPDATE:-}" = 1 ] && l1u_lock_live updating; then return 0; fi
+  for d in "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installed"; do
+    if [ -e "$d" ] || [ -L "$d" ]; then
+      _l1u_own1 "$d" || { say "!! $d is not a folder of your own that only you can write to. In Terminal: chmod go-w \"$d\", then try again."; exit 1; }
+    fi
+  done
+  for d in "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installed"; do
+    [ -d "$d" ] || { mkdir -p "$d" && chmod go-w "$d"; } || { say "!! $d could not be made."; exit 1; }
+  done
+  if ! l1u_lock_take installing; then
+    l1u_lock_live installing && who=" (process $L1U_HOLDER)"
+    say "!! Another install is running in another Terminal window$who. Wait for it to finish, then open the installer again."
+    exit 3
+  fi
+  INSTALL_LOCK=1
+  if l1u_lock_live updating; then   # looked at only now, after the take; on_exit lets `installing` go
+    say "!! An update of 1launcher is running in another Terminal window (process $L1U_HOLDER). Wait for it to finish, then open the installer again."
+    exit 3
+  fi
+  # which game: written beside its place and renamed over it, so that no reader meets half a line
+  printf '%s\n' "$GAME_APPID" > "$L1_UPDATE_DIR/.installing-game.$$" 2>/dev/null \
+    && mv -f "$L1_UPDATE_DIR/.installing-game.$$" "$L1_UPDATE_DIR/installing-game" 2>/dev/null
+  return 0
+}
+core_begin() {   # the opening lines, the wrapper chosen, the running-game refusal, the install's lock, caffeinate
 echo "$GAME_TITLE for Apple Silicon Macs: the installer"
 echo "You need a Steam account that owns the game, $WORDS_NEED."
 echo "You can open the installer again at any point: it carries on from where it stopped."
@@ -299,6 +343,7 @@ if [ -d "$W" ]; then
   unset LOCK
 fi
 if prefix_known && game_running; then say "!! The game is running. Quit it, then open the installer again."; exit 3; fi
+[ "$CHECK" = 0 ] && install_lock   # after the refusals above, before anything is downloaded; --check changes nothing
 [ "$CHECK" = 0 ] && { caffeinate -i -w $$ > /dev/null 2>&1 & }
 [ "$CHECK" = 0 ] && say "The Mac is kept awake while this runs."
 }

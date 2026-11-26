@@ -35,6 +35,8 @@
 #    39 the own-files loop for common/paths.sh, updates.sh and games.tsv dropped (built-in-update 3.3; UT5, also)
 #    The update, its parts joined (built-in-update 3.4; UT7b):
 #    40 l1u_stamp not called by setup            41 the driver's test of a stamp's line turned round
+#    The install's lock, taken by the core (docs/plans/launcher-first-install.md, 3.8; LFT13):
+#    42 the lock not taken                       43 the game file not written
 set -u
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$HERE/.." && pwd)"
@@ -55,7 +57,7 @@ cp "$HERE/scripts/install.sh" "$S"; cp "$REPO/common/install-core.sh" "$CORE"
 : > "$G/launch-relaunched.sh"; : > "$G/make-app.sh"; : > "$G/tools/frame-fix.exe"; : > "$R/common/make-launcher-app.sh"
 cp "$REPO/common/wrappers.sh" "$R/common/wrappers.sh"; : > "$R/common/move-wrappers.sh"   # the resolver, real; the mover, setup's
 cp "$REPO/common/tools.sh" "$R/common/tools.sh"   # the ask and the wait for Apple's tools, real: the core reads it (docs/plans/launcher-first-install.md, 3.2)
-: > "$R/common/paths.sh"; : > "$R/common/updates.sh"; : > "$R/common/games.tsv"   # setup's record of versions (docs/plans/built-in-update.md, 3.3)
+cp "$REPO/common/paths.sh" "$REPO/common/updates.sh" "$R/common/"; : > "$R/common/games.tsv"   # setup's record of versions (docs/plans/built-in-update.md, 3.3); the two are real: the core reads the record's folder and the lock's rule from them (docs/plans/launcher-first-install.md, 3.8)
 
 py() { python3 -I - "$@"; }
 case "$M" in
@@ -130,6 +132,17 @@ PY
   37) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed|update|partial) return 0 ;; esac; fi#' "$CORE" ;;
   38) sed -i '' 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#case "$(game_state)" in installed|update) return 0 ;; esac#' "$CORE" ;;
   39) sed -i '' 's|^for f in "\$GAME_ROOT/\.\./common/paths\.sh" "\$GAME_ROOT/\.\./common/updates\.sh" .*|for f in; do|' "$S" ;;
+  42) sed -i '' 's|^\[ "\$CHECK" = 0 \] \&\& install_lock .*|: no lock|' "$CORE" ;;
+  43) py "$CORE" << 'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = "  printf '%s\\n' \"$GAME_APPID\" > "
+assert s.count(a) == 1
+i = s.index(a); j = s.index("\n", s.index("\n", i) + 1) + 1
+s = s[:i] + "  : the game file is not written\n" + s[j:]
+open(p, "w").write(s)
+PY
+     ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
@@ -182,6 +195,9 @@ cat > "$G/scripts/setup.sh" << 'X'
 case " $* " in *" --mac-only "*) [ -n "${STUB_MAC_WORDS:-}" ] && echo "  $STUB_MAC_WORDS"; exit "${STUB_MAC_RC:-0}" ;; esac
 w="${SM_WRAPPER:-/none}"
 echo "SETUP $* via=${SM_VIA_INSTALLER:-} lock=$(readlink "$w/Contents/SharedSupport/prefix/.launcher.lock" 2>/dev/null) ppid=$PPID given=${L1_WRAPPER_GIVEN-unset}" >> "$CALLS"
+# the install's lock as this stand-in finds it (LFT13): the installer is its parent process
+_u="$HOME/Library/Application Support/1launcher/_update"; _h="$(readlink "$_u/installing" 2>/dev/null)"; [ "$_h" = "$PPID" ] && _h=mine
+echo "LOCKATSETUP ${_h:-none} $(cat "$_u/installing-game" 2>/dev/null || echo none)" >> "$CALLS"
 exit "${STUB_SETUP_RC:-0}"
 X
 cat > "$R/common/make-wrapper.sh" << 'X'
@@ -276,6 +292,19 @@ rc=$(run --)
 check "everything done, nobody to ask: exit 0, no question, nothing fetched, setup run" "$rc:$(o "Apple's Game Porting Toolkit"):$(c '^FETCH'):$(c '^SETUP')" "0:0:0:1"
 rc=$(run -- --yes)
 check "  ...--yes reaches setup" "$(c '^SETUP --yes via=1')" 1
+# LFT13 (docs/plans/launcher-first-install.md, 3.8): this game's installer takes the one install lock through the core
+UD="$HOME/Library/Application Support/1launcher/_update"
+ilock() { if [ -e "$UD/installing" ] || [ -L "$UD/installing" ] || [ -e "$UD/installing-game" ]; then echo left; else echo none; fi; }
+rc=$(run --)
+check "LFT13 the install's lock is this installer's when setup runs, with this game's ID beside it; both are gone afterwards" \
+  "$rc:$(grep '^LOCKATSETUP' "$CALLS"):$(ilock)" "0:LOCKATSETUP mine 3215050:none"
+/bin/sleep 300 & HOLD=$!
+ln -s "$HOLD" "$UD/installing"; rc=$(run --)
+check "LFT13 an install of another process running: exit 3 with its sentence and that process, nothing fetched, setup not run" \
+  "$rc:$(o "^  !! Another install is running in another Terminal window (process $HOLD)\\. Wait for it to finish, then open the installer again\\.\$"):$(c '^FETCH'):$(c '^SETUP'):$(readlink "$UD/installing")" "3:1:0:0:$HOLD"
+rm -f "$UD/installing"; kill "$HOLD" 2>/dev/null; wait "$HOLD" 2>/dev/null; HOLD=""
+rc=$(run -- --check)
+check "LFT13 under --check no lock is taken" "$rc:$(c '^LOCKATSETUP mine'):$(ilock)" "0:0:none"
 ACF="$DS/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_3215050.acf"
 rc=$(run STUB_DF_KB=5000000 -- --check)
 check "low space on a finished install: no CAUTION" "$rc:$(o 'CAUTION: ')" "0:0"

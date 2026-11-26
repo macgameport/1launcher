@@ -31,6 +31,11 @@
 # (24 and 25: docs/plans/launcher-first-install.md, 3.5; LFT3, the stamp.)
 #   MUTANT=24 ..  the launcher's stamp left out of the state; must exit 1
 #   MUTANT=25 ..  the launcher's stamp read without its match; must exit 1
+# (26 to 29: the same plan, 3.8; LFT13, the lock's rule in shell, and --open during an install.)
+#   MUTANT=26 ..  the start's rule dropped (a link older than the Mac's last start read as live); must exit 1
+#   MUTANT=27 ..  the read-back after a take dropped; must exit 1
+#   MUTANT=28 ..  a game file left by another holder not removed at a take; must exit 1
+#   MUTANT=29 ..  --open's refusal during an install dropped; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 T="$(mktemp -d /tmp/updates-test.XXXX)"
@@ -67,6 +72,13 @@ case "${MUTANT:-0}" in
   23) mutate 's#^  \[\[ "\${L1_CURL:-}" =~ \$_L1U_PROG \]\] && curl="\$L1_CURL"$#  [ -n "${L1_CURL:-}" ] \&\& curl="$L1_CURL"#' '^  \[ -n "\${L1_CURL:-}" \] && curl="\$L1_CURL"$' ;;
   24) mutate 's#^  if _l1u_stamp_ok "\$L1_UPDATE_DIR/launcher"; then printf .*#  :#' '^  :$' ;;
   25) mutate 's#^  if _l1u_stamp_ok "\$L1_UPDATE_DIR/launcher"; then printf #  if _l1u_read "$L1_UPDATE_DIR/launcher" 4; then printf #' '^  if _l1u_read "\$L1_UPDATE_DIR/launcher" 4; then printf ' ;;
+  26) mutate 's#^    \[ "\$((10\#\$t))" -ge "\$boot" \] || return 1$#    :#' '^    :$' ;;
+  27) mutate 's#^  if \[ ! -L "\$f" \] || \[ "\$(readlink "\$f" 2>/dev/null)" != "\$\$" \]; then$#  if false; then#' '^  if false; then$' ;;
+  28) mutate 's#^  \[ "\$1" = installing \] \&\& rm -f "\$L1_UPDATE_DIR/installing-game" 2>/dev/null$#  : not removed#' '^  : not removed$'
+      grep -c '^  : not removed$' "$S" | grep -qx 2 || { echo "REFUSED: mutant did not apply"; exit 2; }
+      perl -0pi -e 's/(l1u_lock_release\(\) \{.*?)  : not removed\n/$1  [ "\$1" = installing ] \&\& rm -f "\$L1_UPDATE_DIR\/installing-game" 2>\/dev\/null\n/s' "$S"
+      grep -c '^  : not removed$' "$S" | grep -qx 1 || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  29) mutate 's#^  if l1u_lock_live installing; then printf .failed.t%s.n. "An install is running in Terminal\. .*#  : no refusal#' '^  : no refusal$' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 bash -n "$S" || { echo "REFUSED: the mutant does not parse"; exit 2; }
@@ -386,6 +398,74 @@ check "a TMPDIR that is no folder: opened all the same, the file in a new folder
   "$(opn TMPDIR="$T/no-such-folder" | tr '\n' ':')$(grep -c '^OPEN|-a|Terminal|/tmp/1launcher-update\.[A-Za-z0-9]*/Update 1launcher\.command$' "$CALLS")" "opened:rc=0:1"
 CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
 case "$CMD" in /tmp/1launcher-update.*/"Update 1launcher.command") rm -f "$CMD"; rmdir "$(dirname "$CMD")" 2>/dev/null ;; esac
+
+# --- LFT13 (docs/plans/launcher-first-install.md, 3.8): the lock's rule in shell, for the names installing and
+# updating. L1_SYSCTL names a stub that gives the Mac's last start; a link's own time is set with touch -h.
+BOOT=1700000000
+printf '#!/bin/bash\n[ "$*" = "-n kern.boottime" ] || exit 1\n[ -n "${STUB_BOOT_FAIL:-}" ] && exit 1\necho "{ sec = %s, usec = 84350 } Tue Nov 14 22:13:20 2023"\n' "$BOOT" > "$T/bin/sysctl"; chmod +x "$T/bin/sysctl"
+lk() {   # [VAR=value ...] -- <commands>: the tool's functions in a new bash, whose process number is the taker's
+  local e=()
+  while [ "$1" != -- ]; do e+=("$1"); shift; done; shift
+  env L1_UPDATE_DIR="$U" L1_SYSCTL="$T/bin/sysctl" ${e[@]+"${e[@]}"} /bin/bash -c '. "$1"; '"$*" lock-test "$S"
+}
+live() { lk "$@" -- 'l1u_lock_live "$NAME"; echo "$?:$L1U_HOLDER"'; }   # NAME=<lock> [VAR=value ...]
+/bin/sleep 300 & LIVE=$!
+( exit 0 ) & DEAD=$!; wait "$DEAD"
+trap 'kill "$LIVE" 2>/dev/null; wait "$LIVE" 2>/dev/null; rm -rf "$T"' EXIT
+for name in installing updating; do
+  fresh; ln -s "$LIVE" "$U/$name"
+  check "LFT13 $name: a link to a live process is live, and its holder is that process" "$(live NAME=$name)" "0:$LIVE"
+  fresh; ln -s "$DEAD" "$U/$name"
+  check "LFT13 $name: a link to a process that is gone is not" "$(live NAME=$name)" "1:"
+  fresh; ln -s not-a-number "$U/$name"
+  check "LFT13 $name: a link to no number is not" "$(live NAME=$name)" "1:"
+  fresh; echo "$LIVE" > "$U/$name"
+  check "LFT13 $name: a plain file that holds a live process's number is not" "$(live NAME=$name)" "1:"
+  fresh
+  check "LFT13 $name: with no lock at all: not" "$(live NAME=$name)" "1:"
+  fresh; ln -s "$LIVE" "$U/$name"; touch -h -t 202001010000 "$U/$name"
+  check "LFT13 $name: a link to a live process whose own time is before the Mac's last start is not" "$(live NAME=$name)" "1:"
+  check "LFT13 $name: ...with the start's time unreadable the first two parts decide: live" "$(live NAME=$name STUB_BOOT_FAIL=1)" "0:$LIVE"
+done
+fresh; ln -s "$LIVE" "$U/other"
+check "LFT13 another name than the two is no lock: not live, not taken, and left as it is" "$(live NAME=other):$(lk -- 'l1u_lock_take other; echo $?'):$(readlink "$U/other")" "1::1:$LIVE"
+fresh
+check "LFT13 a take: 0, and the link's target is the taker's own process number" \
+  "$(lk -- 'l1u_lock_take installing; echo "$?:$([ "$(readlink "$L1_UPDATE_DIR/installing")" = "$$" ] && echo mine)"')" "0:mine"
+fresh; ln -s "$LIVE" "$U/installing"
+check "LFT13 a take while another live process holds it: refused, and the lock is still the other's" "$(lk -- 'l1u_lock_take installing; echo $?'):$(readlink "$U/installing")" "1:$LIVE"
+check "LFT13 ...a release by one who does not hold it leaves it" "$(lk -- 'l1u_lock_release installing; echo $?'):$(readlink "$U/installing")" "0:$LIVE"
+fresh
+check "LFT13 take, then release: the link is gone; and a second take by the holder itself is refused" \
+  "$(lk -- 'l1u_lock_take updating; l1u_lock_take updating; echo "$?"; l1u_lock_release updating; ls -A "$L1_UPDATE_DIR" | tr "\n" " "')" "1
+installed "
+for t in "$DEAD" 0 not-a-number; do
+  fresh; ln -s -- "$t" "$U/installing"
+  check "LFT13 a dead lock (target $t) is taken over" "$(lk -- 'l1u_lock_take installing; echo "$?:$([ "$(readlink "$L1_UPDATE_DIR/installing")" = "$$" ] && echo mine)"')" "0:mine"
+done
+fresh; ln -s "$LIVE" "$U/installing"; touch -h -t 202001010000 "$U/installing"
+check "LFT13 a lock older than the Mac's last start, its target a live process, is taken over" "$(lk -- 'l1u_lock_take installing; echo "$?:$([ "$(readlink "$L1_UPDATE_DIR/installing")" = "$$" ] && echo mine)"')" "0:mine"
+fresh; mkdir "$U/installing"
+check "LFT13 a folder at the lock's name: the take refuses, and nothing is left inside the folder" "$(lk -- 'l1u_lock_take installing; echo $?'):$(ls -A "$U/installing" | wc -l | tr -d ' ')" "1:0"
+fresh; echo 949230 > "$U/installing-game"
+check "LFT13 a take of installing removes an installing-game another holder left; a take of updating does not touch it" \
+  "$(echo 1 > "$U/installing-game"; lk -- 'l1u_lock_take updating; l1u_lock_release updating'; [ -e "$U/installing-game" ] && echo kept):$(lk -- 'l1u_lock_take installing; echo $?'):$([ -e "$U/installing-game" ] && echo kept || echo removed)" "kept:0:removed"
+fresh
+check "LFT13 a release of installing removes the game's file with the link" \
+  "$(lk -- 'l1u_lock_take installing; echo 949230 > "$L1_UPDATE_DIR/installing-game"; l1u_lock_release installing; ls -A "$L1_UPDATE_DIR" | tr "\n" " "')" "installed "
+mkdir -p "$T/pathbin2"; for p in readlink stat ln rm; do printf '#!/bin/bash\necho "%s" >> "%s/pathcalls2"\nexec /usr/bin/false\n' "$p" "$T" > "$T/pathbin2/$p"; chmod +x "$T/pathbin2/$p"; done
+fresh; : > "$T/pathcalls2"
+check "LFT13 stubs named readlink, stat, ln and rm first on PATH: take, live and release still work, and none was called" \
+  "$(lk PATH="$T/pathbin2:$PATH" -- 'l1u_lock_take installing; l1u_lock_live installing; echo "$?"; l1u_lock_release installing; ls -A "$L1_UPDATE_DIR" | tr "\n" " "'):$(wc -l < "$T/pathcalls2" | tr -d ' ')" "0
+installed :0"
+# --open while an install runs (the update's side of "they keep out of each other's way")
+fresh; stamp 949230 release v0.2.0; offer v0.3.0; ln -s "$LIVE" "$U/installing"; before="$(ls -A "$U" | tr '\n' ' ')"
+check "LFT13 --open when ready, with a live installing: failed and its sentence, nothing written, L1_OPEN not called" \
+  "$(opn L1_SYSCTL="$T/bin/sysctl" | tr '\n' ':')$([ "$(ls -A "$U" | tr '\n' ' ')" = "$before" ] && echo same):$(tmleft):$(opens)" "failed${TAB}An install is running in Terminal. Wait for it to finish, then update.:rc=0:same:0:0"
+fresh; stamp 949230 release v0.2.0; offer v0.3.0; ln -s "$DEAD" "$U/installing"
+check "LFT13 ...with a dead installing: opened" "$(opn L1_SYSCTL="$T/bin/sysctl" | tr '\n' ':')$(opens)" "opened:rc=0:1"
+fresh; stamp 949230 release v0.3.0; offer v0.3.0; ln -s "$LIVE" "$U/installing"
+check "LFT13 ...not ready, with a live installing: the state's sentence comes first" "$(opn L1_SYSCTL="$T/bin/sysctl" | sed -n 1p)" "failed${TAB}No update is waiting."
 
 # --- UT4: --version-of, and values that would run a command
 fresh

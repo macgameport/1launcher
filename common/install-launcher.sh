@@ -11,7 +11,10 @@
 # and the update tool (common/updates.sh, copied into the folder `bash common/paths.sh` prints as
 # L1_UPDATE_DIR); the wait for Apple's tools, only after an ask; the compiler check; the build
 # (common/make-launcher-app.sh); the launcher's stamp, only after a build that worked; the close, which opens
-# 14unch3r. It downloads nothing itself and does not keep the Mac awake.
+# 14unch3r. It downloads nothing itself and does not keep the Mac awake. It holds the install's lock
+# (the link `installing` in the record's folder: common/updates.sh, 3.8 of the plan) from the moment the record's
+# folders are there until just before the window is opened, and lets it go at every other exit too; it writes
+# no file that names a game. Under an update, whose driver holds `updating`, it takes no lock.
 #
 # Read from the environment: L1_FETCHED_REF and L1_FETCHED_COMMIT, set by the root install.sh after a fetch (the
 # stamp records them); L1_UPDATE=1, set by an update: 14unch3r is then not opened, and the closing line is the
@@ -31,7 +34,10 @@ say() { echo "$*"; }
 
 [ $# -eq 0 ] || { echo "install-launcher.sh takes no argument: $1 (usage: install.sh launcher [<ref>])"; exit 2; }
 
-# Control-C, a closed window, a kill: said, and nothing after the signal is done (the stamp among it)
+# Control-C, a closed window, a kill: said, and nothing after the signal is done (the stamp among it). Each
+# ends in exit, and so reaches the trap on EXIT, which lets the install's lock go.
+HELD=0
+trap '[ "$HELD" = 1 ] && l1u_lock_release installing' EXIT
 on_signal() { echo; echo "Stopped. Paste the line again: it carries on from here."; exit "$1"; }
 trap 'on_signal 130' INT
 trap 'on_signal 143' TERM
@@ -76,6 +82,21 @@ for d in "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installe
   fi
 done
 
+# another install or an update is running: looked at here and not yet taken (with no record's folder nothing can
+# be running). Not under an update: there the driver holds the update's lock itself, and L1_UPDATE=1 is believed
+# only while that lock is live.
+UNDER_UPDATE=0
+[ "${L1_UPDATE:-}" = 1 ] && l1u_lock_live updating && UNDER_UPDATE=1
+busy() {   # says which is running and stops, exit 3; returns when neither is
+  if l1u_lock_live installing; then
+    say "An install is running in another Terminal window (process $L1U_HOLDER). Wait for it to finish, then paste the line again."; exit 3
+  fi
+  if l1u_lock_live updating; then
+    say "An update of 1launcher is running in another Terminal window (process $L1U_HOLDER). Wait for it to finish, then paste the line again."; exit 3
+  fi
+}
+[ "$UNDER_UPDATE" = 1 ] || busy
+
 # --- 2. Apple's Command Line Tools: judged, and asked for when absent (LFD14). "Present" means "runs": the
 #     compiler is found, its SDK is a folder that exists, and it answers. A folder that is there with a swiftc
 #     that does not run (left stale by a macOS upgrade) stops here, and Apple is not asked: a request on a Mac
@@ -100,6 +121,13 @@ fi
 for d in "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installed"; do
   [ -d "$d" ] || { mkdir -p "$d" && chmod go-w "$d"; } || { say "$d could not be made."; exit 1; }
 done
+# the install's lock, taken now that its folder is there: if it cannot be, or an update's lock is live by then,
+# the sentence of the refusals above
+if [ "$UNDER_UPDATE" = 0 ]; then
+  if ! l1u_lock_take installing; then busy; say "An install is running in another Terminal window. Wait for it to finish, then paste the line again."; exit 3; fi
+  HELD=1
+  if l1u_lock_live updating; then busy; fi
+fi
 TOOL="$L1_UPDATE_DIR/updates.sh"
 if ! { cp "$HERE/updates.sh" "$TOOL.new.$$" && chmod 755 "$TOOL.new.$$" && mv -f "$TOOL.new.$$" "$TOOL"; }; then
   rm -f "$TOOL.new.$$"; say "$TOOL could not be written."; exit 1
@@ -139,7 +167,9 @@ fi
 # --- 7. the launcher's own stamp, only after a build that worked
 l1u_stamp_launcher "$HERE/.." || say "  !! 14unch3r's version could not be recorded ($L1_UPDATE_DIR/launcher). It may go on offering an update it already has."
 
-# --- 8. the close
+# --- 8. the close. The lock is let go first: a window that opened under a live lock would answer every click
+#     on a game with "An install is running".
+[ "$HELD" = 1 ] && { l1u_lock_release installing; HELD=0; }
 if [ "${L1_UPDATE:-}" = 1 ]; then
   say "Done. 14unch3r is rebuilt."
 else

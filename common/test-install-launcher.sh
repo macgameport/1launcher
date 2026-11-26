@@ -15,12 +15,16 @@
 #     9 the compiler check dropped                     10 the versions compared as decimals
 #    11 macOS 14.0 refused                             12 the caution below macOS 26 dropped
 #    13 a folder that is there with a broken part asked about
+#   The install's lock (3.8; LFT2's cases "with LF4a"):
+#    14 the lock not released on a signal (the trap on EXIT dropped)
+#    15 the lock still held when the window is opened
+#    16 L1_UPDATE=1 believed with no live `updating`
 set -u
 unset L1_UPDATE_DIR L1_UPDATE L1_UPDATE_NOW L1_FETCHED_REF L1_FETCHED_COMMIT L1_DATA_ROOT L1_WORK_ROOT   # the cases' own
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d /tmp/install-launcher-test.XXXX)"
-BG=""
-trap '[ -n "$BG" ] && kill "$BG" 2>/dev/null; rm -rf "$T"' EXIT
+BG=""; LIVE=""
+trap '[ -n "$BG" ] && kill "$BG" 2>/dev/null; [ -n "$LIVE" ] && { kill "$LIVE" 2>/dev/null; wait "$LIVE" 2>/dev/null; }; rm -rf "$T"' EXIT
 M="${MUTANT:-0}"
 fails=0
 check() {  # <name> <got> <want>
@@ -39,6 +43,9 @@ tool=missing; [ -f "$UPD/updates.sh" ] && cmp -s "$UPD/updates.sh" "$(dirname "$
 stamp=none; [ -e "$UPD/launcher" ] && stamp="$(cut -f2 "$UPD/launcher")"
 tools=there; [ -n "${STUB_NO_TOOLS:-}" ] && [ ! -f "$ST/tools" ] && tools=absent
 echo "BUILDER args=$# tool=$tool stamp=$stamp tools=$tools" >> "$CALLS"
+# the install's lock at that moment: the installer is this stand-in's parent process
+held="$(readlink "$UPD/installing" 2>/dev/null)"; [ "$held" = "$PPID" ] && held=mine
+echo "LOCKATBUILD lock=${held:-none} game=$([ -e "$UPD/installing-game" ] && echo there || echo none)" >> "$CALLS"
 echo "stub: the window's builder"
 [ -n "${STUB_BUILD_SLEEP:-}" ] && /bin/sleep "$STUB_BUILD_SLEEP"
 [ "${STUB_BUILD_RC:-0}" = 0 ] || echo "    window: skipped (the compile failed: a stub's error); nothing was changed"
@@ -79,6 +86,9 @@ PY
   11) sed -i '' 's|^  \*) if \[ "\$((10#\$OSMAJ))" -lt 14 \]; then$|  *) if [ "$((10#$OSMAJ))" -le 14 ]; then|' "$S" ;;
   12) sed -i '' 's|^     elif \[ "\$((10#\$OSMAJ))" -lt 26 \]; then$|     elif false; then|' "$S" ;;
   13) sed -i '' 's|^  swift_ok \|\| { say "\$STALE"; exit 1; }$|  swift_ok \|\| { tools_ask; ASKED=1; }|' "$S" ;;
+  14) sed -i '' '/^trap .\[ "\$HELD" = 1 \] && l1u_lock_release installing. EXIT$/d' "$S" ;;
+  15) sed -i '' '/^\[ "\$HELD" = 1 \] && { l1u_lock_release installing; HELD=0; }$/d' "$S" ;;
+  16) sed -i '' 's|^\[ "\${L1_UPDATE:-}" = 1 \] && l1u_lock_live updating && UNDER_UPDATE=1$|[ "${L1_UPDATE:-}" = 1 ] \&\& UNDER_UPDATE=1|' "$S" ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
@@ -91,7 +101,7 @@ stub() { printf '#!/bin/bash\n%s\n' "$2" > "$T/bin/$1"; chmod +x "$T/bin/$1"; }
 absent='[ -n "${STUB_NO_TOOLS:-}" ] && [ ! -f "$ST/tools" ]'
 stub sw_vers 'echo "SWVERS" >> "$CALLS"; echo "${STUB_OS-27.2.1}"'
 stub sysctl '[ "$*" = "-n hw.optional.arm64" ] && { echo "${STUB_ARM:-1}"; exit 0; }; exec /usr/sbin/sysctl "$@"'
-stub open 'echo "OPEN $*" >> "$CALLS"'
+stub open 'echo "OPEN $*" >> "$CALLS"; echo "LOCKATOPEN lock=$(readlink "$UPD/installing" 2>/dev/null || echo none)" >> "$CALLS"'
 stub id 'if [ "$1" = -u ] && [ -n "${STUB_ROOT:-}" ]; then echo 0; else exec /usr/bin/id "$@"; fi'
 # xcode-select: -p fails while the tools are absent; --install records whether a record folder was there yet
 stub xcode-select 'case "$1" in
@@ -289,6 +299,40 @@ for a in --check --yes release; do
   newh; rc="$(run -- "$a")"
   check "the argument $a: exit 2, said, nothing asked, nothing made" "$rc:$(said "^install-launcher.sh takes no argument: $a "):$(calls '^XS '):$(has "$H/Library")" "2:1:0:no"
 done
+
+# --- the install's lock (docs/plans/launcher-first-install.md, 3.4 and 3.8; LFT2's cases "with LF4a"): held from
+# the moment the record's folders are there until just before the window is opened, and gone after every exit
+/bin/sleep 300 & LIVE=$!
+( exit 0 ) & DEAD=$!; wait "$DEAD"
+lock() { if [ -e "$UPD/installing" ] || [ -L "$UPD/installing" ]; then echo left; else echo none; fi; }
+newh; rc="$(run)"
+check "the lock: held when the builder is called, its target this installer's process, and no file names a game" "$rc:$(grep '^LOCKATBUILD' "$CALLS")" "0:LOCKATBUILD lock=mine game=none"
+check "  ...gone when the window is opened, and gone afterwards" "$(grep '^LOCKATOPEN' "$CALLS"):$(lock)" "LOCKATOPEN lock=none:none"
+newh; mkdir -p "$UPD/installed"; ln -s "$DEAD" "$UPD/installing"; echo 949230 > "$UPD/installing-game"; rc="$(run)"
+check "a dead holder's lock and its installing-game: taken over, the file gone by the build and none written" \
+  "$rc:$(grep '^LOCKATBUILD' "$CALLS"):$(has "$UPD/installing-game"):$(lock)" "0:LOCKATBUILD lock=mine game=none:no:none"
+for other in installing updating; do
+  newh; mkdir -p "$UPD/installed"; ln -s "$LIVE" "$UPD/$other"; rc="$(run)"
+  case "$other" in installing) words="An install is running" ;; updating) words="An update of 1launcher is running" ;; esac
+  check "a live $other of another process: exit 3, the process in its sentence, xcode-select never called, the builder not called, the lock left as it was" \
+    "$rc:$(said "^$words in another Terminal window (process $LIVE)\. Wait for it to finish, then paste the line again\.\$"):$(calls '^XS '):$(calls '^BUILDER '):$(readlink "$UPD/$other")" "3:1:0:0:$LIVE"
+done
+newh; mkdir -p "$UPD/installed"; ln -s "$LIVE" "$UPD/updating"; rc="$(run L1_UPDATE=1)"
+check "in an update (L1_UPDATE=1 and a live updating): no lock is taken, and that updating does not stop it" \
+  "$rc:$(grep '^LOCKATBUILD' "$CALLS"):$(tail -n 1 "$H.out"):$(readlink "$UPD/updating"):$(lock)" "0:LOCKATBUILD lock=none game=none:Done. 14unch3r is rebuilt.:$LIVE:none"
+newh; rc="$(run L1_UPDATE=1)"
+check "with L1_UPDATE=1 and no live updating the lock is taken as in any run" "$rc:$(grep '^LOCKATBUILD' "$CALLS"):$(lock)" "0:LOCKATBUILD lock=mine game=none:none"
+newh; mkdir -p "$UPD/installed"; ln -s "$LIVE" "$UPD/installing"; rc="$(run L1_UPDATE=1)"
+check "  ...and a live installing of another process stops it then too" "$rc:$(calls '^BUILDER ')" "3:0"
+newh; rc="$(run STUB_BUILD_RC=3)"
+check "the lock is gone after a build that failed (exit 1)" "$rc:$(grep '^LOCKATBUILD' "$CALLS" | cut -d' ' -f2):$(lock)" "1:lock=mine:none"
+newh; rc="$(run "STUB_SWIFT_LINE=Apple Swift version 5.8 (swiftlang-5.8.0.1)")"
+check "  ...after the compiler check stopped it (exit 3)" "$rc:$(lock)" "3:none"
+newh; sed -i '' 's/^TOOLS_POLLS=720 /TOOLS_POLLS=3 /' "$S"; rc="$(run STUB_NO_TOOLS=1 STUB_TOOLS_NEVER=1)"
+check "  ...after the tools never arrived (exit 4), the lock having been held through the wait" "$rc:$(lock):$(has "$UPD/updates.sh")" "4:none:yes"
+sed -i '' 's/^TOOLS_POLLS=3 /TOOLS_POLLS=720 /' "$S"
+newh; rc="$(term)"
+check "  ...and after TERM while the builder ran" "$rc:$(grep '^LOCKATBUILD' "$CALLS" | cut -d' ' -f2):$(lock)" "143:lock=mine:none"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

@@ -9,6 +9,9 @@
 #   notes.md                   CHANGELOG.md as last fetched
 #   noted                      the version the launchers last announced, and how often (1 or 2)
 #   off                        if it exists, nothing is ever fetched (made by hand)
+#   installing                 the lock of a running install (docs/plans/launcher-first-install.md, 3.8): a link
+#                              whose target is the installer's process number, as `updating` is the update's
+#   installing-game            beside it, one line: the Steam app ID of the game being installed
 #
 #   . updates.sh             defines the l1u_* functions (exports nothing; safe under set -eu, and to source
 #                            twice). The caller sets L1_UPDATE_DIR first (setup does, after paths.sh).
@@ -21,7 +24,9 @@
 #   bash updates.sh --version-of <f>   that file's version, or nothing
 # Sourced, the functions a caller uses: l1u_own, l1u_stamp <app ID> <tree root>, l1u_stamp_of <app ID>,
 # l1u_stamp_launcher <tree root>, l1u_stamp_of_launcher,
-# l1u_state, l1u_version_of <file>, l1u_newer <x> <y>, l1u_refresh [--now], l1u_notes, l1u_noted, l1u_open.
+# l1u_state, l1u_version_of <file>, l1u_newer <x> <y>, l1u_refresh [--now], l1u_notes, l1u_noted, l1u_open,
+# and the one rule for the two locks: l1u_lock_live <name>, l1u_lock_take <name>, l1u_lock_release <name>,
+# for the names installing and updating.
 # Run, it uses L1_UPDATE_DIR if set and otherwise the folder it lies in, which for the deployed copy is the
 # folder itself. Every call exits 0 when it could answer and says the outcome in its output. The options and
 # the output lines are a contract between versions on one Mac: a later version may add an option or a field
@@ -41,7 +46,8 @@
 # runs it with the one word update, says in one line what happened, and removes itself and its folder.
 # Test variables: L1_UPDATE_DIR; L1_UPDATE_NOW, an epoch that stands for now; L1_CURL (default /usr/bin/curl)
 # and L1_OPEN (default /usr/bin/open), the two programs a test replaces. L1_CURL is written into the update's
-# file only when it is a plain absolute path, and /usr/bin/curl otherwise.
+# file only when it is a plain absolute path, and /usr/bin/curl otherwise. L1_SYSCTL (default /usr/sbin/sysctl)
+# is the program asked for the Mac's last start, for a lock's rule.
 # Every function that runs a program sets PATH itself: a launcher calls this with Wine's bin first on PATH.
 
 _L1U_VER='^v(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$'
@@ -200,6 +206,72 @@ l1u_stamp_of_launcher() {
   printf '%s\t%s\n' "$_l1u_a" "$_l1u_b"
 }
 
+# --- the locks (docs/plans/launcher-first-install.md, 3.8): `installing`, held by whichever installer runs, and
+# `updating`, held by the update's driver. Each is a link in the record's folder, in the launchers' lock form: its
+# target is the holder's process number. One rule for both, read by the shared installer, the launcher's
+# installer, the driver and this tool; the window holds the same rule in Swift.
+_L1U_LOCK='^(installing|updating)$'
+# the Mac's last start as epoch seconds; returns 1 when it cannot be read. `sysctl -n kern.boottime` prints
+# "{ sec = <seconds>, usec = <n> } <a date>".
+_l1u_boot() {
+  local PATH=/usr/bin:/bin:/usr/sbin:/sbin out
+  out="$("${L1_SYSCTL:-/usr/sbin/sysctl}" -n kern.boottime 2>/dev/null)" || return 1
+  [[ "$out" =~ sec\ =\ ([0-9]{1,12}), ]] || return 1
+  printf '%s\n' "$((10#${BASH_REMATCH[1]}))"
+}
+# <name>: 0 when that lock is live, and L1U_HOLDER is then its holder's process number. Live means: a link whose
+# target is a process number; that process answers; and the link is not older than the Mac's last start. After
+# a restart a number left in a link can be some other process's: the link's own time (stat does not follow it)
+# is compared with the start's, and an older link is dead. A start that cannot be read leaves the first two
+# parts to decide. The two times are two clocks, so the rule fails open: a clock set back can make a live lock
+# read as dead, which is the state of a Mac with no lock at all.
+l1u_lock_live() {
+  local PATH=/usr/bin:/bin:/usr/sbin:/sbin f="$L1_UPDATE_DIR/$1" h boot t
+  L1U_HOLDER=""
+  [[ "$1" =~ $_L1U_LOCK ]] || return 1
+  [ -L "$f" ] || return 1
+  h="$(readlink "$f" 2>/dev/null)" || return 1
+  [[ "$h" =~ $_L1U_ID ]] || return 1
+  kill -0 "$h" 2>/dev/null || return 1
+  if boot="$(_l1u_boot)"; then
+    t="$(stat -f %m "$f" 2>/dev/null)" || return 1
+    [[ "$t" =~ $_L1U_TIME ]] || return 1
+    [ "$((10#$t))" -ge "$boot" ] || return 1
+  fi
+  L1U_HOLDER="$h"
+}
+# <name>: 0 when this process holds that lock from now on. A live lock of another process is refused; a dead
+# one is taken over in the launchers' way. The take is proved by reading the link back: a folder planted at the
+# lock's name would take the link inside itself and report success, and of two takers that both found one dead
+# holder only the one whose number the link holds goes on (the read narrows that gap and does not close it).
+# A take of `installing` removes installing-game, whoever left it: a file left by a holder that was killed must
+# not name its game under the next holder's lock.
+l1u_lock_take() {
+  local PATH=/usr/bin:/bin:/usr/sbin:/sbin f="$L1_UPDATE_DIR/$1" h
+  [[ "$1" =~ $_L1U_LOCK ]] || return 1
+  if ! ln -s "$$" "$f" 2>/dev/null; then
+    l1u_lock_live "$1" && return 1
+    h="$(readlink "$f" 2>/dev/null)"
+    [ "$(readlink "$f" 2>/dev/null)" = "$h" ] && rm -f "$f" 2>/dev/null
+    ln -s "$$" "$f" 2>/dev/null || return 1
+  fi
+  if [ ! -L "$f" ] || [ "$(readlink "$f" 2>/dev/null)" != "$$" ]; then
+    [ -d "$f" ] && [ ! -L "$f" ] && rm -f "$f/$$" 2>/dev/null   # the link a planted folder took
+    return 1
+  fi
+  [ "$1" = installing ] && rm -f "$L1_UPDATE_DIR/installing-game" 2>/dev/null
+  return 0
+}
+# <name>: lets the lock go when this process holds it; with `installing`, the file that names the game first
+l1u_lock_release() {
+  local PATH=/usr/bin:/bin:/usr/sbin:/sbin f="$L1_UPDATE_DIR/$1"
+  [[ "$1" =~ $_L1U_LOCK ]] || return 0
+  [ -L "$f" ] && [ "$(readlink "$f" 2>/dev/null)" = "$$" ] || return 0
+  [ "$1" = installing ] && rm -f "$L1_UPDATE_DIR/installing-game" 2>/dev/null
+  rm -f "$f" 2>/dev/null
+  return 0
+}
+
 # the offered version, or nothing: `offer` is one line, the version and the time of the fetch
 _l1u_offer() {
   _l1u_read "$L1_UPDATE_DIR/offer" 2 || return 1
@@ -335,6 +407,8 @@ l1u_open() {
   local PATH=/usr/bin:/bin:/usr/sbin:/sbin d f curl=/usr/bin/curl
   _l1u_state
   if [ "$L1U_WORD" != ready ]; then printf 'failed\t%s\n' "No update is waiting."; return 0; fi
+  # an install and an update keep out of each other's way (docs/plans/launcher-first-install.md, 3.8)
+  if l1u_lock_live installing; then printf 'failed\t%s\n' "An install is running in Terminal. Wait for it to finish, then update."; return 0; fi
   [[ "${L1_CURL:-}" =~ $_L1U_PROG ]] && curl="$L1_CURL"
   d="$(mktemp -d "${TMPDIR:-/tmp}/1launcher-update.XXXXXX" 2>/dev/null)" \
     || d="$(mktemp -d /tmp/1launcher-update.XXXXXX 2>/dev/null)" \

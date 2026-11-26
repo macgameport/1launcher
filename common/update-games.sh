@@ -24,7 +24,8 @@
 #            no record on this Mac; another update running; or GitHub sent an older version than the one
 #            already offered
 # It exports L1_UPDATE=1, under which a setup asks nothing about the Desktop. Its lock is the link `updating`
-# in the record's folder, in the launchers' lock form: its target is this process's number.
+# in the record's folder, in the launchers' lock form: its target is this process's number. While an install's
+# lock, `installing`, is live it stops, exit 3 (docs/plans/launcher-first-install.md, 3.8).
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
@@ -62,6 +63,7 @@ take_lock() {   # 0 = this process holds the lock. A target that is no process n
   return 1
 }
 release_lock() { [ "$(lock_holder)" = "$$" ] && rm -f "$LOCK"; return 0; }
+l1u_lock_live updating || rm -f "$LOCK" 2>/dev/null   # a lock that is not live by the one rule, the Mac's last start among it, is removed first
 if ! take_lock; then
   echo "An update is already running in another Terminal window."
   exit 3
@@ -70,6 +72,12 @@ trap release_lock EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 trap 'exit 129' HUP
+# an install and an update keep out of each other's way (docs/plans/launcher-first-install.md, 3.8): this lock is
+# taken first, and only then is the install's looked at, so of two that start together at least one stops
+if l1u_lock_live installing; then
+  echo "An install is running in another Terminal window (process $L1U_HOLDER). Wait for it to finish, then update again."
+  exit 3
+fi
 
 # 3. what was fetched must not be older than what this Mac was already offered
 T="$(l1u_version_of "$ROOT/CHANGELOG.md")" || T=-

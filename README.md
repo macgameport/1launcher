@@ -89,7 +89,7 @@ says so.
 - **Graphics settings for Cities: Skylines II on a MacBook.** The Mac Studio's are measured
   ([what was found](cities-skylines-2/docs/perf-pass-results.md)); the laptop's are next.
 - **The launcher first.** One pasted line installs 14unch3r, and its window installs each game. Games that are not
-  set up yet are shown with their icon in grey, and a click asks before it installs. The lines for single games keep working. Plan:
+  set up yet are shown as grey tiles with their initials, and a click asks before it installs. The lines for single games keep working. Plan:
   [`docs/plans/launcher-first-install.md`](docs/plans/launcher-first-install.md), a draft, not built yet.
 - **A shorter wait for Apple's Command Line Tools** during an install: asked for at the start, so that the wait
   can overlap the downloads.

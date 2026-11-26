@@ -1,9 +1,11 @@
 # The launcher first: one pasted line installs 14unch3r, and its window installs the games
 
-> **🔧 As-built (2026-11-26): partial — LF0, LF1, LF2, LF3 and LF5a are built on the branch `launcher-first-install`
-> (the four code steps of section 11's fallback).
-> Nothing is merged, nothing is released, and no live step has been run.** Tracking: #35. Built on macOS 27 only
-> (3.2). Each step has its own block below: its commits, what the build chose, its tests and its gates.
+> **🔧 As-built (2026-11-26): partial — every code step is built on the branch `launcher-first-install`: LF0 to
+> LF3, LF5a, LF4a, LF4b, LF5b and LF6, in section 4's order. LF7 is not begun: no live step has been run,
+> nothing is merged, nothing is tagged, `release` has not moved, and the guides still lead with each game's own
+> line.** Tracking: #35. **Built on macOS 27 only** (3.2): no step met a compiler older than Swift 6.4. Each
+> step has its own block below: its commits, what the build chose, its tests and its gates. The sweep of every
+> mutant on one frozen commit (LFT9, exit criterion 1) is the last block.
 >
 > - **LF0** (`8fe37eb`): the probe LP1, met in full (section 7).
 > - **LF1, the launcher's own stamp** (`d3e2dc5`, then `ec1db31`). `d3e2dc5` names `launcher`, `installing` and
@@ -154,13 +156,127 @@
 >   - *Verify against:* `common/launcher-window.swift` (`tableOffers`, `withOwnership`, `initials`,
 >     `tileIcon`, `placeholderIcon`, `initialsRatio`, `Look.initials*`, `GridView.show`),
 >     `common/test-launcher-window.sh` ("LFT6", "LFT10"), `common/test-make-launcher-app.sh` ("LFT12").
+> - **LF4a, the install's lock** (`9567746`). In `common/updates.sh`: `l1u_lock_live`, `l1u_lock_take` and
+>   `l1u_lock_release` for the names `installing` and `updating`, with `L1_SYSCTL` and the read-back after a
+>   take; `--open` refuses during an install. `common/install-core.sh`: `install_lock`, called by `core_begin`,
+>   and its release in `on_exit`; `paths.sh` and `updates.sh` join the core's test of its own files.
+>   `common/install-launcher.sh`: the lines 3.4 marks "(LF4a)". `common/update-games.sh`: one line before its
+>   take, and its look at `installing` after it. Neither setup is touched.
+>   - *What the build chose.* (1) `l1u_lock_live` leaves the holder's process number in `L1U_HOLDER`, for the
+>     sentences that name it. (2) A release of `installing` removes `installing-game` first, whoever calls it;
+>     the launcher's installer never wrote one. (3) The core's two lock sentences are said through its `say`
+>     with `!!`, as its line for a wrapper in use is. (4) A take that fails with no live holder (a folder
+>     planted at the name) says the sentence without the process. (5) The record's-folder sentence in the core
+>     is 3.4's, with the folder in full and in quotes in the command. (6) **Mutant 18 of
+>     `common/test-update-games.sh` changed:** the new line that removes a stale `updating` asks the one rule
+>     first, so the driver's own match of a lock's target no longer decides alone, and the mutant now drops the
+>     match in both places.
+>   - *The transcript,* recorded again on purpose and read case by case: 18 cases are new (LFT13). **Two
+>     existing cases changed, as meant:** with `common/paths.sh` or `common/updates.sh` gone the installer now
+>     stops at once with the own-files sentence, before its first line, where it used to find out at step 6
+>     and add "Open the installer again: it carries on from here." No other case changed.
+>   - *Of the choices James has not reviewed, LF4a was shaped by* RC1 (one link, and the game in a file beside
+>     it), RC2 and RC25 (the rule in `common/updates.sh`; the read-back; `L1_SYSCTL`; the line that removes a
+>     stale `updating`; every lock sentence for Terminal names the holder's process), RC3 (the core takes the
+>     lock in `core_begin` and makes the record's folders there), RC4 (`L1_UPDATE=1` believed only with a live
+>     `updating`), RC5 (the launcher's installer takes the same lock) and RC33 (the driver's own line for a
+>     second update keeps its text).
+>   - *Tests.* LFT13 in `common/test-updates.sh` (mutants 26 to 29), in Cities: Skylines II's
+>     `scripts/test-install.sh` (80 to 87) and in Surviving Mars's (42, 43); the "with LF4a" cases of LFT2 in
+>     `common/test-install-launcher.sh` (14 to 16) and of LFT4 in `common/test-update-games.sh` (27 to 29).
+>     Each new mutant was applied and seen red. At `9567746`: Cities: Skylines II's `scripts/test-install.sh`
+>     87 of 87 red, Surviving Mars's 43 of 43; on the same files' text, `common/test-updates.sh` 29 of 29,
+>     `common/test-update-games.sh` 29 of 29, `common/test-install-launcher.sh` 16 of 16.
+>   - *Gates at `9567746`.* Links exit 0, identifiers at 9, `bash -n` on the changed scripts, and every test
+>     file: 48 of 49 exit 0, `common/test-paths.sh` being the one, as before.
+>   - *Verify against:* `common/updates.sh` (the three `l1u_lock_*`), `common/install-core.sh` (`install_lock`,
+>     `on_exit`), `common/install-launcher.sh` (`busy`, `HELD`), `common/update-games.sh` (the two new places).
+> - **LF4b, the tool's `--install`** (`1f6bcd9`). `l1u_install <Steam app ID>` in `common/updates.sh`, with
+>   its refusals in 3.8's order and the file "Install with 1launcher.command"; the header's line for `off` is
+>   corrected.
+>   - *What the build chose.* (1) Sentences the plan does not give: "That is not a game's Steam app ID.", "A
+>     temporary folder could not be made. Restart the Mac, then click the game again.", "The install's file
+>     could not be written. Restart the Mac, then click the game again." and "Terminal could not be opened for
+>     the install.", the last three after `--open`'s own. (2) For the installer's exit 5 the file says two
+>     lines, the one about the Mac fix and then "Installed. Open 14unch3r to play. You can close this window."
+>     (3) "A signal" is read as any exit code above 128. (4) The record's place is compared as two resolved
+>     paths, so a home reached through a link still counts as the default place. (5) The file traps HUP, INT
+>     and TERM, so that its way out, which removes it and its folder, also runs when the Terminal window is
+>     closed.
+>   - *The transcript:* LFT8's five cases are new in Cities: Skylines II's test; no case that existed changed.
+>   - *Of the choices James has not reviewed, LF4b was shaped by* RD1 (no rehearsal switch: the file always
+>     fetches `release`), RD4 (`ready` refuses: update first), RC25 (the refusal from a record that is not at
+>     the default place; in `off` the stamps' lines judged by the tool) and RC27's sentence for `manual`.
+>   - *Tests.* LFT3's `--install` cases in `common/test-updates.sh` (200 cases in all; mutants 30 to 36) and
+>     the written file, run, in `common/test-update-games.sh` (107 cases; 30 to 32); LFT8 in each game's
+>     `scripts/test-install.sh` (Cities: Skylines II 88 to 90, Surviving Mars 44 to 46). Each new mutant was
+>     applied and seen red; all 36 and all 32 of the two common files are red. At `1f6bcd9`: Cities: Skylines II's `scripts/test-install.sh` 90 of 90 red, Surviving Mars's 46 of 46. No run ended in a timeout.
+>   - *Gates at `1f6bcd9`.* Links exit 0, identifiers at 9, `bash -n` on the changed scripts, and every test
+>     file: 48 of 49 exit 0, `common/test-paths.sh` being the one, as before.
+>   - *Verify against:* `common/updates.sh` (`l1u_install`, `_l1u_default_dir`), and the four test files.
+> - **LF5b, the sheets and the install** (`e4a5712`; `36980b8` for one mutant of the window's test). In `common/launcher-window.swift`: `installLock` and
+>   `lastStart`, the lock's rule in Swift; the state `installing`; `clickAnswer`; `installSheet` and
+>   `installAnswer`; `openInstall`, the one call of `--install`; the window's `askInstall`, `install`,
+>   `tellGuide`, `tellInstall` and `askRunning`; the words of 3.7 for a tile where a tool is there; the text
+>   modes `--install-sheet`, `--install-answer` and `--install-open`.
+>   - *What the build chose.* (1) `clickAnswer` names today's question for a busy game `ask`, with that game's
+>     title after it, as `--second` prints it. (2) **`--act` prints the click's name, so an offer with no tool
+>     now prints `guide` and its address where it printed `start`**; two existing expectations follow. (3) A
+>     tile's line in `--grid` gains a sixteenth field, `tip=<the tooltip's sentence>`, so that LFT6 can read
+>     the tooltip; the plan names only the fifteenth. (4) `--install-sheet` takes `--games <tsv>`, an app id
+>     and the folders, and `--install-open` prints `failure` and the sentence. (5) A sheet shown after the
+>     tool answered `failed` has the message "The install did not open.", which the plan does not give, and
+>     the tool's sentence under it. (6) `installAnswer` also answers the question about a running install:
+>     its second button gives `start`. (7) The lock's process number is read with the shell's form (no
+>     leading zero, at most ten digits), not the launcher lock's own range. (8) **Three source gates changed
+>     their counts on purpose:** 8 lines show a sheet, each after a line that sets it (5 before); the window
+>     reaches the tool on 3 lines, each off the main thread (2 before); 19 lines of `Look` hold a sentence of
+>     the update's kind (18 before: "A newer version is out." is the nineteenth).
+>   - *Of the choices James has not reviewed, LF5b was shaped by* RC12 (`installing`), RC14 (the order of a
+>     click's tests), RC17 (the short sheets' two buttons), RC26 (a live install blocks a start; its words;
+>     `ask-install-running`), RC27 (the names of the modes and functions) and RC13's words.
+>   - *Tests.* LFT6's cases of LF5b, LFT10's running install and LFT13's window cases in
+>     `common/test-launcher-window.sh` (337 cases in all; mutants 98 to 113), and LFT12's last case in
+>     `common/test-make-launcher-app.sh` (42 cases). Each new mutant was applied and seen red.
+>     At `e4a5712`: `common/test-make-launcher-app.sh` 13 of 13 red; `common/test-launcher-window.sh` 111 of 113 red, 27 retired as before, and
+>     **88 refused (exit 2): LF5b had changed the line it swaps, so its text no longer stood in the source.**
+>     It was pointed at the line as LF5b left it, applied and seen red (`36980b8`).
+>   - *Gates at `e4a5712`.* Links exit 0, identifiers at 9, and every test file: 48 of 49 exit 0,
+>     `common/test-paths.sh` being the one, as before.
+>   - *Not seen on a screen:* no sheet has been shown. The build looked at one more scratch picture, of the
+>     three offer states with a tool's words: "Not set up. Click to install.", "Install not finished. Click to
+>     carry on." and "Installing in Terminal." each fit a tile in two lines. Every sheet is LFL9's to show.
+>   - *Verify against:* `common/launcher-window.swift` (`installLock`, `clickAnswer`, `installSheet`,
+>     `installAnswer`, `openInstall`, `Launcher.startChosen`, `askInstall`, `install`, `tellGuide`,
+>     `askRunning`, `Look.install*`), `common/test-launcher-window.sh` ("LFT6", "LFT13").
+> - **LF6, the contract and the words** (`c766c21`). `common/test-game-contract.sh` (LFT7: 33 checks for the
+>   two games; seven mutants on a scratch copy of the tree, each applied and seen red); the header line
+>   `# Terminal questions: <n>` in the five files (0 and 1 in the installers, 2 and 1 in the setups, 1 in the
+>   core); `CLAUDE.md`; the statements of section 10, each with a note in its file; `CHANGELOG.md` under
+>   Unreleased.
+>   - *What the build chose.* (1) "`read` is a command" is typed as: `read` and an option, at the start of a
+>     line or after `;`, `&`, `|`, `then`, `do` or `else`. (2) Some of section 10's corrections were made in
+>     the step that changed the code they describe: the root `install.sh`'s header (LF2), the window source's
+>     first comment (LF5a), the header line for `off` (LF4b), the three sentences of `Look` (LF3). (3) The
+>     changelog's words are the build's: nobody has read them.
+>   - *Gates.* At `c766c21`: links exit 0, identifiers at 9, `bash -n` on the changed scripts, the new test
+>     file and its seven mutants. Every test file of the repository on LF6's tree was running when
+>     this was written.
+> - **The sweep of every mutant on one frozen commit (LFT9).** Running when this was written, at `36980b8`
+>   (LF6's commit and, after it, the one line of the window test's mutant 88): every mutant of the eleven test
+>   files the build touched, 477 in all. Until it is in, exit criterion 1 is not met.
 > - **Not measured:** everything section 6 lists under "Not tested, and said so". No step has met a compiler
->   older than Swift 6.4.
+>   older than Swift 6.4. No sheet, no Terminal window and no real install has been seen: those are the live
+>   steps of section 7, each on James's word.
+> - **A flake to know of.** In `common/test-launcher-window.sh` the cases that start a fixture app through
+>   LaunchServices failed in eight mutant runs that went three or four at a time ("_LSOpenURLsWithCompletionHandler()
+>   failed"), each time beside the mutant's own failure: no mutant was red by them alone. They did not fail in
+>   any run of the file by itself.
 
 **Status: check-it'd 2026-11-26 — build-ready-with-fixes (pass 4), the fixes folded. The build began on
-James's word the same day: LF0 to LF3 and LF5a are built (the as-built note above); the rest is not.** Draft written 2026-11-25; checked four times on 2026-11-26 and
+James's word the same day: every code step, LF0 to LF6, is built (the as-built note above); LF7, the live steps, the merge, the release and the guides, is not begun.** Draft written 2026-11-25; checked four times on 2026-11-26 and
 reworked three times: pass 1 (seven lenses) and passes 2 and 3 said needs-rework, each for faults of the fold
-before it; pass 4, fitted to the third fold, found no blocker. Of what is below, only LF0 to LF3 and LF5a are built. Sections 1 to
+before it; pass 4, fitted to the third fold, found no blocker. Everything below but LF7 is built. Sections 1 to
 14 hold the corrected design: every blocker and every item of pass 1 (the section "Review corrections" near the
 foot), of pass 2 (its block "Second-pass re-check"), of pass 3 (its block "Third-pass re-check") and of pass 4
 (its block "Fourth-pass re-check") is folded
@@ -1398,19 +1514,19 @@ fails on its transcript.
   the one line that removes a stale `updating`; `--open` refuses during an install. Both setups are not
   touched by this part. Tests LFT13 (but the window's cases), **and the cases and mutants of LFT2 and LFT4
   that are marked "with LF4a"**. The core changed again, so this step too ends with the transcript recorded
-  again and its difference read.
-- **LF4b. The tool's `--install`**, and the corrected header line for `off`. Tests LFT3 (`--install`), LFT8.
+  again and its difference read. **Done 2026-11-26** (the as-built note).
+- **LF4b. The tool's `--install`**, and the corrected header line for `off`. Tests LFT3 (`--install`), LFT8. **Done 2026-11-26** (the as-built note).
 - **LF5b. The sheets and the install.** The state installing; `clickAnswer`; the sheet that asks and the four
   short sheets, with `installAnswer`; the question before a set-up game is started while an install runs; the
   words of 3.7 for a Mac with a tool; the three text modes. Tests LFT6 (the rest), LFT10 (its case of a
-  running install), LFT12 (its last case), LFT13 (the window's cases).
+  running install), LFT12 (its last case), LFT13 (the window's cases). **Done 2026-11-26** (the as-built note).
 - **LF6. The contract and the words.** `common/test-game-contract.sh` (LFT7), and the header line `# Terminal
   questions: <n>` in the five files it reads (3.6, row 7); `CLAUDE.md` (the layout table's rows for
   `install.sh` and `common/`, § Published addresses, and the rule for a row of the table); the statements of
   section 10, `docs/plans/launcher-window-look.md`'s among them, which gains the placeholder; `CHANGELOG.md`
   under Unreleased, which says what a player will notice; this plan's as-built header, which says "built on
   macOS 27 only" (3.2) and gives the number `paint initials` printed (3.10). **Not the guides' first step**:
-  see LF7.
+  see LF7. **Done 2026-11-26** (the as-built note).
 - **LF7. Live steps, merge, release, and then the guides** (section 7). In this order: the live steps that
   come before the merge; the merge; LFL7, on `main`; the tag and the move of `release`, by the gate; LFL2c;
   and only then **one commit of its own on `main`** that makes the guides lead with the launcher's line, each

@@ -592,9 +592,9 @@ window's size). `period3` read 0.99 to 1.01 in every capture of every cell.
 | **base** (Dynamic Resolution 0.5) | 24.71, 24.72, 23.56, 24.74, 24.76 | | 54.1 | 0.69 / 0.47 / 0.41 |
 | Dynamic Resolution 0.5, set by the cell | 24.83 | +0.5 % | 52.3 | 0.73 / 0.48 / 0.47 |
 | Dynamic Resolution off | 20.90, 20.96 | −15.4 %, −12.1 % | 56.7 | 0.45 / 0.30 / 0.34 |
-| Dynamic Resolution off + FSR 3 Quality | 22.19, 23.41 | −10.2 %, −3.1 % | 58.4 | 0.48 / 0.28 / 0.29 |
+| Dynamic Resolution off + FSR 3 Quality | 22.19, 23.41, 21.08 (third run) | −10.2 %, −3.1 %, −15.0 % | 58.4 | 0.48 / 0.28 / 0.29 |
 | Dynamic Resolution off + FSR 3 Balanced | 23.99, 23.89 | −1.8 %, −2.3 % | 54.1 | 0.53 / 0.33 / 0.36 |
-| Dynamic Resolution off + FSR 3 Performance | 24.85, 23.69 | +3.0 %, −4.3 % | 52.6 | 0.53 / 0.38 / 0.47 |
+| Dynamic Resolution off + FSR 3 Performance | 24.85, 23.69, 24.50 (third run) | +3.0 %, −4.3 %, −1.1 % | 52.6 | 0.53 / 0.38 / 0.47 |
 | Dynamic Resolution 0.5 + FSR 3 Quality | 23.27, 23.44 | −2.4 %, −5.3 % | 60.6 | 0.48 / 0.27 / 0.28 |
 
 **What it says**
@@ -604,8 +604,12 @@ window's size). `period3` read 0.99 to 1.01 in every capture of every cell.
 - **FSR 3 does not beat Dynamic Resolution on this Mac.** With Dynamic Resolution off, FSR 3 Balanced wins back most of
   the loss (−2 %, both runs agree); no FSR 3 cell was faster than the base in both of its runs, and FSR 3 on top of
   Dynamic Resolution costs 2 to 5 %.
-- **Two cells are not a result yet:** FSR 3 Quality and FSR 3 Performance with Dynamic Resolution off. Their two runs
-  differ by more than 1 % (by 5 %), so each needs a third run (section 4 of the runbook).
+- **Two cells needed a third run** (their first two differed by 5 %; section 4 of the runbook), made the same day at
+  16:10 (folder `settings-20261126-161015`, its three base runs 24.70 to 24.83). **FSR 3 Performance** with Dynamic
+  Resolution off read 24.50: a median of 24.50, about 1 % under the base, the three runs 23.69 to 24.85. **FSR 3
+  Quality** with Dynamic Resolution off read 21.08, so its three runs span 21.08 to 23.41 (11 %) and it is still not a
+  result; its median, 22.19, is 10 % under the base. Its third run's CPU time was 25.8 ms, as high as in series B's slow
+  base runs. Neither changes the finding: no FSR 3 run beat Dynamic Resolution 0.5 by more than the base's own spread.
 - **The graphics card's time hardly moves with the drawn size** (52 to 61 ms in every cell, base included) while the
   frame rate does. The GPU column is noisy here (one base run read 43.6 ms at 23.56 FPS), so no more is read into it.
 - **`period3` showed no stretch in any cell**, FSR 3 Quality and Dynamic Resolution 0.5 included. On the Studio FSR 3
@@ -646,7 +650,7 @@ note that a base like the second group's would make every cell look about 7 % be
 |---|---|---|---|
 | **base** (shadows Medium, TAA) | six runs 24.74 to 24.82; three 23.09 to 23.29 | | 0.67 / 0.49 / 0.43 |
 | Shadows Low (1024, no terrain shadows) | 27.38, 27.69 | +10.4 %, +11.7 % | 0.73 / 0.44 / 0.31 |
-| Shadows High (4096) | 21.87, 22.65 | −11.8 %, −8.6 % | 0.60 / 0.49 / 0.46 |
+| Shadows High (4096) | 21.87, 22.65, 22.69 (third run) | −11.8 %, −8.6 %, −8.5 % | 0.60 / 0.49 / 0.46 |
 | Shadows off | 27.77, 27.81 | +12.0 %, +12.2 % | 0.70 / 0.47 / 0.33 |
 | Anti-aliasing none | 24.73, 24.79 | −0.2 %, 0.0 % | 0.70 / 0.46 / 0.45 |
 | Anti-aliasing FXAA | 24.78, 24.80 | 0.0 %, 0.0 % | 0.68 / 0.48 / 0.46 |
@@ -664,8 +668,8 @@ The edge numbers are the means of each cell's captures (two per second mark; nin
 **What it says**
 
 - **Shadows carry the cost.** Low gives back 10 to 12 %, nearly all of what turning shadows off gives (12 %); High costs
-  9 to 12 %. On the Studio Low was worth 5.5 % and High cost 7.2 %. The two Shadows High runs differ by 3.6 %, so that
-  cell needs a third run before its size is quoted (runbook section 4).
+  9 to 12 %. On the Studio Low was worth 5.5 % and High cost 7.2 %. Shadows High's first two runs differed by 3.6 %; a third
+  (16:10, between base runs of 24.70 and 24.83) read 22.69, so two of three agree on about −8.5 % (median 22.65, −8.6 %).
 - **Anti-aliasing is free here and changes nothing the probe sees.** None, FXAA, SMAA High and TAA read within 0.2 % of
   each other, and their hard edges are the same (0.67 to 0.71 at 30 s). On the Studio, with no scaling, the same four
   methods differed sevenfold in hard edges (none 0.65, TAA 0.07 to 0.13). *Inferred, not measured:* with Dynamic
@@ -678,6 +682,5 @@ The edge numbers are the means of each cell's captures (two per second mark; nin
   the anti-aliasing, which costs nothing here: about 27.5 FPS in the benchmark. That is inferred from two cells; no run
   was made at exactly those settings.
 
-**Still to run:** a third run each of Shadows High and of series A's FSR 3 Quality and FSR 3 Performance with Dynamic
-Resolution off. **Not measured:** shadows Low with clouds off together (on the Studio the gains added up a little short
+**Third runs** of Shadows High and of series A's two FSR 3 cells were made at 16:10 (above and in series A). **Not measured:** shadows Low with clouds off together (on the Studio the gains added up a little short
 of their sum), the distant clouds alone, the cause of the low base runs, and heat, 120 Hz or a real city.

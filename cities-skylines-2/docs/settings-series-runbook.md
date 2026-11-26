@@ -115,24 +115,110 @@ row in [`images/AUDIT.md`](images/AUDIT.md).
 - **Not that a setting "took" because it is in the file.** FSR 4 and XeSS 3 stayed in `Settings.coc` on the
   Studio and the picture came out with no anti-aliasing at all: the edge numbers showed it, the file did not.
 
-## 6. The MacBook (not run yet)
+## 6. The MacBook: the first session, step by step (not run yet)
 
-What is different there, and what the first series should settle:
+For the session on the MacBook. Do the steps in order; each has a stop rule. Nothing here changes an engine, a
+launcher, a wrapper or a save, and nothing is posted anywhere. The person's `Settings.coc` is put back by the
+script. Results go into `docs/perf-pass-results.md` as a new section, with a row in `EXPERIMENTS.md`; captures
+stay in the workspace.
 
-- **The display.** The built-in panel is the main one, so the launcher's display profile is `mobile`: Retina
-  mode on in the Wine registry, and Dynamic Resolution on at a fixed 0.5 with the sharpening filter. The
-  series runs with `CS2_PROFILE=off`, so it leaves the registry as the last ordinary start left it, and
-  `base` leaves Dynamic Resolution as found. So: start the game once from its app and quit it before the
-  first series, and note the `found:` line.
-- **The upscaler of 1.6.4 has not been tried together with Retina mode and Dynamic Resolution.** That is the
-  first question. Cells, each twice, with `base` between:
-  `drs-050` (the laptop's profile, upscaler off), `drs-off` (every pixel of the panel), `drs-off+fsr3`,
-  `drs-off+fsr3-bal`, `drs-off+fsr3-perf`, `drs-050+fsr3` (two reductions at once: expected to look soft).
-  The edge numbers and `period3` say what was drawn; the frame rate says what it cost.
-- **Then the same single-setting cells as on the Studio**, on whichever of the above is kept as that Mac's
-  base: `sh-low sh-high sh-off aa-none aa-fxaa aa-smaa-high clouds-off lod-035 lod-050 fog-off vol-off
-  ssao-off ssr-off`.
-- **Heat is not measured by this.** The benchmark runs uncapped (vsync off) on purpose. A laptop that is
-  played on wants the opposite: vsync on, or a lower limit. That is a separate, shorter check.
-- **Not known:** the window size the series will see there, whether the panel's 120 Hz changes anything with
-  vsync off, and which engine that Mac's wrapper holds. Record all three.
+**What is different on that Mac.** The built-in panel is the main display, so the launcher's display profile is
+`mobile`: Retina mode on in the Wine registry, and Dynamic Resolution on at a fixed 0.5 with the sharpening
+filter. The upscaler of 1.6.4 has not been tried together with those two. That is the first question; the
+single settings are the second.
+
+**Ask the person first:** mains power, lid open, nothing else to be done on the Mac for about four hours (both series), no
+Steam open on any other Mac, no Screen Sharing. One Steam on the account at a time.
+
+### Step 0: the checkout and the game
+
+Every command below is run from the root of that Mac's checkout of this repository.
+
+```bash
+git pull --ff-only origin main
+```
+
+```bash
+grep -m1 buildid "$(bash common/wrappers.sh find game 949230)/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/appmanifest_949230.acf"
+```
+
+- Stop if `scripts/settings-series.sh` is not in the checkout after the pull.
+- The build must be `26404411` (1.6.4f1). If it is older: start the game from its app, let the launcher apply
+  the update, quit, and begin again at this step. Do not measure an older build with this list.
+
+### Step 1: the game starts, and the profile is applied
+
+```bash
+nohup bash cities-skylines-2/scripts/boot-verify.sh > "$(bash common/paths.sh | sed -n 's/^CS2_WORK=//p')/boot-verify-before-series.log" 2>&1 &
+```
+
+- Wait for it to end (about four minutes) and read the log's last lines. Stop unless it says `VERDICT: PASS`.
+- This start also runs the display profile, so the registry and Dynamic Resolution are as in play.
+- If `common/paths.sh` prints the workspace under another name, use that folder: the line above only names a
+  place for the log.
+
+### Step 2: the checks of section 1, and the notes
+
+Run every check in the table of section 1. Then write `notes.md` (macOS, engine, displays, power) as that
+section says; the series folder does not exist yet, so keep the notes beside the log of step 3 and move them in.
+
+### Step 3: a dry run
+
+```bash
+DRY=1 bash cities-skylines-2/scripts/settings-series.sh base drs-050 drs-off drs-off+fsr3 drs-off+fsr3-bal drs-off+fsr3-perf drs-050+fsr3
+```
+
+- It starts nothing. Stop if any cell prints `make_cell FAILED`: the file on this Mac has a shape the script does
+  not know. Send the `found:` line and the failing cell's output to the person; do not edit the script to pass.
+- Keep the `found:` line. `Dynamic Resolution enabled true (minScale 0.5` is expected. If it says `false`, the
+  profile did not run: go back to step 1.
+
+### Step 4: series A, the display and the upscaler (16 cycles, about 70 minutes at the Studio's pace)
+
+`base` leaves Dynamic Resolution as found, so on this Mac it is the laptop's profile. `drs-050` is run once to
+show that it equals `base`.
+
+```bash
+W="$(bash common/paths.sh | sed -n 's/^CS2_WORK=//p')"; mkdir -p "$W/perf-runs"; CAPTURE=1 nohup caffeinate -dis bash cities-skylines-2/scripts/settings-series.sh base drs-050 drs-off drs-off+fsr3 base drs-off+fsr3-bal drs-off+fsr3-perf drs-050+fsr3 base drs-off drs-off+fsr3 drs-off+fsr3-bal base drs-off+fsr3-perf drs-050+fsr3 base > "$W/perf-runs/macbook-series-A.out" 2>&1 &
+```
+
+- After the first cycle is up, do the "window in front" check of section 3.
+- Do not poll the log more than every few minutes. The series is over when it prints `DONE`.
+- Stop rules: section 3. If the series stops itself, read the last cycle's `.log` before anything else.
+
+### Step 5: read series A before going on
+
+- The last block of the log has each run against the base runs beside it.
+- Edge numbers: section 4. **Choose the probe's step from the window:** the series prints `window of this
+  series: <w>x<h>`. If a capture's width equals `<w>`, run `/tmp/edge-probe <file> 1`; if it is twice `<w>`,
+  leave the step at 2.
+- What to report: the frame rate of each of the six, their `hard` and `period3` numbers, and which cells the
+  game did not keep (a `VOID: ... lacks` line).
+- Do not pick a new base. Series B runs on `base` as found, so that it needs no decision.
+
+### Step 6: series B, one setting at a time (33 cycles, about two and a quarter hours at the Studio's pace)
+
+```bash
+W="$(bash common/paths.sh | sed -n 's/^CS2_WORK=//p')"; CAPTURE=1 nohup caffeinate -dis bash cities-skylines-2/scripts/settings-series.sh base sh-low sh-high sh-off base aa-none aa-fxaa aa-smaa-high base vclouds-off lod-035 lod-050 base fog-off ssao-off ssr-off base sh-low sh-high sh-off base aa-none aa-fxaa aa-smaa-high base vclouds-off lod-035 lod-050 base fog-off ssao-off ssr-off base > "$W/perf-runs/macbook-series-B.out" 2>&1 &
+```
+
+- Start it only when series A printed `DONE` and `Settings.coc RESTORED`.
+- If time is short, give the script only the first 17 cells of this list (through the fifth `base`): that is one
+  complete pass. Do not stop a running series by hand.
+
+### Step 7: write it up
+
+- A section in `docs/perf-pass-results.md` shaped like the Studio's: the method line with this Mac's facts, the
+  table, then what it says. Say what was not measured.
+- Compare with the Studio only where section 5 allows it.
+- A row in `EXPERIMENTS.md` (the next free `C` number is the highest plus one), then
+  `python3 cities-skylines-2/scripts/check-experiments.py`, `python3 common/check-links.py` and
+  `ACCEPT=9 bash common/check-identifiers.sh`. Commit the documents only.
+
+### Not part of this list
+
+- **Heat.** These runs are uncapped on purpose (vsync off). For play on a laptop the opposite is wanted.
+  Surviving Mars has its own check: `surviving-mars-relaunched/README.md`, "Known limits".
+- **A second display.** Measure the built-in panel only.
+- **Not known before the first run:** the window size the series will see, whether 120 Hz changes anything with
+  vsync off, and how long a cycle takes there (the Studio's is four minutes).

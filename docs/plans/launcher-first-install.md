@@ -1,9 +1,59 @@
 # The launcher first: one pasted line installs 14unch3r, and its window installs the games
 
-**Status: check-it'd 2026-11-26 — build-ready-with-fixes (pass 4), the fixes folded. The build may start,
-at its step LF0 (the probe LP1), on James's word.** Draft written 2026-11-25; checked four times on 2026-11-26 and
+> **🔧 As-built (2026-11-26): partial — LF0 and LF1 are built on the branch `launcher-first-install`. Nothing is
+> merged, nothing is released, and no live step has been run.** Tracking: #35. Built on macOS 27 only (3.2).
+>
+> - **LF0** (`8fe37eb`): the probe LP1, met in full (section 7).
+> - **LF1, the launcher's own stamp** (`d3e2dc5`, then `ec1db31`). `d3e2dc5` names `launcher`, `installing` and
+>   `installing-game` in `CLAUDE.md` before anything writes them. The second commit is the code: in
+>   `common/updates.sh` the writer `l1u_stamp_launcher <tree root>`, the reader `l1u_stamp_of_launcher`, and the
+>   launcher's row in `_l1u_stamps`; a game's stamp and the launcher's share one writer and one match
+>   (`_l1u_stamp_to`, `_l1u_stamp_ok`). Both setups call `launcher_stamp` on the line after a build of the window
+>   that worked and `launcher_stays` after a "not built" line.
+> - **What the build chose in LF1, where 3.5 left room.** Each is James's to overrule.
+>   1. "Only when an older launcher stamp is there" is built as: a launcher stamp that counts **and holds a lower
+>      version than this tree's**. With a stamp at the tree's own version and a build that failed, the line is
+>      not said: it speaks of "this update", and there is none held back. A case and a mutant hold it in both
+>      setups' tests.
+>   2. One sentence the plan does not give, for a launcher's stamp that cannot be written: "14unch3r's version
+>      could not be recorded (`<file>`). It may go on offering an update it already has." It is marked `!!` like
+>      the game's own, and changes no exit code. Nobody but the build has read it.
+>   3. The launcher's row stands after the games' rows, so the detail of `manual` names a game's line before the
+>      launcher's.
+>   4. Cities: Skylines II's setup has two "not built" lines (the builder failed; the builder is not in the
+>      checkout). The "stays at" line follows either.
+>   5. Surviving Mars's setup test set `SM_APP` in every run it had, so its new cases use a run of their own with
+>      none (`runh`): the app and the window's stand-in then go to the scratch home's `Applications`.
+>   6. `cities-skylines-2/scripts/test-install.golden` was not recorded again: that test passed as it was, so LF1
+>      changed no line of the transcript. `common/test-mac-inventory.sh` and `common/check-deploy.sh`, which
+>      section 6 lists as changing, did not: neither names a file of `_update` but the deployed tool.
+> - **Of the choices James has not reviewed, LF1 was shaped by** RC10 (the stamp is written only by a build that
+>   worked; a failed build leaves the older stamp, and the Mac `ready`). LFD9 is his own.
+> - **Tests of LF1.** LFT3's stamp cases, 27 of them, in `common/test-updates.sh`; LFT5 in
+>   `cities-skylines-2/scripts/test-setup.sh` (17 cases) and `surviving-mars-relaunched/scripts/test-setup.sh`
+>   (17). **New mutants, each applied to the source and seen red (exit 1):** 24 and 25 of
+>   `common/test-updates.sh` (the plan's two); 63 to 66 of Cities: Skylines II's `scripts/test-setup.sh` and 28
+>   to 31 of Surviving Mars's (the plan's three in each, and one more for choice 1). **The older mutants, swept
+>   on the tree of `ec1db31`:** `common/test-updates.sh`, 25 of 25 red (the 23 older ones and the two new); Surviving
+>   Mars's `scripts/test-setup.sh`, 31 of 31 (27 and four); Cities: Skylines II's `scripts/test-setup.sh`, 65 of 65
+>   red (61 and four), and its mutant 36 answers REFUSED on purpose (retired 2026-11-21: `common/test-wrappers.sh`
+>   holds its case). No run that counted as red ended in a timeout but mutant 4 of that file, whose fault is a loop.
+> - **Gates at `ec1db31`.** `common/check-links.py` exit 0; `common/check-identifiers.sh` at its residual of
+>   9; `bash -n` on the six changed scripts; and every test file of the repository run: 47 of 48 exit 0. The one that does not,
+>   `common/test-paths.sh`, fails on `main` at `346c3b1` in the same way and for nothing of this plan:
+>   `surviving-mars-relaunched/tools/load-probe.sh` (`4641f4e`, 2026-11-26) spells a root and is not in that
+>   test's list of thirteen files. It is left for a fix of its own on `main`.
+> - **Not measured:** everything section 6 lists under "Not tested, and said so". No step has met a compiler
+>   older than Swift 6.4.
+> - **Verify against:** `common/updates.sh` (`_l1u_stamp_to`, `_l1u_stamp_ok`, `_l1u_stamps`,
+>   `l1u_stamp_launcher`, `l1u_stamp_of_launcher`); `cities-skylines-2/scripts/setup.sh` and
+>   `surviving-mars-relaunched/scripts/setup.sh` (`launcher_stamp`, `launcher_stays`); `common/test-updates.sh`
+>   ("LFT3"); both `scripts/test-setup.sh` ("LFT5").
+
+**Status: check-it'd 2026-11-26 — build-ready-with-fixes (pass 4), the fixes folded. The build began on
+James's word the same day: LF0 and LF1 are built (the as-built note above); the rest is not.** Draft written 2026-11-25; checked four times on 2026-11-26 and
 reworked three times: pass 1 (seven lenses) and passes 2 and 3 said needs-rework, each for faults of the fold
-before it; pass 4, fitted to the third fold, found no blocker. Nothing below is built. Sections 1 to
+before it; pass 4, fitted to the third fold, found no blocker. Of what is below, only LF0 and LF1 are built. Sections 1 to
 14 hold the corrected design: every blocker and every item of pass 1 (the section "Review corrections" near the
 foot), of pass 2 (its block "Second-pass re-check"), of pass 3 (its block "Third-pass re-check") and of pass 4
 (its block "Fourth-pass re-check") is folded
@@ -1210,7 +1260,8 @@ fails on its transcript.
 - **LF1. The record.** `common/updates.sh`: the launcher's stamp, its writer and reader, and its row in the
   state; both setups write it after a build of the window that worked, and say the line of 3.5 when one
   failed. `CLAUDE.md`'s line for `_update` names every new file first (LFD9: `launcher`, `installing`,
-  `installing-game`), before anything writes them. Tests LFT3 (the stamp), LFT5.
+  `installing-game`), before anything writes them. Tests LFT3 (the stamp), LFT5. **Done 2026-11-26** (the
+  as-built note at the head of this file has the commits, the counts and what the build chose).
 - **LF2. The tools file, the launcher's installer without its lock, and the word.**
   `common/tools.sh`, and the core reading it at `common/install-core.sh:333-342`, with `TOOLS_PART_POLLS`;
   `common/install-launcher.sh`, every line of 3.4 that is not marked "(LF4a)"; the root `install.sh`'s word

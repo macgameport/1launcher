@@ -1,7 +1,9 @@
 # The launcher first: one pasted line installs 14unch3r, and its window installs the games
 
-**Status: NOT yet checked. Draft written 2026-11-25. No build may start from this file until it has passed
-`check it` and carries that pass's verdict line.** Nothing below is built. The lenses the check should recruit,
+**Status: check-it'd 2026-11-26 — needs-rework (pass 1). Draft written 2026-11-25. No build may start from this
+file until it is reworked, checked again, and carries a verdict that allows it.** Nothing below is built. What
+the pass found is the section "Review corrections" near the foot: **the sections above it are NOT yet corrected**,
+so where they disagree with it, it is right. The lenses the check should recruit,
 by what this plan touches: architecture, security (a click that runs code from `release`; a file written with a
 number in it), correctness, the builder lens, design (the window's tiles, a new sheet, published words),
 platform facts (Apple's Command Line Tools, Gatekeeper, Terminal), and the test-plan audit.
@@ -791,9 +793,198 @@ he wanted different:
   setups (their headers and the lines cited). A claim about a part not listed here is marked [inferred] or is
   absent.
 
+## Review corrections (check-it 2026-11-26, pass 1): needs-rework
+
+Seven lenses, each an agent on Fable reading the plan against the code at `93868e3`: architecture, security,
+correctness, a builder, design, Apple platform facts, and the test plan. Two said needs-rework (architecture, test
+plan) and five build-ready-with-fixes. Every blocker below was then read in the code or the plan by the session
+that ran the pass, and holds. **Nothing in this section is folded into the sections above yet.** The rework does
+that, and a second pass checks the rework.
+
+Correctness counted 127 `file:line` citations: 123 hold, 4 are off by a line or two, none points at the wrong
+code; no cited file changed since `91cfb63`. The builder typed in LF1's stamp row and LF2's `launcher` branch in a
+scratch tree: the existing tests stayed green and all 42 older mutants of the two files stayed red.
+
+### Decisions James took during the pass (2026-11-26)
+
+- **The picture of a game that is not installed is the game's own icon, greyed** ("a ghosted or greyed out copy of
+  the icon noting that it's not installed and can be"). Today such a tile shows the generic application icon
+  (`common/launcher-window.swift:1076`): a game's icon is taken from the game's own program when it is set up, and
+  the repository holds no game art.
+- **Where the icon comes from: fetched from Steam's public artwork when the launcher is installed**, held to a
+  fixed size and checksum as the installers' downloads are (his first of three options; the others were art in the
+  repository, and an icon kept from an earlier install).
+- **A click on a greyed game asks first** whether to install it. That is 3.7's sheet; its words follow his.
+
+### Blockers
+
+1. **The live steps cannot pass as written** (architecture, correctness, builder, test plan).
+   - LFL1 ends in the state `manual`; 3.8 refuses `--install` in `manual`; and the file a click writes always
+     fetches `release`, which does not hold this version before the release. So LFL2's click cannot install, and
+     "both stamps name the branch" cannot be reached. `docs/plans/built-in-update.md:897-899` met the same limit.
+   - LFL4: the driver leaves any stamp whose line is not the fetched ref (`common/update-games.sh:111`), and the
+     Studio's stamps are `release`: the rehearsed update from the branch would touch nothing.
+   - LFL3's second half: a launcher at the fetched version with no game runs nothing, and today's closing rule
+     (`common/update-games.sh:147-157`: `RAN > 0`, `SETUP != 0`) then says "No game is set up" and exits 3.
+   - **Correction:** LFL2 becomes three steps. *LFL2a*, the refusal in `manual` (no file written, Terminal not
+     opened). *LFL2b*, before the release: the launcher's stamp rewritten by hand to `release`, then the click,
+     which runs the published `v0.3.1` installer; measured: the tool's answer, the seconds to Terminal's first
+     line, every dialog, the lock's life, stop and carry on, the game starting. *LFL2c*, right after `release`
+     moves, on a clean account: the published launcher line, a click, an install, both stamps `release` at the
+     new version. LFL2c replaces LFL5. LFL4 rewrites the stamps to the branch's line first and puts them back by
+     the pasted lines. LFL3 rewrites the launcher's stamp to an older version before its second half. Exit
+     criterion 2 names which steps come before the merge and which on the tagged release.
+2. **The file handed to Terminal is not "constants only", and the lock comes too late** (builder, security,
+   architecture, correctness).
+   - It takes `_update/installing-<ID>`, so it must know that folder, whose path has a space and comes from
+     `L1UpdateDir`; `_L1U_PROG` (`common/updates.sh:52`) cannot match it, and 3.8 gives no rule.
+   - The lock is taken by the file, after the tool said `opened` and the window quit: a second click opens a
+     second install, and locks per game let two games' installs run at once, which is two Steams on one account.
+   - After a restart a stale lock's process number can belong to a live process, and every install is refused.
+   - **Correction (a design change, to be checked again):** the installer takes the lock, not the file. The
+     shared core takes one lock for an install as it begins and releases it at every exit, so a pasted line is
+     covered too and the file stays constants and the number. One install at a time is that lock's rule. A lock
+     older than the Mac's last start is dead (`sysctl kern.boottime` against the link's own time), in the core,
+     the tool and the window. The update refuses while an install's lock is live and the install while an
+     update's is: both ways, with a test each. Section 14's "nothing in a game's installer changes in slice 1"
+     goes: this is a change to the core.
+3. **On a Mac with only the launcher, the keyboard reaches no tile** (design). The window selects from the set-up
+   apps only (`common/launcher-window.swift:250-253`, `:1183`); arrows need a selection (`:1269`) and Return
+   needs a chosen row (`:1255`). **Correction:** with no app, the first not-set-up tile is selected; LFT6 gains
+   the case and a mutant; the group's help says "to start it or set it up".
+4. **The stated minimum is wrong, and LP1 as written cannot find it** (platform facts).
+   - `MainActor.assumeIsolated` (`:1565`, `:1977`) needs a Swift 5.9 compiler. A Mac on macOS 13.0 to 13.4, or
+     with older tools on a newer macOS, passes `xcode-select -p`, is asked nothing, and fails at the build.
+   - Measured during the pass, and so part of LP1: with `DEVELOPER_DIR=/Library/Developer/CommandLineTools` the
+     window compiles on macOS 27.2.1 with Swift 6.4 in 27 s with an empty module cache (4 s warm); compiler and
+     SDK both from the tools' folder; the binary is arm64, signed ad hoc by the linker, with no quarantine.
+   - **Correction:** the plan says "Command Line Tools 15 or later; built on macOS 27 only" until older compilers
+     are tried. Step 3 reads the compiler's version and, below 5.9, says to update the tools in Software Update.
+     A failed build names the game's own pasted line as the way that still works. LP1's pass condition is the
+     test plan lens's: the compiler found under the tools' folder, the builder's line exits 0, the product
+     answers `--svg` and `--list`, both window test files pass under the same variable, three timings recorded.
+5. **No live step runs on a Mac without Apple's tools** (platform facts, correctness, test plan). LFL1 is on the
+   Studio, where the tools are system-wide; the existing tools stage has never run for real on any Mac of the
+   project; exit criterion 9 names a step that cannot observe it. **Correction:** a live step on a Mac or a macOS
+   guest with no tools (the launcher needs no Wine, graphics card or Rosetta, so a guest serves), on James's word.
+6. **Nothing joins the real installer to the real builder and window** (test plan). LFT2 uses a stand-in builder
+   and LFT6 passes `--update-dir`, which wins over the bundle's key (`:34`); a missing key turns the tile into
+   "opens the guide" with no error. A release whose window, installed from nothing, cannot install would pass
+   every gate. **Correction:** LFT12 in `common/test-make-launcher-app.sh`: a scratch home, the real
+   `install-launcher.sh` and builder; the app's `L1UpdateDir` is the scratch `_update`, `--update-tool` prints the
+   deployed tool, `--list --games` prints one offer row per table row. Mutants: step 4 after step 5; the table
+   not copied.
+7. **LFD14's fold is under-designed, and the held copy is the wrong call** (architecture, builder, correctness,
+   security, platform facts).
+   - In the launcher's installer the overlap is nil (a version test, `mkdir` and `cp`), and the ask as folded
+     comes before the macOS stop, so an old Mac gets Apple's box and is then refused. Nothing may be asked under
+     `--check`.
+   - The stage list the fold asked for, read by the builder and by correctness: in the core nothing before a
+     game's setup runs one of Apple's tools. Cities: Skylines II first needs `python3` at its step 6
+     (`cities-skylines-2/scripts/setup.sh:297`), so its wait could cover the wrapper, Steam and the whole
+     download. Surviving Mars needs `nm` inside its step 4 (`surviving-mars-relaunched/tools/make-engine.sh:103`),
+     before Steam and the game, so only the wrapper's and D3DMetal's downloads could overlap. Not shims, measured:
+     `plutil`, `codesign`, `sips`, `iconutil`, `curl`, `tar`, `xattr`. A box dismissed at the start would be met
+     hours later with nothing downloading: undesigned.
+   - "Present" must mean "runs": a stale folder after a macOS upgrade passes `xcode-select -p`; `tools_ok` is
+     tried once, perhaps while Apple's package is still being written; the request's result is thrown away
+     (`common/install-core.sh:334`), so with no screen session it waits 60 minutes.
+   - A held copy of the tools stage cannot be equal to the core's, and LF8 would rewrite both.
+   - **Correction:** the ask and the wait become two functions in one small shared file read by the core and by
+     the launcher's installer, with the call sites unchanged (no older mutant breaks: the builder checked the
+     three anchors). In this plan the launcher's installer asks after its refusals and its macOS test and waits
+     before the build. **The games' half (LF8, the wait moved later in the core) leaves this plan for a plan of
+     its own**, with the stage list above as its start and the tools-less Mac of blocker 5 as its live step.
+
+### To fix in the rework (each with its lens)
+
+- **Section 9, what is widened** (security). A tile's click runs `release` in every state but `manual`, on a new
+  population (launcher-only Macs), with no version and no notes shown; and the game's setup also rebuilds
+  14unch3r and restamps the launcher, so a yes to one game is an unannounced update. Say all of it; the sheet says
+  that the installer is fetched now from GitHub and may bring a newer 14unch3r; in the state `ready` the click
+  says to update first. Record why pinning a click to the installed tag is declined.
+- **3.7 reads wrappers any account can write** (security; issue #29). "Begun" and "Installing" come from a
+  wrapper's `Info.plist` and `.launcher.lock`. Name #29 in 3.7 and section 9; take "Installing" from the install's
+  lock only; give the one-button sheets "Read the Guide".
+- **The driver's launcher step, 3.5** (architecture, correctness, builder). `own_app` returns 0 for an absent app
+  (`common/make-launcher-app.sh:48`) and cannot be sourced: the driver needs its own "exists and is the builder's
+  app". Name the launcher's row in `_l1u_stamps` (`_l1u_state` skips an empty first field, `common/updates.sh:190`)
+  and its reader. Give the closing line and exit code for a launcher that is current with no game, and for a stamp
+  newer than the fetch.
+- **A failed compile now blocks `current`** (architecture): the launcher's stamp makes the window's build count,
+  where today it is "never counted as a problem". Decide and say it.
+- **Two meanings of "set up"** (architecture): the driver's (wrapper and program) and the window's (the app). A
+  game downloaded with its setup unfinished is "begun" to one and "paste its line" to the other.
+- **The fallback of section 11 is false** (architecture): without LF5 a launcher-only Mac shows "No games are set
+  up". Split LF5 into the listing (a click opens the guide) and the sheet with the install; the fallback is LF1
+  to LF3 plus the listing.
+- **The guides are read from `main`** (architecture, test plan): the table's addresses are `blob/main`, so a guide
+  that leads with the launcher's line before `release` holds the word sends a player to an error. The guide edit
+  is its own commit after `release` moves.
+- **The contract, 3.6** (architecture, correctness, test plan). Row 9 is false: `l1w_games`
+  (`common/wrappers.sh:47`) and the per-game folders of `common/paths.sh:28-31` are second lists a third game
+  must join. Row 7: "stop when nobody answers" is true of the licence and Rosetta questions only; "Press Return"
+  goes on, and the Desktop question is a fourth kind. No row gives a game its picture: the art's table does now.
+  LFT7's "every `read` under a test of the terminal" is not typable as written.
+- **The window** (design, builder). The new tiles belong in the first `reload()`, not behind the ownership
+  question. `--list` takes no `--update-dir` today. What a click does is decided in `startChosen` (`:1766`), which
+  no text mode builds: it needs a pure function and source gates, as the update's sheet has. `runChild` (`:402`)
+  returns nothing alike for any failure, so "the older-tool sentence" is every no-answer's. Names for the three
+  states; tooltip and spoken words for each (today's spoken words say "opens the set-up guide"). Only the icon is
+  grey and at 0.5: the title and second line stay at 1 and 0.88, so the contrast lines hold. "A game that is set
+  up is never drawn so" is false: a set-up game that is not installed in Steam is grey today, and tested. The
+  second lines fit (measured with the window's fonts); the height stays inside 600 until four rows.
+- **The words** (design). The sheet's text says "asks before it fetches anything under a licence", true of one
+  game only; "from here" is unclear once the window has quit. The `manual` sentence says "the games" where only the
+  launcher may be on a checkout, and the window knows the state before the click, so it shows the one-button
+  sheet at once. Three buttons is this window's first: record it in the look's document and capture it.
+- **The look's document** (design): section 10 names `docs/plans/launcher-window-look.md`'s statements that end
+  (`:159-162`, `:238`, `:242`, `:246`, `:564`, W14's offer expectations at `:475`).
+- **Tests** (test plan, builder). LFT8 starts at the tree's version and passes on "holds the tree's version": start
+  it older. LFT2 gains: tools arriving mid-wait, tools present but not running, an Intel Mac, a signal during the
+  build. The cases that run the written file belong in `common/test-update-games.sh`; add a failed fetch (000,
+  404, 500), a hangup, and a record folder whose name holds a space, a quote and `$(touch X)`. A dead install lock
+  must not read as installing. LFT1 gains `launcher <ref>` and its mutant. LFT9's "every older mutant still red"
+  is a hand-run practice recorded in the as-built header, not a gate, and "none refused" is false at baseline
+  (`cities-skylines-2/scripts/test-setup.sh:126` retires one): say so. LFT10's first mutant repeats an existing
+  kill. LFL1's pass conditions become measurements, and it gains the dark and light captures.
+- **Platform facts to restate** (platform facts). The paste warning of macOS 26.4 is documented by Apple
+  (support.apple.com/guide/security/sece3b202c4b): Terminal not opened in 30 days, no developer tooling found,
+  the paste from a browser or a message; so the Studio can never show it, and LFL2c's Mac must qualify.
+  `softwareupdate` does need an administrator. LFD2's condition is "a member of the Apple Developer Program"
+  (99 USD a year; an individual's signature carries the legal name). The compile takes 27 s cold on the Studio and
+  the builder prints nothing meanwhile.
+- **Small ones** (correctness). The pasted line stands seven times, not six (`cities-skylines-2/README.md:30` too,
+  which is that game's guide address). 3.4 step 4 names two folders where both setups test and make three, the
+  parent first. `install.sh:21` belongs in section 10. "Three kinds of tile" heads a table of four.
+
+### What the rework still has to decide or probe
+
+- **The art.** Which of Steam's images is the game's own icon, and its address: a probe fetches it for both games
+  and compares it with the icon of the set-up app. A table of its own (app ID, address, size, checksum) and not a
+  fifth field of `common/games.tsv`, whose shape is published. What a tile shows when the fetch fails or the Mac
+  is offline: the generic icon, as today. The launcher's installer then makes a request to Valve, which it does
+  not today: the guides say so.
+- **Open for James** (each has the rework's default, taken if he says nothing against it):
+  1. *How a click-to-install is proven before the release.* Default: the three-step LFL2 of blocker 1, with no
+     rehearsal switch in the tool, so the first install from a click on this version's own installer happens
+     right after `release` moves (the old pasted lines keep working if it fails). The other way is a switch by
+     which the tool follows the line a Mac's stamps name, which lets it be rehearsed from a branch and is more
+     code on the path a click runs.
+  2. *The games' half of the Command Line Tools wait* (LF8) leaves for a plan of its own. Default: yes.
+  3. *A Mac, or a macOS guest, with no Apple tools on it* for the live step of blocker 5. It needs James to make
+     one; without it LFD14 and the tools stage stay unmeasured.
+  4. *In the state `ready`, a click on a game that is not set up says to update first.* Default: yes.
+  5. *The launcher's installer fetches each game's icon from Valve* (his choice of 2026-11-26): the guides gain a
+     line saying so.
+
 ## Review log
 
-No pass has been run. Key paths this plan depends on: `install.sh`, `common/games.tsv`,
+| Date | Pass | Lenses | Method | Model | Verified against | Verdict |
+|---|---|---|---|---|---|---|
+| 2026-11-26 | 1 | architecture, security, correctness, builder, design, platform facts, test plan | seven agents in two batches, read-only; the builder ran the gates and typed two steps into a scratch tree; platform facts compiled the window with the Command Line Tools alone; every blocker read again by the session | Fable 5.2 | `93868e3` | needs-rework |
+
+Key paths this plan depends on: `install.sh`, `common/games.tsv`,
 `common/install-core.sh`, `common/updates.sh`, `common/update-games.sh`, `common/make-launcher-app.sh`,
 `common/launcher-window.swift`, `common/wrappers.sh`, `common/paths.sh`, `common/make-wrapper.sh`, both games'
 `scripts/install.sh` and `scripts/setup.sh`, and the tests named in section 6.

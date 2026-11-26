@@ -84,18 +84,19 @@ from the installed libraries with `otool -l` the same day.
 What is planned, in the order it is likely to come. None of it is promised, and nothing here has a date unless it
 says so.
 
-- **Surviving Mars: Relaunched with the Machine Utopia expansion**, tested on this setup when the expansion is out.
+- **Surviving Mars: Relaunched with the Machine Utopia expansion**, tested with this project's setup when the
+  expansion is out.
 - **Graphics settings for Cities: Skylines II on a MacBook.** The Mac Studio's are measured
   ([what was found](cities-skylines-2/docs/perf-pass-results.md)); the laptop's are next.
 - **The launcher first.** One pasted line installs 14unch3r, and its window installs each game. Games that are not
-  set up yet are shown in grey. The lines for single games keep working. Plan:
-  [`docs/plans/launcher-first-install.md`](docs/plans/launcher-first-install.md), not checked and not built.
-- **A shorter wait for Apple's Command Line Tools** during an install: asked for at the start, so the wait falls
-  inside the downloads.
+  set up yet are shown with their icon in grey, and a click asks before it installs. The lines for single games keep working. Plan:
+  [`docs/plans/launcher-first-install.md`](docs/plans/launcher-first-install.md), a draft, not built yet.
+- **A shorter wait for Apple's Command Line Tools** during an install: asked for at the start, so that the wait
+  can overlap the downloads.
 - **Workers & Resources: Soviet Republic**, as the third game.
 - **An install that runs inside the 14unch3r window** in place of a Terminal window, after the launcher-first
-  install has run on real Macs.
-- **A ready-built, signed 14unch3r**, once the project is a registered Apple developer. Until then the app is
+  install has run on players' Macs.
+- **A ready-built, signed 14unch3r**, once the project is a member of the Apple Developer Program. Until then the app is
   compiled on your Mac from the source in this repository.
 
 ## Layout

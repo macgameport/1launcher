@@ -5,7 +5,7 @@ now a **Mac Studio M5 Max / macOS 27** — on a fully free stack, **including wo
 and, as far as I can tell, isn't documented anywhere else.
 
 **Status (2026-10-16):** Playable — **47.8 FPS on the built-in benchmark at 2560×1440** on the Mac Studio, and a
-steady 60 (vsync) in a 4.8k-population city ([Performance](#performance)). Renders, saves, mods download *and* load — and the last
+steady 60 (vsync) in a 4.8k-population city ([Performance](#performance)). Those are October's readings, on game 1.6.2; on 1.6.4 the same benchmark reads 39.5 to 49.6 depending on settings (2026-11-26, [Performance](#performance)). Renders, saves, mods download *and* load — and the last
 real defect (the alt-tab / exclusive-fullscreen freeze) is **fixed** by an optional self-built
 stock wine 11.16 engine ([INSTALL §6](INSTALL.md#6-recommended-build-the-wine-1116-engine-kills-the-alt-tab-freeze)):
 ~45 FPS on the M3 Max, Direct presentation, freeze gone.
@@ -60,7 +60,7 @@ and was retired from this repository on 2026-11-09.
 | Patches | **10** | **10** — the six errno patches are unnecessary on Wine 11 |
 | Alt-tab in exclusive fullscreen | **works** | freezes ([dxmt#206](https://github.com/3Shain/dxmt/issues/206)) — use borderless |
 | Steam's **visible storefront** | **renders** with patched wine+DXMT (2026-08-31); **black** on the stock stack — shop via **S734M.app**, the Windows Steam | **renders** |
-| Measured | **M3 Max, 1080p:** 44.9 FPS, GPU 23.1 ms, presentation `Direct` · **Mac Studio M5 Max, 2560×1440, benchmark:** 47.8 FPS ([Performance](#performance)) | M3 Max, 1080p: 42.7 FPS, GPU ~26 ms, `Composited` |
+| Measured | **M3 Max, 1080p:** 44.9 FPS, GPU 23.1 ms, presentation `Direct` · **Mac Studio M5 Max, 2560×1440, benchmark:** 47.8 FPS on game 1.6.2, 39.5 to 49.6 on 1.6.4 by settings ([Performance](#performance)) | M3 Max, 1080p: 42.7 FPS, GPU ~26 ms, `Composited` |
 | Proven by | a full validated session: mods delete+redownload, alt-tab cycles, city play | boots, mods load + download, Steam UI, DLC |
 
 The 11.16 engine is the recommended setup and takes about an hour to build ([INSTALL §6](INSTALL.md#6-recommended-build-the-wine-1116-engine-kills-the-alt-tab-freeze)).
@@ -86,7 +86,9 @@ Every number is labelled with its machine; the full method and every run are in
 
 | Machine | Scene | Settings | Result |
 |---|---|---|---|
-| **Mac Studio M5 Max**, macOS 27.0.1, Studio Display 60 Hz | built-in benchmark (`-benchmark`), 2560×1440, vsync off | daily driver (below) | **47.8 FPS** (clean defaults: 45.0 — the daily driver is +6.1 %); noise between runs ~0.1–0.8 FPS |
+| **Mac Studio M5 Max**, macOS 27.0.1, Studio Display 60 Hz, **game 1.6.2f1** (October) | built-in benchmark (`-benchmark`), 2560×1440, vsync off | daily driver (below) | **47.8 FPS** (clean defaults: 45.0 — the daily driver is +6.1 %); noise between runs ~0.1–0.8 FPS |
+| Mac Studio M5 Max, macOS 27.2, **game 1.6.4f1** (2026-11-25/26) | the same benchmark, 2560×1440, vsync off | shadows Medium, TAA, upscaler Disabled | **39.5 FPS**; the October daily driver's settings read 41.8 (12.5 % below October), and 46.2 with the FSR 3 upscaler that 1.6.4 switches on |
+| Mac Studio M5 Max, game 1.6.4f1 | the same benchmark | from the richest picture tried to the fastest | 34.8 to 49.6 FPS |
 | Mac Studio M5 Max | a 4.8k-population city, zoomed out | daily driver, vsync on | **60 FPS held**, GPU ~20 ms |
 | M3 Max, macOS 26, 1080p @ 120 Hz | benchmark stress scene | daily driver | 26.8 FPS (+11.6 % over the base config, 1 %-low +55 %) |
 | M3 Max | city view, 1080p | base config, 11.16 engine | 44.9 FPS, GPU 23.1 ms |
@@ -99,6 +101,13 @@ mip bias **0**, VSync **on**, Maximum frame latency **2** (the default); the res
 without your choosing it, and draws the city at two thirds of the resolution). On the Mac Studio the owner's
 choice since 2026-11-25 is shadows **Medium** and anti-aliasing **TAA** in place of Low and High SMAA
 ([the three readings](docs/perf-pass-results.md#164-on-the-mac-studio-the-upscaler-shadows-and-anti-aliasing-2026-11-25)).
+
+**What each setting costs on 1.6.4** (Mac Studio, 108 benchmark runs, 2026-11-25/26; the
+[table](docs/perf-pass-results.md#the-settings-series-on-164f1-2026-11-25-1743-to-2335-every-graphics-setting-one-at-a-time)):
+Level of Detail is the expensive one (0.5 costs 11 %, 1.0 costs 26 % against 0.25), then shadow quality (Low +5.5 %,
+High −7 %), volumetric clouds (+4 % off) and the upscaler (FSR 3: +10 % at Quality, +14.5 % at Balanced, softer each
+step). Anti-aliasing is nearly free, and TAA smooths edges most. **Do not choose AMD FSR 4 or Intel XeSS 3:** they do
+nothing on this port and anti-aliasing stops working. The MacBook has not been measured on 1.6.4.
 
 **What was measured and did not help** (Mac Studio, 2026-10-12…15): a DXMT frame cap at 30 or 60, Maximum frame
 latency 1 (**−13 %** — leave it at 2), and Unity `boot.config` tuning (job-worker count, allocator sizes). On the

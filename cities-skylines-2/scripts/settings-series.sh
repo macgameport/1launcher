@@ -177,6 +177,13 @@ cleanup() {
   wait_gone || echo "  WARNING: the game or Wine still up after 240 s: restoring anyway"
   cp -p "$BAK" "$S"
   [ "$(shasum -a 256 "$S" | cut -c1-64)" = "$SH0" ] && echo "Settings.coc RESTORED (sha256 == before)" || echo "Settings.coc RESTORE FAILED: copy $BAK over it"
+  # 1.6.4 writes a crash-report dump of about 105 MB into its cache on every start (GOTCHAS 2026-11-26), and a run
+  # this short ends before the game's own pruning. Remove the ones this series made, and only those.
+  local D="$C/.cache/backtrace/crashpad/reports" n
+  if [ -d "$D" ]; then
+    n=$(find "$D" -type f -name '*.dmp' -newer "$BAK" 2>/dev/null | wc -l | tr -d ' ')
+    [ "$n" -gt 0 ] && { find "$D" -type f -name '*.dmp' -newer "$BAK" -delete 2>/dev/null; echo "removed $n crash-report dump(s) this series left in the game's cache"; }
+  fi
   echo "DONE $(date +%H:%M:%S)"
 }
 trap cleanup EXIT

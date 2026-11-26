@@ -56,6 +56,8 @@ Rules for the list of cells:
 While it runs: do not start the game, Steam or a second series; do not edit `settings-series.sh`; do not bring
 another app's window over the game. Reading the log is fine.
 
+**Disk.** Game 1.6.4 writes a crash-report dump of about 105 MB at every start. The series removes the ones it made when it ends; if a series is killed, remove them by hand (GOTCHAS, 2026-11-26). Captures are about 10 MB each on a 5K panel: 200 of them is 2 GB.
+
 It always ends by putting `Settings.coc` back and printing `Settings.coc RESTORED (sha256 == before)`. If that
 line says FAILED, copy `Settings.coc.before` from the series folder over the game's file before anything else.
 

@@ -522,9 +522,9 @@ The FPS column is the mean over both series; the last four base runs of the seco
   and the upscaler. Fog, volumetrics, ambient occlusion and reflections are worth about 1 % each.
 - **Level of Detail is the expensive one, and it is paid on the processor:** 0.5 costs 11 % and 1.0 costs 26 %, with
   the processor's part of the frame going from 15.1 ms to 19.8 ms. 0.25 is the value to keep.
-- **Nothing went above 46 FPS.** With FSR 3 at Performance the graphics card's part of the frame is 17.4 ms and the
-  processor's 14.7 ms, and the frame still takes 21.8 ms. That is the same floor the October pass found (C81): below
-  the game, not in its settings.
+- **No single setting went above 46 FPS, and the fastest combination reached 49.6** (below). With FSR 3 at
+  Performance the graphics card's part of the frame is 17.4 ms and the processor's 14.7 ms, and the frame still takes
+  21.8 ms: the frame is longer than either part the game measures, as the October pass found (C81).
 - **The stored resolution is ignored in the Fullscreen Window.** Two runs with 1920x1080 written into `Settings.coc`
   read as base runs (the window stayed 2560x1440). The results row's `resolution` field is the stored value, as the
   October sections already say; October's 47.8 FPS was at a 2560x1440 window.
@@ -538,3 +538,32 @@ Chrome the active app; from the next start the game's window opened behind Chrom
 which is front to back). Every "vs base" above is against the base runs beside it, so the step does not carry into the
 percentages; the two FPS columns of cells run on both sides of it are a little apart for this reason. The runbook's
 "window in front" check comes from this.
+
+### Settings combined (2026-11-26, 00:02 to 01:46): 25 cycles, none void
+
+The same method, run from the repo script (`scripts/settings-series.sh`, folder `settings-20261126-000204`), each
+combination twice with base runs between; the base read 38.90 to 39.62 (seven runs).
+
+| Combination (the rest as the base) | FPS, two runs | vs base | GPU ms |
+|---|---|---|---|
+| Shadows High + Level of Detail 0.35 | 34.80 / 34.90 | −11.7 % | 31.7 |
+| **base** (shadows Medium, TAA, no upscaler) | 38.90 to 39.62 | | 27.8 |
+| Distant clouds off | 39.72 / 39.59 | +0.8 % | 26.4 |
+| Volumetric clouds off | 41.04 / 40.92 | +4.3 % | 26.1 |
+| Shadows Low + clouds off | 43.96 / 44.66 | +12.5 % | 22.3 |
+| Shadows Low + clouds, fog, volumetrics, ambient occlusion and reflections off | 45.51 / 46.07 | +16.0 % | 20.9 |
+| Clouds off + FSR 3 Quality | 45.91 / 45.75 | +16.3 % | 17.8 |
+| Shadows Low + SMAA High + FSR 3 Quality (October's daily driver as the 1.6.4 update leaves it) | 46.28 / 46.03 | +17.2 % | 17.5 |
+| Shadows Low + clouds off + FSR 3 Quality | 47.69 / 48.37 | +21.9 % | 17.2 |
+| Shadows Low + clouds off + FSR 3 Balanced | 49.63 / 49.62 | +25.5 % | 17.0 |
+
+- **The gains add up, a little short of their sum:** shadows Low (+5.5 %) with clouds off (+6.7 %) gives +12.5 %; with
+  FSR 3 Quality (+10.2 %) on top, +21.9 %.
+- **The cloud cost is the volumetric clouds** (+4.3 % off); the distant ones are within the noise.
+- **The October file explains why nobody noticed the slowdown.** A player who never opened the settings after the
+  update runs October's daily driver with FSR 3 on, which reads 46.2 here against October's 47.8: the upscaler hides
+  most of the 12.5 %, at two thirds of the resolution.
+- **The whole range on this Mac is 34.8 to 49.6 FPS** in the benchmark, from the richest picture tried to the fastest.
+  The four effect groups together are worth about 3.5 % once shadows and clouds are down.
+- **The benchmark is heavier than play.** Metal's counter read 58.5 FPS at the base settings in a suburb of a real city
+  that afternoon (the section before the series), where the benchmark reads 39.5.

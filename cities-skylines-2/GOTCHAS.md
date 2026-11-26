@@ -3398,3 +3398,26 @@ layer 0 (`/tmp/winlist` is front to back and listed Chrome above the game).
 - **The same day, a second way to spoil a run:** a question put to another app with `osascript` from the session
   made macOS ask "claude.app wants access to control ...", in a dialog that sat in front of everything on the
   main display until someone answered it. Do not script other apps from a session.
+
+## 1.6.4 writes a 105 MB crash-report dump on every start, and short runs never prune them (2026-11-26)
+
+Found on the Studio when the disk was short: `<the game's data>/.cache/backtrace/crashpad/reports/` held **182
+`.dmp` files of 103 to 115 MB, 19.5 GB**, every one dated 2026-11-25 or 26, the two days of the settings series
+(111 benchmark starts) and of James's sessions that afternoon. The game's data folder is
+`LocalLow/Colossal Order/Cities Skylines II` in the wrapper's prefix; `.cache` is hidden, so `du *` does not show it.
+
+- **When one is written (measured on the last four cycles):** 109 to 110 s after the cycle began, three seconds
+  before `SceneFlow.log`'s first `Loading completed`. So it is made while the game starts, not at exit, and the
+  game runs on: every one of those cycles was graceful and its result row clean.
+- **Two in one start** when something else loaded the disk during the start (two cycles, each while a `du` of the
+  workspace ran): the second dump came 20 s after the first.
+- **Not explained:** what the dump is for. A watchdog for a stalled main thread during loading would fit both
+  observations; nothing here shows it. Nothing in `Player.log` names it.
+- **Not known:** whether a long session prunes them. No dump older than 2026-11-25 was there, though the game had
+  been started on 1.6.4 since 2026-11-10 (boot-verify runs, and the menu only); so either those starts wrote
+  none, or something removed them. Until that is known, treat the folder as growing by 105 MB per start.
+- **What was done:** two samples and a list of all 182 with times and sizes are in
+  `<workspace>/crashdumps-164f1-20261126/`; the folder went to the Trash and the game makes a new one.
+  `scripts/settings-series.sh` now removes the dumps its own series made, at its end.
+- **A dump is private:** it is a memory image, with paths and account ids in it. Never attach one anywhere public.
+- **Rule:** after any series of game starts, look at the free space and at this folder.

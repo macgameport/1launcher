@@ -33,6 +33,9 @@
 # while it runs setup and has already asked the question about this Mac, and L1_WRAPPER_GIVEN, which says
 # whether the player named the wrapper; SM_STATE, SM_APP and SM_WRAPPER, which name another state folder, app
 # and wrapper (tests). With SM_APP set, 14unch3r is built in that app's folder.
+# Terminal questions: 1
+# (What this file itself asks the player, each only at a terminal and each answered by --yes: the contract a
+# game meets, docs/plans/launcher-first-install.md, 3.6, row 7. common/test-game-contract.sh counts them.)
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 GAME_ROOT="$(cd "$HERE/.." && pwd)"

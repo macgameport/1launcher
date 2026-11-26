@@ -15,6 +15,9 @@
 # Read from the environment by scripts/install.sh's runs: CS2_VIA_INSTALLER=1 (the caution question was
 # asked already; two lines speak of the installer) and L1_FETCHED_REF=<ref> (the checkout is a temporary copy),
 # with L1_FETCHED_COMMIT beside it; and L1_UPDATE=1, set by an update: the Desktop question is not asked.
+# Terminal questions: 2
+# (What this file itself asks the player, each only at a terminal and each answered by --yes: the contract a
+# game meets, docs/plans/launcher-first-install.md, 3.6, row 7. common/test-game-contract.sh counts them.)
 #
 # What it does:
 #   1. verifies the wrapper, Steam and the game are where they should be

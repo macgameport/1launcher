@@ -567,3 +567,58 @@ combination twice with base runs between; the base read 38.90 to 39.62 (seven ru
   The four effect groups together are worth about 3.5 % once shadows and clouds are down.
 - **The benchmark is heavier than play.** Metal's counter read 58.5 FPS at the base settings in a suburb of a real city
   that afternoon (the section before the series), where the benchmark reads 39.5.
+
+## The MacBook, series A on 1.6.4f1 (2026-11-26, 03:23 to 04:38): dynamic resolution and the upscaler
+
+**Method.** As the Studio's series, from `scripts/settings-series.sh` (folder `settings-20261126-032334`, runbook
+section 6, step 4), with captures. MacBook Pro M3 Max, macOS 27.2.1, the built-in panel only (3024x1964 Retina), on
+its own charger (the battery read 98 % during the series and 100 % after it), lid open, no Screen Sharing viewer, the daily engine (Wine 11.16 + DXMT), game 1.6.4f1. Every cycle:
+`Window resolution: 3024x1964` gated from `Player.log`, vsync off, `CS2_PROFILE=off` + Use Native=1, the cell's keys
+read back after a graceful exit, the game's window the only one in front (checked in the window list after the first
+cycle). **16 cycles, none void; no cell lacks a key.**
+
+**The base** is this Mac's settings as found: shadows Low (map 1024, terrain shadows off), SMAA High, upscaler None,
+Level of Detail 0.25, and Dynamic Resolution on at a fixed 0.5 (not adaptive), which is the laptop profile's. It read
+**23.56 to 24.76 FPS** (five runs; four of them 24.71 to 24.76).
+
+"Hard edges" is as in the Studio's table, at 30 / 50 / 70 s, with the probe's step 1 (the captures are 3024 wide, the
+window's size). `period3` read 0.99 to 1.01 in every capture of every cell.
+
+| Setting changed | FPS (each run) | vs base | GPU ms | Hard edges 30 / 50 / 70 s |
+|---|---|---|---|---|
+| **base** (Dynamic Resolution 0.5) | 24.71, 24.72, 23.56, 24.74, 24.76 | | 54.1 | 0.69 / 0.47 / 0.41 |
+| Dynamic Resolution 0.5, set by the cell | 24.83 | +0.5 % | 52.3 | 0.73 / 0.48 / 0.47 |
+| Dynamic Resolution off | 20.90, 20.96 | −15.4 %, −12.1 % | 56.7 | 0.45 / 0.30 / 0.34 |
+| Dynamic Resolution off + FSR 3 Quality | 22.19, 23.41 | −10.2 %, −3.1 % | 58.4 | 0.48 / 0.28 / 0.29 |
+| Dynamic Resolution off + FSR 3 Balanced | 23.99, 23.89 | −1.8 %, −2.3 % | 54.1 | 0.53 / 0.33 / 0.36 |
+| Dynamic Resolution off + FSR 3 Performance | 24.85, 23.69 | +3.0 %, −4.3 % | 52.6 | 0.53 / 0.38 / 0.47 |
+| Dynamic Resolution 0.5 + FSR 3 Quality | 23.27, 23.44 | −2.4 %, −5.3 % | 60.6 | 0.48 / 0.27 / 0.28 |
+
+**What it says**
+
+- **Dynamic Resolution at 0.5 is worth 12 to 15 % here**, the one clear step in the series: off, the frame rate fell
+  from about 24.7 to 20.9 in both runs. The cell that sets 0.5 reads as a base run, as the runbook expected.
+- **FSR 3 does not beat Dynamic Resolution on this Mac.** With Dynamic Resolution off, FSR 3 Balanced wins back most of
+  the loss (−2 %, both runs agree); no FSR 3 cell was faster than the base in both of its runs, and FSR 3 on top of
+  Dynamic Resolution costs 2 to 5 %.
+- **Two cells are not a result yet:** FSR 3 Quality and FSR 3 Performance with Dynamic Resolution off. Their two runs
+  differ by more than 1 % (by 5 %), so each needs a third run (section 4 of the runbook).
+- **The graphics card's time hardly moves with the drawn size** (52 to 61 ms in every cell, base included) while the
+  frame rate does. The GPU column is noisy here (one base run read 43.6 ms at 23.56 FPS), so no more is read into it.
+- **`period3` showed no stretch in any cell**, FSR 3 Quality and Dynamic Resolution 0.5 included. On the Studio FSR 3
+  Quality stood one of the three numbers 11 % apart. Why it does not show here was not looked at: the probe's period-3
+  test may not fit a Retina window drawn at its device size, or the scaling may not be a plain 1.5. Do not read the flat
+  numbers as "drawn at full size".
+- **Edges are hardest with Dynamic Resolution on and FSR 3 off** (0.69 at 30 s against 0.45 to 0.53 for the others),
+  with SMAA in every cell. The Studio's SMAA High read 0.28 to 0.37 at 2560x1440 with no scaling; the difference here
+  is consistent with a picture drawn at half size and stretched, but that was not measured directly.
+
+**Not measured here:** shadows, anti-aliasing, clouds, Level of Detail and the effects, one at a time (series B). Its
+first run on 2026-11-26 is not a result: it ran on a 15 W charger, the battery went from 100 % to 7 %, and from its
+28th cycle every cell, base included, read about 5 FPS. It is to be run again on the MacBook's own charger. Nor: heat
+over a long session, 120 Hz with vsync on, or play in a real city.
+
+**Against the Studio** (section 5 of the runbook: not by percentage alone). The base settings differ (the Studio's
+base is shadows Medium, TAA, no Dynamic Resolution, at 2560x1440), so the frame rates are not put side by side. What can
+be said: the MacBook's benchmark sits near 25 FPS at its laptop profile, and the one lever that moves it is the drawn
+size.

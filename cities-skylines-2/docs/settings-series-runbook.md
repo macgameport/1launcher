@@ -22,7 +22,7 @@ every stop rule says what to do. Paths are from the repository root unless they 
 | The screen is unlocked and the display is on | the series checks both at every cycle | it says so and stops |
 | No Screen Sharing viewer | `pmset -g assertions \| grep "Remote user"` | one is connected: the frame rate reads about 10 % low |
 | The driver that closes the game is there | `ls "<workspace>/win-resize-driver.exe"` | absent: build it (the line is in `scripts/win-resize-driver.c`) or copy it from the other Mac |
-| On a laptop: mains power, lid open, the built-in panel is the only display | `pmset -g batt` | on battery |
+| On a laptop: mains power, lid open, the built-in panel is the only display | `pmset -g batt`, and `system_profiler SPPowerDataType \| grep Wattage` | on battery, or a charger weaker than the Mac's own: the MacBook's series B of 2026-11-26 ran on a 15 W charger, drained the battery from 100 % to 7 %, and read about 5 FPS from its 28th cycle |
 | No other window lies in front of the game | section 3, "the window in front" | one does |
 
 Write down, once, in the series folder's `notes.md`: the Mac, macOS (`sw_vers -productVersion`), the engine
@@ -76,8 +76,11 @@ line says FAILED, copy `Settings.coc.before` from the series folder over the gam
 during the first cycle, once the game is up:
 
 ```bash
+[ -x /tmp/winlist ] || swiftc -O cities-skylines-2/scripts/winlist.swift -o /tmp/winlist
 /tmp/winlist | grep -nE 'layer=0 ' | head -5
 ```
+
+`/tmp/winlist` is also what the series' captures use, so build it before a series with `CAPTURE=1`; `/tmp` is emptied at a restart.
 
 The list is front to back. A line of another app above the line with `title=Cities` on the same display means
 that window covers the game. Hide or move that app's window and start the series again.
@@ -115,7 +118,7 @@ row in [`images/AUDIT.md`](images/AUDIT.md).
 - **Not that a setting "took" because it is in the file.** FSR 4 and XeSS 3 stayed in `Settings.coc` on the
   Studio and the picture came out with no anti-aliasing at all: the edge numbers showed it, the file did not.
 
-## 6. The MacBook: the first session, step by step (not run yet)
+## 6. The MacBook: the first session, step by step (series A and series B run 2026-11-26)
 
 For the session on the MacBook. Do the steps in order; each has a stop rule. Nothing here changes an engine, a
 launcher, a wrapper or a save, and nothing is posted anywhere. The person's `Settings.coc` is put back by the
@@ -204,7 +207,10 @@ W="$(bash common/paths.sh | sed -n 's/^CS2_WORK=//p')"; CAPTURE=1 nohup caffeina
 
 - Start it only when series A printed `DONE` and `Settings.coc RESTORED`.
 - If time is short, give the script only the first 17 cells of this list (through the fifth `base`): that is one
-  complete pass. Do not stop a running series by hand.
+  complete pass. Do not stop a running series by hand. If it must stop (the Mac has to move), wait until no Wine
+  runs, end the series and its `caffeinate`, then look for a `launch-cs2` process: a launcher already started for
+  the next cycle outlives the series and goes on to start Steam (2026-11-26). End it before Steam starts, or shut
+  its Steam down with `steam.exe -shutdown`, never `kill -9`.
 
 ### Step 7: write it up
 

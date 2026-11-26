@@ -567,3 +567,120 @@ combination twice with base runs between; the base read 38.90 to 39.62 (seven ru
   The four effect groups together are worth about 3.5 % once shadows and clouds are down.
 - **The benchmark is heavier than play.** Metal's counter read 58.5 FPS at the base settings in a suburb of a real city
   that afternoon (the section before the series), where the benchmark reads 39.5.
+
+## The MacBook, series A on 1.6.4f1 (2026-11-26, 03:23 to 04:38): dynamic resolution and the upscaler
+
+**Method.** As the Studio's series, from `scripts/settings-series.sh` (folder `settings-20261126-032334`, runbook
+section 6, step 4), with captures. MacBook Pro M3 Max, macOS 27.2.1, the built-in panel only (3024x1964 Retina), on
+its own charger (the battery read 98 % during the series and 100 % after it), lid open, no Screen Sharing viewer, the daily engine (Wine 11.16 + DXMT), game 1.6.4f1. Every cycle:
+`Window resolution: 3024x1964` gated from `Player.log`, vsync off, `CS2_PROFILE=off` + Use Native=1, the cell's keys
+read back after a graceful exit, the game's window the only one in front (checked in the window list after the first
+cycle). **16 cycles, none void; no cell lacks a key.**
+
+**The base** is the script's (shadows Medium, map 2048 with terrain shadows; TAA; upscaler None; Level of Detail 0.25),
+with Dynamic Resolution as this Mac had it: on at a fixed 0.5 (not adaptive), which is the laptop profile's. It read
+**23.56 to 24.76 FPS** (five runs; four of them 24.71 to 24.76). *Corrected 2026-11-26, after series B:* this section
+first said the base was this Mac's settings as found (shadows Low, SMAA High). The script sets shadows, anti-aliasing,
+Level of Detail and the upscaler in every cell and reads them back after the run; it leaves only Dynamic Resolution and
+the display mode as found. The measurements are unchanged.
+
+"Hard edges" is as in the Studio's table, at 30 / 50 / 70 s, with the probe's step 1 (the captures are 3024 wide, the
+window's size). `period3` read 0.99 to 1.01 in every capture of every cell.
+
+| Setting changed | FPS (each run) | vs base | GPU ms | Hard edges 30 / 50 / 70 s |
+|---|---|---|---|---|
+| **base** (Dynamic Resolution 0.5) | 24.71, 24.72, 23.56, 24.74, 24.76 | | 54.1 | 0.69 / 0.47 / 0.41 |
+| Dynamic Resolution 0.5, set by the cell | 24.83 | +0.5 % | 52.3 | 0.73 / 0.48 / 0.47 |
+| Dynamic Resolution off | 20.90, 20.96 | −15.4 %, −12.1 % | 56.7 | 0.45 / 0.30 / 0.34 |
+| Dynamic Resolution off + FSR 3 Quality | 22.19, 23.41, 21.08 (third run) | −10.2 %, −3.1 %, −15.0 % | 58.4 | 0.48 / 0.28 / 0.29 |
+| Dynamic Resolution off + FSR 3 Balanced | 23.99, 23.89 | −1.8 %, −2.3 % | 54.1 | 0.53 / 0.33 / 0.36 |
+| Dynamic Resolution off + FSR 3 Performance | 24.85, 23.69, 24.50 (third run) | +3.0 %, −4.3 %, −1.1 % | 52.6 | 0.53 / 0.38 / 0.47 |
+| Dynamic Resolution 0.5 + FSR 3 Quality | 23.27, 23.44 | −2.4 %, −5.3 % | 60.6 | 0.48 / 0.27 / 0.28 |
+
+**What it says**
+
+- **Dynamic Resolution at 0.5 is worth 12 to 15 % here**, the one clear step in the series: off, the frame rate fell
+  from about 24.7 to 20.9 in both runs. The cell that sets 0.5 reads as a base run, as the runbook expected.
+- **FSR 3 does not beat Dynamic Resolution on this Mac.** With Dynamic Resolution off, FSR 3 Balanced wins back most of
+  the loss (−2 %, both runs agree); no FSR 3 cell was faster than the base in both of its runs, and FSR 3 on top of
+  Dynamic Resolution costs 2 to 5 %.
+- **Two cells needed a third run** (their first two differed by 5 %; section 4 of the runbook), made the same day at
+  16:10 (folder `settings-20261126-161015`, its three base runs 24.70 to 24.83). **FSR 3 Performance** with Dynamic
+  Resolution off read 24.50: a median of 24.50, about 1 % under the base, the three runs 23.69 to 24.85. **FSR 3
+  Quality** with Dynamic Resolution off read 21.08, so its three runs span 21.08 to 23.41 (11 %) and it is still not a
+  result; its median, 22.19, is 10 % under the base. Its third run's CPU time was 25.8 ms, as high as in series B's slow
+  base runs. Neither changes the finding: no FSR 3 run beat Dynamic Resolution 0.5 by more than the base's own spread.
+- **The graphics card's time hardly moves with the drawn size** (52 to 61 ms in every cell, base included) while the
+  frame rate does. The GPU column is noisy here (one base run read 43.6 ms at 23.56 FPS), so no more is read into it.
+- **`period3` showed no stretch in any cell**, FSR 3 Quality and Dynamic Resolution 0.5 included. On the Studio FSR 3
+  Quality stood one of the three numbers 11 % apart. Why it does not show here was not looked at: the probe's period-3
+  test may not fit a Retina window drawn at its device size, or the scaling may not be a plain 1.5. Do not read the flat
+  numbers as "drawn at full size".
+- **Edges are hardest with Dynamic Resolution on and FSR 3 off** (0.69 at 30 s against 0.45 to 0.53 for the others),
+  with TAA in every cell. The Studio's TAA read 0.07 to 0.13 at 2560x1440 with no scaling. Series B (below) found that
+  on this Mac anti-aliasing does not change the edge numbers at all, which fits a picture drawn at half size and
+  stretched with sharpening; that was not measured directly.
+
+**Not measured here:** shadows, anti-aliasing, clouds, Level of Detail and the effects, one at a time; that is series B,
+below. Nor: heat over a long session, 120 Hz with vsync on, or play in a real city.
+
+**Against the Studio** (section 5 of the runbook: not by percentage alone). The base settings differ (the Studio's
+base is shadows Medium, TAA, no Dynamic Resolution, at 2560x1440), so the frame rates are not put side by side. What can
+be said: the MacBook's benchmark sits near 25 FPS at its laptop profile, and the one lever that moves it is the drawn
+size.
+
+## The MacBook, series B on 1.6.4f1 (2026-11-26, 13:15 to 15:48): shadows, anti-aliasing, clouds, Level of Detail, effects
+
+**Method.** As series A (folder `settings-20261126-131532`, runbook section 6, step 5, with captures), on a 60 W charger
+(not the MacBook's own); the battery read 85 to 88 % and rose through the series. The game's window was the only one in
+front (checked after the first cycle). **33 cycles (the twelve cells and the base, twice over), none void; no cell lacks
+a key; Settings.coc put back.** Two earlier starts that day are not results: one stopped by hand for a commute, one on a
+15 W charger that drained the battery to 7 %, after which every cell read about 5 FPS.
+
+**The base** is series A's: shadows Medium (2048, terrain shadows), TAA, upscaler None, Level of Detail 0.25, Dynamic
+Resolution on at a fixed 0.5. Read back from the first cycle's file: `TAA`, `2048`, terrain shadows `true`.
+
+**The base runs fall into two groups:** six read 24.74 to 24.82 FPS (CPU about 21.2 ms), three read 23.09 to 23.29
+(cycles 9, 17 and 25; CPU about 24.3 ms, GPU about 41 ms). Why was not found: they do not follow one cell, and the last
+base read 24.82. So the script's own "vs base" column, which averages the base runs either side of a cell, is not used
+here; every cell is put against the six base runs of the first group (mean **24.79**). Read the percentages as that, and
+note that a base like the second group's would make every cell look about 7 % better.
+
+| Setting changed | FPS (each run) | vs 24.79 | Hard edges 30 / 50 / 70 s |
+|---|---|---|---|
+| **base** (shadows Medium, TAA) | six runs 24.74 to 24.82; three 23.09 to 23.29 | | 0.67 / 0.49 / 0.43 |
+| Shadows Low (1024, no terrain shadows) | 27.38, 27.69 | +10.4 %, +11.7 % | 0.73 / 0.44 / 0.31 |
+| Shadows High (4096) | 21.87, 22.65, 22.69 (third run) | −11.8 %, −8.6 %, −8.5 % | 0.60 / 0.49 / 0.46 |
+| Shadows off | 27.77, 27.81 | +12.0 %, +12.2 % | 0.70 / 0.47 / 0.33 |
+| Anti-aliasing none | 24.73, 24.79 | −0.2 %, 0.0 % | 0.70 / 0.46 / 0.45 |
+| Anti-aliasing FXAA | 24.78, 24.80 | 0.0 %, 0.0 % | 0.68 / 0.48 / 0.46 |
+| Anti-aliasing SMAA High | 24.73, 24.81 | −0.2 %, +0.1 % | 0.71 / 0.47 / 0.29 |
+| Volumetric clouds off | 25.63, 25.54 | +3.4 %, +3.0 % | 0.62 / 0.49 / 0.49 |
+| Level of Detail 0.35 | 23.34, 23.37 | −5.8 %, −5.7 % | 0.65 / 0.47 / 0.45 |
+| Level of Detail 0.50 | 21.44, 21.49 | −13.5 %, −13.3 % | 0.69 / 0.44 / 0.34 |
+| Fog off | 24.93, 25.09 | +0.6 %, +1.2 % | 0.53 / 0.43 / 0.47 |
+| Ambient occlusion off | 24.80, 24.87 | 0.0 %, +0.3 % | 0.69 / 0.48 / 0.40 |
+| Reflections off | 24.99, 25.05 | +0.8 %, +1.0 % | 0.63 / 0.50 / 0.49 |
+
+The edge numbers are the means of each cell's captures (two per second mark; nine for the base). `period3` read 0.99 to
+1.01 in all 132 captures.
+
+**What it says**
+
+- **Shadows carry the cost.** Low gives back 10 to 12 %, nearly all of what turning shadows off gives (12 %); High costs
+  9 to 12 %. On the Studio Low was worth 5.5 % and High cost 7.2 %. Shadows High's first two runs differed by 3.6 %; a third
+  (16:10, between base runs of 24.70 and 24.83) read 22.69, so two of three agree on about −8.5 % (median 22.65, −8.6 %).
+- **Anti-aliasing is free here and changes nothing the probe sees.** None, FXAA, SMAA High and TAA read within 0.2 % of
+  each other, and their hard edges are the same (0.67 to 0.71 at 30 s). On the Studio, with no scaling, the same four
+  methods differed sevenfold in hard edges (none 0.65, TAA 0.07 to 0.13). *Inferred, not measured:* with Dynamic
+  Resolution at 0.5 the picture is stretched and sharpened (Contrast Adaptive Sharpen) after anti-aliasing, and that
+  step sets the edges.
+- **Level of Detail costs as it rises:** 0.35 costs about 6 %, 0.50 about 13 %. Keep 0.25.
+- **Volumetric clouds off gives 3 %** (the Studio: 4.3 % for the same cell). The distant clouds were not tried here.
+- **Fog, ambient occlusion and reflections are each within about 1 %**, inside what two runs of one cell can tell apart.
+- **This Mac's own settings as found** (shadows Low, SMAA High, Dynamic Resolution 0.5) are the Shadows Low cell but for
+  the anti-aliasing, which costs nothing here: about 27.5 FPS in the benchmark. That is inferred from two cells; no run
+  was made at exactly those settings.
+
+**Third runs** of Shadows High and of series A's two FSR 3 cells were made at 16:10 (above and in series A). **Not measured:** shadows Low with clouds off together (on the Studio the gains added up a little short
+of their sum), the distant clouds alone, the cause of the low base runs, and heat, 120 Hz or a real city.

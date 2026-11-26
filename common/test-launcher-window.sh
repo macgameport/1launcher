@@ -44,8 +44,11 @@
 #   MUTANT=24 ...   the 8-byte token always read; must exit 1
 #   MUTANT=25 ...   no size limit on packageinfo.vdf; must exit 1
 #   MUTANT=26 ...   only the first file read; must exit 1
-#   MUTANT=27 ...   an offer for a game that has an app; must exit 1
-#   MUTANT=28 ...   a guide address not on https://github.com/ accepted; must exit 1
+#   (MUTANT=27 retired 2026-11-26: "an offer for a game that has an app". Which games are offered is decided by
+#   tableOffers since docs/plans/launcher-first-install.md, 3.7, and the line it dropped in offerRows now only
+#   spares a question about ownership; MUTANT=87 holds the case.)
+#   MUTANT=28 ...   a guide address not on https://github.com/ accepted; must exit 1 (since the same plan the
+#                   test that decides it is tableOffers's, and that is the line this mutant changes)
 #   MUTANT=29 ...   no time limit on the child that reads the files; must exit 1
 #   MUTANT=30 ...   the files read in the list's own process, not a child's; must exit 1
 #   MUTANT=31 ...   the mark not stroked in the icon; must exit 1
@@ -182,8 +185,8 @@ case "${MUTANT:-0}" in
   24) swap 'if token { guard r.skip(8) else { return nil } }' 'guard r.skip(8) else { return nil }' ;;
   25) swap 'readPlainFile(file, limit: 16_777_216)' 'guard let data = readPlainFile(file, limit: 1 << 40), let ids = ownedIDs(data) else { continue }' ;;
   26) swap 'for file in files {' 'for file in files.prefix(1) {' ;;
-  27) drop 'guard !have.contains(g.id) else { continue }' ;;
-  28) drop 'guard g.address.hasPrefix("https://github.com/") else { continue }' ;;
+  27) echo "REFUSED: mutant 27 is retired (the header says where its case went)"; exit 2 ;;
+  28) swap 'guard !have.contains(g.id), !seen.contains(g.id), g.address.hasPrefix("https://github.com/") else { continue }' 'guard !have.contains(g.id), !seen.contains(g.id) else { continue }' ;;
   29) swap 'let deadline = Date().addingTimeInterval(limit)' 'let deadline = Date.distantFuture' ;;
   30) swap 'guard let out = runChild(helper, ["--owned", String(id)] + files, limit: 5) else { return "unknown" }' 'let out = ownership(of: id, in: files)' ;;
   31) drop 'markPath(in: small ? smallBox : iconBox, stroke:' ;;

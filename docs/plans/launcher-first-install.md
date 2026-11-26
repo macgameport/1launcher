@@ -19,6 +19,7 @@
 >      version than this tree's**. With a stamp at the tree's own version and a build that failed, the line is
 >      not said: it speaks of "this update", and there is none held back. A case and a mutant hold it in both
 >      setups' tests.
+>      **James, 2026-11-26: kept as built.**
 >   2. One sentence the plan does not give, for a launcher's stamp that cannot be written: "14unch3r's version
 >      could not be recorded (`<file>`). It may go on offering an update it already has." It is marked `!!` like
 >      the game's own, and changes no exit code. Nobody but the build has read it.

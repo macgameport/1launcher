@@ -8,14 +8,20 @@ platform facts (Apple's Command Line Tools, Gatekeeper, Terminal), and the test-
 Every `file:line` below was read on `main` at `91cfb63` (2026-11-25). A path is relative to the repository
 root. Tracking: no issue yet; one is opened when the check is done.
 
+**Decisions: taken by James on 2026-11-26** (section 13, the block under the table). Four are his own: the install
+view goes on the roadmap (LFD1), 14unch3r is compiled on the player's Mac until the project is a registered Apple
+developer (LFD2), a game that is not set up is drawn in grey scale and ghosted (LFD4), and the wait for Apple's
+Command Line Tools is asked for first and overlapped (LFD14, new). The fold of those four is new material and has
+not been checked either.
+
 **How to read the marks.** **[read]**: read in the code or a plan at that commit, by the session that wrote
 this draft. **[record]**: taken from another plan's record of a measurement, not measured again. **[inferred]**:
 follows from what was read, and was not run. **[not known]**: the code and the plans do not answer it; it is a
 probe or a decision below. Nothing in this draft was measured: no test, build, app, Wine or network request was
 run while it was written.
 
-This plan's steps are LF0 to LF7, its tests LFT1 to LFT9, its probes LP1 to LP3, its live steps LFL1 to LFL6
-and its decisions LFD1 to LFD13.
+This plan's steps are LF0 to LF8 (LF8, added with LFD14, may come after LF7), its tests LFT1 to LFT11, its
+probes LP1 to LP3, its live steps LFL1 to LFL6 and its decisions LFD1 to LFD14.
 
 ## 0. What James asked for (2026-11-25)
 
@@ -215,6 +221,9 @@ way for an installer to talk. An install view is a plan of its own (section 14),
 the installers, questions that have names, is worth knowing before a third game's installer is written
 (LFD1 asks).
 
+**Decided 2026-11-26 (LFD1): Terminal in this plan, and the install view is on the roadmap** (the root
+`README.md`, "Roadmap"; section 11, slice 3).
+
 ### 3.2 What must happen before a window can appear: build it there (LFD2)
 
 On a Mac with nothing, in order **[inferred from 1.2, 1.3]**: Terminal and the paste; the fetch of the
@@ -236,22 +245,32 @@ So: build it there. The cost is honest and is said in the guide: the first windo
 LP1 measures the compile. Shipping a built app stays possible later without changing this plan's design, and is
 not in it (section 14).
 
-> **Asked by James on 2026-11-25, after this draft; not folded, and it bears on LFD2.** He wants the wait for
-> Apple's Command Line Tools made shorter or simpler in a release soon. The first player from outside the
-> project was about to run an installer that day, and this is the longest step that is not a game's download.
-> Nothing below is measured; the check, or a small plan of its own, weighs it:
-> - **What needs the tools today [read].** Cities: Skylines II names `python3`, for its patches
->   (`cities-skylines-2/scripts/install.sh:42`); Surviving Mars names `nm`, for its engine swap
->   (`surviving-mars-relaunched/scripts/install.sh:45`); and every app this project builds is compiled with
->   `swiftc`. So a built app alone would not remove the tools from either game's install.
-> - **Start them sooner.** The core asks for the tools at its step 2 and waits (`common/install-core.sh:326-345`).
->   Asking at the very start and going on with the downloads that do not need them would overlap the two waits.
->   **[inferred]** Which stages can run before the tools are there has not been read.
-> - **Ask without Apple's box.** `softwareupdate` can install the tools from Terminal; it needs an
->   administrator's password, which the installer has never asked for. **[not verified on macOS 26 or 27]**
-> - **Need less of them.** Built apps fetched by the pasted line (the table above), `nm` replaced by something
->   macOS has without the tools, and a Python that is not Apple's: each is a published thing or a dependency
->   this project does not have today.
+**Decided 2026-11-26 (LFD2): compiled on the player's Mac until the project is a registered Apple developer.** A
+built app is taken up when a Developer ID exists to sign and notarize it with; until then nothing of this plan
+ships a binary.
+
+**Decided 2026-11-26 (LFD14): the wait for Apple's Command Line Tools is asked for first, and overlapped.** Asked
+by James on 2026-11-25, the day the first player from outside the project was about to run an installer: this is
+the longest step that is not a game's download.
+
+- **What needs the tools today [read].** Cities: Skylines II names `python3`, for its patches
+  (`cities-skylines-2/scripts/install.sh:42`); Surviving Mars names `nm`, for its engine swap
+  (`surviving-mars-relaunched/scripts/install.sh:45`); and every app this project builds is compiled with
+  `swiftc`. So a built app alone would not remove the tools from either game's install.
+- **The rule.** An installer asks Apple for the tools as its first act after its refusals
+  (`xcode-select --install`, when `xcode-select -p` finds none), says in one line that Apple's box is up and what to
+  press, and goes on. It waits for them only at the first stage that runs one of them, with the wait and the words
+  the core has today (`common/install-core.sh:326-345`). With the tools there, nothing is asked and nothing waits.
+- **In the launcher's installer** (3.4) the stages before the build need no tool, so the ask comes first and the
+  wait comes before the build.
+- **In a game's installer** the gain is larger and is a change to the shared core: the wait can fall inside the
+  wrapper's, Steam's and the game's downloads. **[inferred, not read]** Which of the core's stages run a tool of
+  Apple's before the game's setup has not been read; the check's builder lens reads it, and the stage list it
+  finds is written here before step LF8 is built. If a stage before the downloads needs a tool, the wait stays
+  where that stage is and the gain is smaller.
+- **Not chosen:** asking through `softwareupdate` without Apple's box (it needs an administrator's password, which
+  the installer has never asked for; not verified on macOS 26 or 27), and needing fewer of the tools (a Python that
+  is not Apple's, `nm` replaced, built apps: each a dependency or a published thing the project does not have).
 
 ### 3.3 The no-game form of the root `install.sh` (LFD3)
 
@@ -294,8 +313,9 @@ update. It takes no option.
    1.3). An Intel processor or a macOS outside what is tested gets one line of caution and no stop: each
    game's own check decides for that game (Cities: Skylines II cautions on Intel, Surviving Mars stops:
    `cities-skylines-2/scripts/setup.sh:248-254`, `surviving-mars-relaunched/scripts/setup.sh:60-63`). LFD12.
-3. **Apple's Command Line Tools.** The core's stage (`core_tools`), with `swiftc` as the part that must run
-   (`xcrun -f swiftc`). The core cannot be read here as it is: it stops unless a game's settings are set
+3. **Apple's Command Line Tools.** Asked for at once, right after step 1's refusals, and waited for here, before
+   the build (LFD14, 3.2): steps 2 and 4 run while Apple's download does. The core's stage (`core_tools`), with
+   `swiftc` as the part that must run (`xcrun -f swiftc`). The core cannot be read here as it is: it stops unless a game's settings are set
    (`common/install-core.sh:20-26`). So this script holds a copy of that stage's wait and words, and a test
    holds the two equal, the way `cities-skylines-2/scripts/test-install.sh` holds the core's copies of the
    launcher's functions equal to the launcher (`common/install-core.sh:97-99`). Whether a shared file is
@@ -408,6 +428,12 @@ Three kinds of tile, and where each state comes from:
   to install." The group's label becomes "Not set up on this Mac" (today "You also own",
   `common/launcher-window.swift:801`). The installer's first lines already say that a Steam account that owns
   the game is needed (`common/install-core.sh:269`). A game that is set up is never hidden (D7, unchanged).
+- **A game that is not on this Mac yet is drawn in grey scale and ghosted (LFD4, decided 2026-11-26).** The three
+  new kinds of tile (not set up, begun, installing) are drawn by the rule the window has for a game it cannot
+  start: `dim()` (`common/launcher-window.swift:976`), under which the icon is drawn through `greyed()` at
+  `Look.dimAlpha`, 0.5 (`:794`, `:1077-1078`) **[read: those lines; the rest of the tile's drawing was not]**. A
+  game that is set up is never drawn so. Where the icon of a game with no app comes from is for the design lens:
+  the table has no picture, and today's offers were not read for it.
 - **A wrapper under an old name with no marker** (a Mac not yet renamed, `docs/plans/wrapper-names.md`) is
   not seen by the window, which reads markers only: such a game shows as "not set up" where "begun" would be
   truer. The click is right either way: the installer finds the wrapper by `common/wrappers.sh`'s rule and
@@ -493,16 +519,21 @@ every mutant of section 6 applied and seen red before the step is called done.
 - **LF1. The record.** `common/updates.sh`: the launcher's stamp and its place in the state; both setups
   write it after a build of the window that worked. `CLAUDE.md`'s line for `_update` names the new files
   first (LFD9), before anything writes them. Tests LFT3 (its first half), LFT5.
-- **LF2. The launcher's installer and the word.** `common/install-launcher.sh`; the root `install.sh`'s word
-  `launcher` and the one new line for no word. Tests LFT1, LFT2.
+- **LF2. The launcher's installer and the word.** `common/install-launcher.sh`, which asks for Apple's tools
+  first (LFD14); the root `install.sh`'s word `launcher` and the one new line for no word. Tests LFT1, LFT2,
+  LFT11 (its launcher half).
 - **LF3. The update.** `common/update-games.sh`'s step for the launcher; `Look.updateText`. Test LFT4.
 - **LF4. The tool's `--install`** and the lock. Tests LFT3 (its second half), LFT8.
-- **LF5. The window.** The three kinds of tile, the group's label, the sheet, the text modes for each, the
-  fallback with no tool. Test LFT6.
+- **LF5. The window.** The three kinds of tile, drawn in grey scale and ghosted (LFD4), the group's label, the
+  sheet, the text modes for each, the fallback with no tool. Tests LFT6, LFT10.
 - **LF6. The contract and the words.** `common/test-game-contract.sh` (LFT7); `CLAUDE.md` (the layout
   table's rows for `install.sh` and `common/`, § Published addresses); the statements of section 10; the root
   `README.md` and both `INSTALL.md` files, each keeping its game's own line as the second way;
   `CHANGELOG.md` under Unreleased; this plan's as-built header.
+- **LF8. The tools asked first in the shared core (LFD14).** Only after the stage list of 3.2 is written from a
+  read of the core: `common/install-core.sh` asks at its start and waits at the first stage that runs a tool.
+  Both games' installers change with it. Test LFT11 (its games half). It may be released after LF7: slice 1
+  does not depend on it.
 - **LF7. Live steps, merge, release** (section 7). The guides lead with the launcher's line only from the
   release whose `release` holds the word (LFD10): until then that line answers "not a Steam app ID: launcher".
 
@@ -538,6 +569,8 @@ check confirms each count against the file's header.
 | LFT7 | `common/test-game-contract.sh` (new), on a tree given as its argument | For every row of `common/games.tsv`: four fields and each one's form; the folder is there; `scripts/install.sh` and `scripts/setup.sh` are there and pass `bash -n`; the installer sets every setting of the core's list, with `GAME_APPID` the row's ID and `GAME_TITLE` the row's title; it reads `common/install-core.sh`; `WORDS_NEED` and `NEED_GB` are one-line literals; `l1w_row game <ID>` returns 0 and `l1w_games` prints the ID; the guide's address names a file of the tree; the installer's header lists the exit codes and every `read` in the installer and its setup stands under a test of the terminal. And the reverse: every ID of `l1w_games` has a row | on a scratch copy of the tree: an ID taken out of `l1w_games`; a `GAME_APPID` that is not the row's; a guide's address with no file; `WORDS_NEED` holding `$(date)`; a `read` with no terminal test; a fifth field in a row |
 | LFT8 | each game's `scripts/test-install.sh`, in the case that keeps the real `setup.sh` | **The parts joined.** From a fixture with the launcher's stamp alone (`release`, the tree's version): `updates.sh --install <ID>` with stubs; the written file run; through the root `install.sh`, the installer and the real setup; then the game's stamp and the launcher's stamp hold the tree's version, the state is `current`, and no lock is left | the written file made to run `update`; the lock left behind |
 | LFT9 | the gates | `common/check-links.py`, `common/check-identifiers.sh` at its residual, `bash -n` on every changed script, every other test file of the repository, and every older mutant of each test file touched still red and none REFUSED | none |
+| LFT10 | `common/test-launcher-window.sh`, through `--grid` | **Ghosted (LFD4).** With one game set up and one not: the tile of the game that is not set up carries `dim` in `--grid`'s line and the set-up game's does not; the same for a begun wrapper and for a running install's lock | A new mutant: `dim()` no longer true for the new states: red. A second: `dim()` true for a set-up game: red |
+| LFT11 | `common/test-install-launcher.sh`; both games' `scripts/test-install.sh` (the games half with LF8) | **The tools first (LFD14).** With no tools at the start: `xcode-select --install` is called before any download's stub is called and before the record's folder is made, the one line about Apple's box is printed, and the installer waits at the first stage that runs a tool and not before. With the tools there: no ask, no line, no wait | A new mutant each: the ask moved back to where the wait is: red. The wait dropped: red (a stage runs a stub tool that is not there yet) |
 
 **Existing tests that change, by name** (each to be confirmed by the check's builder lens, which reads the
 files): `common/test-launcher-window.sh` (the offer cases that expect no row without an owning cache, the
@@ -611,6 +644,11 @@ a pasted command (`docs/plans/simple-install.md`, NL4, not yet run).
 6. The design audit gate is done for the window's new tiles and sheet: the existing look's constants are
    used, the contrast lines are at 4.5 or more, and `docs/plans/launcher-window-look.md` is extended.
 7. The as-built header is written at the build, with LFL5 and LFL6 named as still to come.
+8. A game that is not set up, a begun install and a running install are each drawn in grey scale and ghosted,
+   shown in a capture of the window in the dark and the light appearance (LFD4); LFT10 passes.
+9. On a Mac without Apple's tools the launcher's installer asks for them before anything else it does, and
+   LFL1 records the seconds from the paste to Apple's box and from the box's end to the window (LFD14). If LF8
+   is built: the same in LFL2 for a game, with the stage at which the installer waited.
 
 ## 9. What is published, and can never be withdrawn
 
@@ -661,9 +699,10 @@ itself and its tiles open the guides, which is less than the idea and breaks not
   taken from each installer when the window is built) and this Mac's free space beside them (LFD7, LFD11).
   And the installer's look for another Steam moved to its first step, so that it stops before anything is
   downloaded.
-- **Slice 3: an install view inside the window** (3.1), after slice 1 has run on real Macs.
-- **A double-click form of the launcher's installer**, signed or not (1.5, ND1 of
-  `docs/plans/simple-install.md`).
+- **Slice 3: an install view inside the window** (3.1), after slice 1 has run on real Macs. On the roadmap since
+  2026-11-26 (LFD1).
+- **A built and signed 14unch3r, and a double-click form of the launcher's installer**, once the project is a
+  registered Apple developer (LFD2; 1.5, ND1 of `docs/plans/simple-install.md`).
 - **The third game**, written against 3.6, with LFL6 as its live step.
 
 ## 12. Rollback
@@ -699,11 +738,22 @@ itself and its tiles open the guides, which is less than the idea and breaks not
 | LFD11 | When less space is free than the game needs: does the window refuse, or caution? | Caution, in slice 2, as the installer does (1.2): a player may be about to free space or to install without the DLC |
 | LFD12 | On an Intel Mac, or a macOS outside what is tested, does the launcher's installer stop? | It says so and goes on; only a macOS below 13, where the window cannot run, stops it. The two games already judge an Intel Mac differently, so the judgment belongs to each game |
 | LFD13 | One install at a time from the window, whatever the game? | Yes (3.8): each install starts a Steam, and one Steam at a time can use an account |
+| LFD14 | (Added 2026-11-26, from James's request of 2026-11-25.) Is the wait for Apple's Command Line Tools asked for first and overlapped with what needs no tool? | Yes (3.2): in the launcher's installer in slice 1, and in the shared core as step LF8 once its stages are read |
+
+**Decided by James on 2026-11-26**, in answer to the table above laid out in the session, with the question which
+he wanted different:
+
+- **LFD1: Terminal, "but put in the roadmap".** The install view is on the roadmap (root `README.md`).
+- **LFD2: compiled on the Mac "until we are a registered developer".**
+- **LFD4: every game, and "uninstalled games should be gray scale or ghosted".**
+- **LFD14: "agree".**
+- **LFD3 and LFD5 to LFD13: as recommended.** He named the four above and left these as they stand.
 
 ## 14. Not in this plan
 
 - **An install view inside the window**, and questions that have names (3.1; slice 3).
-- **A built or signed 14unch3r**, and a double-click installer of the launcher (3.2).
+- **A built or signed 14unch3r**, and a double-click installer of the launcher (3.2): until the project is a
+  registered Apple developer (LFD2).
 - **The table of games fetched from the network** (3.5).
 - **Removing a game.** There is no uninstaller; the guides' Uninstall sections stand.
 - **Buying a game, or signing in to Steam, from the window.** The installer still sends the player to Steam's
@@ -711,7 +761,7 @@ itself and its tiles open the guides, which is less than the idea and breaks not
 - **Installing two games in one go.** One click, one game, one at a time.
 - **A change to `common/games.tsv`'s shape**, or joining it with `common/wrappers.sh`'s table (3.6).
 - **The installers' own steps.** Nothing in a game's installer changes in slice 1; LP2 and LP3 may find
-  things that are theirs to fix.
+  things that are theirs to fix. The one change planned to the shared core is step LF8 (LFD14), after slice 1.
 - **Macs set up before `v0.3.1`.** They need one paste per game before any update reaches them
   (`docs/plans/built-in-update.md`, section 11).
 - **The third game itself.**
@@ -732,6 +782,9 @@ itself and its tiles open the guides, which is less than the idea and breaks not
 - **Which older mutants are anchored on the lines this plan touches** in `install.sh`, the two setups,
   `common/update-games.sh` and `common/updates.sh`. `docs/plans/built-in-update.md` names several for its own
   changes; none was looked up for these.
+- **Which stages of `common/install-core.sh` run a tool of Apple's, and in what order** (LFD14, LF8). Only the
+  two games' named parts (`python3`, `nm`) and the tools stage itself were read.
+- **Where the picture of a game with no app comes from** in a ghosted tile (LFD4).
 - **The siblings' precedents** (1.6).
 - **Line numbers** are of `91cfb63`. Three of the files read are long and were read in parts:
   `common/launcher-window.swift` (its header, `:128-312`, `:440-508`, `:639-836`, `:1606-1984`), and the two

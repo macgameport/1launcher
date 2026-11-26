@@ -64,8 +64,13 @@ pgrep -x steam_osx >/dev/null && { echo "REFUSED: the macOS Steam is running"; e
 fi
 case "${MAXFPS:-}" in ""|30|60|120|144|240|Unlimited) ;; *) echo "REFUSED: MAXFPS is one of 30 60 120 144 240 Unlimited"; exit 2 ;; esac
 case "${VSYNC:-}" in ""|true|false) ;; *) echo "REFUSED: VSYNC is true or false"; exit 2 ;; esac
-WL=/tmp/winlist
-{ [ -x "$WL" ] && [ "$WL" -nt "$HERE/../cities-skylines-2/scripts/winlist.swift" ]; } || swiftc -O "$HERE/../cities-skylines-2/scripts/winlist.swift" -o "$WL" 2>/dev/null
+# The window lister is built into this account's own temporary folder (mode 700), never /tmp: a program found at
+# a path any account can write must not be run. It is used only if it is this account's own plain file.
+WLDIR="$(getconf DARWIN_USER_TEMP_DIR 2>/dev/null)"; { [ -d "$WLDIR" ] && [ -O "$WLDIR" ]; } || WLDIR="$SM_STATE/runs"
+WL="${WLDIR%/}/1launcher-winlist"
+wl_ok() { [ -f "$WL" ] && [ ! -L "$WL" ] && [ -O "$WL" ] && [ -x "$WL" ] && [ "$WL" -nt "$HERE/../cities-skylines-2/scripts/winlist.swift" ]; }
+wl_ok || swiftc -O "$HERE/../cities-skylines-2/scripts/winlist.swift" -o "$WL" 2>/dev/null
+wl_ok || WL=""
 [ -x "$WL" ] || echo "note: no window lister (swiftc missing?): no captures in this run"
 OUT="$SM_STATE/runs/load-$LABEL-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$OUT"
 game_pids() { for _p in $(pgrep -f 'Mars\.exe' 2>/dev/null); do case "$(ps -o command= -p "$_p" 2>/dev/null)" in "$GAME/Mars.exe"*) echo "$_p" ;; esac; done; }

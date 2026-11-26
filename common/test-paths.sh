@@ -99,6 +99,8 @@ cities-skylines-2/launchers/Cities Skylines II (DXMT Wine 11).command
 common/mac-inventory.sh
 common/paths.sh
 common/test-paths.sh
+common/test-updates.sh
+common/updates.sh
 surviving-mars-relaunched/launch-relaunched.sh
 surviving-mars-relaunched/patch-window-origin.py
 surviving-mars-relaunched/scripts/setup.sh
@@ -110,7 +112,7 @@ surviving-mars-relaunched/tools/split-wrapper.sh
 surviving-mars-relaunched/tools/steam-judge.sh
 surviving-mars-relaunched/tools/test-mod-notes.sh
 LIST
-  check "the files that spell a root are the listed fourteen" "$files" "$(cat "$T/want")"
+  check "the files that spell a root are the listed sixteen" "$files" "$(cat "$T/want")"
   [ "$files" = "$(cat "$T/want")" ] || printf '%s\n' "$spelled" | cut -c1-160
 
   # --- LT15: the two folders are not swapped. In tracked shell and Python files, a name joined to $CS2_DATA is

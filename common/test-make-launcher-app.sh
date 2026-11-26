@@ -231,7 +231,7 @@ printf '#!/bin/bash\ncase "$1" in -p) echo /Library/Developer/CommandLineTools ;
 printf '#!/bin/bash\necho 27.2.1\n' > "$T/jbin/sw_vers"
 printf '#!/bin/bash\necho "OPEN $*" >> "%s/jcalls"\n' "$T" > "$T/jbin/open"
 chmod +x "$T/jbin"/*; : > "$T/jcalls"
-JU="$JH/Library/Application Support/1launcher/_update"; JA="$JH/Applications/14unch3r.app"
+JU="$(env -u L1_DATA_ROOT -u L1_WORK_ROOT -u L1_UPDATE_DIR HOME="$JH" bash "$HERE/paths.sh" 2>/dev/null | sed -n 's/^L1_UPDATE_DIR=//p')"; JA="$JH/Applications/14unch3r.app"
 rc=$(env -u L1_UPDATE_DIR -u L1_UPDATE -u L1_DATA_ROOT -u L1_FETCHED_COMMIT HOME="$JH" PATH="$T/jbin:$PATH" L1_FETCHED_REF=release /bin/bash "$J/common/install-launcher.sh" > "$T/jout" 2>&1; echo $?)
 check "LFT12 the launcher's installer with the real builder: exit 0, the app built in the scratch home, open called once with it, Apple not asked" \
   "$rc:$([ -x "$JA/Contents/MacOS/launcher-window" ] && echo built):$(grep -c "^OPEN $JA\$" "$T/jcalls"):$(grep -c '^XS ' "$T/jcalls")" "0:built:1:0"

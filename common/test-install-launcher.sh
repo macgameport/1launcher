@@ -132,7 +132,7 @@ TAB="$(printf '\t')"
 n=0
 newh() {   # a fresh home, state and record of calls
   n=$((n + 1)); H="$T/h$n"; ST="$T/st$n"; CALLS="$T/calls$n"; mkdir -p "$H" "$ST"; : > "$CALLS"
-  UPD="$H/Library/Application Support/1launcher/_update"
+  UPD="$(HOME="$H" bash "$REPO/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"   # asked of common/paths.sh, never spelled here (common/test-paths.sh, LT14)
   export CALLS ST UPD
 }
 run() {   # [VAR=value ...] [-- arguments]: the installer's exit code; its output in $H.out

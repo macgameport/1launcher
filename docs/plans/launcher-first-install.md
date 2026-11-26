@@ -1204,8 +1204,8 @@ existed, unbuildable.
 difference read (1.2): LF2 and LF4a for certain, since they change the core; LF1 and LF3 if that file then
 fails on its transcript.
 
-- **LF0. The probes that gate** (section 7), before the code they gate. LP1 is measured in part (pass 1); its
-  remaining conditions are met before LF1. LP2 and LP3 gate nothing here: what they find is the installers'
+- **LF0. The probes that gate** (section 7), before the code they gate. **Done 2026-11-26:** LP1's pass
+  condition is met in full (section 7). LP2 and LP3 gate nothing here: what they find is the installers'
   to fix.
 - **LF1. The record.** `common/updates.sh`: the launcher's stamp, its writer and reader, and its row in the
   state; both setups write it after a build of the window that worked, and say the line of 3.5 when one
@@ -1352,6 +1352,18 @@ install, LFL8 for a running one); macOS's refusal of a pasted command (LFL7).
   compilers macOS 14 and later deliver. **[not known]** whether an older one of those (Swift 5.9, 5.10, 6.0)
   compiles the file: no Mac of the project has one, and no step of this plan meets one, since LFL7's Mac is on
   macOS 27 as well. Until one is met, the as-built header and the guides say "built on macOS 27 only" (3.2).
+  **Met in full on 2026-11-26, on the branch at `346c3b1` (the session; outputs in `/tmp/lp1/`, a scratch
+  folder that a restart empties):** the Studio, macOS 27.2.1, `DEVELOPER_DIR=/Library/Developer/CommandLineTools`.
+  `xcrun -f swiftc` gives `/Library/Developer/CommandLineTools/usr/bin/swiftc`, Apple Swift 6.4
+  (swiftlang-6.4.0.34.1), and the SDK is the tools' own `SDKs/MacOSX.sdk`. The builder's compile line
+  (`common/make-launcher-app.sh:71`) exits 0 with no warning: **26.0 s** with an empty module cache, **3.9 s**
+  warm. The product is arm64, signed ad hoc by the linker, with no extended attribute; `--svg <file>` writes a
+  file equal to `docs/images/14unch3r.svg`, and `--list` exits 0. **The builder whole**
+  (`bash common/make-launcher-app.sh --dest <scratch>`) exits 0 in **24.7 s** and its app's program writes the
+  same mark. `common/test-launcher-window.sh` and `common/test-make-launcher-app.sh` both exit 0 with
+  "0 failure(s)" under the same variable; neither file unsets it, and both compile through `xcrun`. So LF1 may
+  begin. Still as said above: one compiler, one macOS. The bundle's `LSMinimumSystemVersion` read `13.0`, as
+  today; LF2 makes it `14.0`.
 - **LP2. A full disk during Steam's download.** In a scratch wrapper on a small disk image: what Steam shows,
   what its manifest's fields read, and whether Steam stays up. Decides whether the installer's wait needs a
   rule, as a finding for the installers (it is true of a pasted line today) and not as part of this plan.

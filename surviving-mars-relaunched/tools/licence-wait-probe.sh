@@ -59,7 +59,13 @@ if [ "${1:-}" = --judge ]; then judge "${2:?usage: --judge <game log>}"; exit; f
 wait_lines() { grep -c "^Licence wait: $2 s\$" "$1"; }   # <launcher log> <seconds>
 
 SECS="${1:?usage: licence-wait-probe.sh <seconds> [runs] | --judge <game log>}"; RUNS="${2:-5}"
-eval "$(grep -E '^(APP|SS|GAME|ENGINE)=' "$L")"
+# The wrapper as the launcher finds it: by its marker, or SM_WRAPPER (common/wrappers.sh). Until 2026-11-26 this
+# read the launcher's APP= line, which has been set by a function call since wrapper-names: APP came out empty
+# and every run was refused ("no game log dir under /Contents/SharedSupport/prefix").
+APP="$(bash "$HERE/../common/wrappers.sh" find game 3215050)" || { echo "REFUSED: no wrapper of the game found"; exit 2; }
+SS="$APP/Contents/SharedSupport"
+GAME="$SS/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Project Spark"
+ENGINE="${SM_ENGINE:-$SS/wine}"
 export WINEPREFIX="$SS/prefix" WINEESYNC=1 WINEMSYNC=1 WINEDEBUG=-all
 export DYLD_FALLBACK_LIBRARY_PATH="$APP/Contents/Frameworks:$ENGINE/lib:/usr/lib:/usr/local/lib"
 WINE="$ENGINE/bin/wine64"

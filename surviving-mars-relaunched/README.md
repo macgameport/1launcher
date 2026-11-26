@@ -139,7 +139,14 @@ On a Mac whose D3DMetal came from CrossOver, after CrossOver updates it: `bash t
 ## Known limits
 
 - Steam Workshop subscriptions are untested; Paradox Mods work from the in-game Mod Manager.
-- No frame cap is saved by default; set VSync or a limit in Options > Video if the Mac runs hot.
+- **Heat on a laptop: set a frame limit.** The game's own source (it ships in `ModTools/Src`) gives the defaults:
+  Vsync on and a Frame Rate Limit of 240, and neither is saved until someone changes it. On a 60 Hz display that
+  means 60 frames a second; on a MacBook's 120 Hz panel it allows 120, twice the work for the same picture. Set
+  **Options > Display > Frame Rate Limit** to 60 (or 30 on battery). Not yet measured on a MacBook: with a colony
+  loaded, `bash tools/load-probe.sh --attach before`, change the limit, then `... --attach after`, and compare the
+  two summaries (the game's processor share and the graphics card's load). On the Studio the main menu alone uses
+  about 45 % of one core and almost none of the graphics card, whatever the limit (five runs, 2026-11-26), so a menu
+  says nothing about this; on the MacBook the game used 2.2 to 2.7 cores in play with no limit saved (2026-11-01).
 - There is no arm64 path: D3DMetal is not in CrossOver's ARM64 preview (cs2 #21).
 
 ## History

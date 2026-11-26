@@ -265,7 +265,7 @@ case "${MUTANT:-0}" in
   85) swap 'guard lstat(tool, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }' 'guard stat(tool, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }' ;;
   86) drop 'if let line = footRect, tiles[i].cell.0 == tiles.last?.cell.0 {' ;;
   87) swap 'guard !have.contains(g.id), !seen.contains(g.id), g.address.hasPrefix("https://github.com/") else { continue }' 'guard !seen.contains(g.id), g.address.hasPrefix("https://github.com/") else { continue }' ;;
-  88) swap 'prefix: nil, state: wrappers.count == 1 ? .begun : .notSetUp))' 'prefix: nil, state: .begun))' ;;
+  88) swap 'wrappers.count == 1 ? .begun : .notSetUp))' 'prefix: nil, state: g.id == installing ? .installing : .begun))' ;;
   89) swap 'return offers.map { r in' 'return offers.filter { $0.state == .begun || ids.contains($0.appID ?? 0) }.map { r in' ;;
   90) swap '(defaultRow(apps, last: last) ?? offers.first).flatMap' 'let pick = tiles.firstIndex { $0.row.key == keep } ?? defaultRow(apps, last: last).flatMap { d in tiles.firstIndex { $0.row.key == d.key } }' ;;
   91) drop 'if i > 0, core.allSatisfy({ $0.isNumber }) || core.allSatisfy({ "IVX".contains($0) }) { continue }' ;;

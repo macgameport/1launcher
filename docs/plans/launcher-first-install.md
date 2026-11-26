@@ -1,6 +1,7 @@
 # The launcher first: one pasted line installs 14unch3r, and its window installs the games
 
-> **🔧 As-built (2026-11-26): partial — LF0, LF1, LF2 and LF3 are built on the branch `launcher-first-install`.
+> **🔧 As-built (2026-11-26): partial — LF0, LF1, LF2, LF3 and LF5a are built on the branch `launcher-first-install`
+> (the four code steps of section 11's fallback).
 > Nothing is merged, nothing is released, and no live step has been run.** Tracking: #35. Built on macOS 27 only
 > (3.2). Each step has its own block below: its commits, what the build chose, its tests and its gates.
 >
@@ -113,13 +114,53 @@
 >     at `226f56d`: 48 of 49 exit 0, `common/test-paths.sh` being the one, as before.
 >   - *Verify against:* `common/update-games.sh` (`launcher_app`, `the_launcher`, the closing block),
 >     `common/launcher-window.swift` (`Look`), `common/test-update-games.sh` ("LFT4").
+> - **LF5a, the listing** (`8de135f`; `8f07aa4` for two older mutants of its test). In
+>   `common/launcher-window.swift`: `tableOffers`, which makes one offer row for every game of the table that
+>   has no app, from files alone, so the tiles are in the first `reload()`; the states `not-set-up` and `begun`;
+>   the label "Not set up on this Mac"; the first offer selected when no app is there; the group's help; and
+>   the placeholder of 3.10 (`initials`, `placeholderIcon`, `tileIcon`, six constants in `Look`, the fifteenth
+>   field of a tile's line in `--grid`, the line `paint initials`). A click still opens the guide. No tile is
+>   `installing`, and no line of the lock is in the window.
+>   - **`paint initials` printed 7.76** with the three titles the project knows, over the floor of 4.5 (3.10
+>     reckoned "at least about 6.5").
+>   - *What the build chose.* (1) Names the plan left to the build: `withOwnership`, which turns a tile that is
+>     not set up into `owned` when a cache says so and moves nothing; `markedPaths`, the list `markedWrapper`
+>     now reads; the two helpers of 3.10's source gate, `drawPlaceholderBody` and `placeholderLetters`, with
+>     `placeholderSquare` under both; and `initialsRatio`, which `paintLines` calls for the new line and in
+>     which the third call of `tileIcon(` stands. (2) "Exactly one wrapper carries the game's marker" is
+>     counted over all the folders the window reads, and one wrapper reached by two spellings of a folder is
+>     one. (3) A begun game that a cache says the account has stays `begun`. (4) Letters too wide for the
+>     square are drawn in the same font at a smaller size, in proportion. (5) The source's first comment says
+>     in this step that a game of the table is a row too; section 10 gives that correction to LF6.
+>   - *A finding of the sweep.* Mutants 27 and 28 of `common/test-launcher-window.sh` each dropped a guard in
+>     `offerRows`. That function no longer decides which games are offered, so neither was red at `8de135f`.
+>     27 is retired (87 holds its case, in `tableOffers`); 28 now drops the same test in `tableOffers` and is
+>     red (`8f07aa4`).
+>   - *Existing cases that changed, as section 6 said they would:* eleven of `common/test-launcher-window.sh`,
+>     those that expected no offer without an owning cache, the label "You also own", or the old help.
+>   - *Of the choices James has not reviewed, LF5a was shaped by* RC12 (the states' names), RC28 (the
+>     placeholder grey at full strength, not through the grey rule), RC29 (the rule for the letters), RC30
+>     (an owned offer gets the placeholder too) and RC31 (the names, the field, the six constants).
+>   - *Tests.* LFT6's cases of LF5a and LFT10 in `common/test-launcher-window.sh` (280 cases in all; mutants
+>     87 to 97); LFT12's listing case in `common/test-make-launcher-app.sh` (41 cases; mutant 13). Each new
+>     mutant was applied and seen red. The sweep of the window's test, all 97: 95 red at `8de135f`, and at
+>     `8f07aa4` 96 red with 27 retired, which answers REFUSED on purpose. No run ended in a timeout.
+>   - *Gates at `8de135f`.* Links exit 0, identifiers at the residual of 9, `bash -n` on the changed test
+>     files, and every test file run: 48 of 49 exit 0, `common/test-paths.sh` being the one, as before.
+>   - *Not seen on a screen.* The build looked at one scratch picture of the grid, drawn into a bitmap by a
+>     scratch copy of the source (not a capture of the window, and not kept): a grey rounded square with the
+>     letters centred, the first tile selected. Whether it reads as "not installed" beside real icons is still
+>     LFL1's captures and James's word (exit criterion 9).
+>   - *Verify against:* `common/launcher-window.swift` (`tableOffers`, `withOwnership`, `initials`,
+>     `tileIcon`, `placeholderIcon`, `initialsRatio`, `Look.initials*`, `GridView.show`),
+>     `common/test-launcher-window.sh` ("LFT6", "LFT10"), `common/test-make-launcher-app.sh` ("LFT12").
 > - **Not measured:** everything section 6 lists under "Not tested, and said so". No step has met a compiler
 >   older than Swift 6.4.
 
 **Status: check-it'd 2026-11-26 — build-ready-with-fixes (pass 4), the fixes folded. The build began on
-James's word the same day: LF0 to LF3 are built (the as-built note above); the rest is not.** Draft written 2026-11-25; checked four times on 2026-11-26 and
+James's word the same day: LF0 to LF3 and LF5a are built (the as-built note above); the rest is not.** Draft written 2026-11-25; checked four times on 2026-11-26 and
 reworked three times: pass 1 (seven lenses) and passes 2 and 3 said needs-rework, each for faults of the fold
-before it; pass 4, fitted to the third fold, found no blocker. Of what is below, only LF0 to LF3 are built. Sections 1 to
+before it; pass 4, fitted to the third fold, found no blocker. Of what is below, only LF0 to LF3 and LF5a are built. Sections 1 to
 14 hold the corrected design: every blocker and every item of pass 1 (the section "Review corrections" near the
 foot), of pass 2 (its block "Second-pass re-check"), of pass 3 (its block "Third-pass re-check") and of pass 4
 (its block "Fourth-pass re-check") is folded
@@ -1349,7 +1390,7 @@ fails on its transcript.
   goes with the generic icon, its only user. A click opens the game's guide, with today's words, and needs no
   tool. No tile is `installing` yet: the lock's rule in Swift comes with LF5b.
   Tests LFT6 (every case not marked "with LF5b"), LFT10 (but its case of a running install), LFT12 (its
-  listing case).
+  listing case). **Done 2026-11-26** (the as-built note).
 - **LF4a. The install's lock.** The three functions in `common/updates.sh`, with `L1_SYSCTL` and the read-back
   after a take; the core takes the lock in `core_begin` and releases it in `on_exit`; **the launcher's
   installer gains every line of 3.4 marked "(LF4a)"**: the look in its refusals, the take in step 3, the

@@ -1728,11 +1728,123 @@ Folded (rework 1): 3.7 (the picture, the sheet), 3.10 (the pictures), 3.2 (the m
   Folded (rework 1): section 13 (RD1 to RD4, as the rework's defaults, taken with his knowledge), 3.10 and LF7
   (the guides' line).
 
+### Second-pass re-check (2026-11-26, pass 2): needs-rework, narrowly
+
+Three reviewers on Fable read the rework at `a36692b`: correctness with a build on paper, security, and one for
+architecture, the tests and live steps, and the words. About 180 new statements about the code were opened: about
+174 hold. The lock's design holds, and so does the pictures' trust. **Three blockers, each a fault of the fold,
+each read again in the plan by the session:** two reviewers called the plan build-ready-with-fixes and one
+needs-rework; all three asked for one fitted check of the fold that follows, not another fleet.
+**Nothing below is folded into sections 1 to 14 yet.**
+
+**Blockers**
+
+1. **On a Mac that has a game, the pictures are never fetched** (all three reviewers). Only the launcher's
+   installer fetches (3.4 step 6; 3.10); the driver skips that script when a game's setup has just written the
+   launcher's stamp (3.5), which is every ordinary update, and the setups fetch nothing. So every player coming
+   from `v0.3.1`, every player whose first paste was a game's line, and every new game's tile shows the generic
+   icon for good, against James's own decision; LFT4 as written pins the fault. **Correction:** the pictures step
+   becomes a small file of its own (`common/fetch-art.sh`), called by the launcher's installer and always by the
+   driver's launcher step when its own test finds the app, before the stamp tests; it makes no request when every
+   file matches. Say what a game's own pasted line does. LFT4 gains the case and the mutant "pictures skipped when
+   the launcher is current". A changed row keeps the old file until the new one verifies.
+2. **Steps LF2 and LF3 cannot pass their own tests in the order given** (correctness, architecture). The
+   launcher's installer takes the lock and LFT2 and LFT4 have lock cases and lock mutants, but the lock is built in
+   LF4a, after them; the fallback release of section 11 then ships an installer that calls functions that are not
+   there. **Correction:** the order is LF1, LF2, LF3, LF5a, LF4a, LF4b, LF5b. LF2's installer has no lock; the lock
+   cases and mutants of LFT2 and LFT4 are listed under LF4a, where the launcher's installer and the driver gain the
+   lock. Section 11 names the fallback's steps (LF1 to LF3 and LF5a), its live steps and its exit criteria.
+3. **LFL7's order cannot show the paste warning** (correctness, architecture; the order was written by the
+   session, not the rework). The warning needs a Mac with no developer tools (1.5); the step put James's account
+   first, which installs the tools for the whole Mac, and then called Erin's account "the paste warning's case".
+   **Correction:** the first paste is in the account whose Terminal has been unopened longest (Erin's), with the
+   tools absent: that one run reads the warning and Apple's box. The second account is the with-tools path only.
+   The pre-check is done in Finder (Go to Folder for `/Library/Developer/CommandLineTools` and
+   `/Applications/Xcode.app`; About This Mac), not in Terminal. The step gains a pass condition (LFL1's); the
+   request's exit codes are read before Install is pressed; the ssh reading is struck (it needs Remote Login
+   switched on on someone else's Mac); the ref is named (`main` after the merge); it runs before the tag, since
+   a tag cannot be moved; a launcher kept there is in the state `manual` and installs nothing until the published
+   line is pasted after the release. LP1 and section 11 still say "LFL7's guest". No step meets a compiler below
+   6.4, so the as-built header and the guide say "built on macOS 27 only".
+
+**To fix in the same fold**
+
+- **The golden transcript** (correctness): `cities-skylines-2/scripts/test-install.sh:870-881` fails when the
+  transcript differs from `test-install.golden`, and it will. The steps that touch the core each end with the
+  golden recorded again and the difference read; the file is named under the tests that change.
+- **Mutant numbers:** the last of `cities-skylines-2/scripts/test-install.sh` is 76, so new ones start at 77.
+- **The tools file:** `common/install-core.sh:333-342` changes, not `:333-341`; the 24 polls of the part get a
+  name set by the caller. The line `are not installed yet."; exit 4; }` stays in the core, literally: mutant 27's
+  `sed` reaches only the core. A tools folder that is there with a part that does not run stops at once with the
+  Software Update sentence, as the core does today; the two-minute settle applies only when the folder appeared
+  during this run. The own-folder test of `_update` (no write) joins step 1 of the launcher's installer, before
+  the ask.
+- **`off` hides `manual` and `ready`** (`common/updates.sh:188` returns before the stamps are read): in `off`,
+  `--install` judges the stamps' lines itself, so that a Mac on a checkout does not install from `release`.
+- **The lock** (security, correctness, architecture). Every taker removes `installing-game` right after taking
+  the link, and a game then writes it beside its place and renames. After `ln`, `readlink` must equal the taker's
+  own number, else it refuses (a folder planted at the name; two takers of one dead holder). The driver gains one
+  line: a `updating` that is not live by the boot rule is removed before the lock is taken, so a stale one cannot
+  block both the update and, through "update first", the install. `L1_UPDATE=1` is believed only while an update's
+  lock is live. With a record folder that is not the default, `--install` refuses with the `manual` sentence. The
+  boot rule compares two clocks and fails open (a live lock read as dead lets a second install start, today's
+  state): say so. The launcher's installer releases the lock before it opens the window. Section 12 names
+  `updating` among the files a player may remove. LFT13's stub for `sysctl` needs a named test variable: every
+  function of `updates.sh` sets `PATH` itself (`:41`).
+- **Starting a set-up game while an install runs** pushes the installer's Steam off, which is LFD13's own
+  reason: the window treats a live install as it treats a busy game (Don't Start, Start Anyway).
+- **The picture's fetch, pinned** (security). The hosts are a short list fixed after LP4, held by the installer's
+  row rule and by LFT7; a row over 1,048,576 bytes is refused (the window reads at most that); the curl line is
+  written out (`-q --proto '=https' --tlsv1.2 -sS --max-time 20 --max-filesize <size> --max-redirs 0 -o <temp>
+  -w '%{http_code}' <address>`), kept only on exit 0, code 200, the size and the checksum; stale temporary files
+  are cleared. The window bounds the picture's pixel size and greys it once per reload, not at every paint. The
+  request to Valve is said in this release's changelog section, which a player reads before the yes, and names
+  what Valve sees (the address, the time, curl's name). A check before a release move says when Valve has
+  changed an image.
+- **Section 9:** `common/install-launcher.sh` is run by the root `install.sh` of `release` from whatever ref it
+  fetched: its path, its call with no argument and its exit codes are a contract, as the driver's are, and so is
+  the form `launcher <ref>`.
+- **Existing sentences that a launcher's stamp makes untrue** join section 10: `checkoutText` and `namedText`
+  (`common/launcher-window.swift:829-830`). New words: "14unch3r or a game here was set up from a checkout.
+  Update with git pull, then run install.sh launcher and each game's setup." and "14unch3r or a game here was set
+  up from a named version. Paste the installer line from the guide again to follow new versions."
+- **The words** (replacements, exact). `tell-manual`: "`<title>` is not installed from this window on this
+  Mac." / "14unch3r or a game here was set up from a checkout or a named version. From a checkout: bash
+  `<folder>`/scripts/install.sh. Otherwise paste the game's line from its guide." `tell-update-first`: "A newer
+  version is out. Click the line at the foot of this window to update, then click the game again."
+  `tell-installing`: "Only one install runs at a time. Its Terminal window shows how far it is; click this game
+  again when it has finished." `tell-quit-first`: "Quit `<title>`", not "Quit it". The core's lock line names the
+  process, as the driver's does. The record folder's line: "... is not a folder of your own that only you can
+  write to. In Terminal: chmod go-w `<folder>`, then try again." macOS below 14: the version found, and "Update
+  macOS, then paste the line again."; the caution below 26 and the Intel caution have no text yet: write them.
+  The pictures' fallback: "The picture of `<title>` could not be fetched ... Pasting the line again tries
+  again." The build: "This can take a minute; nothing is printed meanwhile." A failed build adds the guide's
+  address. The setup's line for a failed build: "... until it can be built: the line above says why." The closing
+  line adds "You can close this window." "Apple's Command Line Tools" is the project's term throughout.
+- **Live steps and criteria.** A step in the form of the update's UL1 (a scratch `_update`, a fixture app,
+  hand-written stamps, offer and lock) shows all five sheets in both appearances before the merge:
+  `tell-update-first` and `tell-quit-first` reach no screen otherwise. LFL2c pastes "the guide's launcher line",
+  which the guides do not hold until after it: give it the line. The captures criterion 9 wants (begun,
+  installing, no picture) are assigned to LFL2b, LFL8 and LFL1. LFL4's pass is boot-verify PASS, Surviving Mars
+  starts, and the stamps' fields; it removes the launcher's stamp it left. Criterion 4 names its test.
+  Criterion 11 carries the waiver's "or". LFL2b's "no tiles for games not set up" is wrong for `v0.3.1`'s window
+  once a prefix exists.
+- **Tests with no mutant or no case.** The order of the click's tests (a combined case: `manual` with an install
+  running); a short sheet never answers `open`; the macOS stop and both cautions at their boundaries (14.0,
+  26.0); Swift 5.10 against 5.9 (a decimal compare would stop it) and both forms of `--version`; `tools_ask`
+  keeping the request's exit code; the take-then-look order of the two locks; LFT12 goes on to `--act start`
+  giving `ask-install`; `LSMinimumSystemVersion`; the picture's size test and its time limit. LFT6's three "new
+  text modes", the click's pure function and the function that makes the not-set-up rows need names. LFT7's
+  count of terminal reads against "the number its header lists" has no header to read: define the header line and
+  say LF6 adds it to five files. LFT11 names Surviving Mars's test file, which has no tools case.
+- **Struck:** 3.1's "the README does not yet name the view" (it does, `README.md:97`).
+
 ## Review log
 
 | Date | Pass | Lenses | Method | Model | Verified against | Verdict |
 |---|---|---|---|---|---|---|
 | 2026-11-26 | 1 | architecture, security, correctness, builder, design, platform facts, test plan | seven agents in two batches, read-only; the builder ran the gates and typed two steps into a scratch tree; platform facts compiled the window with the Command Line Tools alone; every blocker read again by the session | Fable 5.2 | `93868e3` | needs-rework |
+| 2026-11-26 | 2, on the rework | correctness with a build on paper; security; architecture, tests, live steps and words | three agents, read-only; each blocker read again in the plan by the session | Fable 5.2 | `a36692b` | needs-rework, narrowly: three blockers of the fold |
 
 Key paths this plan depends on: `install.sh`, `common/games.tsv`,
 `common/install-core.sh`, `common/updates.sh`, `common/update-games.sh`, `common/make-launcher-app.sh`,

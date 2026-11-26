@@ -19,7 +19,7 @@ sentences pass 3 gave (LFL9's fixture, LFT6's split); the fallback's lists (sect
 `91cfb63` (2026-11-25), and pass 1 read them again at `93868e3`. The first rework read the lines it cites newly
 at `dc990de`, the second at `e40cd4d` and the third at `fe72c0e` (all 2026-11-26); no code file cited here
 differs between those commits, and the guides' line numbers are of `dc990de`. A path is relative to the
-repository root. Tracking: no issue yet; one is opened when the check is done.
+repository root. Tracking: [#35](https://github.com/macgameport/1launcher/issues/35), opened 2026-11-26 after the fourth pass.
 
 **Decisions: taken by James on 2026-11-26** (section 13). His own: the install view goes on the roadmap (LFD1);
 14unch3r is compiled on the player's Mac until the project is a member of the Apple Developer Program (LFD2); a
@@ -1439,9 +1439,9 @@ section 11 runs fewer of them, named there.
     with its games' stamps on `release`. **And `_update/launcher`, which this step left, goes to the Trash:**
     `v0.3.1` does not read it, and left on the branch's line it would make that Mac `manual` on the day this
     version is released.
-- **LFL7. A Mac with none of Apple's tools (RD3): Erin's iMac, after the merge and before the tag.**
-  - **The Mac (James, 2026-11-26).** An iMac at home, Erin's computer, on macOS 27, with two accounts that
-    have never held anything of the project: Erin's, and James's own, kept there for troubleshooting. Apple's
+- **LFL7. A Mac with none of Apple's tools (RD3): the family iMac, after the merge and before the tag.**
+  - **The Mac (James, 2026-11-26).** An iMac at home, another person's computer, on macOS 27, with two accounts that
+    have never held anything of the project: its owner's, and James's own, kept there for troubleshooting. Apple's
     tools are "very unlikely" on it (his word). They install for the whole Mac, and the paste warning needs a
     Mac that has none (1.5). So the order below is fixed, and it is the reverse of the one this step had
     first, which pass 2 found could never show the warning.
@@ -1454,20 +1454,20 @@ section 11 runs fewer of them, named there.
   - **Before anything, in Finder, in James's own account.** Go to Folder, for
     `/Library/Developer/CommandLineTools` and for `/Applications/Xcode.app`: both must be absent. About This
     Mac: the macOS version and the chip. Nothing is typed into Terminal for this, in either account: a
-    Terminal opened in Erin's account would end the 30 days the warning needs, and running one of Apple's
+    Terminal opened in its owner's account would end the 30 days the warning needs, and running one of Apple's
     tools to look for them can itself bring Apple's box (`common/install-core.sh:328`). If either folder is
     there, the step cannot measure what it is for: it stops, that is recorded here, and exit criterion 3's
     "or" applies.
-  - **First, Erin's account: the one run that reads both the paste warning and Apple's box.** It is the
+  - **First, its owner's account: the one run that reads both the paste warning and Apple's box.** It is the
     account whose Terminal has been unopened longest, and nobody opens Terminal in it before the paste. With
-    her at the Mac or by her leave: Safari shows this file's page on `main`, the line is copied there,
+    the owner at the Mac or by the owner's leave: Safari shows this file's page on `main`, the line is copied there,
     Terminal is opened, and the line is pasted.
     - *Read off the screen, in order.* What macOS shows at the paste, and what must be done to go on: the
       guides' words for it come from here. If macOS shows nothing at the paste, that is recorded, and the
       as-built header names the paste warning as unmeasured. The installer's first lines.
       The seconds from the installer's first line to Apple's box. Apple's box and its words.
-      **Whether an administrator is asked for a password; a standard account stays not known:** Erin is an
-      administrator on her own Mac (James, 2026-11-26), so if one is asked it is hers to type, and no account
+      **Whether an administrator is asked for a password; a standard account stays not known:** Its owner is an
+      administrator on that Mac (James, 2026-11-26), so if one is asked it is the owner's to type, and no account
       of this step is a standard one. Which of `tools_ask`'s two sets of words the installer said, which is
       whether the first request was taken (3.2). **Before Install is pressed**, in a second Terminal window:
       `xcode-select --install; echo $?`, the request's exit code with a box already up. Then Install and
@@ -1479,7 +1479,7 @@ section 11 runs fewer of them, named there.
       `not-set-up`; the first field of `_update/launcher` is `main`; `bash _update/updates.sh` prints
       `manual`; `xcrun swiftc --version` prints the compiler's version, which is recorded. And off the
       screen: the installer went on by itself once Apple's box was done, and 14unch3r opened. LFL1's `find`
-      is not run here: her `~/Library` holds her own things.
+      is not run here: the owner's `~/Library` holds the owner's own things.
   - **Second, James's own account: the path with the tools there, and nothing more.** The same line. It
     cannot show the paste warning, since the Mac has developer tools by then, and it brings no box. Read:
     the seconds from the paste to the window, with a compile that has an empty module cache. Pass: the same
@@ -1488,12 +1488,12 @@ section 11 runs fewer of them, named there.
     Mac. What `xcode-select --install` gives there stays not known (3.2).
   - **A launcher kept there is in the state `manual`**, having been set up from `main`: a click on a game
     says so and installs nothing (3.7, line 2). It installs games only after the release, once the published
-    line is pasted in that account. That is said to her before she decides to keep it.
-  - **What the step leaves on her Mac, said to her before it runs:** Apple's Command Line Tools (1.3 GB on the
+    line is pasted in that account. That is said to the owner before the launcher is kept.
+  - **What the step leaves on that Mac, said to its owner before it runs:** Apple's Command Line Tools (1.3 GB on the
     Studio, for the whole Mac; removed with `sudo rm -rf /Library/Developer/CommandLineTools`, an administrator's
     act); in each account used, `~/Applications/14unch3r.app`, the folder
     `~/Library/Application Support/1launcher/_update`, and the window's one preferences file. No Wine, Steam
-    or Rosetta. Each goes to the Trash afterwards unless she wants the launcher kept.
+    or Rosetta. Each goes to the Trash afterwards unless the owner wants the launcher kept.
   - Without this step LFD14's ask, the shared wait and the stage it replaces stay unmeasured: that stage has
     never run for real on any Mac of the project **[record: pass 1]**. It does not answer LP1's open
     question: this Mac's compiler is as new as the Studio's.
@@ -1769,7 +1769,7 @@ the first rework's, in which LF2 called the lock of LF4a, unbuildable).
   the Trash like any app; with no game set up, the next update then removes its stamp (3.5). The placeholder
   leaves no file anywhere: it is drawn each time.
 - **After the live steps:** the scratch account is deleted by James, with the shared folder of its outputs.
-  What LFL7 left on Erin's iMac, and how each thing is removed, is in that step; Apple's tools stay there
+  What LFL7 left on the family iMac, and how each thing is removed, is in that step; Apple's tools stay there
   unless an administrator removes them. After LFL4 both pasted lines put that Mac back and its launcher's
   stamp goes to the Trash (section 7). LFL9's scratch app and folders are removed in that step. Nothing else
   of the Studio's own account was touched.
@@ -1826,8 +1826,7 @@ them before him as open, each with this default, and he did not object.
   a switch by which the tool follows the line the Mac's stamps name: rehearsable from a branch, and more code
   on the path every click runs.
 - **RD2. The games' half of the wait for Apple's tools leaves this plan** for a plan of its own (section 14).
-- **RD3. A live step on a Mac with none of Apple's tools** (LFL7). James named the Mac the same day: Erin's
-  iMac. No guest is made.
+- **RD3. A live step on a Mac with none of Apple's tools** (LFL7). James named the Mac the same day: the family iMac. No guest is made.
 - **RD4. In the state `ready`, a click on a game that is not set up says to update first.**
 
 **The rework's own choices, which James has not seen.** Each is one he can overrule; the section named holds
@@ -1962,7 +1961,7 @@ style"; how it is drawn, and which letters, were the fold's to choose.
   - these are not shims of the tools, and run without them: `plutil`, `codesign`, `sips`, `iconutil`, `curl`,
     `tar`, `xattr`;
   - a box dismissed at the start would be met hours later, with nothing downloading: that case has no design;
-  - its live step needs a Mac without Apple's tools, which Erin's iMac no longer is once LFL7 has run; and
+  - its live step needs a Mac without Apple's tools, which the family iMac no longer is once LFL7 has run; and
     it starts from `common/tools.sh`, which this plan makes.
 - **The table of games fetched from the network** (3.5).
 - **A picture of a game from anywhere but the game's own app:** none in the repository, and none fetched
@@ -1999,7 +1998,7 @@ style"; how it is drawn, and which letters, were the fold's to choose.
   the tools run (LFL7). What a standard account is asked stays not known: both accounts of LFL7 are
   administrators'. What it gives with no screen session: no step reads it. That a request on a
   Mac which has the tools' folder brings no box is pass 2's record. The stage this plan shares out has never
-  run for real on a Mac of the project. Whether Erin's iMac is free of the tools is read in Finder when LFL7
+  run for real on a Mac of the project. Whether the family iMac is free of the tools is read in Finder when LFL7
   begins, not before.
 - **The second form of the line `swiftc --version` prints** (3.2) is pass 2's record: rework 2 ran no
   compiler.
@@ -2323,8 +2322,8 @@ the fitted third pass reads it. The choices the fold had to make are RC21 to RC2
    RC23.
 3. **LFL7's order cannot show the paste warning** (correctness, architecture; the order was written by the
    session, not the rework). The warning needs a Mac with no developer tools (1.5); the step put James's account
-   first, which installs the tools for the whole Mac, and then called Erin's account "the paste warning's case".
-   **Correction:** the first paste is in the account whose Terminal has been unopened longest (Erin's), with the
+   first, which installs the tools for the whole Mac, and then called its owner's account "the paste warning's case".
+   **Correction:** the first paste is in the account whose Terminal has been unopened longest (its owner's), with the
    tools absent: that one run reads the warning and Apple's box. The second account is the with-tools path only.
    The pre-check is done in Finder (Go to Folder for `/Library/Developer/CommandLineTools` and
    `/Applications/Xcode.app`; About This Mac), not in Terminal. The step gains a pass condition (LFL1's); the

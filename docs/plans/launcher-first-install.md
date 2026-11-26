@@ -236,6 +236,23 @@ So: build it there. The cost is honest and is said in the guide: the first windo
 LP1 measures the compile. Shipping a built app stays possible later without changing this plan's design, and is
 not in it (section 14).
 
+> **Asked by James on 2026-11-25, after this draft; not folded, and it bears on LFD2.** He wants the wait for
+> Apple's Command Line Tools made shorter or simpler in a release soon. The first player from outside the
+> project was about to run an installer that day, and this is the longest step that is not a game's download.
+> Nothing below is measured; the check, or a small plan of its own, weighs it:
+> - **What needs the tools today [read].** Cities: Skylines II names `python3`, for its patches
+>   (`cities-skylines-2/scripts/install.sh:42`); Surviving Mars names `nm`, for its engine swap
+>   (`surviving-mars-relaunched/scripts/install.sh:45`); and every app this project builds is compiled with
+>   `swiftc`. So a built app alone would not remove the tools from either game's install.
+> - **Start them sooner.** The core asks for the tools at its step 2 and waits (`common/install-core.sh:326-345`).
+>   Asking at the very start and going on with the downloads that do not need them would overlap the two waits.
+>   **[inferred]** Which stages can run before the tools are there has not been read.
+> - **Ask without Apple's box.** `softwareupdate` can install the tools from Terminal; it needs an
+>   administrator's password, which the installer has never asked for. **[not verified on macOS 26 or 27]**
+> - **Need less of them.** Built apps fetched by the pasted line (the table above), `nm` replaced by something
+>   macOS has without the tools, and a Python that is not Apple's: each is a published thing or a dependency
+>   this project does not have today.
+
 ### 3.3 The no-game form of the root `install.sh` (LFD3)
 
 A new first word, `launcher`, beside `update`:

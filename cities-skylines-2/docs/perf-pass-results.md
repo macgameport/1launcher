@@ -458,3 +458,83 @@ Each row's settings were read from `Settings.coc` at the time.
   comparison of None, SMAA and TAA was made, so whether anti-aliasing changes the picture on 1.6.4 is open.
 - **FSR 3 at Quality** was on by itself before this and is not in the table: its frame rate was not read. GOTCHAS,
   2026-11-25. Outputs: the workspace, `city-164f1-20261125/`.
+
+## The settings series on 1.6.4f1 (2026-11-25, 17:43 to 23:35): every graphics setting, one at a time
+
+**Method.** The built-in benchmark, one setting changed per run, unattended: `scripts/settings-series.sh` (run that
+night from the workspace as `s164-series.sh`; the repo script makes the same `Settings.coc`, byte for byte, for all 22
+cells below). Mac Studio M5 Max, macOS 27.2, Studio Display 60 Hz, the daily engine (Wine 11.16 + DXMT), game 1.6.4f1.
+Every cycle: `Window resolution: 2560x1440` gated from `Player.log`, vsync off, `CS2_PROFILE=off` + Use Native=1,
+display awake, unlocked, no Screen Sharing viewer, the cell's keys read back from `Settings.coc` after a graceful exit.
+**83 cycles in two series, none void.** The second series (51 cycles) also captured the game's window at 10, 30, 50 and
+70 s into the scene (204 captures) for `scripts/edge-probe.swift`; captures did not move the frame rate (base 39.53 with,
+39.55 without).
+
+**The base** is what was kept that afternoon: shadows Medium, TAA, upscaler disabled, Level of Detail 0.25, fog,
+volumetrics, ambient occlusion, reflections and clouds on. It read **39.55 FPS** (12 runs, sd 0.11) in the first series
+and 39.44 to 39.60 in the first ten base runs of the second.
+
+"vs base" is each run against the base runs before and after it in its own series. "Hard edges" is the share of strong
+edges in a capture that are a single hard jump (1.0 = no smoothing at all), at 30 / 50 / 70 s; the camera moves, so
+these are distributions, not the same pixels.
+
+| Setting changed | Runs | FPS | vs base | GPU ms | Hard edges 30 / 50 / 70 s |
+|---|---|---|---|---|---|
+| **base** | 26 | 39.40 | | 28.0 | 0.07 / 0.08 / 0.13 |
+| Shadows off | 2 | 42.52 | +8.1 % | 20.9 | 0.06 / 0.07 / 0.14 |
+| Shadows Low | 3 | 41.72 | +5.5 % | 24.8 | 0.07 / 0.07 / 0.14 |
+| Shadows High | 3 | 36.69 | −7.2 % | 31.2 | 0.08 / 0.08 / 0.12 |
+| Anti-aliasing None | 3 | 40.09 | +1.4 % | 26.2 | 0.70 / 0.62 / 0.64 |
+| Anti-aliasing FXAA | 3 | 40.07 | +1.3 % | 27.0 | 0.16 / 0.15 / 0.16 |
+| Anti-aliasing SMAA Low | 3 | 39.94 | +1.0 % | 26.8 | 0.32 / 0.30 / 0.27 |
+| Anti-aliasing SMAA High | 3 | 39.77 | +0.6 % | 26.6 | 0.28 / 0.35 / 0.37 |
+| Upscaler FSR 3, Ultra Quality | 2 | 39.68 | +1.6 % | 26.9 | 0.05 / 0.07 / 0.07 |
+| Upscaler FSR 3, Quality (the game's default) | 3 | 43.61 | +10.2 % | 19.2 | 0.05 / 0.06 / 0.04 |
+| Upscaler FSR 3, Balanced | 2 | 44.70 | +14.5 % | 17.9 | 0.04 / 0.05 / 0.09 |
+| Upscaler FSR 3, Performance | 2 | 45.77 | +17.2 % | 17.4 | 0.04 / 0.05 / 0.11 |
+| Upscaler FSR 4 | 2 | 39.67 | +1.5 % | 27.6 | 0.69 / 0.60 / 0.62 |
+| Upscaler XeSS 3 | 2 | 39.62 | +1.3 % | 27.0 | 0.66 / 0.59 / 0.64 |
+| Level of Detail 0.35 | 2 | 37.08 | −5.1 % | 29.9 | 0.08 / 0.08 / 0.15 |
+| Level of Detail 0.5 | 3 | 35.17 | −11.1 % | 28.9 | 0.07 / 0.07 / 0.17 |
+| Level of Detail 1.0 | 3 | 29.17 | −26.3 % | 30.5 | 0.06 / 0.07 / 0.13 |
+| Fog off | 2 | 40.03 | +1.3 % | 29.0 | 0.09 / 0.08 / 0.11 |
+| Volumetrics off | 2 | 39.75 | +0.6 % | 27.1 | 0.07 / 0.08 / 0.14 |
+| Ambient occlusion off | 2 | 39.94 | +1.0 % | 27.2 | 0.08 / 0.08 / 0.13 |
+| Reflections off | 2 | 40.05 | +1.3 % | 27.6 | 0.08 / 0.07 / 0.14 |
+| Clouds off (volumetric and distance) | 2 | 42.07 | +6.7 % | 25.7 | 0.08 / 0.07 / 0.12 |
+| Shadows Low + SMAA High (October's daily driver) | 4 | 41.81 | +6.2 % | 24.3 | 0.26 / 0.33 / 0.36 |
+
+The FPS column is the mean over both series; the last four base runs of the second (below) pull the base's mean to 39.40.
+
+**What it says**
+
+- **Anti-aliasing is nearly free, and TAA smooths most.** The four methods differ by 1.4 % in frame rate. In hard edges
+  they differ sevenfold: none 0.65, SMAA 0.3, FXAA 0.16, TAA 0.07 to 0.13. This closes the question left open that
+  afternoon: anti-aliasing does change the picture on 1.6.4, and SMAA leaves about a third of strong edges untouched.
+  Whether the thin kerb line James saw is among those was not looked at one line at a time.
+- **FSR 4 and XeSS 3 do not work here, and choosing one removes anti-aliasing.** Both values stayed in `Settings.coc`,
+  and the picture and the frame rate were those of anti-aliasing None (hard edges 0.6 to 0.7). So on this stack the
+  upscaler list has one working entry besides Disabled: FSR 3.
+- **FSR 3 buys 10 to 17 %.** Quality draws at two thirds of the window and stretches by 1.5: one of the three
+  `period3` numbers stood 11 % apart from the others, as measured by hand that afternoon. Ultra Quality buys almost
+  nothing. Its edges read softer than TAA's at every level, which fits the fuzz James saw.
+- **Three settings carry the cost on the graphics side:** shadow quality (Low +5.5 %, High −7.2 %), clouds (+6.7 % off)
+  and the upscaler. Fog, volumetrics, ambient occlusion and reflections are worth about 1 % each.
+- **Level of Detail is the expensive one, and it is paid on the processor:** 0.5 costs 11 % and 1.0 costs 26 %, with
+  the processor's part of the frame going from 15.1 ms to 19.8 ms. 0.25 is the value to keep.
+- **Nothing went above 46 FPS.** With FSR 3 at Performance the graphics card's part of the frame is 17.4 ms and the
+  processor's 14.7 ms, and the frame still takes 21.8 ms. That is the same floor the October pass found (C81): below
+  the game, not in its settings.
+- **The stored resolution is ignored in the Fullscreen Window.** Two runs with 1920x1080 written into `Settings.coc`
+  read as base runs (the window stayed 2560x1440). The results row's `resolution` field is the stored value, as the
+  October sections already say; October's 47.8 FPS was at a 2560x1440 window.
+- **The same settings are 12.5 % slower than in October.** Shadows Low + SMAA High with no upscaler read 47.8 FPS on
+  1.6.2f1 and macOS 27.0.1 (C75), and 41.8 here on 1.6.4f1 and macOS 27.2, with the same engine, window and
+  `Settings.coc` keys otherwise. Which of the two changed it is not known. **The README's 47.8 is October's number.**
+
+**A window in front of the game costs 2.3 %.** From the 40th cycle of the second series the base read 38.58 to 38.69
+(four runs) where it had read 39.44 to 39.60 (ten runs). At 22:38 the session had opened a tab in Chrome, which made
+Chrome the active app; from the next start the game's window opened behind Chrome's (seen later in the window list,
+which is front to back). Every "vs base" above is against the base runs beside it, so the step does not carry into the
+percentages; the two FPS columns of cells run on both sides of it are a little apart for this reason. The runbook's
+"window in front" check comes from this.

@@ -3364,3 +3364,37 @@ start and Steam's. That bundle is Homebrew's Python, arm64 only, so the Intel co
   nobody noticed a conflict. The wrapper's Steam stayed signed in from 16:44:47 to 17:08:50, and its log has no
   line of a session replaced or of being signed in elsewhere. The cloud log at exit says "No launch record found" and no file upload
   was seen in it. This is not a clearance: the rule of one Steam at a time stands.
+
+## FSR 4 and XeSS 3 can be chosen, do nothing, and take anti-aliasing with them (2026-11-25)
+
+Measured on the Studio (1.6.4f1, the daily engine), two benchmark runs each, 12 captures each
+(`docs/perf-pass-results.md`, the settings series). With `"upscaler": "FSR4"` or `"XeSS3"` in `Settings.coc` the
+game kept the value and closed normally. The picture had no anti-aliasing at all: 0.59 to 0.69 of strong edges
+were one hard jump, against 0.62 to 0.70 with anti-aliasing None and 0.07 to 0.13 with TAA, which was the
+anti-aliasing chosen in those runs. The frame rate was that of anti-aliasing None (+1.4 %).
+
+- **So a value that "took" in the file is not a setting that works.** The read-back passed, the result row was
+  clean, and only the captures showed it. The same series' FSR 3 runs show the opposite case: a real change.
+- **For a player:** in Options > Graphics > Upscalers, on this port only "Disabled" and "AMD FSR 3" do what they
+  say. With either of the other two entries the picture is drawn at full size with jagged edges.
+- **Not tried:** DLSS 4, the fourth entry in the list (expected the same: it needs a card this Mac has not);
+  D3DMetal; the MacBook. FSR 3 on D3DMetal 2.1 and 3.0 does draw (`<workspace>/d3dm-test/notes.md`).
+- **Rule:** an upscaler or anti-aliasing cell is judged by a capture's edge numbers, never by the settings file.
+
+## The app that is active when the game starts decides whether the game's window is in front (2026-11-25)
+
+Measured on the Studio in the settings series (`docs/perf-pass-results.md`). The series starts the game from a
+shell, with no click. While Claude was the active app (its window is on the second display) the game's
+Fullscreen Window came up in front, at window layer 26. After the session had opened a tab in Chrome, Chrome was
+the active app, its window is on the main display, and every later start put the game's window behind it, at
+layer 0 (`/tmp/winlist` is front to back and listed Chrome above the game).
+
+- **Cost:** the base read 38.58 to 38.69 FPS (four runs) where it had read 39.44 to 39.60 (ten runs): 2.3 %.
+  Nothing else changed, and no gate of the series saw it: the window was still 2560x1440, the display awake.
+- **Captures are not affected:** `screencapture -l <window id>` gives the window's own picture when it is covered.
+- **Rule for a series:** make an app with no window on the game's display the active one before the first cycle
+  (`open -a <that app>`), check the window list during the first cycle, and put a base run between every three
+  or four cells. Do not use the Mac's other apps from the session while a series runs.
+- **The same day, a second way to spoil a run:** a question put to another app with `osascript` from the session
+  made macOS ask "claude.app wants access to control ...", in a dialog that sat in front of everything on the
+  main display until someone answered it. Do not script other apps from a session.

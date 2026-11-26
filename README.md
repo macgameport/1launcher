@@ -61,7 +61,7 @@ Apple Silicon Macs only. Both games run Intel (x86-64) Wine under Rosetta 2, so 
 
 | | Cities: Skylines II | Surviving Mars: Relaunched |
 |---|---|---|
-| **Tested** | macOS 26 on an M3 Max and macOS 27.0.1 on an M5 Max: played and benchmarked. macOS 27.2 on an M3 Max: boots to the main menu. One user report from an M4 Pro on macOS 27.0 | macOS 27.2, on an M3 Max and an M5 Max |
+| **Tested** | macOS 26 on an M3 Max and macOS 27.0.1 on an M5 Max: played and benchmarked. macOS 27.2 on an M3 Max: boots to the main menu. One user report from an M4 Pro on macOS 27.0 | macOS 27.2, on an M3 Max and an M5 Max. One user report from a Mac mini M4 on macOS 27.2.1: installed by the pasted line and played (on 26.7.3 the installer had stopped at its tools step) |
 | **Untested** | macOS 14 and 15. DXMT's own minimum is macOS 14, but the DXMT library inside the Porting Kit engine that the install guide uses is built for macOS 26, and macOS does not load a library built for a newer release. Treat macOS 26 as the floor until someone reports otherwise | macOS 14 to 26. Apple's D3DMetal 3.0 is built for macOS 14.0, and the wrapper and Wine the installer fetches for 10.15 (read from the files, 2026-11-13), but nobody has run this there |
 | **Not supported** | Intel Macs; macOS 13 and earlier; macOS 28 and later | Intel Macs; macOS before 14; macOS 28 and later |
 

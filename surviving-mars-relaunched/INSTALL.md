@@ -8,7 +8,12 @@ game of this project needed first.
 > wrapper on the same Mac instead of downloaded, and the last step, the game's app, was run on its own.
 > Since then it has been run whole on two Macs that already had the game (2026-11-16 and 2026-11-17), and
 > the game was started from the app or from 14unch3r and played. It has not yet been run from the first
-> step to the last on a Mac that holds nothing of this project. This note goes when it has.
+> step to the last on a Mac that holds nothing of this project by the project itself.
+> **One player has (reported 2026-11-26, a Mac mini M4):** the pasted line installed the game and it ran, on macOS
+> 27.2.1. On macOS 26.7.3 the same Mac had stopped at step 2 with "Apple's Command Line Tools are installed, but
+> their nm does not run", and reinstalling the tools did not get past it; after the upgrade to 27.2.1 it went
+> through. Whether the cause was 26.7.3 or the state of the tools on that Mac is not known. If you meet that line:
+> update the Command Line Tools in Software Update, or update macOS, then paste the line again.
 
 ## The quick way
 

@@ -1,6 +1,6 @@
 # Workers & Resources: Soviet Republic, the third game: what it will need
 
-**Status: investigation, drafted 2026-11-27 on James's question ("should we investigate what we think will be
+**Status: investigation, drafted 2026-11-27 on James's question; WP1 run the same night (section 4a) ("should we investigate what we think will be
 needed for w&r?"). Not checked, and not a plan to build from.** It gathers what is known and what must be
 measured first. The plan to build comes after the probes in section 4, and it is checked before any code.
 Order (James, 2026-11-25): Surviving Mars's Utopia update is tested first, then this game.
@@ -109,6 +109,48 @@ Surviving Mars's. One Steam on the account at a time.
   licence wait Surviving Mars has (15 s). It also checks whether Steam Cloud and Workshop work in the wrapper.
 - **WP5. A first number.** The frame rate in a mid-sized city at the Studio's resolution, as a reference
   only. Not a performance pass.
+
+## 4a. What WP1 found (2026-11-27, the Studio, on James's word; outputs in the game's workspace, `wp1/`)
+
+**Passed on both engines: the game starts and draws its menu** (James's word for each: "Menu drew, I quit").
+
+**The wrappers.** Two fresh wrappers in the game's workspace, never in `~/Applications`:
+- `probe-wr-d3dm30.app`, made by Surviving Mars's own installer, steps 3 to 5, with `SM_WRAPPER` naming it
+  and `--yes`: Wine 10 (Sikarugir), D3DMetal 3.0 from Gcenx's page, and Windows Steam.
+- `probe-wr-dxmt.app`, made by `common/make-wrapper.sh` with Cities: Skylines II's pinned engine (Wine 11.0
+  with DXMT v0.80): 49 s. It was given an APFS clone of the first wrapper's prefix, so its Steam, sign-in and
+  game are the same files.
+
+James signed in once, in the first. The installer, stopped at step 6 with SIGTERM, released the install lock.
+
+**The download.** 7.16 GB in 315 s, build 26953348, **24 GB on disk** (the store says 9 GB). Steam also
+fetched its common redistributables (app 228980).
+- The folder is `SovietRepublic`.
+- It holds `SOVIET64.exe`, `SOVIET.exe` and `SETUPAPPLICATION SOVIET.exe` (and `ModelViewer.exe`), with the
+  game's **own `XAudio2_6.dll` to `XAudio2_9.dll`**.
+
+**The boots.** `SOVIET64.exe`, started directly with that wrapper's Steam running, skips the start window (WP3
+in part), with Surviving Mars's environment and `SteamAppId=784150`.
+
+| Engine | Window | What the logs say | James |
+|---|---|---|---|
+| Wine 10 + D3DMetal 3.0 | after 4 s, 1920×1080 | D3DMetal refuses four shader calls with class linkage (vertex, pixel, hull, domain); Wine twice cannot decode WMA ("GStreamer doesn't support WMA decoding"); the game's own log ends in an orderly close | menu drew, quit |
+| Wine 11 + DXMT v0.80 | after 3 s, 1920×1080; the process holds `winemetal` behind `d3d11`/`dxgi` | no WMA line; the game's log names the adapter Apple M5 Max and ends in an orderly close, its device's last release at 2, not 0 | menu drew, quit; "a bit more laggy, but it is hard to tell for sure remotely" |
+
+**Not answered yet:**
+- **Sound.** James heard none, over Screen Sharing, which does not settle it.
+- **Whether a save loads**, and how either engine runs past the menu.
+- **WP4:** whether the game starts with Steam not running.
+
+**Seen besides:**
+- On closing, the game saves its last session into `media_soviet/saved_last/`, which a fresh install does not
+  have, and every write failed. Whether it makes the folder later, or the game expects it, is for WP2's run.
+- `steam.exe -shutdown` stopped neither probe's Steam. Each was ended with `wineserver -k` for its prefix
+  only, and no crash marker was left.
+- Surviving Mars's installer printed one stray line in its step 4, the temporary folder of the D3DMetal
+  pieces. That is a finding for that installer.
+- The `--yes` that let the installer run unattended also took the D3DMetal licence notice's "by using it you
+  agree", for evaluation, the use this Mac already makes of it.
 
 ## 5. Open risks, most serious first
 

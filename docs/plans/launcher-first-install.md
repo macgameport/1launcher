@@ -13,7 +13,9 @@
 >   `main`, and LFL7 and the tag still wait for them. Every test file was run on the merged tree first: 49 of 50
 >   passed, and the one, `common/test-paths.sh`, was this branch's own, not `main`'s: seven files of this plan
 >   spell the update folder (`common/updates.sh` on purpose, its deployed copy having no `paths.sh` beside it;
->   six test files in their fixtures) and the test's list had not been told. Fixed in `2c4672b`; 50 of 50.
+>   six test files in their fixtures) and the test's list had not been told. `2c4672b` listed all seven; the
+>   branch's own fix, `e38f896` (the next block), came in with a second merge and replaced it: the tests take the
+>   folder from `common/paths.sh`, and the list names the two files that spell it. 50 of 50 on that merge.
 >
 > - **LF0** (`8fe37eb`): the probe LP1, met in full (section 7).
 > - **LF1, the launcher's own stamp** (`d3e2dc5`, then `ec1db31`). `d3e2dc5` names `launcher`, `installing` and
@@ -55,7 +57,9 @@
 >   9; `bash -n` on the six changed scripts; and every test file of the repository run: 47 of 48 exit 0. The one that does not,
 >   `common/test-paths.sh`, fails on `main` at `346c3b1` in the same way and for nothing of this plan:
 >   `surviving-mars-relaunched/tools/load-probe.sh` (`4641f4e`, 2026-11-26) spells a root and is not in that
->   test's list of thirteen files. It is left for a fix of its own on `main`.
+>   test's list of thirteen files. It is left for a fix of its own on `main`. **Corrected the same day: true of
+>   this commit only. From LF2 on the build's own files spelled a root too; the block "The paths test" below
+>   says which, and what was done.**
 > - **Verify against (LF1):** `common/updates.sh` (`_l1u_stamp_to`, `_l1u_stamp_ok`, `_l1u_stamps`,
 >   `l1u_stamp_launcher`, `l1u_stamp_of_launcher`); `cities-skylines-2/scripts/setup.sh` and
 >   `surviving-mars-relaunched/scripts/setup.sh` (`launcher_stamp`, `launcher_stays`); `common/test-updates.sh`
@@ -270,7 +274,8 @@
 >     changelog's words are the build's: nobody has read them.
 >   - *Gates.* At `c766c21`: links exit 0, identifiers at 9, `bash -n` on the changed scripts, the new test
 >     file and its seven mutants. Every test file of the repository at `36980b8` (LF6's tree and the one
->     line of mutant 88): 49 of 50 exit 0, and the one is `common/test-paths.sh`, which fails on `main` alike.
+>     line of mutant 88): 49 of 50 exit 0, and the one is `common/test-paths.sh` (for `main`'s reason and, as found later, for this
+>     build's own: the block "The paths test" below).
 > - **The sweep of every mutant on one frozen commit (LFT9).** At `36980b8` (LF6's commit and, after it, the
 >   one line of the window test's mutant 88), in a worktree of its own: every mutant of the eleven test files
 >   the build touched, 477 in all. **475 exit 1; the other two are the retired ones, which exit 2 and say so.**
@@ -285,6 +290,29 @@
 >   the list it patched is gone, and `common/test-wrappers.sh` MUTANT=4 holds the case). One run ended in a
 >   timeout, mutant 4 of that file, which is a loop on purpose. The sweep is the tests' half of exit
 >   criterion 1; the live steps are the rest of section 8.
+> - **The paths test: a fault of this build that its earlier failure hid** (`e38f896`, after the merge of `main`
+>   at `9e1c3e5`). Every block above says `common/test-paths.sh` was the one red file "as before", meaning for
+>   `main`'s reason alone. That was true at LF1 and false from LF2 on. `main`'s fault was mended there
+>   (`df2eda0`: the load probe joined the list, fourteen files) and merged in, and the test was still red: the
+>   files that spell a root were 14 at `ec1db31`, 16 from `be68346` (LF2), 18 from `9567746` (LF4a) and 21 from
+>   `1f6bcd9` (LF4b). Seven files of this build spelled the record's folder. Every spelling was the right one
+>   (the test's case "every spelled folder equals a printed value" passed throughout); what failed was the
+>   list of files that may spell one.
+>   - *What was done.* Five test files take the folder from `common/paths.sh` with `HOME` at their scratch
+>     home, as the tests on `main` do and as `common/test-make-launcher-app.sh` already said of itself: both
+>     games' `scripts/test-install.sh` (the stand-in setup asks the tree's own `common/paths.sh`),
+>     `common/test-install-launcher.sh`, `common/test-make-launcher-app.sh`, `common/test-update-games.sh`.
+>     Two files join the list, sixteen now: `common/updates.sh`, which spells its default by 3.7 (the deployed
+>     copy has no `paths.sh` beside it), and `common/test-updates.sh`, which holds the source gate of that
+>     spelling. **The plan did not say that 3.7's spelling needs a line in LT14's list: a finding, recorded
+>     here.**
+>   - *Verified at `e38f896`.* Every test file of the repository: 50 of 50 exit 0, the first time on this
+>     branch. Every mutant of the five changed test files and of the paths test, 201 in all, exits 1:
+>     `common/test-paths.sh` 4 of 4, `common/test-update-games.sh` 32 of 32, `common/test-install-launcher.sh`
+>     16 of 16, `common/test-make-launcher-app.sh` 13 of 13, `cities-skylines-2/scripts/test-install.sh` 90 of
+>     90, `surviving-mars-relaunched/scripts/test-install.sh` 46 of 46; no run met the LaunchServices flake.
+>     The other six test files of LFT9 and every script under test are byte for byte what they were at
+>     `36980b8`, so their sweep above stands. Cities: Skylines II's golden transcript did not change.
 > - **Not measured:** everything section 6 lists under "Not tested, and said so". No step has met a compiler
 >   older than Swift 6.4. No sheet, no Terminal window and no real install has been seen: those are the live
 >   steps of section 7, each on James's word.

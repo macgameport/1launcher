@@ -443,7 +443,7 @@ check "Terminal could not be opened: failed and a sentence, exit 0 all the same,
 # --- LFT3 (docs/plans/launcher-first-install.md, 3.8): the file `updates.sh --install <ID>` writes, run as Terminal
 # would run it. The record is at the default place under the scratch home: anywhere else the tool refuses.
 asked() {   # [VAR=value ...]: --install 949230 with the launcher's stamp alone on release; its answer in $T/open.out, the file's path in CMD
-  newh; IUD="$H/Library/Application Support/1launcher/_update"; mkdir -p "$IUD/installed"; chmod 700 "$IUD" "$IUD/installed"
+  newh; IUD="$(HOME="$H" bash "$HERE/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"; mkdir -p "$IUD/installed"; chmod 700 "$IUD" "$IUD/installed"
   printf 'release\tv0.3.0\t-\t100\n' > "$IUD/launcher"; rm -rf "$T/tmp"; mkdir -p "$T/tmp"
   env HOME="$H" TMPDIR="$T/tmp" L1_UPDATE_DIR="$IUD" L1_UPDATE_NOW="$NOW" L1_CURL="$T/bin/curl" L1_OPEN="$T/bin/open" "$@" bash "$U" --install 949230 > "$T/open.out" 2>&1
   CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
@@ -487,11 +487,12 @@ env HOME="$H" TMPDIR="$T/tmp" STUB_SERVED_SLEEP=1 "$CMD" > "$T/cmd.out" 2>&1 < /
 i=0; until grep -q '^BOOT' "$CALLS" 2>/dev/null || [ "$i" -gt 100 ]; do /bin/sleep 0.1; i=$((i + 1)); done
 kill -HUP "$hp" 2>/dev/null; wait "$hp" 2>/dev/null; rc=$?
 check "LFT3 a hangup while the installer runs: exit 129, no closing line, and the file and its folder are gone" "$rc:$(csaid "$CLOSE0"):$(gone):$(ls -A "$T/tmp" | wc -l | tr -d ' ')" "129:0:gone:0"
-ODD="$T/an odd's \$(touch $T/ranX) place"; mkdir -p "$ODD/home/Library/Application Support/1launcher/_update/installed" "$ODD/tmp" "$ODD/home/Applications"
-chmod 700 "$ODD/home/Library/Application Support/1launcher/_update" "$ODD/home/Library/Application Support/1launcher/_update/installed"
-printf 'release\tv0.3.0\t-\t100\n' > "$ODD/home/Library/Application Support/1launcher/_update/launcher"; : > "$CALLS"
+ODD="$T/an odd's \$(touch $T/ranX) place"; OUD="$(HOME="$ODD/home" bash "$HERE/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"   # asked of common/paths.sh, never spelled here (common/test-paths.sh, LT14)
+mkdir -p "$OUD/installed" "$ODD/tmp" "$ODD/home/Applications"
+chmod 700 "$OUD" "$OUD/installed"
+printf 'release\tv0.3.0\t-\t100\n' > "$OUD/launcher"; : > "$CALLS"
 check "LFT3 with HOME and TMPDIR under a folder whose name holds a space, a quote and \$(touch X): it opens" \
-  "$(env HOME="$ODD/home" TMPDIR="$ODD/tmp" L1_UPDATE_DIR="$ODD/home/Library/Application Support/1launcher/_update" L1_CURL="$T/bin/curl" L1_OPEN="$T/bin/open" bash "$U" --install 949230 2>&1)" opened
+  "$(env HOME="$ODD/home" TMPDIR="$ODD/tmp" L1_UPDATE_DIR="$OUD" L1_CURL="$T/bin/curl" L1_OPEN="$T/bin/open" bash "$U" --install 949230 2>&1)" opened
 CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"; : > "$CALLS"
 rc="$(env HOME="$ODD/home" TMPDIR="$ODD/tmp" "$CMD" > "$T/cmd.out" 2>&1 < /dev/null; echo $?)"
 check "LFT3 ...and runs: the installer got the ID, the closing line is said, the file and its folder are gone, and nothing named X was made" \

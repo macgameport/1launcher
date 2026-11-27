@@ -255,7 +255,7 @@ cat > "$R/cities-skylines-2/scripts/setup.sh" << 'X'
 #!/bin/bash
 echo "SETUP $* via=${CS2_VIA_INSTALLER:-} wrapper=${CS2_WRAPPER:-} given=${L1_WRAPPER_GIVEN-unset}" >> "$CALLS"
 # the install's lock as this stand-in finds it (LFT13): the installer is its parent process
-_u="$HOME/Library/Application Support/1launcher/_update"; _h="$(readlink "$_u/installing" 2>/dev/null)"; [ "$_h" = "$PPID" ] && _h=mine
+_u="$(bash "$(dirname "$0")/../../common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"; _h="$(readlink "$_u/installing" 2>/dev/null)"; [ "$_h" = "$PPID" ] && _h=mine
 echo "LOCKATSETUP ${_h:-none} $(cat "$_u/installing-game" 2>/dev/null || echo none)" >> "$CALLS"
 printf '%s\n' "${CS2_PATCH_DIR:-}" > "$CALLS.patchdir"
 case " $* " in *" --mac-only "*)
@@ -771,7 +771,7 @@ done
 
 # --- LFT13 (docs/plans/launcher-first-install.md, 3.8): the install's lock, the link `installing` in the record's
 # folder, taken by the core in core_begin and let go at every exit. The setup stand-in records what it finds.
-ud() { printf '%s' "$H/Library/Application Support/1launcher/_update"; }
+ud() { HOME="$H" bash "$REPO/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p'; }   # asked of common/paths.sh, never spelled here (common/test-paths.sh, LT14)
 ilock() { if [ -e "$(ud)/installing" ] || [ -L "$(ud)/installing" ]; then echo left; else echo none; fi; }
 igame() { if [ -e "$(ud)/installing-game" ]; then echo left; else echo none; fi; }
 atsetup() { grep '^LOCKATSETUP' "$CALLS" | sort -u | tr '\n' '|'; }

@@ -199,7 +199,7 @@ case " $* " in *" --mac-only "*) [ -n "${STUB_MAC_WORDS:-}" ] && echo "  $STUB_M
 w="${SM_WRAPPER:-/none}"
 echo "SETUP $* via=${SM_VIA_INSTALLER:-} lock=$(readlink "$w/Contents/SharedSupport/prefix/.launcher.lock" 2>/dev/null) ppid=$PPID given=${L1_WRAPPER_GIVEN-unset}" >> "$CALLS"
 # the install's lock as this stand-in finds it (LFT13): the installer is its parent process
-_u="$HOME/Library/Application Support/1launcher/_update"; _h="$(readlink "$_u/installing" 2>/dev/null)"; [ "$_h" = "$PPID" ] && _h=mine
+_u="$(bash "$(dirname "$0")/../../common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"; _h="$(readlink "$_u/installing" 2>/dev/null)"; [ "$_h" = "$PPID" ] && _h=mine
 echo "LOCKATSETUP ${_h:-none} $(cat "$_u/installing-game" 2>/dev/null || echo none)" >> "$CALLS"
 exit "${STUB_SETUP_RC:-0}"
 X
@@ -296,7 +296,7 @@ check "everything done, nobody to ask: exit 0, no question, nothing fetched, set
 rc=$(run -- --yes)
 check "  ...--yes reaches setup" "$(c '^SETUP --yes via=1')" 1
 # LFT13 (docs/plans/launcher-first-install.md, 3.8): this game's installer takes the one install lock through the core
-UD="$HOME/Library/Application Support/1launcher/_update"
+UD="$(bash "$REPO/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"   # asked of common/paths.sh, never spelled here (common/test-paths.sh, LT14)
 ilock() { if [ -e "$UD/installing" ] || [ -L "$UD/installing" ] || [ -e "$UD/installing-game" ]; then echo left; else echo none; fi; }
 rc=$(run --)
 check "LFT13 the install's lock is this installer's when setup runs, with this game's ID beside it; both are gone afterwards" \

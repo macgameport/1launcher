@@ -17,6 +17,7 @@
 >   branch's own fix, `e38f896` (the next block), came in with a second merge and replaced it: the tests take the
 >   folder from `common/paths.sh`, and the list names the two files that spell it. 50 of 50 on that merge.
 >
+> - **RC1 to RC33: James kept them all as built (2026-11-27, section 13).**
 > - **Run on 2026-11-26 and 27 in the scratch home: LFL1, LFL2a, LFL8, LFL3 and LFL9 passed** (section 7 has
 >   each result). James's word on the placeholder (exit criterion 9): "Yes, keep it." Not measured: the Tab key's
 >   round of the three buttons (Keyboard navigation is off on the Studio), and LFL8's running tile as a capture
@@ -2320,6 +2321,11 @@ them before him as open, each with this default, and he did not object.
 - **RD2. The games' half of the wait for Apple's tools leaves this plan** for a plan of its own (section 14).
 - **RD3. A live step on a Mac with none of Apple's tools** (LFL7). James named the Mac the same day: the family iMac. No guest is made.
 - **RD4. In the state `ready`, a click on a game that is not set up says to update first.**
+
+**James read RC1 to RC33 on 2026-11-27, in plain words, grouped (the choices seen working at LFL8 and LFL9;
+the small rules RC7, RC10, RC16, RC19, RC29 and RC30; RC27's unread sentences, quoted to him from
+`common/install-launcher.sh`; the internal ones; the three withdrawn), and kept them all as built: "keep
+them".** The headings below keep their wording as the record of when each choice was made.
 
 **The rework's own choices, which James has not seen.** Each is one he can overrule; the section named holds
 the reasoning.

@@ -1,11 +1,19 @@
 # The launcher first: one pasted line installs 14unch3r, and its window installs the games
 
 > **🔧 As-built (2026-11-26): partial — every code step is built on the branch `launcher-first-install`: LF0 to
-> LF3, LF5a, LF4a, LF4b, LF5b and LF6, in section 4's order. LF7 is not begun: no live step has been run,
-> nothing is merged, nothing is tagged, `release` has not moved, and the guides still lead with each game's own
+> LF3, LF5a, LF4a, LF4b, LF5b and LF6, in section 4's order. LF7 is begun only by the merge: no live step has been run,
+> nothing is tagged, `release` has not moved, and the guides still lead with each game's own
 > line.** Tracking: #35. **Built on macOS 27 only** (3.2): no step met a compiler older than Swift 6.4. Each
 > step has its own block below: its commits, what the build chose, its tests and its gates. The sweep of every
 > mutant on one frozen commit (LFT9, exit criterion 1) is the last block.
+>
+> - **Merged into `main` before its live steps, on James's word (2026-11-26, "Merge now"): `5746dd1`, with
+>   `--no-ff`.** This departs from LF7's order, which puts LFL1, LFL9, LFL2a, LFL8, LFL2b, LFL3 and LFL4 before
+>   the merge; none had run. `release` has not moved, so no player has this yet; the live steps now run from
+>   `main`, and LFL7 and the tag still wait for them. Every test file was run on the merged tree first: 49 of 50
+>   passed, and the one, `common/test-paths.sh`, was this branch's own, not `main`'s: seven files of this plan
+>   spell the update folder (`common/updates.sh` on purpose, its deployed copy having no `paths.sh` beside it;
+>   six test files in their fixtures) and the test's list had not been told. Fixed in `2c4672b`; 50 of 50.
 >
 > - **LF0** (`8fe37eb`): the probe LP1, met in full (section 7).
 > - **LF1, the launcher's own stamp** (`d3e2dc5`, then `ec1db31`). `d3e2dc5` names `launcher`, `installing` and

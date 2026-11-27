@@ -28,6 +28,23 @@
 #   MUTANT=21 ..  --open not asking the state first (a file written and opened when no update waits); must exit 1
 #   MUTANT=22 ..  `opened` said when Terminal could not be opened; must exit 1
 #   MUTANT=23 ..  L1_CURL written into the update's file unmatched; must exit 1
+# (24 and 25: docs/plans/launcher-first-install.md, 3.5; LFT3, the stamp.)
+#   MUTANT=24 ..  the launcher's stamp left out of the state; must exit 1
+#   MUTANT=25 ..  the launcher's stamp read without its match; must exit 1
+# (26 to 29: the same plan, 3.8; LFT13, the lock's rule in shell, and --open during an install.)
+#   MUTANT=26 ..  the start's rule dropped (a link older than the Mac's last start read as live); must exit 1
+#   MUTANT=27 ..  the read-back after a take dropped; must exit 1
+#   MUTANT=28 ..  a game file left by another holder not removed at a take; must exit 1
+#   MUTANT=29 ..  --open's refusal during an install dropped; must exit 1
+# (30 to 36: the same plan, 3.8; LFT3, --install. What the written file does when it is run is
+# common/test-update-games.sh's.)
+#   MUTANT=30 ..  the ID written unmatched; must exit 1
+#   MUTANT=31 ..  the refusal in the state manual dropped; must exit 1
+#   MUTANT=32 ..  in the state off, the stamps' lines not judged; must exit 1
+#   MUTANT=33 ..  the test of the record's place dropped; must exit 1
+#   MUTANT=34 ..  the refusal in the state ready dropped; must exit 1
+#   MUTANT=35 ..  the refusal while an update runs dropped; must exit 1
+#   MUTANT=36 ..  the refusal while an install runs dropped; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 T="$(mktemp -d /tmp/updates-test.XXXX)"
@@ -62,6 +79,22 @@ case "${MUTANT:-0}" in
   21) mutate 's#^  if \[ "\$L1U_WORD" != ready \]; then printf .failed.t%s.n. "No update is waiting\."; return 0; fi$#  :#' '^  :$' ;;
   22) mutate 's#^  if ! "\${L1_OPEN:-/usr/bin/open}" -a Terminal "\$f" > /dev/null 2>&1; then$#  "${L1_OPEN:-/usr/bin/open}" -a Terminal "$f" > /dev/null 2>\&1; if false; then#' '-a Terminal "\$f" > /dev/null 2>&1; if false; then$' ;;
   23) mutate 's#^  \[\[ "\${L1_CURL:-}" =~ \$_L1U_PROG \]\] && curl="\$L1_CURL"$#  [ -n "${L1_CURL:-}" ] \&\& curl="$L1_CURL"#' '^  \[ -n "\${L1_CURL:-}" \] && curl="\$L1_CURL"$' ;;
+  24) mutate 's#^  if _l1u_stamp_ok "\$L1_UPDATE_DIR/launcher"; then printf .*#  :#' '^  :$' ;;
+  25) mutate 's#^  if _l1u_stamp_ok "\$L1_UPDATE_DIR/launcher"; then printf #  if _l1u_read "$L1_UPDATE_DIR/launcher" 4; then printf #' '^  if _l1u_read "\$L1_UPDATE_DIR/launcher" 4; then printf ' ;;
+  26) mutate 's#^    \[ "\$((10\#\$t))" -ge "\$boot" \] || return 1$#    :#' '^    :$' ;;
+  27) mutate 's#^  if \[ ! -L "\$f" \] || \[ "\$(readlink "\$f" 2>/dev/null)" != "\$\$" \]; then$#  if false; then#' '^  if false; then$' ;;
+  28) mutate 's#^  \[ "\$1" = installing \] \&\& rm -f "\$L1_UPDATE_DIR/installing-game" 2>/dev/null$#  : not removed#' '^  : not removed$'
+      grep -c '^  : not removed$' "$S" | grep -qx 2 || { echo "REFUSED: mutant did not apply"; exit 2; }
+      perl -0pi -e 's/(l1u_lock_release\(\) \{.*?)  : not removed\n/$1  [ "\$1" = installing ] \&\& rm -f "\$L1_UPDATE_DIR\/installing-game" 2>\/dev\/null\n/s' "$S"
+      grep -c '^  : not removed$' "$S" | grep -qx 1 || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  29) mutate 's#^  if l1u_lock_live installing; then printf .failed.t%s.n. "An install is running in Terminal\. .*#  : no refusal#' '^  : no refusal$' ;;
+  30) mutate 's#^  if ! \[\[ "\$id" =~ \$_L1U_ID \]\]; then printf .*#  : unmatched#' '^  : unmatched$' ;;
+  31) mutate 's#^  if \[ "\$L1U_WORD" = manual \]; then printf .failed.t%s.n. "\$manual"; return 0; fi$#  : not refused in manual#' '^  : not refused in manual$' ;;
+  32) mutate 's#^      if \[ "\$line" != release \]; then printf .failed.t%s.n. "\$manual"; return 0; fi$#      :#' '^      :$' ;;
+  33) mutate 's#^  if \[ -z "\$here" \] || \[ "\$here" != "\$there" \]; then printf .*#  : any place#' '^  : any place$' ;;
+  34) mutate 's#^  if \[ "\$L1U_WORD" = ready \]; then printf .failed.t%s.n. "A newer 1launcher is out\. .*#  : not refused in ready#' '^  : not refused in ready$' ;;
+  35) mutate 's#^  if l1u_lock_live updating; then printf .failed.t%s.n. "An update is running in Terminal\. .*#  : no look at updating#' '^  : no look at updating$' ;;
+  36) mutate 's#^  if l1u_lock_live installing; then printf .failed.t%s.n. "An install is running in Terminal\. Its .*#  : no look at installing#' '^  : no look at installing$' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 bash -n "$S" || { echo "REFUSED: the mutant does not parse"; exit 2; }
@@ -191,6 +224,59 @@ check "an installed/ the group can write: 1, nothing written" "$(st true):$(ls -
 fresh; stamp 949230 release v0.2.0; stamp 3215050 checkout v0.3.0
 check "l1u_stamp_of: the line and the version of a game's stamp; 1 for a game with none, and for a name that is no ID" \
   "$(fn l1u_stamp_of 949230):$(fn l1u_stamp_of 3215050):$(fn l1u_stamp_of 777; echo "rc=$?"):$(fn l1u_stamp_of '../x'; echo "rc=$?")" "release${TAB}v0.2.0:checkout${TAB}v0.3.0:rc=1:rc=1"
+
+# --- LFT3 (docs/plans/launcher-first-install.md, 3.5): 14unch3r's own stamp, the file `launcher`, counts in the
+# state as a game's does, is read by the same match, and has a writer and a reader of its own
+lstamp() { printf '%s\t%s\t%s\t%s\n' "$1" "$2" "${3:--}" "${4:-100}" > "$U/launcher"; }   # <line> <version> [commit] [time]
+fresh; lstamp release v0.2.0
+check "LFT3 the launcher's stamp alone, on release, with no offer: unknown" "$(tool)" "unknown${TAB}v0.2.0$TAB-$TAB-"
+check "LFT3 ...and a refresh calls curl, once" "$(tool --refresh | cut -f1,5):$(calls)" "ready${TAB}fetched:1"
+fresh; lstamp release v0.2.0; offer v0.3.0
+check "LFT3 ...with a newer offer: ready" "$(tool)" "ready${TAB}v0.2.0${TAB}v0.3.0$TAB-"
+fresh; lstamp release v0.3.0; offer v0.3.0
+check "LFT3 ...with the offer at its version: current" "$(tool)" "current${TAB}v0.3.0${TAB}v0.3.0$TAB-"
+fresh; lstamp checkout v0.3.0; offer v0.4.0
+check "LFT3 ...on checkout: manual, with the detail checkout, and nothing is fetched" "$(tool):$(tool --refresh --now | cut -f5):$(calls)" "manual${TAB}v0.3.0${TAB}v0.4.0${TAB}checkout:skipped:0"
+fresh; lstamp release v0.2.0; stamp 949230 release v0.3.0; stamp 3215050 release v0.4.0; offer v0.3.0
+check "LFT3 beside game stamps at a higher version: the installed version is the launcher's, and the offer is ready" "$(tool)" "ready${TAB}v0.2.0${TAB}v0.3.0$TAB-"
+fresh; lstamp release v0.4.0; stamp 949230 release v0.3.0; offer v0.3.0
+check "LFT3 ...beside a game at a lower version: the game's, and current" "$(tool)" "current${TAB}v0.3.0${TAB}v0.3.0$TAB-"
+fresh; lstamp checkout v0.3.0; stamp 949230 release v0.3.0; offer v0.4.0
+check "LFT3 a launcher built from a checkout beside a game on release: manual" "$(tool)" "manual${TAB}v0.3.0${TAB}v0.4.0${TAB}checkout"
+fresh; stamp 4 v0.1.0 v0.1.0; lstamp other v0.2.0
+check "LFT3 manual's detail is a game's line before the launcher's: its row comes after the games'" "$(tool | cut -f1,4)" "manual${TAB}v0.1.0"
+fresh; lstamp release v0.2.0; offer v0.3.0; : > "$U/off"
+check "LFT3 the file off: off, with the launcher's stamp there too" "$(tool)" "off$TAB-${TAB}v0.3.0$TAB-"
+fresh; lstamp release v0.2.0 "$HEX" 55; stamp 949230 checkout v0.3.0
+check "LFT3 l1u_stamp_of_launcher: its line and its version, whatever the games' stamps say" "$(fn l1u_stamp_of_launcher; echo "rc=$?")" "release${TAB}v0.2.0
+rc=0"
+check "LFT3 ...and l1u_stamp_of still takes an app ID and nothing else" "$(fn l1u_stamp_of launcher; echo "rc=$?")" "rc=1"
+fresh
+check "LFT3 ...with no such file: nothing, and 1" "$(fn l1u_stamp_of_launcher; echo "rc=$?")" "rc=1"
+passed() {   # <name>: the launcher file as the caller left it counts for nothing, to the state and to the reader
+  check "LFT3 a launcher file that $1: passed over, the state is none, the reader says 1, nothing ran" \
+    "$(tool):$(fn l1u_stamp_of_launcher; echo "rc=$?"):$([ -e "$T/ran8" ] && echo ran || echo none)" "none$TAB-${TAB}v0.3.0$TAB-:rc=1:none"
+}
+fresh; offer v0.3.0; printf 'release\tv0.2.0\t-\t100\n' > "$T/real-launcher"; ln -s "$T/real-launcher" "$U/launcher"; passed "is a link"
+fresh; offer v0.3.0; printf 'release\tv0.2.0\t-\t100\nrelease\tv0.2.0\t-\t100\n' > "$U/launcher"; passed "has two lines"
+fresh; offer v0.3.0; printf 'release\tv0.2.0\t-\t100\textra\n' > "$U/launcher"; passed "has five fields"
+fresh; offer v0.3.0; printf 'release\ta[$(touch %s/ran8)]\t-\t100\n' "$T" > "$U/launcher"; passed "has a version that would run a command"
+fresh; offer v0.3.0; printf 'release\tv0.2.0\tnot-a-commit\t100\n' > "$U/launcher"; passed "has a commit that is no commit"
+fresh; offer v0.3.0; printf 'release\tv0.2.0\t-\ta[$(touch %s/ran8)]\n' "$T" > "$U/launcher"; passed "has a time that would run a command"
+fresh; offer v0.3.0; mkdir "$U/launcher"; passed "is a folder"
+# the writer
+stl() { ( export L1_UPDATE_DIR="$U" L1_UPDATE_NOW="$NOW"; "$@"; . "$S"; l1u_stamp_launcher "$T/tree"; echo "rc=$?" ); }
+fresh
+check "LFT3 l1u_stamp_launcher from a checkout: the line checkout, the tree's version, no commit, the time" "$(stl true):$(cat "$U/launcher")" "rc=0:checkout${TAB}v0.3.0$TAB-$TAB$NOW"
+check "LFT3 ...in the record's folder itself, nothing in installed/, nothing left beside it" "$(ls -A "$U" | tr '\n' ' '):$(ls -A "$U/installed" | wc -l | tr -d ' ')" "installed launcher :0"
+check "LFT3 ...and the state is then manual" "$(tool)" "manual${TAB}v0.3.0$TAB-${TAB}checkout"
+fresh
+check "LFT3 ...from a fetch: the ref and the commit" "$(stl export L1_FETCHED_REF=release L1_FETCHED_COMMIT=$HEX):$(cat "$U/launcher")" "rc=0:release${TAB}v0.3.0$TAB$HEX$TAB$NOW"
+check "LFT3 ...what it wrote is read back: unknown at that version" "$(tool):$(fn l1u_stamp_of_launcher)" "unknown${TAB}v0.3.0$TAB-$TAB-:release${TAB}v0.3.0"
+fresh
+check "LFT3 ...a ref that is not a line: 1, nothing written" "$(stl export 'L1_FETCHED_REF=a b'):$(ls -A "$U" | tr '\n' ' ')" "rc=1:installed "
+fresh; chmod 770 "$U"
+check "LFT3 ...an _update the group can write: 1, nothing written" "$(stl true):$(ls -A "$U" | tr '\n' ' ')" "rc=1:installed "
 
 # --- UT4: the refresh: when curl is called, and with what
 OPTS="CURL -q --proto =https --tlsv1.2 -sS --max-time 10 --max-filesize 1048576 -o $U/.fetch.[A-Za-z0-9]* -w %{http_code} https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/CHANGELOG.md"
@@ -328,6 +414,154 @@ check "a TMPDIR that is no folder: opened all the same, the file in a new folder
   "$(opn TMPDIR="$T/no-such-folder" | tr '\n' ':')$(grep -c '^OPEN|-a|Terminal|/tmp/1launcher-update\.[A-Za-z0-9]*/Update 1launcher\.command$' "$CALLS")" "opened:rc=0:1"
 CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
 case "$CMD" in /tmp/1launcher-update.*/"Update 1launcher.command") rm -f "$CMD"; rmdir "$(dirname "$CMD")" 2>/dev/null ;; esac
+
+# --- LFT13 (docs/plans/launcher-first-install.md, 3.8): the lock's rule in shell, for the names installing and
+# updating. L1_SYSCTL names a stub that gives the Mac's last start; a link's own time is set with touch -h.
+BOOT=1700000000
+printf '#!/bin/bash\n[ "$*" = "-n kern.boottime" ] || exit 1\n[ -n "${STUB_BOOT_FAIL:-}" ] && exit 1\necho "{ sec = %s, usec = 84350 } Tue Nov 14 22:13:20 2023"\n' "$BOOT" > "$T/bin/sysctl"; chmod +x "$T/bin/sysctl"
+lk() {   # [VAR=value ...] -- <commands>: the tool's functions in a new bash, whose process number is the taker's
+  local e=()
+  while [ "$1" != -- ]; do e+=("$1"); shift; done; shift
+  env L1_UPDATE_DIR="$U" L1_SYSCTL="$T/bin/sysctl" ${e[@]+"${e[@]}"} /bin/bash -c '. "$1"; '"$*" lock-test "$S"
+}
+live() { lk "$@" -- 'l1u_lock_live "$NAME"; echo "$?:$L1U_HOLDER"'; }   # NAME=<lock> [VAR=value ...]
+/bin/sleep 300 & LIVE=$!
+( exit 0 ) & DEAD=$!; wait "$DEAD"
+trap 'kill "$LIVE" 2>/dev/null; wait "$LIVE" 2>/dev/null; rm -rf "$T"' EXIT
+for name in installing updating; do
+  fresh; ln -s "$LIVE" "$U/$name"
+  check "LFT13 $name: a link to a live process is live, and its holder is that process" "$(live NAME=$name)" "0:$LIVE"
+  fresh; ln -s "$DEAD" "$U/$name"
+  check "LFT13 $name: a link to a process that is gone is not" "$(live NAME=$name)" "1:"
+  fresh; ln -s not-a-number "$U/$name"
+  check "LFT13 $name: a link to no number is not" "$(live NAME=$name)" "1:"
+  fresh; echo "$LIVE" > "$U/$name"
+  check "LFT13 $name: a plain file that holds a live process's number is not" "$(live NAME=$name)" "1:"
+  fresh
+  check "LFT13 $name: with no lock at all: not" "$(live NAME=$name)" "1:"
+  fresh; ln -s "$LIVE" "$U/$name"; touch -h -t 202001010000 "$U/$name"
+  check "LFT13 $name: a link to a live process whose own time is before the Mac's last start is not" "$(live NAME=$name)" "1:"
+  check "LFT13 $name: ...with the start's time unreadable the first two parts decide: live" "$(live NAME=$name STUB_BOOT_FAIL=1)" "0:$LIVE"
+done
+fresh; ln -s "$LIVE" "$U/other"
+check "LFT13 another name than the two is no lock: not live, not taken, and left as it is" "$(live NAME=other):$(lk -- 'l1u_lock_take other; echo $?'):$(readlink "$U/other")" "1::1:$LIVE"
+fresh
+check "LFT13 a take: 0, and the link's target is the taker's own process number" \
+  "$(lk -- 'l1u_lock_take installing; echo "$?:$([ "$(readlink "$L1_UPDATE_DIR/installing")" = "$$" ] && echo mine)"')" "0:mine"
+fresh; ln -s "$LIVE" "$U/installing"
+check "LFT13 a take while another live process holds it: refused, and the lock is still the other's" "$(lk -- 'l1u_lock_take installing; echo $?'):$(readlink "$U/installing")" "1:$LIVE"
+check "LFT13 ...a release by one who does not hold it leaves it" "$(lk -- 'l1u_lock_release installing; echo $?'):$(readlink "$U/installing")" "0:$LIVE"
+fresh
+check "LFT13 take, then release: the link is gone; and a second take by the holder itself is refused" \
+  "$(lk -- 'l1u_lock_take updating; l1u_lock_take updating; echo "$?"; l1u_lock_release updating; ls -A "$L1_UPDATE_DIR" | tr "\n" " "')" "1
+installed "
+for t in "$DEAD" 0 not-a-number; do
+  fresh; ln -s -- "$t" "$U/installing"
+  check "LFT13 a dead lock (target $t) is taken over" "$(lk -- 'l1u_lock_take installing; echo "$?:$([ "$(readlink "$L1_UPDATE_DIR/installing")" = "$$" ] && echo mine)"')" "0:mine"
+done
+fresh; ln -s "$LIVE" "$U/installing"; touch -h -t 202001010000 "$U/installing"
+check "LFT13 a lock older than the Mac's last start, its target a live process, is taken over" "$(lk -- 'l1u_lock_take installing; echo "$?:$([ "$(readlink "$L1_UPDATE_DIR/installing")" = "$$" ] && echo mine)"')" "0:mine"
+fresh; mkdir "$U/installing"
+check "LFT13 a folder at the lock's name: the take refuses, and nothing is left inside the folder" "$(lk -- 'l1u_lock_take installing; echo $?'):$(ls -A "$U/installing" | wc -l | tr -d ' ')" "1:0"
+fresh; echo 949230 > "$U/installing-game"
+check "LFT13 a take of installing removes an installing-game another holder left; a take of updating does not touch it" \
+  "$(echo 1 > "$U/installing-game"; lk -- 'l1u_lock_take updating; l1u_lock_release updating'; [ -e "$U/installing-game" ] && echo kept):$(lk -- 'l1u_lock_take installing; echo $?'):$([ -e "$U/installing-game" ] && echo kept || echo removed)" "kept:0:removed"
+fresh
+check "LFT13 a release of installing removes the game's file with the link" \
+  "$(lk -- 'l1u_lock_take installing; echo 949230 > "$L1_UPDATE_DIR/installing-game"; l1u_lock_release installing; ls -A "$L1_UPDATE_DIR" | tr "\n" " "')" "installed "
+mkdir -p "$T/pathbin2"; for p in readlink stat ln rm; do printf '#!/bin/bash\necho "%s" >> "%s/pathcalls2"\nexec /usr/bin/false\n' "$p" "$T" > "$T/pathbin2/$p"; chmod +x "$T/pathbin2/$p"; done
+fresh; : > "$T/pathcalls2"
+check "LFT13 stubs named readlink, stat, ln and rm first on PATH: take, live and release still work, and none was called" \
+  "$(lk PATH="$T/pathbin2:$PATH" -- 'l1u_lock_take installing; l1u_lock_live installing; echo "$?"; l1u_lock_release installing; ls -A "$L1_UPDATE_DIR" | tr "\n" " "'):$(wc -l < "$T/pathcalls2" | tr -d ' ')" "0
+installed :0"
+# --open while an install runs (the update's side of "they keep out of each other's way")
+fresh; stamp 949230 release v0.2.0; offer v0.3.0; ln -s "$LIVE" "$U/installing"; before="$(ls -A "$U" | tr '\n' ' ')"
+check "LFT13 --open when ready, with a live installing: failed and its sentence, nothing written, L1_OPEN not called" \
+  "$(opn L1_SYSCTL="$T/bin/sysctl" | tr '\n' ':')$([ "$(ls -A "$U" | tr '\n' ' ')" = "$before" ] && echo same):$(tmleft):$(opens)" "failed${TAB}An install is running in Terminal. Wait for it to finish, then update.:rc=0:same:0:0"
+fresh; stamp 949230 release v0.2.0; offer v0.3.0; ln -s "$DEAD" "$U/installing"
+check "LFT13 ...with a dead installing: opened" "$(opn L1_SYSCTL="$T/bin/sysctl" | tr '\n' ':')$(opens)" "opened:rc=0:1"
+fresh; stamp 949230 release v0.3.0; offer v0.3.0; ln -s "$LIVE" "$U/installing"
+check "LFT13 ...not ready, with a live installing: the state's sentence comes first" "$(opn L1_SYSCTL="$T/bin/sysctl" | sed -n 1p)" "failed${TAB}No update is waiting."
+
+# --- LFT3 (docs/plans/launcher-first-install.md, 3.8): --install <Steam app ID>. The installer the written file
+# starts keeps its record at the default place, so the tool opens only from a record that is there: these
+# cases put it under a scratch HOME, at the place common/paths.sh gives.
+UKEEP="$U"; IH="$T/ihome"; IU="$IH/Library/Application Support/1launcher/_update"
+ifresh() { rm -rf "$IH"; mkdir -p "$IU/installed"; chmod 700 "$IU" "$IU/installed"; U="$IU"; : > "$CALLS"; }   # the record at the default place of that home
+ins() {   # [VAR=value ...] -- <words after --install>: its answer and exit code; TMPDIR a fresh scratch folder
+  local e=()
+  while [ "$1" != -- ]; do e+=("$1"); shift; done; shift
+  rm -rf "$TM"; mkdir -p "$TM"; : > "$CALLS"
+  env HOME="$IH" L1_UPDATE_DIR="$U" L1_CURL="$T/bin/curl" L1_OPEN="$T/bin/open" L1_SYSCTL="$T/bin/sysctl" L1_UPDATE_NOW="$NOW" TMPDIR="$TM" ${e[@]+"${e[@]}"} bash "$S" --install "$@"; echo "rc=$?"
+}
+snapu() { (cd "$U" && { find . | LC_ALL=C sort; find . -type f -exec shasum {} +; } | shasum | cut -c1-12); }
+refused() {   # <name> <sentence> [VAR=value ...] -- <ID>: failed and that sentence, exit 0, nothing written anywhere, L1_OPEN not called
+  local name="$1" want="$2" before; shift 2; before="$(snapu)"
+  check "LFT3 --install $name: failed and its sentence, exit 0, nothing written, L1_OPEN not called" \
+    "$(ins "$@" | tr '\n' ':')$([ "$(snapu)" = "$before" ] && echo same):$(tmleft):$(opens)" "failed${TAB}$want:rc=0:same:0:0"
+}
+NOTID="That is not a game's Steam app ID."
+MANUAL="14unch3r or a game here was set up from a checkout or a named version. From a checkout, run the game's scripts/install.sh; otherwise paste the game's line from its guide."
+ifresh; lstamp release v0.3.0; offer v0.3.0
+for bad in 0 12x 12345678901 'a[$(touch '"$T"'/ran9)]' '-5' ' 949230'; do refused "with the ID [$bad]" "$NOTID" -- "$bad"; done
+check "LFT3 ...and with no ID at all; nothing ran" "$(ins -- | tr '\n' ':')$([ -e "$T/ran9" ] && echo ran || echo none)" "failed${TAB}$NOTID:rc=0:none"
+ifresh; lstamp checkout v0.3.0; offer v0.3.0
+refused "in the state manual (the launcher from a checkout)" "$MANUAL" -- 949230
+ifresh; lstamp release v0.3.0; stamp 3215050 v0.2.0 v0.2.0
+refused "in the state manual (a game from a named version)" "$MANUAL" -- 949230
+ifresh; lstamp release v0.3.0; stamp 3215050 checkout v0.3.0; : > "$U/off"
+refused "in the state off with one stamp on checkout" "$MANUAL" -- 949230
+ifresh; lstamp checkout v0.3.0; : > "$U/off"
+refused "in the state off with the launcher's stamp on checkout" "$MANUAL" -- 949230
+ifresh; U="$UKEEP"; fresh; lstamp release v0.3.0; offer v0.3.0
+refused "from a record at a scratch folder that is not the default place" "$MANUAL" -- 949230
+ifresh; lstamp release v0.2.0; offer v0.3.0
+refused "in the state ready" "A newer 1launcher is out. Update first, then click the game again." -- 949230
+ifresh; lstamp release v0.3.0; offer v0.3.0; ln -s "$LIVE" "$U/updating"
+refused "while an update runs" "An update is running in Terminal. Wait for it to finish, then click the game again." -- 949230
+ifresh; lstamp release v0.3.0; offer v0.3.0; ln -s "$LIVE" "$U/installing"
+refused "while an install runs" "An install is running in Terminal. Its Terminal window shows how far it is." -- 949230
+ifresh; lstamp release v0.3.0; offer v0.3.0; chmod 777 "$U"
+refused "with a record folder others can write" "This Mac's record of versions is not a folder of your own that only you can write to. In Terminal: chmod go-w \"$IU\", then try again." -- 949230
+chmod 700 "$U"
+INSFILE="^OPEN|-a|Terminal|$TM/1launcher-install\.[A-Za-z0-9]*/Install with 1launcher\.command\$"
+for st in none unknown current off; do
+  ifresh
+  case "$st" in
+    none) : ;;
+    unknown) lstamp release v0.3.0 ;;
+    current) lstamp release v0.3.0; stamp 3215050 release v0.3.0; offer v0.3.0 ;;
+    off) lstamp release v0.2.0; stamp 3215050 release v0.2.0; offer v0.3.0; : > "$U/off" ;;
+  esac
+  before="$(snapu)"
+  check "LFT3 --install in the state $st: opened, exit 0, L1_OPEN got -a Terminal and the file's path, nothing written into the record's folder" \
+    "$(tool | cut -f1):$(ins -- 3215050 | tr '\n' ':')$(opens):$(grep -c "$INSFILE" "$CALLS"):$([ "$(snapu)" = "$before" ] && echo same)" "$st:opened:rc=0:1:1:same"
+done
+ifresh; lstamp release v0.3.0; offer v0.3.0; ln -s "$DEAD" "$U/installing"
+check "LFT3 a dead installing (no such process) does not refuse" "$(ins -- 949230 | tr '\n' ':')$(opens)" "opened:rc=0:1"
+ifresh; lstamp release v0.3.0; offer v0.3.0; ln -s "$LIVE" "$U/installing"; touch -h -t 202001010000 "$U/installing"
+check "LFT3 ...nor one older than the Mac's last start" "$(ins -- 949230 | tr '\n' ':')$(opens)" "opened:rc=0:1"
+CMD="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
+check "LFT3 the written file: mode 755, alone in a new folder of TMPDIR, a bash script that names the curl it was given and the ID" \
+  "$(stat -f %Lp "$CMD" 2>/dev/null):$(tmleft):$(ls -A "$(dirname "$CMD")" | wc -l | tr -d ' '):$(sed -n '1,3p' "$CMD" | tr '\n' '|')" "755:1:1:#!/bin/bash|CURL='$T/bin/curl'|ID='949230'|"
+check "LFT3 ...clear comes before its first line of words; it holds neither the word installing nor the record folder's path nor the home's" \
+  "$([ "$(grep -n '^clear$' "$CMD" | head -n 1 | cut -d: -f1)" -lt "$(grep -n '^ *echo ' "$CMD" | head -n 1 | cut -d: -f1)" ] && echo first):$(grep -c 'installing' "$CMD"):$(grep -cF "$IU" "$CMD"):$(grep -cF "$IH" "$CMD")" "first:0:0:0"
+check "LFT3 ...it fetches the root install.sh of release by the branch's full name, once, and runs it with the one ID" \
+  "$(grep -c 'https://raw.githubusercontent.com/macgameport/1launcher/refs/heads/release/install\.sh)"; rc=\$?$' "$CMD"):$(grep -c 'raw\.githubusercontent' "$CMD"):$(grep -c '^  /bin/bash -c "\$S" 1launcher-install "\$ID"; rc=\$?$' "$CMD")" "1:1:1"
+check "LFT3 ...curl is not called by --install itself" "$(calls)" 0
+for bad in "x'; touch $T/ran10; '" '/tmp/$(touch '"$T"'/ran10)' 'curl'; do
+  ifresh; lstamp release v0.3.0
+  check "LFT3 L1_CURL holding [$bad]: the file names /usr/bin/curl, and nothing ran" "$(ins L1_CURL="$bad" -- 949230 | tr '\n' ':')$(sed -n 2p "$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"):$([ -e "$T/ran10" ] && echo ran || echo none)" "opened:rc=0:CURL='/usr/bin/curl':none"
+done
+ifresh; lstamp release v0.3.0
+check "LFT3 Terminal could not be opened: failed and a sentence, exit 0, and the file and its folder are removed again" \
+  "$(ins STUB_OPEN_EXIT=1 -- 949230 | tr '\n' ':')$(opens):$(tmleft)" "failed${TAB}Terminal could not be opened for the install.:rc=0:1:0"
+check "LFT3 a source gate: the tool's spelling of the default place equals the two lines of common/paths.sh" \
+  "$(grep -c '^_l1u_default_dir() { printf .%s.n. "\$HOME/Library/Application Support/1launcher/_update"; }$' "$HERE/updates.sh"):$(grep -c '^_l1_data_default="\$HOME/Library/Application Support/1launcher"$' "$HERE/paths.sh"):$(grep -c '^L1_UPDATE_DIR="\${L1_UPDATE_DIR:-\$L1_DATA_ROOT/_update}"$' "$HERE/paths.sh")" "1:1:1"
+check "LFT3 ...and common/paths.sh, asked with that home, gives the folder these cases used" "$(env -u L1_UPDATE_DIR -u L1_DATA_ROOT HOME="$IH" bash "$HERE/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')" "$IU"
+check "LFT3 --install is in the usage line, and the header no longer says that off means nothing is ever fetched" \
+  "$(bash "$S" --nope 2>&1 | grep -c -- '--install <Steam app ID>'):$(grep -c 'if it exists, nothing is ever fetched' "$S")" "1:0"
+U="$UKEEP"
 
 # --- UT4: --version-of, and values that would run a command
 fresh

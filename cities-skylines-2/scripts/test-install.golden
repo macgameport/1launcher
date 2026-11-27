@@ -803,6 +803,95 @@ Step 2 of 6: Apple's Command Line Tools
   !! Apple's Command Line Tools are installed, but their python3 does not run. Reinstall them, then open the installer again.
 
 The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== LFT11 the tools arrive, python3 fails at two polls and runs at the third: the install goes on :: 0:3:1
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  A box from Apple has opened; it may be behind this window. Press Install, then Agree.
+  The download comes from Apple and can take 10 minutes or more. This window goes on by itself when it is done.
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT11 ...python3 never runs: after the settle exit 1, the core's sentence, setup not run :: 1:1:4:0
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  A box from Apple has opened; it may be behind this window. Press Install, then Agree.
+  The download comes from Apple and can take 10 minutes or more. This window goes on by itself when it is done.
+  !! Apple's Command Line Tools are installed, but their python3 does not run. Reinstall them, then open the installer again.
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== LFT11 the request answering 1: the other words are said and the first are not, and the wait still runs :: 0:1:0:1
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  Apple's box could not be opened from here. It may be open already; if no box is showing, run xcode-select --install in Terminal at the Mac itself. This window goes on by itself when the tools are there.
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT11 the settle is two minutes: TOOLS_PART_POLLS=24 stands in the core, on the line after TOOLS_POLLS :: 1
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  Apple's box could not be opened from here. It may be open already; if no box is showing, run xcode-select --install in Terminal at the Mac itself. This window goes on by itself when the tools are there.
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT11 common/tools.sh gone: exit 4 in the own-files words, setup not run :: 4:0:1:0
+The installer's own files are gone (macOS clears old temporary files).
 == low space on a finished install: no CAUTION, and on :: 0:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -3001,6 +3090,349 @@ Step 5 of 6: The game
   Waiting for you to choose Install in Steam
 
 Stopped. Open the installer again: it carries on from here.
+== LFT13 while an install waits: installing is a link to the installer's own process, and installing-game holds the game's ID :: mine:949230
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is open.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+== LFT13 ...stopped by TERM: the lock and the game's file are gone :: 143:none:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is open.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+
+Stopped. Open the installer again: it carries on from here.
+== LFT13 while an install waits: installing is a link to the installer's own process, and installing-game holds the game's ID :: mine:949230
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is open.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+== LFT13 ...stopped by HUP: the lock and the game's file are gone :: 129:none:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  Steam for Windows is open.
+  When Steam's sign-in window appears:
+    1. Sign in with the Steam account that owns Cities: Skylines II. Tick "Remember me".
+       Steam may ask for a code from your email or the Steam app on your phone.
+    2. Click Library, then Cities: Skylines II, then the blue Install button, then Install.
+       The download is about 100 GB and takes hours.
+    3. When it finishes Steam shows a green Play button. Do not press it: it does not work from
+       inside Steam. This window sees the download finish, closes Steam, and goes on to step 6.
+  Leave this window open. The Mac is kept awake while it runs.
+  Waiting for you to choose Install in Steam
+
+Stopped. Open the installer again: it carries on from here.
+== LFT13 a finished install (exit 0): the lock was this installer's at both calls of setup, with the game's ID beside it, and both are gone afterwards :: 0:LOCKATSETUP mine 949230|:none:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT13 ...the record's three folders were made, none writable by group or others :: 755:755:755
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT13 ...under a umask of 000 too, the parent first :: 0:755:755:755
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT13 the lock is gone after exit 1 :: 1:none:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  !! Apple's Command Line Tools are installed, but their python3 does not run. Reinstall them, then open the installer again.
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== LFT13 ...after exit 3 :: 3:none:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+  Rosetta 2   MISSING
+
+  Rosetta 2 is Apple's translator for Intel programs. The game cannot run without it, and this Mac does not have it.
+  Installing it accepts Apple's licence for it.
+  To install it later, run this in Terminal:  softwareupdate --install-rosetta --agree-to-license
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== LFT13 ...after exit 4 :: 4:none:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  A box from Apple has opened; it may be behind this window. Press Install, then Agree.
+  The download comes from Apple and can take 10 minutes or more. This window goes on by itself when it is done.
+  Apple's Command Line Tools are not installed yet.
+
+Open the installer again: it carries on from here.
+== LFT13 a second install while one runs: exit 3 with its sentence and the holder's process, nothing downloaded, setup not run, the lock still the other's :: 3:1:0:0:0:theirs
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  !! Another install is running in another Terminal window (process N). Wait for it to finish, then open the installer again.
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== LFT13 a lock older than the Mac's last start, its target a live process, is taken over :: 0:LOCKATSETUP mine 949230|:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT13 a live updating: exit 3 with its sentence, setup not run, installing not left behind, the update's lock untouched :: 3:1:0:none:none:theirs
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  !! An update of 1launcher is running in another Terminal window (process N). Wait for it to finish, then open the installer again.
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== LFT13 under L1_UPDATE=1 with a live updating: no lock is taken, and that updating does not stop it :: 0:LOCKATSETUP none none|:theirs
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT13 under L1_UPDATE=1 with no live updating the lock is taken as in any run :: 0:LOCKATSETUP mine 949230|:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+== LFT13 under --check nothing is made and no lock is taken :: 0:LOCKATSETUP none none|:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+
+Step 1 of 6: This Mac
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+  would run setup.sh
+== LFT13 a record folder others can write: exit 1 with the chmod sentence, the folder in full and in quotes in the command, before anything is downloaded :: 1:1:0:0:none
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  !! T/h105/Library/Application Support/1launcher/_update is not a folder of your own that only you can write to. In Terminal: chmod go-w "T/h105/Library/Application Support/1launcher/_update", then try again.
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
+== LFT13 source gates: in install_lock the take of installing stands before the look at updating; the game's file is written beside its place and renamed, never in place :: take first:0:1
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  !! T/h105/Library/Application Support/1launcher/_update is not a folder of your own that only you can write to. In Terminal: chmod go-w "T/h105/Library/Application Support/1launcher/_update", then try again.
+
+The install stopped. The lines above say why. Open the installer again to carry on from that step.
 == the game started during the wait: exit 3 at step 6, setup not run :: 3:0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -3063,53 +3495,9 @@ Step 6 of 6: The Mac fixes and the game's app
 
 Open the installer again: it carries on from here.
 == common/paths.sh gone: exit 4, setup not run, and no Rosetta offer made of it :: 4:0:0:0:1
-Cities: Skylines II for Apple Silicon Macs: the installer
-You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
-You can open the installer again at any point: it carries on from where it stopped.
-  The Mac is kept awake while this runs.
-
-Step 1 of 6: This Mac
-
-Step 2 of 6: Apple's Command Line Tools
-  OK
-
-Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/wrapper-949230.app
-
-Step 4 of 6: Steam for Windows
-  OK
-
-Step 5 of 6: The game
-  OK
-
-Step 6 of 6: The Mac fixes and the game's app
-  The installer's own files are gone (macOS clears old temporary files).
-
-Open the installer again: it carries on from here.
+The installer's own files are gone (macOS clears old temporary files).
 == common/updates.sh gone: exit 4 in the own-files words, setup not run :: 4:0:1
-Cities: Skylines II for Apple Silicon Macs: the installer
-You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
-You can open the installer again at any point: it carries on from where it stopped.
-  The Mac is kept awake while this runs.
-
-Step 1 of 6: This Mac
-
-Step 2 of 6: Apple's Command Line Tools
-  OK
-
-Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
-  OK: ~/Applications/wrapper-949230.app
-
-Step 4 of 6: Steam for Windows
-  OK
-
-Step 5 of 6: The game
-  OK
-
-Step 6 of 6: The Mac fixes and the game's app
-  The installer's own files are gone (macOS clears old temporary files).
-
-Open the installer again: it carries on from here.
+The installer's own files are gone (macOS clears old temporary files).
 == common/games.tsv gone: exit 4 in the own-files words, setup not run :: 4:0:1
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -3558,7 +3946,7 @@ The Wine wrappers' names:
   moved: ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h107/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h125/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -3567,12 +3955,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h107/Applications/Cities Skylines II.app ===
-    launcher: T/h107/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h125/Applications/Cities Skylines II.app ===
+    launcher: T/h125/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h107/Applications/Cities Skylines II.app
+Double-click: T/h125/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:
@@ -3599,7 +3987,7 @@ Renamed:   ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
            entry) must be pointed at the new one. To keep the old names on a Mac not renamed yet: L1_KEEP_WRAPPER_NAMES=1 bash scripts/install.sh
 
 Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
-==   ...the app's L1Prefix names the renamed wrapper, and no .launcher.lock is left in it :: T/h107/Applications/wrapper-949230.app/Contents/SharedSupport/prefix:none
+==   ...the app's L1Prefix names the renamed wrapper, and no .launcher.lock is left in it :: T/h125/Applications/wrapper-949230.app/Contents/SharedSupport/prefix:none
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
 You can open the installer again at any point: it carries on from where it stopped.
@@ -3659,7 +4047,7 @@ The Wine wrappers' names:
   moved: ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h107/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h125/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -3668,12 +4056,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h107/Applications/Cities Skylines II.app ===
-    launcher: T/h107/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h125/Applications/Cities Skylines II.app ===
+    launcher: T/h125/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h107/Applications/Cities Skylines II.app
+Double-click: T/h125/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:
@@ -3757,11 +4145,11 @@ Installing launcher + patches into ~/Library/Application Support/1launcher/citie
   wrappers.sh (how the launcher finds the game's wrapper)
 
 The Wine wrappers' names:
-  skip: CS2_WRAPPER names a wrapper (T/h108/Applications/CS2dxmt11.app): it is used as it is and keeps its name
+  skip: CS2_WRAPPER names a wrapper (T/h126/Applications/CS2dxmt11.app): it is used as it is and keeps its name
 Nothing was renamed.
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h108/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h126/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -3770,12 +4158,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h108/Applications/Cities Skylines II.app ===
-    launcher: T/h108/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h126/Applications/Cities Skylines II.app ===
+    launcher: T/h126/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h108/Applications/Cities Skylines II.app
+Double-click: T/h126/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:
@@ -3833,7 +4221,7 @@ The Wine wrappers' names:
 Nothing was renamed.
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h109/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h127/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -3842,12 +4230,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h109/Applications/Cities Skylines II.app ===
-    launcher: T/h109/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h127/Applications/Cities Skylines II.app ===
+    launcher: T/h127/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h109/Applications/Cities Skylines II.app
+Double-click: T/h127/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:
@@ -3930,7 +4318,7 @@ The Wine wrappers' names:
   moved: ~/Applications/CS2dxmt11.app -> ~/Applications/wrapper-949230.app
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h110/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h128/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -3939,12 +4327,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h110/Applications/Cities Skylines II.app ===
-    launcher: T/h110/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h128/Applications/Cities Skylines II.app ===
+    launcher: T/h128/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h110/Applications/Cities Skylines II.app
+Double-click: T/h128/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:
@@ -4032,7 +4420,7 @@ The Wine wrappers' names:
 Nothing was renamed.
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h111/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h129/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -4041,12 +4429,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h111/Applications/Cities Skylines II.app ===
-    launcher: T/h111/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h129/Applications/Cities Skylines II.app ===
+    launcher: T/h129/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h111/Applications/Cities Skylines II.app
+Double-click: T/h129/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:
@@ -4136,7 +4524,7 @@ The Wine wrappers' names:
   nothing to rename
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h112/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h130/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -4145,12 +4533,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h112/Applications/Cities Skylines II.app ===
-    launcher: T/h112/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h130/Applications/Cities Skylines II.app ===
+    launcher: T/h130/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h112/Applications/Cities Skylines II.app
+Double-click: T/h130/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:
@@ -4240,7 +4628,7 @@ The Wine wrappers' names:
   nothing to rename
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h113/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h131/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -4249,12 +4637,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h113/Applications/Cities Skylines II.app ===
-    launcher: T/h113/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h131/Applications/Cities Skylines II.app ===
+    launcher: T/h131/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h113/Applications/Cities Skylines II.app
+Double-click: T/h131/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:
@@ -4284,6 +4672,311 @@ Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
 Cities: Skylines II: updated.
 Surviving Mars: Relaunched: its installer stopped. Its lines above say why.
 Not everything was updated. Do what the lines above say.
+== LFT8 the fixture: a begun install (a marked wrapper, no app), the launcher's stamp alone on release at v0.0.9, that version on offer: the state is current :: current	v0.0.9	v0.0.9:no-app:marked
+== LFT8 the deployed tool, asked to install the game: opened, and Terminal was handed one file :: opened:1:file
+== LFT8 the written file, run: the root install.sh is fetched, then the archive of release, and the game's line runs this installer and the real setup; exit 0, its closing line last :: 0:1:1:Installed. Open 14unch3r to play. You can close this window.
+Fetching the installer from github.com/macgameport/1launcher ...
+Fetching 1launcher (release) from github.com/macgameport/1launcher ...
+1launcher: commit not read
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+=== Cities: Skylines II on macOS — setup ===
+repo: a temporary copy of macgameport/1launcher at release
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+=== Cities: Skylines II on macOS — setup ===
+repo: a temporary copy of macgameport/1launcher at release
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: nothing to rename
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (wrapper-949230.app)                    OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  nothing to rename
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h132/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h132/Applications/Cities Skylines II.app ===
+    launcher: T/h132/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h132/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+
+Installed. Open 14unch3r to play. You can close this window.
+== LFT8 ...the game's stamp and the launcher's stamp both hold release and the tree's version, and the state is current (with the launcher's stamp left at v0.0.9 it would be ready) :: release	v0.1.0:release	v0.1.0:current	v0.1.0	v0.1.0
+Fetching the installer from github.com/macgameport/1launcher ...
+Fetching 1launcher (release) from github.com/macgameport/1launcher ...
+1launcher: commit not read
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+=== Cities: Skylines II on macOS — setup ===
+repo: a temporary copy of macgameport/1launcher at release
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+=== Cities: Skylines II on macOS — setup ===
+repo: a temporary copy of macgameport/1launcher at release
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: nothing to rename
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (wrapper-949230.app)                    OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  nothing to rename
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h132/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h132/Applications/Cities Skylines II.app ===
+    launcher: T/h132/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h132/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+
+Installed. Open 14unch3r to play. You can close this window.
+== LFT8 ...no lock is left, no file names a game, the game's app is there, and the temporary folders are empty :: none:none:app:0
+Fetching the installer from github.com/macgameport/1launcher ...
+Fetching 1launcher (release) from github.com/macgameport/1launcher ...
+1launcher: commit not read
+Cities: Skylines II for Apple Silicon Macs: the installer
+You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
+You can open the installer again at any point: it carries on from where it stopped.
+  The Mac is kept awake while this runs.
+
+Step 1 of 6: This Mac
+=== Cities: Skylines II on macOS — setup ===
+repo: a temporary copy of macgameport/1launcher at release
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+
+
+Step 2 of 6: Apple's Command Line Tools
+  OK
+
+Step 3 of 6: Wine, which runs Windows programs (about 235 MB)
+  OK: ~/Applications/wrapper-949230.app
+
+Step 4 of 6: Steam for Windows
+  OK
+
+Step 5 of 6: The game
+  OK
+
+Step 6 of 6: The Mac fixes and the game's app
+=== Cities: Skylines II on macOS — setup ===
+repo: a temporary copy of macgameport/1launcher at release
+data: ~/Library/Application Support/1launcher/cities-skylines-2
+work: ~/Library/Developer/1launcher/cities-skylines-2
+move: a new install
+wrapper: nothing to rename
+
+Preflight:
+  Apple Silicon                                        OK
+  Rosetta 2                                            OK
+  macOS 27.2                                           OK (tested)
+  Wine wrapper (wrapper-949230.app)                    OK
+  wine64 in the wrapper ()                             OK
+  Steam inside the wrapper                             OK
+  Cities: Skylines II installed                        OK
+  python3 (patches + icon extraction)                  OK
+
+All 8 checks passed.
+
+Installing launcher + patches into ~/Library/Application Support/1launcher/cities-skylines-2
+  launcher:  launch-cs2-dxmt11.sh
+  repatch.sh
+  cs2-display-profile.sh (home/mobile display profiles)
+  patches:   16 scripts
+  patches/_vendor (dnfile and pefile, which the patch scripts use)
+  wrappers.sh (how the launcher finds the game's wrapper)
+
+The Wine wrappers' names:
+  nothing to rename
+
+Applying binary patches (idempotent — safe to re-run after every game update):
+Target game dir: T/h132/Applications/wrapper-949230.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+== Re-applying the Cities: Skylines II patches ==
+  (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
+10 of 10 patch scripts finished without error
+JetBrains Toolbox stub: written
+== Finished ==
+  every patch script finished without error.
+
+Building the double-clickable app:
+=== building T/h132/Applications/Cities Skylines II.app ===
+    launcher: T/h132/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+    icon:     skipped (generic icon) — game exe or python3 not found; the app still works
+    progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
+=== done ===
+Double-click: T/h132/Applications/Cities Skylines II.app
+Log:          ~/Library/Logs/cs2-launcher.log
+
+Building 14unch3r, the window that lists the games:
+
+=== setup complete ===
+
+Play:      double-click  ~/Applications/Cities Skylines II.app
+           or open 14unch3r, which lists every game set up on this Mac
+Log:       ~/Library/Logs/cs2-launcher.log
+
+First run: Steam signs in inside the wrapper, waits ~15s for the licence to sync, then the game
+           starts. That wait only happens when Steam was not already running.
+
+In-game:   Options -> Graphics -> Display Mode -> FULLSCREEN WINDOW.
+           Exclusive Fullscreen has an alt-tab presentation bug on this stack (dxmt#206) —
+           borderless looks identical and is immune.
+
+After a game update: open the installer again (updates reset the patched DLLs).
+Troubleshooting: INSTALL.md, then GOTCHAS.md.
+
+Done. Start the game from Applications: Cities Skylines II, or 14unch3r.
+
+Installed. Open 14unch3r to play. You can close this window.
 == no run reached the runaway guard :: 0
 Cities: Skylines II for Apple Silicon Macs: the installer
 You need a Steam account that owns the game, about 105 GB free, and time for a download of about 100 GB.
@@ -4345,7 +5038,7 @@ The Wine wrappers' names:
 Nothing was renamed.
 
 Applying binary patches (idempotent — safe to re-run after every game update):
-Target game dir: T/h111/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
+Target game dir: T/h129/Applications/CS2dxmt11.app/Contents/SharedSupport/prefix/drive_c/Program Files (x86)/Steam/steamapps/common/Cities Skylines II
 == Re-applying the Cities: Skylines II patches ==
   (the six errno-tolerance patches are off; CS2_ERRNO_PATCHES=1 applies them)
 10 of 10 patch scripts finished without error
@@ -4354,12 +5047,12 @@ JetBrains Toolbox stub: written
   every patch script finished without error.
 
 Building the double-clickable app:
-=== building T/h111/Applications/Cities Skylines II.app ===
-    launcher: T/h111/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
+=== building T/h129/Applications/Cities Skylines II.app ===
+    launcher: T/h129/Library/Application Support/1launcher/cities-skylines-2/launch-cs2-dxmt11.sh
     icon:     skipped (generic icon) — game exe or python3 not found; the app still works
     progress: skipped (swiftc is missing: install the Xcode Command Line Tools) — notifications only
 === done ===
-Double-click: T/h111/Applications/Cities Skylines II.app
+Double-click: T/h129/Applications/Cities Skylines II.app
 Log:          ~/Library/Logs/cs2-launcher.log
 
 Building 14unch3r, the window that lists the games:

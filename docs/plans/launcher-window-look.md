@@ -159,7 +159,10 @@ Tiles replace rows. The rows, their order, their states and their titles are the
 - **Offers** (parent 2.5) start a row of their own below the others, 4 to a row, under a label "You also
   own": 11 points semibold, white at alpha 0.88, 16 high, 8 below the row above it and 4 above its tiles.
   The label stays because a tile with a generic icon and no app behind it needs its reason said. An offer
-  is a grey tile (2.4).
+  is a grey tile (2.4). **Extended by `docs/plans/launcher-first-install.md`, 3.7 and 3.10:** every game of the
+  table that has no app is an offer, whether or not Steam says the account owns it, and it is there when the
+  window opens; the label is "Not set up on this Mac"; and the tile shows no generic icon but the game's
+  placeholder, a grey square with the game's initials.
 - **Two blocks.** The games and Steam tiles are one block and the offers another. Within a block the rows
   share one left edge; each block is centred; the label starts at the offers block's left edge. So when
   the offers arrive late and the window widens about its middle (2.2), no game moves on the screen.
@@ -238,12 +241,32 @@ Every colour, alpha and size of 2.1 to 2.5 is a named constant in one `enum Look
 | a Steam app that is `absent` | "Windows Steam not found. Build this app again." | "Windows Steam not found" |
 | an offer | "Not set up on this Mac. Opens the set-up guide." | "Not set up. Opens its guide." |
 
+> Extended by `docs/plans/launcher-first-install.md`, 3.7: these two sentences of an offer stand where the window has
+> no update tool. With the tool, a click installs, and the tile says so: "Not set up on this Mac. Click to
+> install." and "Not set up. Click to install." ("In your Steam library. Click to install." when a cache says
+> the account has the game); for an install that was begun, "Install not finished. Click to carry on."; and
+> while one runs, "Installing in Terminal."
+
 - **Grey tiles (K7).** Those three kinds are grey: the icon is drawn with its colours replaced by their
   luminance, at alpha 0.5. An offer's icon is the generic application icon, since a game's own icon comes
   out of its own files when its app is built. The texts stay at full strength, so the ratios below hold.
+  **Extended by `docs/plans/launcher-first-install.md`, 3.10:** the luminance rule at alpha 0.5 stays true of a
+  set-up game or a Steam app that is `absent`, and ends for an offer. An offer draws the placeholder: the body
+  of the app's own icon (the rounded square of `iconBody`, its two whites 0.32 and 0.13) with the first two
+  initials of the game's title in white at 0.88, the system font at 22 points semibold, drawn in grey at full
+  strength and not through the grey rule. Its six constants are `Look.initialsTop`, `initialsBottom`,
+  `initialsRadius`, `initialsAlpha`, `initialsFont` and `initialsPad`. The letters: a word's first letter or
+  digit, made upper case; a word with neither gives none ("&"); a word after the first that is only a number,
+  in digits or in the capitals I, V and X, gives none; so "Cities: Skylines II" is CS and "Surviving Mars:
+  Relaunched" SM. The generic application icon is drawn nowhere.
   A grey tile is chosen and started like any other: an `absent` game's launcher stops at once with its own
   alert naming the fix (`cities-skylines-2/launchers/launch-cs2-dxmt11.sh:183`,
-  `surviving-mars-relaunched/launch-relaunched.sh:145`), and an offer opens its guide.
+  `surviving-mars-relaunched/launch-relaunched.sh:145`), and an offer opens its guide. **Extended by
+  `docs/plans/launcher-first-install.md`, 3.7:** with the update tool there, a click on an offer asks first, in the
+  window's first sheet with three buttons ("Not Now", the first and the default, "Install" or "Carry On", and
+  "Read the Guide"), and on a yes Terminal runs the game's installer. On a Mac set up from a checkout, when a
+  newer version is out, while an install runs or while a game is in use, a short sheet says why instead, with
+  "OK" and "Read the Guide".
 - **Tooltip:** the full title and, on a new line, the full sentence when there is one. The tile answers
   `accessibilityHelp()` with nothing, or VoiceOver would read the tooltip after the label (section 1).
 - **Selection:** a plate behind the icon, the icon's rectangle grown by 7 at the sides and 6 above and
@@ -259,7 +282,10 @@ Every colour, alpha and size of 2.1 to 2.5 is a named constant in one `enum Look
 - **Ratios the build must keep:** title on the pill 6.27; title on the background 6.80 at worst with the
   mark behind and 8.20 without; second line and label 5.72 and 6.83. All are above 4.5. `--grid` prints
   them from the real views (section 4). The system's Increase Contrast setting changes nothing here:
-  these are the floor at every setting.
+  these are the floor at every setting. **Extended by `docs/plans/launcher-first-install.md`, 3.10:** `--grid`
+  prints one more, `paint initials`, the placeholder's letters against its body: 7.76 at the build, over the
+  same floor of 4.5. A tile's line in `--grid` has a fifteenth field for the picture it draws, `icon=app` or
+  `icon=initials:<letters>`, and a sixteenth for its tooltip's sentence, `tip=<sentence>`.
 - The empty state keeps its two strings (`:623-624`), "No games are set up on this Mac yet." at 13 points
   in white and the README address at 11 points in white at alpha 0.88, still selectable, centred in a
   grid of 444 by 172 with the mark behind. The address measured 350 points wide.
@@ -472,7 +498,7 @@ y from the top left (2.6).
 | # | Step | Test | Cases | Mutants, each seen red |
 |---|---|---|---|---|
 | W13 | B8 | `common/test-launcher-window.sh`: `--icon-at`; `common/test-make-launcher-app.sh`: the packing | `ink` at 512,242 (ring top), 243,511 and 780,511 (ring sides), 483,575 and 540,575 (the stems), 433,395 (the 1's flag), 650,458 (the 4's flag); `body` at 512,780 (the ring's opening), 512,575 (between the stems), 672,575; `clear` at 64,959. The "14" icon measured `body` at five of those ink points and `ink` at 512,575 and 672,575, so the case tells the two apart. With `small`: `ink` at 512,192, which is `body` in the full form. `test-make-launcher-app.sh:127-133` still passes: 1024 by 1024. Added there, with a recording `sips` first on the path: the three files of 16 and 32 pixels are scaled from the small drawing and the other seven from the full one; with a program that fails on `small`, all ten come from the full one and the icon is still packed | the mark not stroked in the icon; the arc ended at 302 degrees, not 238; the small form's stroke at 0.05; the small drawing used for no size |
-| W14 | B9 | `common/test-launcher-window.sh`: `--grid` | Each row of 2.1's table by `size`, `window` and origins, with fixture apps; 17 games give `size 552 788` and `window 552 600`. `mark` is 333, 55.5, 27 at 444 and 414, 69, 33 at 552. Every tile has `AXButton`, the label of 2.7 and no help; the group is `AXGroup`, "Games", with its help. An offer is on its own row under the label, both at the offers block's left edge; its label ends "opens the set-up guide in your browser"; it shows "Not set up. Opens its guide." and is `dim`. An `absent` Steam app shows "Windows Steam not found", is `dim`, and its label holds the full sentence. An `absent` game shows "Not installed in Steam" and is `dim`; a `ready` one is not. Two apps with one title, whose file names differ only at their ends: 2 title lines each, line 1 the title, and the two shown titles differ. A game whose title wraps to three lines shows 2, the second ending in an ellipsis. The selected tile is the last game when listed, else the first game. An empty folder: `size 444 172`, both strings, no tile. `first-click activates`. `paint`: the pill is `#0059D1` at 6.27; title, second line and label are at least 4.5; the outline is at least 4.5 on the background and 3 on the plate | 5 to a row; the group gap dropped; the least width dropped; the button role dropped; an offer's label without the guide words; offers not starting a row; the offers block given the games' left edge; the first tile selected whatever the last id; the title allowed 3 lines; the file name cut at its tail; an `absent` game not dim; the tile's help left as the tooltip; `acceptsFirstMouse` true; the pill the accent colour; the outline dropped; the second line at alpha 0.5; the mark at alpha 0.4 |
+| W14 | B9 | `common/test-launcher-window.sh`: `--grid` | Each row of 2.1's table by `size`, `window` and origins, with fixture apps; 17 games give `size 552 788` and `window 552 600`. `mark` is 333, 55.5, 27 at 444 and 414, 69, 33 at 552. Every tile has `AXButton`, the label of 2.7 and no help; the group is `AXGroup`, "Games", with its help. An offer is on its own row under the label, both at the offers block's left edge; its label ends "opens the set-up guide in your browser"; it shows "Not set up. Opens its guide." and is `dim`. An `absent` Steam app shows "Windows Steam not found", is `dim`, and its label holds the full sentence. An `absent` game shows "Not installed in Steam" and is `dim`; a `ready` one is not. Two apps with one title, whose file names differ only at their ends: 2 title lines each, line 1 the title, and the two shown titles differ. A game whose title wraps to three lines shows 2, the second ending in an ellipsis. The selected tile is the last game when listed, else the first game. An empty folder: `size 444 172`, both strings, no tile. `first-click activates`. `paint`: the pill is `#0059D1` at 6.27; title, second line and label are at least 4.5; the outline is at least 4.5 on the background and 3 on the plate | 5 to a row; the group gap dropped; the least width dropped; the button role dropped; an offer's label without the guide words; offers not starting a row; the offers block given the games' left edge; the first tile selected whatever the last id; the title allowed 3 lines; the file name cut at its tail; an `absent` game not dim; the tile's help left as the tooltip; `acceptsFirstMouse` true; the pill the accent colour; the outline dropped; the second line at alpha 0.5; the mark at alpha 0.4 **Extended by `docs/plans/launcher-first-install.md`, LFT6 and LFT10:** an offer's expectations there are those of 3.7 and 3.10 of that plan (the label, the words with and without a tool, the placeholder's field and its paint line) |
 | W15 | B9 | same file: `--act` | `right` moves on, stays at the last tile; `left` stays at the first; `right` goes from the end of row 1 to the start of row 2. `down` goes to the nearest tile of the next row (with 5 games and Steam, from the fourth tile to Steam, not to the fifth game), into the offers row too, and stays on the last row; `up` the reverse. `return`, `enter` and `space` print `start` and the selected path; on an offer, its address. `escape` prints `quit`. `sheet:escape` prints `end-sheet`; `sheet:space` and `sheet:return` print `pass`. `press` and `release` on one tile: `start`, and the tile is selected after the press. `press` on one tile and `release` on another, or in a gap: `nothing`. `press`, `release2` on one tile: `nothing`. `press`, `reload`, `release` on one tile: `nothing`. `press` and `release` at 146:40, between two tiles, and at 10:10: `nothing`. After `block`: `press` and `release`, `return`, `right` and `axpress:1` each print `nothing`; after `unblock` they act. `axpress:2` starts tile 2. `axfocus:3` selects tile 3, and after every move `focus` names the selected tile. `right`, `reload`: still tile 2. With 17 games: `offset 188` after four `down`, `offset 0` after four `up` | a start on the press; the release not compared with the armed tile; a second click counted; a reload not disarming; `down` moving one tile on; `right` wrapping to the first; Escape dropped; Space dropped; Space taken under a sheet; the press action starting nothing; `blocked` not asked; focus never answered; a reload selecting the default; the selection not scrolled into view |
 | W16 | B10 | same file: `--svg` | The output equals `docs/images/14unch3r.svg` by `cmp`, is the five lines of 2.8 and 596 bytes, passes `xmllint --noout`, and holds none of `<text`, `<image`, `<script`, `href`. `README.md` names that file once, and the file is there | the 1's top at 0.70, not 0.76; a second line break written at the end |
 | W17 | B11 | same file: `--alias`, in a scratch folder with a fixture app | `none` for an empty path; `make` prints `made`, and the file is an alias by `file`, then reads `have`; `make` again prints `have` and the file's bytes and inode are unchanged. `other`, and untouched under `make`: a plain file, a folder, a symlink to the app, a dangling symlink, an alias to another fixture app. After the app is moved within the scratch folder the alias still reads `have` for the new path. A target that does not exist: `failed`, exit 1, nothing written. A folder that does not exist: `failed`, exit 1 | an existing path overwritten; a symlink to the app read as `have`; an alias to another app read as `have`; exit 0 on a failed write |
@@ -561,7 +587,7 @@ read and written as before.
 | D20 | The Desktop shortcut | **Decided 2026-11-10 ("Ask, default No").** Asked at a terminal, default no; `--desktop` says yes; `--yes` does not, and without `--desktop` an unwatched run does not look at the Desktop; never replaced; nothing remembered |
 | D21 | A new place outside the repo, which `CLAUDE.md` asks James's word for | `~/Desktop/14unch3r`, one alias, made only on a yes. K5 is that word; B12 writes it into `CLAUDE.md` |
 | D22 | The repository's name, which James asked to alias to `14unch3r` | **Decided 2026-11-10 ("Keep 1launcher").** GitHub has no aliases; a rename, whose old links redirect, was offered and not taken. The app, the icon and the page's image say 14unch3r; the repository, its folders and its links stay `1launcher` (parent D4) |
-| D23 | A tile that cannot start (K7) | Grey icon and a few words saying why. It is still chosen and started: for a game not installed, its launcher's own alert names the fix. The window cannot open a game's own Steam to install it; that gap is in `docs/plans/1launcher-unification.md` |
+| D23 | A tile that cannot start (K7) | Grey icon and a few words saying why. It is still chosen and started: for a game not installed, its launcher's own alert names the fix. The window cannot open a game's own Steam to install it; that gap is in `docs/plans/1launcher-unification.md`. **Ended by `docs/plans/launcher-first-install.md`, 3.7: a click on a game that is not set up asks, and on a yes Terminal runs that game's installer** |
 | D24 | The icon at 16 and 32 pixels | A small form with a heavier stroke, measured (section 1): the full form is a grey blur at 16 |
 | D25 | The hover plate and the pointing hand, which the mockup does not have | Added, since one click starts a game. **Kept after L2 (2026-11-10, "keep all three, everything checked out")** |
 

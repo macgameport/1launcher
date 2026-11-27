@@ -15,6 +15,9 @@
 # Read from the environment by scripts/install.sh's runs: CS2_VIA_INSTALLER=1 (the caution question was
 # asked already; two lines speak of the installer) and L1_FETCHED_REF=<ref> (the checkout is a temporary copy),
 # with L1_FETCHED_COMMIT beside it; and L1_UPDATE=1, set by an update: the Desktop question is not asked.
+# Terminal questions: 2
+# (What this file itself asks the player, each only at a terminal and each answered by --yes: the contract a
+# game meets, docs/plans/launcher-first-install.md, 3.6, row 7. common/test-game-contract.sh counts them.)
 #
 # What it does:
 #   1. verifies the wrapper, Steam and the game are where they should be
@@ -27,6 +30,8 @@
 #      shortfall is a fix not out yet for this build of the game, setup finishes, says so, and exits 5
 #   4. builds "Cities Skylines II.app" in ~/Applications with the game's own icon, then 14unch3r.app,
 #      the window that lists every game set up on this Mac (common/make-launcher-app.sh)
+#      After a build of 14unch3r that worked, the window's own version is recorded too, in the file `launcher` of
+#      the folder step 5 names (docs/plans/launcher-first-install.md, 3.5).
 #   5. records which version this was (docs/plans/built-in-update.md, 3.1 and 3.3): common/updates.sh is copied
 #      into the folder `bash common/paths.sh` prints as L1_UPDATE_DIR, a file update-dir beside the launcher names
 #      that folder, and at the end, for exit 0 and exit 5, one line is written to its installed/949230. A run
@@ -396,6 +401,25 @@ stamp_step() {
   echo "  !! This version could not be recorded ($(tilde "$L1_UPDATE_DIR/installed/949230")). 14unch3r will not offer updates for this game."
   return 0
 }
+# 14unch3r's own stamp (docs/plans/launcher-first-install.md, 3.5): written on the line after a build of the window
+# that worked, and by nothing else: the window in ~/Applications is then this tree's. Never counted as a problem.
+launcher_stamp() {
+  [ "$RECORD" = 1 ] || return 0
+  l1u_stamp_launcher "$REPO/.." && return 0
+  echo "  !! 14unch3r's version could not be recorded ($(tilde "$L1_UPDATE_DIR/launcher")). It may go on offering an update it already has."
+  return 0
+}
+# after a "not built" line: an older stamp of 14unch3r is left as it is, and when it holds an older version than this
+# tree's, that is said: the window there is the old one, and the state goes on counting it
+launcher_stays() {
+  local old tree
+  [ "$RECORD" = 1 ] || return 0
+  old="$(l1u_stamp_of_launcher)" || return 0
+  old="${old#*$'\t'}"; tree="$(l1u_version_of "$REPO/../CHANGELOG.md")" || tree=-
+  [ "$old" != - ] && l1u_newer "$tree" "$old" || return 0
+  echo "  14unch3r stays at $old. It will go on offering this update until it can be built: the line above says why."
+  return 0
+}
 
 # ---------------------------------------------------------------- install
 echo
@@ -535,10 +559,13 @@ else
   WINDOW_BUILDER="$REPO/../common/make-launcher-app.sh"
   if [ ! -f "$WINDOW_BUILDER" ]; then
     echo "  window: not built (common/make-launcher-app.sh is not in this checkout)"
+    launcher_stays
   elif bash "$WINDOW_BUILDER"; then
     WINDOW_BUILT=1
+    launcher_stamp
   else
     echo "  window: not built (see the line above)"
+    launcher_stays
   fi
 fi
 # S734M.app, the Windows Steam, names its wrapper's path: rebuilt when it is there, so that it follows a rename. Only

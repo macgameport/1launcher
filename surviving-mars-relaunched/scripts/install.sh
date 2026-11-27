@@ -16,6 +16,9 @@
 #   or nobody to ask) or because the game, another install, this wrapper's Steam or another wrapper's Steam
 #   is running; 4 = it cannot go on by itself: open the installer again to carry on. --check exits 0 after
 #   its report, or 1 or 3 for the refusals that come before it.
+# Terminal questions: 1
+# (What this file itself asks the player, each only at a terminal and each answered by --yes: the contract a
+# game meets, docs/plans/launcher-first-install.md, 3.6, row 7. common/test-game-contract.sh counts them.)
 # SM_WRAPPER=<absolute path> names another wrapper, made in step 3 if absent. That is a test: the game's
 # app starts the default wrapper, so the installer then stops before step 7 and makes no app.
 # L1_TRACE=<file> gets one line per poll while Steam starts and downloads, and one for the installer's own

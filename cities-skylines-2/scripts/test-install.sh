@@ -72,6 +72,18 @@
 #   74 the own-files loop for common/updates.sh and common/games.tsv dropped
 # The update, its parts joined (docs/plans/built-in-update.md, 3.4; UT7b); each must exit 1:
 #   75 l1u_stamp not called by setup    76 the driver's test of a stamp's line turned round
+# The ask and the wait for Apple's tools, common/tools.sh, read by the core (docs/plans/launcher-first-install.md,
+# 3.2; LFT11); each must exit 1:
+#   77 the two minutes dropped (the part tried once)    78 tools.sh left out of the core's test of its own files
+#   79 the request's exit code thrown away (the first words said after a request that was not taken)
+# The install's lock, taken by the core (the same plan, 3.8; LFT13); each must exit 1:
+#   80 the lock not taken                      81 not released at an exit
+#   82 not released on a signal                83 the core's look at `updating` dropped
+#   84 the core's look made before its take    85 the game file not written
+#   86 the lock taken under --check            87 L1_UPDATE=1 believed with no live `updating`
+# An install from 14unch3r, its parts joined (the same plan, 3.8; LFT8); each must exit 1:
+#   88 the written file made to run update     89 the lock left behind (in the fetched tree's core)
+#   90 the setup's launcher stamp dropped
 # The transcript (docs/plans/shared-installer.md, ST1): every case's name, result and whole output, with the
 # scratch folder's name and process numbers replaced, is compared with test-install.golden, which holds what
 # the installer printed when it was last recorded on purpose: on the branch first-run-findings, after the
@@ -88,14 +100,19 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 LAUNCHER="$REPO/cities-skylines-2/launchers/launch-cs2-dxmt11.sh"
 T="$(mktemp -d /tmp/install-test.XXXX)"
-trap 'rm -rf "$T"' EXIT
+LIVE=""
+trap '[ -n "$LIVE" ] && { kill "$LIVE" 2>/dev/null; wait "$LIVE" 2>/dev/null; }; rm -rf "$T"' EXIT
 R="$T/repo"; mkdir -p "$R/cities-skylines-2/scripts" "$R/cities-skylines-2/patches" "$R/common"
 S="$R/cities-skylines-2/scripts/install.sh"; cp "$HERE/install.sh" "$S"
 C="$R/common/install-core.sh"; cp "$REPO/common/install-core.sh" "$C"   # the shared stages: mutants apply in either file
 : > "$R/cities-skylines-2/repatch.sh"; : > "$R/common/make-launcher-app.sh"
-: > "$R/common/paths.sh"; : > "$R/cities-skylines-2/scripts/move-install.sh"   # setup's own files (docs/plans/local-files-layout.md, 3.4)
+cp "$REPO/common/paths.sh" "$R/common/paths.sh"; : > "$R/cities-skylines-2/scripts/move-install.sh"   # setup's own files (docs/plans/local-files-layout.md, 3.4); paths.sh is real: the core reads the record's folder from it (LFT13)
 cp "$REPO/common/wrappers.sh" "$R/common/wrappers.sh"; : > "$R/common/move-wrappers.sh"   # the resolver, real; the mover, setup's (docs/plans/wrapper-names.md)
-: > "$R/common/updates.sh"; : > "$R/common/games.tsv"   # setup's record of versions (docs/plans/built-in-update.md, 3.3)
+cp "$REPO/common/updates.sh" "$R/common/updates.sh"; : > "$R/common/games.tsv"   # setup's record of versions (docs/plans/built-in-update.md, 3.3); updates.sh is real: the core reads the lock's rule from it (LFT13)
+TL="$R/common/tools.sh"; cp "$REPO/common/tools.sh" "$TL"   # the ask and the wait for Apple's tools, real: the core reads it (LFT11)
+tmutate() {  # <sed expression> <grep that proves it applied>: a mutant of the tree's copy of common/tools.sh
+  sed -i '' "$1" "$TL"; grep -q -- "$2" "$TL" || { echo "REFUSED: mutant did not apply"; exit 2; }
+}
 mutate() {  # <sed expression> <grep that proves it applied>
   sed -i '' "$1" "$S" "$C"; cat "$S" "$C" | grep -q -- "$2" || { echo "REFUSED: mutant did not apply"; exit 2; }
 }
@@ -179,6 +196,35 @@ case "${MUTANT:-0}" in
   72) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#if prefix_known; then case "$(game_state)" in installed|update|partial) return 0 ;; esac; fi#' '^if prefix_known; then case "\$(game_state)" in installed|update|partial) return 0' ;;
   73) mutate 's#^if prefix_known; then case "\$(game_state)" in installed|update) return 0 ;; esac; fi$#case "$(game_state)" in installed|update) return 0 ;; esac#' '^case "\$(game_state)" in installed|update) return 0 ;; esac$' ;;
   74) mutate 's#^for f in "\$GAME_ROOT/../common/updates.sh" "\$GAME_ROOT/../common/games.tsv"; do .*#for f in; do#' '^for f in; do$' ;;
+  77) tmutate 's#^    \[ "\$j" -gt "\$TOOLS_PART_POLLS" \] \&\& return 2$#    return 2#' '^    return 2$' ;;
+  78) mutate 's#^\[ -f "\$CORE_DIR/tools.sh" \] || { echo .*#: no test of tools.sh#' '^: no test of tools.sh$' ;;
+  80) mutate 's#^\[ "\$CHECK" = 0 \] \&\& install_lock .*#: no lock#' '^: no lock$' ;;
+  81) mutate 's#^  \[ "\${INSTALL_LOCK:-0}" = 1 \] \&\& l1u_lock_release installing .*#  : not released#' '^  : not released$' ;;
+  82) mutate 's#^on_signal() { END=signal; exit "\$1"; }$#on_signal() { END=signal; INSTALL_LOCK=0; exit "$1"; }#' '^on_signal() { END=signal; INSTALL_LOCK=0; exit "\$1"; }$' ;;
+  83) mutate 's#^  if l1u_lock_live updating; then   \# looked at only now.*#  if false; then#' '^  if false; then$' ;;
+  84) python3 -I - "$C" << 'PY' || { echo "REFUSED: mutant did not apply"; exit 2; }
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = "  if l1u_lock_live updating; then   # looked at only now"; b = "  if ! l1u_lock_take installing; then\n"
+assert s.count(a) == 1 and s.count(b) == 1
+i = s.index(a); j = s.index("  fi\n", i) + 5; blk = s[i:j]; s = s[:i] + s[j:]
+k = s.index(b); s = s[:k] + blk + s[k:]
+open(p, "w").write(s)
+PY
+      ;;
+  85) python3 -I - "$C" << 'PY' || { echo "REFUSED: mutant did not apply"; exit 2; }
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = "  printf '%s\\n' \"$GAME_APPID\" > "
+assert s.count(a) == 1
+i = s.index(a); j = s.index("\n", s.index("\n", i) + 1) + 1
+s = s[:i] + "  : the game file is not written\n" + s[j:]
+open(p, "w").write(s)
+PY
+      ;;
+  86) mutate 's#^\[ "\$CHECK" = 0 \] \&\& install_lock #install_lock #' '^install_lock   \# after the refusals' ;;
+  87) mutate 's#^  if \[ "\${L1_UPDATE:-}" = 1 \] \&\& l1u_lock_live updating; then return 0; fi$#  if [ "${L1_UPDATE:-}" = 1 ]; then return 0; fi#' '^  if \[ "\${L1_UPDATE:-}" = 1 \]; then return 0; fi$' ;;
+  79) tmutate 's#^  xcode-select --install > /dev/null 2>&1 || rc=\$?$#  xcode-select --install > /dev/null 2>\&1 || true#' '^  xcode-select --install > /dev/null 2>&1 || true$' ;;
 esac
 
 fails=0
@@ -208,6 +254,9 @@ export ST="$T/state" CALLS="$T/calls"
 cat > "$R/cities-skylines-2/scripts/setup.sh" << 'X'
 #!/bin/bash
 echo "SETUP $* via=${CS2_VIA_INSTALLER:-} wrapper=${CS2_WRAPPER:-} given=${L1_WRAPPER_GIVEN-unset}" >> "$CALLS"
+# the install's lock as this stand-in finds it (LFT13): the installer is its parent process
+_u="$HOME/Library/Application Support/1launcher/_update"; _h="$(readlink "$_u/installing" 2>/dev/null)"; [ "$_h" = "$PPID" ] && _h=mine
+echo "LOCKATSETUP ${_h:-none} $(cat "$_u/installing-game" 2>/dev/null || echo none)" >> "$CALLS"
 printf '%s\n' "${CS2_PATCH_DIR:-}" > "$CALLS.patchdir"
 case " $* " in *" --mac-only "*)
   if [ -n "${STUB_NO_ROSETTA:-}" ] && [ ! -f "$ST/rosetta" ]; then echo "  Rosetta 2   MISSING"; exit 1; fi
@@ -352,10 +401,11 @@ cat > "$B/xcode-select" << 'X'
 case "$1" in
   -p) if [ -n "${STUB_NO_TOOLS:-}" ] && [ ! -f "$ST/tools" ]; then echo "XS -p fail" >> "$CALLS"; exit 2; fi
       echo "XS -p ok" >> "$CALLS"; echo /Library/Developer/CommandLineTools ;;
-  --install) echo "XS --install" >> "$CALLS"; : > "$ST/tools-pending" ;;
+  --install) echo "XS --install" >> "$CALLS"; : > "$ST/tools-pending"; exit "${STUB_XS_INSTALL_EXIT:-0}" ;;
 esac
 X
-printf '#!/bin/bash\necho "PY" >> "$CALLS"; exit "${STUB_PY_EXIT:-0}"\n' > "$B/python3"
+# python3: with STUB_PY_FAILS=<n> its first n calls of a home fail, as a part of Apple's tools still being written does
+printf '#!/bin/bash\necho "PY" >> "$CALLS"\nif [ -n "${STUB_PY_FAILS:-}" ]; then n=$(( $(cat "$ST/pys" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$ST/pys"; [ "$n" -le "$STUB_PY_FAILS" ] && exit 1; fi\nexit "${STUB_PY_EXIT:-0}"\n' > "$B/python3"
 printf '#!/bin/bash\necho "ROUTE $*" >> "$CALLS"; [ -n "${STUB_ROUTE_FAIL:-}" ] && exit 1\necho "   route to: default"; echo "  interface: ${STUB_IFACE:-en0}"\n' > "$B/route"
 printf '#!/bin/bash\necho "CAFF $*" >> "$CALLS"\n' > "$B/caffeinate"
 printf '#!/bin/bash\necho "KILL $*" >> "$CALLS"; rm -f "$ST/steam" "$ST/helper"\n' > "$B/killrec"
@@ -494,6 +544,19 @@ check "  ...they never arrive: exit 4" "$rc" 4
 sed -i '' 's/^TOOLS_POLLS=3 /TOOLS_POLLS=720 /' "$C"
 newh; done_all; rc="$(STUB_PY_EXIT=1 run)"
 check "tools there, python3 broken: exit 1, Apple not asked" "$rc:$(calls 'XS --install')" "1:0"
+# LFT11 (docs/plans/launcher-first-install.md, 3.2): the ask and the wait are common/tools.sh's, which the core reads
+newh; done_all; rc="$(STUB_NO_TOOLS=1 STUB_PY_FAILS=2 run)"
+check "LFT11 the tools arrive, python3 fails at two polls and runs at the third: the install goes on" "$rc:$(calls '^PY$'):$(grep -c '^SETUP  via=1' "$CALLS")" "0:3:1"
+newh; done_all; sed -i '' 's/^TOOLS_PART_POLLS=24 /TOOLS_PART_POLLS=3 /' "$C"; rc="$(STUB_NO_TOOLS=1 STUB_PY_EXIT=1 run)"
+check "LFT11 ...python3 never runs: after the settle exit 1, the core's sentence, setup not run" "$rc:$(said 'but their python3 does not run\. Reinstall them, then open the installer again\.$'):$(calls '^PY$'):$(grep -c '^SETUP  via' "$CALLS")" "1:1:4:0"
+sed -i '' 's/^TOOLS_PART_POLLS=3 /TOOLS_PART_POLLS=24 /' "$C"
+newh; done_all; rc="$(STUB_NO_TOOLS=1 STUB_XS_INSTALL_EXIT=1 run)"
+check "LFT11 the request answering 1: the other words are said and the first are not, and the wait still runs" \
+  "$rc:$(said "Apple's box could not be opened from here\. It may be open already"):$(said 'A box from Apple has opened'):$(grep -c '^SETUP  via=1' "$CALLS")" "0:1:0:1"
+check "LFT11 the settle is two minutes: TOOLS_PART_POLLS=24 stands in the core, on the line after TOOLS_POLLS" "$(grep -A1 '^TOOLS_POLLS=720 ' "$C" | tail -n 1 | grep -c '^TOOLS_PART_POLLS=24 ')" 1
+newh; done_all; mv "$TL" "$T/tools.away"
+check "LFT11 common/tools.sh gone: exit 4 in the own-files words, setup not run" "$(run):$(grep -c '^SETUP  via' "$CALLS"):$(said "The installer's own files are gone"):$(grep -cE 'command not found|No such file' "$H.out")" "4:0:1:0"
+mv "$T/tools.away" "$TL"
 
 # --- step 3: the wrapper
 # UT2 (docs/plans/built-in-update.md, U0): the free-space caution is for an install that still has to download
@@ -706,6 +769,56 @@ for sig in TERM HUP; do
   check "  ...and a signal's exit code" "$rc" "$([ "$sig" = TERM ] && echo 143 || echo 129)"
 done
 
+# --- LFT13 (docs/plans/launcher-first-install.md, 3.8): the install's lock, the link `installing` in the record's
+# folder, taken by the core in core_begin and let go at every exit. The setup stand-in records what it finds.
+ud() { printf '%s' "$H/Library/Application Support/1launcher/_update"; }
+ilock() { if [ -e "$(ud)/installing" ] || [ -L "$(ud)/installing" ]; then echo left; else echo none; fi; }
+igame() { if [ -e "$(ud)/installing-game" ]; then echo left; else echo none; fi; }
+atsetup() { grep '^LOCKATSETUP' "$CALLS" | sort -u | tr '\n' '|'; }
+/bin/sleep 300 & LIVE=$!
+for sig in TERM HUP; do
+  newh; bash "$MKW" "$WR" steam; : > "$ST/steam"; : > "$ST/helper"
+  env -u CS2_WRAPPER -u L1_TRACE HOME="$H" PATH="$B:$PATH" L1_KILL="$B/killrec" bash "$S" > "$H.out" 2>&1 < /dev/null & ip=$!
+  i=0; until grep -q 'Waiting for you to choose Install' "$H.out" 2>/dev/null || [ "$i" -gt 100 ]; do /bin/sleep 0.1; i=$((i + 1)); done
+  check "LFT13 while an install waits: installing is a link to the installer's own process, and installing-game holds the game's ID" \
+    "$([ "$(readlink "$(ud)/installing")" = "$ip" ] && echo mine):$(cat "$(ud)/installing-game" 2>/dev/null)" "mine:949230"
+  kill -"$sig" "$ip"; wait "$ip"; rc=$?
+  check "LFT13 ...stopped by $sig: the lock and the game's file are gone" "$rc:$(ilock):$(igame)" "$([ "$sig" = TERM ] && echo 143 || echo 129):none:none"
+done
+newh; done_all; rc="$(run)"
+check "LFT13 a finished install (exit 0): the lock was this installer's at both calls of setup, with the game's ID beside it, and both are gone afterwards" \
+  "$rc:$(atsetup):$(ilock):$(igame)" "0:LOCKATSETUP mine 949230|:none:none"
+check "LFT13 ...the record's three folders were made, none writable by group or others" \
+  "$(stat -f %Lp "$(dirname "$(ud)")"):$(stat -f %Lp "$(ud)"):$(stat -f %Lp "$(ud)/installed")" "755:755:755"
+newh; done_all; rc="$(umask 000; run)"
+check "LFT13 ...under a umask of 000 too, the parent first" "$rc:$(stat -f %Lp "$(dirname "$(ud)")"):$(stat -f %Lp "$(ud)"):$(stat -f %Lp "$(ud)/installed")" "0:755:755:755"
+newh; done_all; rc="$(STUB_PY_EXIT=1 run)"
+check "LFT13 the lock is gone after exit 1" "$rc:$(ilock):$(igame)" "1:none:none"
+newh; done_all; rc="$(STUB_NO_ROSETTA=1 run)"
+check "LFT13 ...after exit 3" "$rc:$(ilock):$(igame)" "3:none:none"
+newh; done_all; sed -i '' 's/^TOOLS_POLLS=720 /TOOLS_POLLS=3 /' "$C"; rc="$(STUB_NO_TOOLS=1 STUB_TOOLS_NEVER=1 run)"
+check "LFT13 ...after exit 4" "$rc:$(ilock):$(igame)" "4:none:none"
+sed -i '' 's/^TOOLS_POLLS=3 /TOOLS_POLLS=720 /' "$C"
+newh; mkdir -p "$(ud)/installed"; ln -s "$LIVE" "$(ud)/installing"; rc="$(run)"
+check "LFT13 a second install while one runs: exit 3 with its sentence and the holder's process, nothing downloaded, setup not run, the lock still the other's" \
+  "$rc:$(said "^  !! Another install is running in another Terminal window (process $LIVE)\. Wait for it to finish, then open the installer again\.\$"):$(calls '^MAKEWRAPPER'):$(calls '^CURL'):$(calls '^SETUP'):$([ "$(readlink "$(ud)/installing")" = "$LIVE" ] && echo theirs)" "3:1:0:0:0:theirs"
+newh; done_all; mkdir -p "$(ud)/installed"; ln -s "$LIVE" "$(ud)/installing"; touch -h -t 202001010000 "$(ud)/installing"; rc="$(run)"
+check "LFT13 a lock older than the Mac's last start, its target a live process, is taken over" "$rc:$(atsetup):$(ilock)" "0:LOCKATSETUP mine 949230|:none"
+newh; done_all; mkdir -p "$(ud)/installed"; ln -s "$LIVE" "$(ud)/updating"; rc="$(run)"
+check "LFT13 a live updating: exit 3 with its sentence, setup not run, installing not left behind, the update's lock untouched" \
+  "$rc:$(said "^  !! An update of 1launcher is running in another Terminal window (process $LIVE)\. Wait for it to finish, then open the installer again\.\$"):$(calls '^SETUP'):$(ilock):$(igame):$([ "$(readlink "$(ud)/updating")" = "$LIVE" ] && echo theirs)" "3:1:0:none:none:theirs"
+newh; done_all; mkdir -p "$(ud)/installed"; ln -s "$LIVE" "$(ud)/updating"; rc="$(L1_UPDATE=1 run)"
+check "LFT13 under L1_UPDATE=1 with a live updating: no lock is taken, and that updating does not stop it" "$rc:$(atsetup):$([ "$(readlink "$(ud)/updating")" = "$LIVE" ] && echo theirs)" "0:LOCKATSETUP none none|:theirs"
+newh; done_all; rc="$(L1_UPDATE=1 run)"
+check "LFT13 under L1_UPDATE=1 with no live updating the lock is taken as in any run" "$rc:$(atsetup):$(ilock)" "0:LOCKATSETUP mine 949230|:none"
+newh; done_all; rc="$(run --check)"
+check "LFT13 under --check nothing is made and no lock is taken" "$rc:$(atsetup):$([ -e "$H/Library" ] && echo made || echo none)" "0:LOCKATSETUP none none|:none"
+newh; mkdir -p "$(ud)"; chmod o+w "$(ud)"; rc="$(run)"
+check "LFT13 a record folder others can write: exit 1 with the chmod sentence, the folder in full and in quotes in the command, before anything is downloaded" \
+  "$rc:$(grep -cxF "  !! $(ud) is not a folder of your own that only you can write to. In Terminal: chmod go-w \"$(ud)\", then try again." "$H.out"):$(calls '^MAKEWRAPPER'):$(calls '^CURL'):$(ilock)" "1:1:0:0:none"
+check "LFT13 source gates: in install_lock the take of installing stands before the look at updating; the game's file is written beside its place and renamed, never in place" \
+  "$(awk '/^install_lock\(\) \{/ { p = 1 } p && /l1u_lock_take installing/ && !t { t = NR } p && /if l1u_lock_live updating; then   #/ { l = NR } p && /^}/ { p = 0 } END { print (t > 0 && l > t) ? "take first" : t ":" l }' "$C"):$(grep -c '> "\$L1_UPDATE_DIR/installing-game"' "$C"):$(grep -c 'mv -f "\$L1_UPDATE_DIR/.installing-game.\$\$" "\$L1_UPDATE_DIR/installing-game"' "$C")" "take first:0:1"
+
 # --- step 6
 newh; bash "$MKW" "$WR" steam; dl - installed+game
 check "the game started during the wait: exit 3 at step 6, setup not run" "$(run):$(grep -c '^SETUP  via' "$CALLS")" "3:0"
@@ -774,6 +887,7 @@ for f in "$REPO"/cities-skylines-2/patches/patch_*.py; do : > "$G2/patches/$(bas
 cp "$S" "$G2/scripts/install.sh"; cp "$C" "$R2/common/install-core.sh"   # the copies under test: a mutant of either applies here too
 cp "$REPO/common/paths.sh" "$REPO/common/wrappers.sh" "$REPO/common/move-wrappers.sh" "$R/common/make-wrapper.sh" "$R2/common/"
 cp "$REPO/common/updates.sh" "$REPO/common/games.tsv" "$R2/common/"   # the real setup keeps its record of versions (docs/plans/built-in-update.md, 3.3)
+cp "$TL" "$R2/common/tools.sh"   # the copy under test: a mutant of it applies here too
 printf '#!/bin/bash\nexit 0\n' > "$R2/common/make-launcher-app.sh"; printf '#!/bin/bash\nexit 1\n' > "$T/wt11bin/xcrun"
 printf '#!/bin/bash\n[ -n "${STUB_WHOLDERS:-}" ] && echo "$STUB_WHOLDERS"\nexit 0\n' > "$T/wt11bin/wprobe"
 # this Mac, the same on any Mac, so that the transcript does not depend on the one it runs on (as scripts/test-setup.sh has it)
@@ -864,6 +978,52 @@ rc="$(upd STUB_SECOND_EXIT=3)"
 check "UT7b with the second game's installer made to stop: exit 3, this game's stamp is new, the other's is old, and the state stays ready" \
   "$rc:$(calls '^SECOND args= update=1$'):$(cut -f2 "$UD/installed/949230" 2>/dev/null):$(cut -f2 "$UD/installed/3215050" 2>/dev/null):$(state)" \
   "3:1:v0.1.0:v0.0.9:ready${TAB}v0.0.9${TAB}v0.1.0"
+# --- LFT8 (docs/plans/launcher-first-install.md, 3.8 and section 6): an install from 14unch3r, the parts joined.
+#     The fixture: the record at the default place under the scratch home (anywhere else the tool refuses), a
+#     marked wrapper of the game with no app (a begun install), the launcher's stamp alone on release at v0.0.9,
+#     and the offer at v0.0.9, so the state is current and the tool opens. The offer is then raised to the tree's
+#     version, as a daily check would have found it, and the written file is run: through the root install.sh
+#     (a stub curl serves it, and the archive of the WT11 copy), this installer and the real setup.
+case "${MUTANT:-0}" in
+  88) sed -i '' 's#^  /bin/bash -c "\$S" 1launcher-install "\$ID"; rc=\$?$#  /bin/bash -c "$S" 1launcher-install update; rc=$?#' "$R2/common/updates.sh"
+      grep -q '^  /bin/bash -c "\$S" 1launcher-install update; rc=\$?$' "$R2/common/updates.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  89) sed -i '' 's#^  \[ "\${INSTALL_LOCK:-0}" = 1 \] && l1u_lock_release installing .*#  : not released#' "$R2/common/install-core.sh"
+      grep -q '^  : not released$' "$R2/common/install-core.sh" || { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+  90) sed -i '' '/^    launcher_stamp$/d' "$G2/scripts/setup.sh"
+      grep -q '^    launcher_stamp$' "$G2/scripts/setup.sh" && { echo "REFUSED: mutant did not apply"; exit 2; } ;;
+esac
+mkdir -p "$T/lft8bin" "$T/lft8tmp"; ( cd "$T" && tar -czf "$T/lft8.tar.gz" repo2 )
+cat > "$T/lft8bin/curl" << X
+#!/bin/bash
+case " \$* " in
+  *"/refs/heads/release/install.sh "*) echo "ROOTSCRIPT \$*" >> "\$CALLS"; src="$REPO/install.sh" ;;
+  *"/archive/"*) echo "ARCHIVE \$*" >> "\$CALLS"; src="$T/lft8.tar.gz" ;;
+  *) exec "$B/curl" "\$@" ;;   # anything else is the installer's own
+esac
+out=""; while [ \$# -gt 0 ]; do case "\$1" in -o) out="\$2"; shift 2 ;; *) shift ;; esac; done
+cp "\$src" "\$out"; printf 200
+X
+printf '#!/bin/bash\n{ printf "OPEN"; for a in "$@"; do printf "|%%s" "$a"; done; echo; } >> "$CALLS"\n' > "$T/lft8bin/open"
+chmod +x "$T/lft8bin/curl" "$T/lft8bin/open"
+newh; done_all; UD="$(HOME="$H" bash "$R2/common/paths.sh" | sed -n 's/^L1_UPDATE_DIR=//p')"; mkdir -p "$UD/installed"
+printf 'release\tv0.0.9\t-\t100\n' > "$UD/launcher"; printf 'v0.0.9\t200\n' > "$UD/offer"; cp "$R2/common/updates.sh" "$UD/updates.sh"
+check "LFT8 the fixture: a begun install (a marked wrapper, no app), the launcher's stamp alone on release at v0.0.9, that version on offer: the state is current" \
+  "$(state):$([ -e "$H/Applications/Cities Skylines II.app" ] && echo app || echo no-app):$(HOME="$H" bash "$R2/common/wrappers.sh" find game 949230 > /dev/null 2>&1 && echo marked)" "current${TAB}v0.0.9${TAB}v0.0.9:no-app:marked"
+: > "$CALLS"
+ans="$(env HOME="$H" TMPDIR="$T/lft8tmp" L1_UPDATE_DIR="$UD" L1_CURL="$T/lft8bin/curl" L1_OPEN="$T/lft8bin/open" bash "$UD/updates.sh" --install 949230 2>&1)"
+CMD8="$(sed -n 's/^OPEN|-a|Terminal|//p' "$CALLS")"
+check "LFT8 the deployed tool, asked to install the game: opened, and Terminal was handed one file" "$ans:$(grep -c '^OPEN|-a|Terminal|' "$CALLS"):$([ -x "$CMD8" ] && echo file)" "opened:1:file"
+printf 'v0.1.0\t300\n' > "$UD/offer"   # as a daily check would have found it since
+env -u CS2_WRAPPER -u L1_TRACE -u CS2_VIA_INSTALLER -u L1_WRAPPER_GIVEN HOME="$H" TMPDIR="$T/lft8tmp" PATH="$T/lft8bin:$T/wt11bin:$B:$PATH" \
+  L1_KILL="$B/killrec" L1_WMOVE_PROBE="$T/wt11bin/wprobe" L1_UPDATE_NOW=1800000000 TERM=xterm "$CMD8" > "$H.raw" 2>&1 < /dev/null; rc=$?
+# (TERM is given, so that the file's clear prints the same whatever terminal runs this test; its codes are taken out below)
+sed -e 's#1launcher-fetch\.[A-Za-z0-9]*#1launcher-fetch.X#g' -e 's#1launcher-install\.[A-Za-z0-9]*#1launcher-install.X#g' -e $'s/\033\\[[0-9;]*[A-Za-z]//g' "$H.raw" > "$H.out"
+check "LFT8 the written file, run: the root install.sh is fetched, then the archive of release, and the game's line runs this installer and the real setup; exit 0, its closing line last" \
+  "$rc:$(calls '^ROOTSCRIPT .*/refs/heads/release/install\.sh$'):$(calls '^ARCHIVE .*/archive/refs/heads/release\.tar\.gz$'):$(tail -n 1 "$H.out")" "0:1:1:Installed. Open 14unch3r to play. You can close this window."
+check "LFT8 ...the game's stamp and the launcher's stamp both hold release and the tree's version, and the state is current (with the launcher's stamp left at v0.0.9 it would be ready)" \
+  "$(cut -f1,2 "$UD/installed/949230" 2>/dev/null):$(cut -f1,2 "$UD/launcher" 2>/dev/null):$(state)" "release${TAB}v0.1.0:release${TAB}v0.1.0:current${TAB}v0.1.0${TAB}v0.1.0"
+check "LFT8 ...no lock is left, no file names a game, the game's app is there, and the temporary folders are empty" \
+  "$([ -e "$UD/installing" ] || [ -L "$UD/installing" ] && echo left || echo none):$([ -e "$UD/installing-game" ] && echo left || echo none):$([ -e "$H/Applications/Cities Skylines II.app" ] && echo app):$(ls -A "$T/lft8tmp" | wc -l | tr -d ' ')" "none:none:app:0"
 H="$HWT"
 check "no run reached the runaway guard" "$(cat "$T/runaway" 2>/dev/null | wc -l | tr -d ' ')" 0
 # --- the transcript: what the installer printed in every case above, against what it printed when last recorded

@@ -567,6 +567,12 @@ it is measured against this in section 9).
   | 2 | `none` | This Mac is not yet set up for updates. | Paste each game's installer line once more. After that, 14unch3r says when a new version is out. |
   | 3 | `manual`, detail `checkout` | No update is offered on this Mac. | Its games were set up from a checkout. Update with git pull, then run each game's setup. |
   | 4 | `manual`, any other detail | No update is offered on this Mac. | A game here was set up from a named version. Paste its installer line from the guide to follow new versions again. |
+
+  > Extended by `docs/plans/launcher-first-install.md`, 3.5 and section 10: a Mac can be `manual` through 14unch3r's
+  > own stamp alone, so rows 3 and 4 now say "14unch3r or a game here was set up from a checkout. Update with git
+  > pull, then run install.sh launcher and each game's setup." and "14unch3r or a game here was set up from a
+  > named version. Paste the installer line from the guide again to follow new versions."; and the update's sheet
+  > says "for 14unch3r and each game set up here".
   | 5 | `ready` | the sheet above | |
   | 6 | the fetch `failed`, or `unknown`, or no usable answer (none, or one that fails the rule above) | The list of versions could not be read from GitHub. | Check the network and try again later. |
   | 7 | `current` | 1launcher `<installed>` is the newest version. | A game set up before updates were recorded is not counted until its line is pasted once. |
@@ -723,7 +729,9 @@ bold sentence saying what a player will notice or must do; pointers to plans and
 Adding a game stays what it is today: a folder with its installer, a row in `common/games.tsv`, a row in
 `common/wrappers.sh`'s table, its tests, a release. With this plan the release then reaches installed Macs:
 the update rebuilds 14unch3r with the new table, and the window offers the game to players whose Steam
-account owns it (1.3). The offer still opens the game's set-up guide, which holds the pasted line (UD7).
+account owns it (1.3). The offer still opens the game's set-up guide, which holds the pasted line (UD7). (Ended by
+`docs/plans/launcher-first-install.md`, 3.7: with the update tool there, a click on a game that is not set up
+asks, and on a yes Terminal runs that game's installer; and every game of the table is listed, owned or not.)
 
 ### 3.10 Statements this plan ends
 
@@ -974,7 +982,7 @@ answer marked as such:
 
 ## 11. Not in this plan
 
-- **An install started from the window** (UD7).
+- **An install started from the window** (UD7). It is planned and built since: `docs/plans/launcher-first-install.md`.
 - **A progress view inside the window** (UD2).
 - **Engine changes**, among them the `ntdll.dll` change of issue #30 and an engine of Wine 11.20 or later.
   They need a plan of their own. What this plan gives them: an installer step that swaps an engine, as

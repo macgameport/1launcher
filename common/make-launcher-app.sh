@@ -3,7 +3,8 @@
 # the one chosen (docs/plans/launcher-window.md, 2.3). It compiles common/launcher-window.swift into the app,
 # copies common/games.tsv beside it, draws the app's icon with the program it just built, and writes the
 # Info.plist, with the key L1UpdateDir when the update tool is deployed (docs/plans/built-in-update.md, 3.3).
-# Cities: Skylines II's setup.sh runs it after building that game's app.
+# Each game's scripts/setup.sh runs it after building that game's app, and common/install-launcher.sh runs it for
+# a Mac with no game (docs/plans/launcher-first-install.md, 3.4).
 #
 #   bash common/make-launcher-app.sh                    # ~/Applications/14unch3r.app
 #   bash common/make-launcher-app.sh --dest <folder>    # build somewhere else (testing)
@@ -112,7 +113,7 @@ cat > "$PL" << 'PLIST'
     <key>CFBundleExecutable</key>      <string>launcher-window</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleVersion</key>         <string>1.0</string>
-    <key>LSMinimumSystemVersion</key>  <string>13.0</string>
+    <key>LSMinimumSystemVersion</key>  <string>14.0</string>
     <key>NSHighResolutionCapable</key> <true/>
     <key>CFBundleAlternateNames</key>
     <array>

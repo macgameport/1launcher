@@ -886,7 +886,7 @@ four"); they are listed under "After the check".**
 | MD5 | Order against the installer plan | NL2 goes ahead once the shared-installer plan is built and its SL1 passed (SD2 there), on the app that plan's builder makes. NL3, the first public release, waits for ML4, so that what is first published installs both games and the shared files have their final addresses before anyone depends on them | as recommended |
 | MD6 | Apple's Command Line Tools for this game | Asked for. The engine swap needs them, so there is no other way for this game | as recommended |
 | MD7 | One shared installer, or a second script held alike by a test | One (2.2) | as recommended |
-| MD8 | 14unch3r's "Not set up" tile starts the installer | A later slice, with its own plan: it changes the window app and its tests | as recommended |
+| MD8 | 14unch3r's "Not set up" tile starts the installer | A later slice, with its own plan: it changes the window app and its tests. That plan is `docs/plans/launcher-first-install.md`, built on its branch since 2026-11-26 | as recommended |
 | MD9 | A question before Apple's software is fetched (2.4, stage 3) | Yes, once, answered no by default, as the installer already asks before Rosetta. The licence says not to install it if one does not agree; a line of text that scrolls past is less than that. The other way is the line of text | as recommended |
 | MD10 | The installer stops when another wrapper's Steam is open on this Mac (2.2) | Yes, in the core, so for both games: two Steams on one account make the first skip its cloud upload. Cities: Skylines II's installer gains it in the shared-installer plan (its 2.1 and 2.3). The other way is a sentence in the guide | as recommended |
 

@@ -16,6 +16,9 @@
 #   cannot go on by itself: open the installer again to carry on; 5 = finished, but a Mac fix is not out yet
 #   for this build of the game (setup's exit 5). --check exits 0 after its report, or 1 or 3 for the
 #   refusals that come before it.
+# Terminal questions: 0
+# (What this file itself asks the player, each only at a terminal and each answered by --yes: the contract a
+# game meets, docs/plans/launcher-first-install.md, 3.6, row 7. common/test-game-contract.sh counts them.)
 # CS2_WRAPPER=<absolute path> names the wrapper, made in step 3 if absent. L1_TRACE=<file> gets one line per
 # poll while Steam starts and downloads, and one for the installer's own transfer (the plans' live checks).
 set -u

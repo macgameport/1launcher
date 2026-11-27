@@ -22,7 +22,9 @@
 # Setup also keeps the record of which version this was (docs/plans/built-in-update.md, 3.1 and 3.3):
 # common/updates.sh is copied into the folder `bash common/paths.sh` prints as L1_UPDATE_DIR, a file update-dir
 # beside the launcher names that folder, and before the closing words one line is written to its
-# installed/3215050. A run with --check or --mac-only touches nothing of that folder.
+# installed/3215050. A run with --check or --mac-only touches nothing of that folder. After a build of 14unch3r
+# that worked, the window's own version is recorded there too, in the file `launcher`
+# (docs/plans/launcher-first-install.md, 3.5); not with SM_APP set, where the window is built in another folder.
 #
 # The wrapper is found by common/wrappers.sh, by the marker in its Info.plist, and setup gives an old-named one
 # its new name with common/move-wrappers.sh (docs/plans/wrapper-names.md, 3.4). L1_KEEP_WRAPPER_NAMES=1 declines.
@@ -31,6 +33,9 @@
 # while it runs setup and has already asked the question about this Mac, and L1_WRAPPER_GIVEN, which says
 # whether the player named the wrapper; SM_STATE, SM_APP and SM_WRAPPER, which name another state folder, app
 # and wrapper (tests). With SM_APP set, 14unch3r is built in that app's folder.
+# Terminal questions: 1
+# (What this file itself asks the player, each only at a terminal and each answered by --yes: the contract a
+# game meets, docs/plans/launcher-first-install.md, 3.6, row 7. common/test-game-contract.sh counts them.)
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 GAME_ROOT="$(cd "$HERE/.." && pwd)"
@@ -191,6 +196,25 @@ stamp_step() {
   echo "  !! This version could not be recorded ($(tilde "$L1_UPDATE_DIR/installed/3215050")). 14unch3r will not offer updates for this game."
   return 0
 }
+# 14unch3r's own stamp (docs/plans/launcher-first-install.md, 3.5): written on the line after a build of the window
+# that worked into ~/Applications, and by nothing else: that window is then this tree's. Never counted as a problem.
+launcher_stamp() {
+  [ -z "${SM_APP:-}" ] || return 0
+  l1u_stamp_launcher "$REPO" && return 0
+  echo "  !! 14unch3r's version could not be recorded ($(tilde "$L1_UPDATE_DIR/launcher")). It may go on offering an update it already has."
+  return 0
+}
+# after the "not built" lines: an older stamp of 14unch3r is left as it is, and when it holds an older version than
+# this tree's, that is said: the window there is the old one, and the state goes on counting it
+launcher_stays() {
+  local old tree
+  [ -z "${SM_APP:-}" ] || return 0
+  old="$(l1u_stamp_of_launcher)" || return 0
+  old="${old#*$'\t'}"; tree="$(l1u_version_of "$REPO/CHANGELOG.md")" || tree=-
+  [ "$old" != - ] && l1u_newer "$tree" "$old" || return 0
+  echo "      14unch3r stays at $old. It will go on offering this update until it can be built: the line above says why."
+  return 0
+}
 for d in "$(dirname "$L1_UPDATE_DIR")" "$L1_UPDATE_DIR" "$L1_UPDATE_DIR/installed"; do
   if [ -e "$d" ] || [ -L "$d" ]; then
     own_folder "$d" || { echo "  !! $(tilde "$d") is not a folder of your own that only you can write to; setup will not keep its record of versions there."; exit 1; }
@@ -249,8 +273,8 @@ grep -v '^14unch3r: ' "$OUT" | sed "s#$HOME#~#g; s/^/  /"
 if [ -n "${SM_APP:-}" ]; then bash "$REPO/common/make-launcher-app.sh" --dest "$(dirname "$APP")" > "$OUT" 2>&1; rc=$?
 else bash "$REPO/common/make-launcher-app.sh" > "$OUT" 2>&1; rc=$?; fi
 case "$rc" in
-  0) say "14unch3r" "built: one window that lists every game" ;;
-  *) say "14unch3r" "not built (the game's own app does not need it):"; sed "s#$HOME#~#g; s/^/      /" "$OUT" ;;
+  0) say "14unch3r" "built: one window that lists every game"; launcher_stamp ;;
+  *) say "14unch3r" "not built (the game's own app does not need it):"; sed "s#$HOME#~#g; s/^/      /" "$OUT"; launcher_stays ;;
 esac
 rm -f "$OUT"
 

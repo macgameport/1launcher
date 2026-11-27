@@ -44,8 +44,11 @@
 #   MUTANT=24 ...   the 8-byte token always read; must exit 1
 #   MUTANT=25 ...   no size limit on packageinfo.vdf; must exit 1
 #   MUTANT=26 ...   only the first file read; must exit 1
-#   MUTANT=27 ...   an offer for a game that has an app; must exit 1
-#   MUTANT=28 ...   a guide address not on https://github.com/ accepted; must exit 1
+#   (MUTANT=27 retired 2026-11-26: "an offer for a game that has an app". Which games are offered is decided by
+#   tableOffers since docs/plans/launcher-first-install.md, 3.7, and the line it dropped in offerRows now only
+#   spares a question about ownership; MUTANT=87 holds the case.)
+#   MUTANT=28 ...   a guide address not on https://github.com/ accepted; must exit 1 (since the same plan the
+#                   test that decides it is tableOffers's, and that is the line this mutant changes)
 #   MUTANT=29 ...   no time limit on the child that reads the files; must exit 1
 #   MUTANT=30 ...   the files read in the list's own process, not a child's; must exit 1
 #   MUTANT=31 ...   the mark not stroked in the icon; must exit 1
@@ -104,6 +107,37 @@
 #   MUTANT=84 ...   a relative --update-dir taken; must exit 1
 #   MUTANT=85 ...   a tool that is a link taken; must exit 1
 #   MUTANT=86 ...   the scroll rule left without the foot line's height; must exit 1
+# The listing of every game of the table (docs/plans/launcher-first-install.md, 3.7; LFT6, the cases of LF5a):
+#   MUTANT=87 ...   a set-up game listed as not set up; must exit 1
+#   MUTANT=88 ...   begun shown without a marker; must exit 1
+#   MUTANT=89 ...   the tiles hidden when ownership is not known; must exit 1
+#   MUTANT=90 ...   with no app, no tile selected; must exit 1
+# The placeholder of a game that is not set up (the same plan, 3.10; LFT10):
+#   MUTANT=91 ...   the rule for a number dropped, so that a numeral gives an initial; must exit 1
+#   MUTANT=92 ...   "&" given an initial; must exit 1
+#   MUTANT=93 ...   three letters taken; must exit 1
+#   MUTANT=94 ...   the letters not made upper case; must exit 1
+#   MUTANT=95 ...   the placeholder drawn for a set-up game; must exit 1
+#   MUTANT=96 ...   the generic application icon drawn for a game that is not set up; must exit 1
+#   MUTANT=97 ...   the letters' alpha made 0.3; must exit 1
+# The click, the sheets and the install (the same plan, 3.7; LFT6, the cases of LF5b):
+#   MUTANT=98 ...   "Install" made the first button; must exit 1
+#   MUTANT=99 ...   the first button made to give open; must exit 1
+#   MUTANT=100 ...  the third button made to give open; must exit 1
+#   MUTANT=101 ...  the tool called before the sheet's answer; must exit 1
+#   MUTANT=102 ...  the ID passed to the tool unmatched; must exit 1
+#   MUTANT=103 ...  the limit removed from the call of --install; must exit 1
+#   MUTANT=104 ...  the fallback with no tool dropped; must exit 1
+#   MUTANT=105 ...  the test for a game in use dropped; must exit 1
+#   MUTANT=106 ...  the test for a running install dropped; must exit 1
+#   MUTANT=107 ...  the state manual made to ask; must exit 1
+#   MUTANT=108 ...  the state ready made to ask; must exit 1
+#   MUTANT=109 ...  the order of manual and a running install turned round; must exit 1
+#   MUTANT=110 ...  a short sheet's second button made to give open; must exit 1
+#   MUTANT=111 ...  a set-up game started with no question while an install runs; must exit 1
+# The install's lock as the window reads it (the same plan, 3.8; LFT13, the window's cases):
+#   MUTANT=112 ...  the start's rule dropped (a link older than the Mac's last start read as live); must exit 1
+#   MUTANT=113 ...  a wrapper's lock read as installing; must exit 1
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SRC="$HERE/launcher-window.swift"
@@ -169,8 +203,8 @@ case "${MUTANT:-0}" in
   24) swap 'if token { guard r.skip(8) else { return nil } }' 'guard r.skip(8) else { return nil }' ;;
   25) swap 'readPlainFile(file, limit: 16_777_216)' 'guard let data = readPlainFile(file, limit: 1 << 40), let ids = ownedIDs(data) else { continue }' ;;
   26) swap 'for file in files {' 'for file in files.prefix(1) {' ;;
-  27) drop 'guard !have.contains(g.id) else { continue }' ;;
-  28) drop 'guard g.address.hasPrefix("https://github.com/") else { continue }' ;;
+  27) echo "REFUSED: mutant 27 is retired (the header says where its case went)"; exit 2 ;;
+  28) swap 'guard !have.contains(g.id), !seen.contains(g.id), g.address.hasPrefix("https://github.com/") else { continue }' 'guard !have.contains(g.id), !seen.contains(g.id) else { continue }' ;;
   29) swap 'let deadline = Date().addingTimeInterval(limit)' 'let deadline = Date.distantFuture' ;;
   30) swap 'guard let out = runChild(helper, ["--owned", String(id)] + files, limit: 5) else { return "unknown" }' 'let out = ownership(of: id, in: files)' ;;
   31) drop 'markPath(in: small ? smallBox : iconBox, stroke:' ;;
@@ -230,6 +264,34 @@ case "${MUTANT:-0}" in
   84) drop 'guard dir.hasPrefix("/") else { return nil }' ;;
   85) swap 'guard lstat(tool, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }' 'guard stat(tool, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }' ;;
   86) drop 'if let line = footRect, tiles[i].cell.0 == tiles.last?.cell.0 {' ;;
+  87) swap 'guard !have.contains(g.id), !seen.contains(g.id), g.address.hasPrefix("https://github.com/") else { continue }' 'guard !seen.contains(g.id), g.address.hasPrefix("https://github.com/") else { continue }' ;;
+  88) swap 'wrappers.count == 1 ? .begun : .notSetUp))' 'prefix: nil, state: g.id == installing ? .installing : .begun))' ;;
+  89) swap 'return offers.map { r in' 'return offers.filter { $0.state == .begun || ids.contains($0.appID ?? 0) }.map { r in' ;;
+  90) swap '(defaultRow(apps, last: last) ?? offers.first).flatMap' 'let pick = tiles.firstIndex { $0.row.key == keep } ?? defaultRow(apps, last: last).flatMap { d in tiles.firstIndex { $0.row.key == d.key } }' ;;
+  91) drop 'if i > 0, core.allSatisfy({ $0.isNumber }) || core.allSatisfy({ "IVX".contains($0) }) { continue }' ;;
+  92) swap 'let core = word.filter { $0.isLetter || $0.isNumber }' 'let core = word' ;;
+  93) swap 'enumerated() where out.count < 2 {' 'for (i, word) in title.split(whereSeparator: { $0.isWhitespace }).enumerated() where out.count < 3 {' ;;
+  94) swap 'if let upper = String(first).uppercased().first { out.append(upper) }' 'out.append(first)' ;;
+  95) swap 'func tileIcon(_ r: Row) -> TileIcon { r.role == .offer ? .initials(initials(r.sortTitle)) : .app }' 'func tileIcon(_ r: Row) -> TileIcon { .initials(initials(r.sortTitle)) }' ;;
+  96) swap 'placeholderIcon(row.sortTitle).draw(in: iconRect,' 'NSWorkspace.shared.icon(for: .applicationBundle).draw(in: iconRect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)'
+      swap 'import AppKit' 'import AppKit; import UniformTypeIdentifiers' ;;
+  97) swap 'static let initialsAlpha: CGFloat = 0.88' 'static let initialsAlpha: CGFloat = 0.3' ;;
+  98) swap 'buttons: [Look.notNow, begun ? Look.carryOn : Look.install, Look.readGuide], notes: nil)' 'buttons: [begun ? Look.carryOn : Look.install, Look.notNow, Look.readGuide], notes: nil)' ;;
+  99) swap 'case ("ask-install", "second"): return "open"' 'case ("ask-install", "second"), ("ask-install", "first"): return "open"' ;;
+  100) swap 'case ("ask-install", "third"): return "guide"' 'case ("ask-install", "third"): return "open"' ;;
+  101) swap 'guard let w = words("ask-install", r) else { return }' 'guard let w = words("ask-install", r) else { return }; self.install(r)' ;;
+  102) swap 'guard let d = dir, more.count == 1, let id = lastID(more[0]) else { usage() }' 'guard let d = dir, more.count == 1, let id = Int(more[0]) else { usage() }' ;;
+  103) swap 'afterInstall(askUpdate(tool, ["--install", String(id)], limit: 10))' 'afterInstall(askUpdate(tool, ["--install", String(id)], limit: 86_400))' ;;
+  104) drop 'guard tool else { return .guide }' ;;
+  105) drop 'if let title = busy { return .tellQuitFirst(title) }' ;;
+  106) drop 'if installing { return .tellInstalling }' ;;
+  107) drop 'if state?.word == "manual" { return .tellManual }' ;;
+  108) drop 'if state?.word == "ready" { return .tellUpdateFirst }' ;;
+  109) swap 'if state?.word == "manual" { return .tellManual }' 'if installing { return .tellInstalling }; if state?.word == "manual" { return .tellManual }' ;;
+  110) swap 'case ("tell-manual", "second"), ("tell-update-first", "second"), ("tell-installing", "second"), ("tell-quit-first", "second"): return "guide"' 'case ("tell-manual", "second"), ("tell-update-first", "second"), ("tell-installing", "second"), ("tell-quit-first", "second"): return "open"' ;;
+  111) drop 'if installing { return .askInstallRunning }' ;;
+  112) drop 'if let start = lastStart(), st.st_mtimespec.tv_sec < start { return (false, nil) }' ;;
+  113) swap 'prefix: nil, state: g.id == installing ? .installing : wrappers.count == 1 ? .begun : .notSetUp))' 'prefix: nil, state: (g.id == installing || wrappers.contains { lockHeldByLiveProcess($0 + "/Contents/SharedSupport/prefix") }) ? .installing : wrappers.count == 1 ? .begun : .notSetUp))' ;;
   *) echo "REFUSED: no mutant ${MUTANT}"; exit 2 ;;
 esac
 P="$T/launcher-window"
@@ -550,7 +612,9 @@ check "--owned: 200 single-byte changes to a valid file, fixed seed: each answer
 echo "      (the 200: $(printf '%s\n' $seen | sort | uniq -c | tr -s ' ' | tr '\n' ',' | sed 's/,$//'))"
 usage "--owned <id> and no file" --owned 949230
 usage "--owned <id that is no number> <file>" --owned 94x "$V/own28.vdf"
-# offers: a table of five games; the account owns four of them by the Steam app's packageinfo.vdf
+# offers: a table of five games; the account owns four of them by the Steam app's packageinfo.vdf. Since
+# docs/plans/launcher-first-install.md (3.7) every game of the table that has no app is an offer row, whether or not
+# a cache says the account owns it: what the cache changes is the state, owned where there was not-set-up.
 printf '# app id\tfolder\ttitle\tguide\n949230\tcs2\tCities: Skylines II\thttps://github.com/example/1launcher/blob/main/cs2.md\n3215050\tsmr\tSurviving Mars: Relaunched\thttps://github.com/example/1launcher/blob/main/smr.md\n1111\tf\tA File Game\tfile:///etc/hosts\n2222\th\tAn Http Game\thttp://github.com/example/h\n4444\tn\tNot Owned\thttps://github.com/example/n\n' > "$T/games.tsv"
 O="$T/w7o"
 pso=$(prefix w7-steam); pmo=$(prefix w7-mars); pbad=$(prefix w7-bad)
@@ -561,14 +625,18 @@ steamapp "$O/main/s.app" S734M "$pso"; game "$O/main/mars.app" Mars 3215050 "$pm
 steamapp "$O/bad/s.app" S734M "$pbad"; game "$O/bad/mars.app" Mars 3215050 "$pmo"
 steamapp "$O/noprefix/s.app" S734M
 OFFER="$(line offer 949230 owned "Cities: Skylines II" https://github.com/example/1launcher/blob/main/cs2.md)"
-check "offers: an owned ported game with no app is an offer line, after the Steam apps; nothing else is offered" \
+OFFER2="$(line offer 4444 not-set-up "Not Owned" https://github.com/example/n)"
+check "offers: every ported game with no app is an offer line, after the Steam apps: owned where the cache says so, not-set-up otherwise; a set-up game, a file address and an http address give none" \
   "$(list --games "$T/games.tsv" "$O/main")" \
   "$(line game 3215050 absent Mars "$O/main/mars.app")
 $(line steam - absent S734M "$O/main/s.app")
-$OFFER"
+$OFFER
+$OFFER2"
+kinds() { cut -f1,3 | tr '\t\n' ': '; }   # each row's role and state
+NOTOWN="game:absent steam:absent offer:not-set-up offer:not-set-up "
 check "offers: none without --games" "$(list "$O/main" | cut -f1 | tr '\n' ' ')" "game steam "
-check "offers: none when the only file is not read cleanly (unknown)" "$(list --games "$T/games.tsv" "$O/bad" | cut -f1 | tr '\n' ' ')" "game steam "
-check "offers: none when no row has a prefix" "$(list --games "$T/games.tsv" "$O/noprefix" | cut -f1 | tr '\n' ' ')" "steam "
+check "offers: when the only file is not read cleanly (unknown): the two offers, neither owned" "$(list --games "$T/games.tsv" "$O/bad" | kinds)" "$NOTOWN"
+check "offers: when no row has a prefix there is nothing to ask: the three games with no app, none owned" "$(list --games "$T/games.tsv" "$O/noprefix" | kinds)" "steam:unknown offer:not-set-up offer:not-set-up offer:not-set-up "
 printf '#!/bin/bash\nsleep 8\necho owned\n' > "$T/slow.sh"
 printf '#!/bin/bash\nexit 1\n' > "$T/fails.sh"
 printf '#!/bin/bash\necho owned\nexit 1\n' > "$T/saysfails.sh"
@@ -577,16 +645,16 @@ chmod +x "$T/slow.sh" "$T/fails.sh" "$T/saysfails.sh" "$T/crashes.sh"
 t0=$(date +%s)
 out="$(L1_OWNED_HELPER="$T/slow.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1)"
 t1=$(date +%s)
-check "offers: a helper that sleeps 8 s: the rows within 7 s, and no offer" \
-  "$([ $((t1 - t0)) -lt 7 ] && echo in-time || echo "after $((t1 - t0)) s") $(printf '%s\n' "$out" | cut -f1 | tr '\n' ' ')" "in-time game steam "
-check "offers: a helper that exits 1 without a word: no offer" \
-  "$(L1_OWNED_HELPER="$T/fails.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1 | cut -f1 | tr '\n' ' ')" "game steam "
-check "offers: a helper that says owned and exits 1: no offer" \
-  "$(L1_OWNED_HELPER="$T/saysfails.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1 | cut -f1 | tr '\n' ' ')" "game steam "
-check "offers: a helper that says owned and crashes: no offer" \
-  "$(L1_OWNED_HELPER="$T/crashes.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1 | cut -f1 | tr '\n' ' ')" "game steam "
-check "offers: L1_OWNED_HELPER naming no program: no offer" \
-  "$(L1_OWNED_HELPER="$T/none.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1 | cut -f1 | tr '\n' ' ')" "game steam "
+check "offers: a helper that sleeps 8 s: the rows within 7 s, and no offer is owned" \
+  "$([ $((t1 - t0)) -lt 7 ] && echo in-time || echo "after $((t1 - t0)) s") $(printf '%s\n' "$out" | kinds)" "in-time $NOTOWN"
+check "offers: a helper that exits 1 without a word: no offer is owned" \
+  "$(L1_OWNED_HELPER="$T/fails.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1 | kinds)" "$NOTOWN"
+check "offers: a helper that says owned and exits 1: no offer is owned" \
+  "$(L1_OWNED_HELPER="$T/saysfails.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1 | kinds)" "$NOTOWN"
+check "offers: a helper that says owned and crashes: no offer is owned" \
+  "$(L1_OWNED_HELPER="$T/crashes.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1 | kinds)" "$NOTOWN"
+check "offers: L1_OWNED_HELPER naming no program: no offer is owned" \
+  "$(L1_OWNED_HELPER="$T/none.sh" "$P" --list --games "$T/games.tsv" "$O/main" 2>&1 | kinds)" "$NOTOWN"
 
 # --- W13: the icon carries the mark, and a small form for 16 and 32 pixels (docs/plans/launcher-window-look.md)
 check "--icon-at: ink on the ring, the stems and both flags; body in the opening, between the stems and beside them; clear outside" \
@@ -594,7 +662,9 @@ check "--icon-at: ink on the ring, the stems and both flags; body in the opening
 check "--icon-at small: ink at 512,192, which is body in the full form" "$("$P" --icon-at small 512,192):$("$P" --icon-at 512,192)" "ink:body"
 
 # --- W14: --grid. A tile line: tile, row, column, x, y, role, selected, dim, AX role, label, help, title lines,
-# the title as shown, the second line as shown.
+# the title as shown, the second line as shown, the fifteenth field, the picture it draws: icon=app, or
+# icon=initials:<letters> for the placeholder (docs/plans/launcher-first-install.md, 3.10), and the sixteenth,
+# tip=<the tooltip's sentence, or ->.
 grid() { "$P" --grid "$@" 2>&1; }
 gsize() { grid "$@" | awk -F'\t' '$1 == "size" { printf "%s by %s", $2, $3 }'; }
 origins() { grid "$@" | awk -F'\t' '$1 == "tile" { printf "%s,%s ", $4, $5 }'; }
@@ -625,16 +695,17 @@ check "grid: the mark: side, left edge and depth below, at 444 and at 552" \
   "$(grid - "$Gd/2-1" | grep '^mark')|$(grid - "$Gd/4-1" | grep '^mark')" "mark${TAB}333${TAB}55.5${TAB}27|mark${TAB}414${TAB}69${TAB}33"
 check "grid: every tile is AXButton with no help; the group is AXGroup Games with its help; the first click activates" \
   "$(field 9 - "$Gd/5-1" | sort -u)|$(field 11 - "$Gd/5-1" | sort -u)|$(grid - "$Gd/5-1" | grep '^group')|$(grid - "$Gd/5-1" | grep '^first-click')" \
-  "AXButton|-|group${TAB}AXGroup${TAB}Games${TAB}Click a game, or press Return, to start it.|first-click${TAB}activates"
+  "AXButton|-|group${TAB}AXGroup${TAB}Games${TAB}Click a game, or press Return, to start it or set it up.|first-click${TAB}activates"
 check "grid: the selected tile is the last game when listed, else the first game" \
   "$(grid 503 "$Gd/5-1" | awk -F'\t' '$7 == "selected" { print $13 }')|$(grid 999 "$Gd/5-1" | awk -F'\t' '$7 == "selected" { print $13 }')" "Game 03|Game 01"
 game "$O/two/mars.app" Mars 3215050 "$pmo"; game "$O/two/other.app" Other 777 "$pmo"; steamapp "$O/two/s.app" S734M "$pso"
-check "grid: 2 games, Steam, 1 offer: the offer and its label at the offers block's left edge" \
+check "grid: 2 games, Steam, 2 offers: the offers and their label at the offers block's left edge, the three groups 346 high" \
   "$(gsize --games "$T/games.tsv" - "$O/two") $(origins --games "$T/games.tsv" - "$O/two")|$(grid --games "$T/games.tsv" - "$O/two" | grep '^label')" \
-  "444 by 346 24,4 152,4 300,4 162,178 |label${TAB}162${TAB}158${TAB}You also own"
-check "grid: the offer's label ends with the guide words; it shows the short line and is dim" \
+  "444 by 346 24,4 152,4 300,4 98,178 226,178 |label${TAB}98${TAB}158${TAB}Not set up on this Mac"
+check "grid: an offer's label ends with the guide words; it shows the short line and is dim, owned or not" \
   "$(grid --games "$T/games.tsv" - "$O/two" | awk -F'\t' '$6 == "offer" { print $10 "|" $14 "|" $8 }')" \
-  "Cities: Skylines II, not set up on this Mac, opens the set-up guide in your browser|Not set up. Opens its guide.|dim"
+  "Cities: Skylines II, not set up on this Mac, opens the set-up guide in your browser|Not set up. Opens its guide.|dim
+Not Owned, not set up on this Mac, opens the set-up guide in your browser|Not set up. Opens its guide.|dim"
 check "grid: an absent Steam app shows the short line and is dim; its label holds the full sentence" \
   "$(grid - "$O/two" | awk -F'\t' '$6 == "steam" { print $10 "|" $14 "|" $8 }')" "S734M, Windows Steam not found. Build this app again.|Windows Steam not found|dim"
 pga=$(prefix w14-absent); pgr=$(prefix w14-ready); manifest "$pgr" 949230
@@ -673,7 +744,7 @@ check "act: down goes to the nearest tile of the next row, Steam and not the fif
   "$(act right,right,right,down,down,up,up - "$Gd/5-1")" \
   "selected Game 02|selected Game 03|selected Game 04|selected Steam 1|selected Steam 1|selected Game 02|selected Game 02"
 check "act: down goes into the offers row, a start there gives its address, and up goes to the nearest tile above" \
-  "$(act down,return,up --games "$T/games.tsv" - "$O/two")" "selected Cities: Skylines II|start https://github.com/example/1launcher/blob/main/cs2.md|selected Other"
+  "$(act down,return,up --games "$T/games.tsv" - "$O/two")" "selected Cities: Skylines II|guide https://github.com/example/1launcher/blob/main/cs2.md|selected Other"
 check "act: return, enter and space start the selection; escape quits" "$(act right,return,enter,space,escape - "$Gd/3-1")" \
   "selected Game 02|start $Gd/3-1/g02.app|start $Gd/3-1/g02.app|start $Gd/3-1/g02.app|quit"
 check "act: under a sheet, escape ends it, and space and return pass to it" "$(act sheet:escape,sheet:space,sheet:return - "$Gd/3-1")" "end-sheet|pass|pass"
@@ -872,7 +943,7 @@ sheet() { "$P" --update-sheet --update-dir "$@" 2>&1; }
 : > "$RDY/args.log"
 check "UT8 sheet: message, text with the installed version, the buttons Not Now then Update, and the notes line by line" "$(sheet "$RDY" "$Gd/1-0")" \
 "message${TAB}1launcher v0.4.0 is out.
-text${TAB}This Mac has v0.3.0. Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there.
+text${TAB}This Mac has v0.3.0. Update opens Terminal and runs the installer again for 14unch3r and each game set up here. It may ask you a question there.
 button${TAB}Not Now
 button${TAB}Update
 note${TAB}v0.4.0 (2026-12-01)
@@ -883,7 +954,7 @@ check "UT8 ...the tool was asked for the state and then for --notes, and nothing
 NOV=$(tool nov "ready${TAB}-${TAB}v0.4.0${TAB}-")
 check "UT8 sheet: with - as the installed version the first sentence is absent; with no notes, the one line with the address" \
   "$(sheet "$NOV" "$Gd/1-0" | grep '^text\|^note')" \
-"text${TAB}Update opens Terminal and runs the installer again for each game set up here. It may ask you a question there.
+"text${TAB}Update opens Terminal and runs the installer again for 14unch3r and each game set up here. It may ask you a question there.
 note${TAB}What changed: https://github.com/macgameport/1launcher/blob/release/CHANGELOG.md"
 sleep 300 & LIVE8=$!; disown; KEEP="$KEEP $LIVE8"
 pz=$(prefix ut8-zulu); pa=$(prefix ut8-alpha); pq=$(prefix ut8-quiet)
@@ -920,9 +991,9 @@ check "UT8 menu row 1: off" "$(umenu "$(tool off "off${TAB}-${TAB}-${TAB}-")" sk
 check "UT8 menu row 2: none" "$(umenu "$(tool none "none${TAB}-${TAB}v0.4.0${TAB}-")" skipped)" \
   "alert${TAB}This Mac is not yet set up for updates.${TAB}Paste each game's installer line once more. After that, 14unch3r says when a new version is out."
 check "UT8 menu row 3: manual, from a checkout" "$(umenu "$(tool checkout "manual${TAB}v0.3.0${TAB}-${TAB}checkout")" skipped)" \
-  "alert${TAB}No update is offered on this Mac.${TAB}Its games were set up from a checkout. Update with git pull, then run each game's setup."
+  "alert${TAB}No update is offered on this Mac.${TAB}14unch3r or a game here was set up from a checkout. Update with git pull, then run install.sh launcher and each game's setup."
 check "UT8 menu row 4: manual, any other line" "$(umenu "$(tool named "manual${TAB}v0.2.0${TAB}v0.4.0${TAB}v0.2.0")" skipped)" \
-  "alert${TAB}No update is offered on this Mac.${TAB}A game here was set up from a named version. Paste its installer line from the guide to follow new versions again."
+  "alert${TAB}No update is offered on this Mac.${TAB}14unch3r or a game here was set up from a named version. Paste the installer line from the guide again to follow new versions."
 check "UT8 menu row 5: ready gives the sheet, after a failed fetch too" "$(umenu "$RDY" fetched)|$(umenu "$RDY" failed)" "sheet|sheet"
 UNK=$(tool unknown "unknown${TAB}v0.4.0${TAB}-${TAB}-")
 check "UT8 menu row 6: current with a failed fetch; unknown; no answer to the refresh; an answer that is no state" \
@@ -972,19 +1043,230 @@ check "UT8 tool: outside an app and with no --update-dir: -" "$(utool)" "-"
 
 check "UT8 no text mode asked the tool to --refresh" "$(cat "$U"/*/args.log | grep -c -- '--refresh')" 0
 
+# --- LFT6, the cases of LF5a (docs/plans/launcher-first-install.md, 3.7): every game of the table is a row, from
+# files alone. A click on one opens its guide, with today's words, and needs no tool; the sheets come with LF5b.
+L="$T/lf5a"; mkdir -p "$L/none" "$L/begun" "$L/twins" "$L/steamonly"
+printf '949230\tcs2\tCities: Skylines II\thttps://github.com/example/cs2\n3215050\tsmr\tSurviving Mars: Relaunched\thttps://github.com/example/smr\n777\twr\tWorkers & Resources: Soviet Republic\thttps://github.com/example/wr\n' > "$L/three.tsv"
+check "LFT6 --list --games with no app at all: one offer row per game of the table, each not-set-up, by title" \
+  "$(list --games "$L/three.tsv" "$L/none" | cut -f1-4 | tr '\t\n' ': ')" \
+  "offer:949230:not-set-up:Cities: Skylines II offer:3215050:not-set-up:Surviving Mars: Relaunched offer:777:not-set-up:Workers & Resources: Soviet Republic "
+check "LFT6 ...an offer's path is the game's guide address, and without --games there is no row" \
+  "$(list --games "$L/three.tsv" "$L/none" | cut -f5 | tr '\n' ' ')|$(list "$L/none")" "https://github.com/example/cs2 https://github.com/example/smr https://github.com/example/wr |"
+wrap "$L/begun/wrapper-3215050.app" game-wrapper 3215050; wrap "$L/begun/wrapper-0.app" steam-wrapper
+check "LFT6 one wrapper marked for a game and no app: that game is begun, the others not-set-up; a Steam wrapper begins nothing" \
+  "$(list --games "$L/three.tsv" "$L/begun" | cut -f2,3 | tr '\t\n' ': ')" "949230:not-set-up 3215050:begun 777:not-set-up "
+wrap "$L/twins/a.app" game-wrapper 3215050; wrap "$L/twins/b.app" game-wrapper 3215050
+check "LFT6 two wrappers marked alike: not-set-up" "$(list --games "$L/three.tsv" "$L/twins" | cut -f2,3 | tr '\t\n' ': ')" "949230:not-set-up 3215050:not-set-up 777:not-set-up "
+check "LFT6 the one wrapper reached through two folders, and by two spellings of one folder, is one: begun" \
+  "$(mkdir -p "$L/other"; list --games "$L/three.tsv" "$L/begun" "$L/begun/../begun" "$L/other" | awk -F'\t' '$2 == 3215050 { print $3 }')" begun
+check "LFT6 a wrapper in each of two folders, marked alike: two, so not-set-up" \
+  "$(wrap "$L/other/w.app" game-wrapper 3215050; list --games "$L/three.tsv" "$L/begun" "$L/other" | awk -F'\t' '$2 == 3215050 { print $3 }')" not-set-up
+game "$L/setup/cs2.app" "Cities: Skylines II" 949230; wrap "$L/setup/wrapper-949230.app" game-wrapper 949230
+check "LFT6 a game that is set up has no offer row, its marked wrapper beside it or not" \
+  "$(list --games "$L/three.tsv" "$L/setup" | cut -f1,2,3 | tr '\t\n' ': ')" "game:949230:unknown offer:3215050:not-set-up offer:777:not-set-up "
+check "LFT6 the cache says owned: the state owned for that game, and no other row changes (the first offers case above holds the whole listing)" \
+  "$(list --games "$T/games.tsv" "$O/main" | awk -F'\t' '$1 == "offer" { printf "%s:%s ", $2, $3 }')" "949230:owned 4444:not-set-up "
+# --grid with offers only: the label, the help, the selection, the words of today, the colours
+og() { grid --games "$L/three.tsv" - "$L/none"; }
+check "LFT6 --grid with no app: three tiles under the label, the group's help says a game can be set up, the first offer is selected" \
+  "$(og | grep -c '^tile'):$(og | grep '^label' | cut -f4):$(og | grep '^group' | cut -f4):$(og | awk -F'\t' '$1 == "tile" { printf "%s ", $7 }')" \
+  "3:Not set up on this Mac:Click a game, or press Return, to start it or set it up.:selected - - "
+check "LFT6 ...with no --update-dir each offer has today's guide words: the second line, the tooltip's sentence in its label, and nothing to start" \
+  "$(og | awk -F'\t' '$1 == "tile" { print $14 }' | sort -u):$(og | awk -F'\t' '$1 == "tile" && $10 ~ /, not set up on this Mac, opens the set-up guide in your browser$/ { n++ } END { print n + 0 }'):$(og | grep -c '^empty')" \
+  "Not set up. Opens its guide.:3:0"
+opaint() { og | awk -F'\t' -v k="$1" '$1 == "paint" && $2 == k { print $3 }'; }
+check "LFT6 ...paint with offers only: title, second line and label at least 4.5" "$(atleast "$(opaint title)" 4.5)|$(atleast "$(opaint second)" 4.5)|$(atleast "$(opaint label)" 4.5)" "ok|ok|ok"
+check "LFT6 the keys with no app: right and left move among the offers, down and up stay in their one row, and Return opens the selected one's guide" \
+  "$(act right,right,left,down,up,return --games "$L/three.tsv" - "$L/none")" \
+  "selected Surviving Mars: Relaunched|selected Workers & Resources: Soviet Republic|selected Surviving Mars: Relaunched|selected Surviving Mars: Relaunched|selected Surviving Mars: Relaunched|guide https://github.com/example/smr"
+check "LFT6 with an app there the selection is the app's, as before, and the offers follow it" \
+  "$(grid --games "$L/three.tsv" - "$L/setup" | awk -F'\t' '$1 == "tile" { printf "%s:%s ", $6, $7 }')" "game:selected offer:- offer:- "
+
+# --- LFT10 (the same plan, 3.10): the placeholder of a game that is not set up, read from a tile's fifteenth field
+icons() { awk -F'\t' '$1 == "tile" { printf "%s|%s|%s ", $13, $8, $15 }'; }
+check "LFT10 the three titles the project knows, with no app: CS, SM and WR, each dim" \
+  "$(og | awk -F'\t' '$1 == "tile" { printf "%s:%s ", $15, $8 }')" "icon=initials:CS:dim icon=initials:SM:dim icon=initials:WR:dim "
+printf '1\ta\tAlpha III Beta\thttps://github.com/example/1\n2\tb\tAlpha 2 Beta\thttps://github.com/example/2\n3\tc\tAlpha 3D Beta\thttps://github.com/example/3\n4\td\t9 Lives\thttps://github.com/example/4\n5\te\t2nd Alpha\thttps://github.com/example/5\n6\tf\tSolo\thttps://github.com/example/6\n7\tg\talpha & beta\thttps://github.com/example/7\n8\th\t&\thttps://github.com/example/8\n9\ti\tAlpha IV\thttps://github.com/example/9\n10\tj\tII Alpha\thttps://github.com/example/10\n11\tk\tAlpha ii beta\thttps://github.com/example/11\n12\tl\t(Alpha) "Beta"\thttps://github.com/example/12\n13\tm\tAlpha 1800 X Beta\thttps://github.com/example/13\n' > "$L/letters.tsv"
+letters() { T10="$1, " grid --games "$L/letters.tsv" - "$L/none" | T10="$1, " awk -F'\t' '$1 == "tile" && index($10, ENVIRON["T10"]) == 1 { print $15 }'; }
+for pair in "Alpha III Beta=AB" "Alpha 2 Beta=AB" "Alpha 3D Beta=A3" "9 Lives=9L" "2nd Alpha=2A" "Solo=S" "alpha & beta=AB" "&=" \
+            "Alpha IV=A" "II Alpha=IA" "Alpha ii beta=AI" '(Alpha) "Beta"=AB' "Alpha 1800 X Beta=AB"; do
+  check "LFT10 the letters of ${pair%%=*}: ${pair#*=}" "$(letters "${pair%%=*}")" "icon=initials:${pair#*=}"
+done
+check "LFT10 the tree's own common/games.tsv: every game's tile has one or two letters" \
+  "$(grid --games "$HERE/games.tsv" - "$L/none" | awk -F'\t' '$1 == "tile" { n++; if ($15 ~ /^icon=initials:..?$/) ok++ } END { print (n > 1 && n == ok) ? "all" : n + 0 ":" ok + 0 }')" all
+pwa=$(prefix lf5a-absent); pwr=$(prefix lf5a-ready); manifest "$pwr" 949230; pws=$(prefix lf5a-steam)
+game "$L/mixed/cs2.app" "Cities: Skylines II" 949230 "$pwr"; steamapp "$L/mixed/s.app" S734M "$pws"
+check "LFT10 one game set up and one not, and a Steam app: the set-up game and the Steam app draw their app's icon, the other its letters; the set-up game is not dim" \
+  "$(grid --games "$L/three.tsv" - "$L/mixed" | icons)" \
+  "Cities: Skylines II|-|icon=app S734M|dim|icon=app Surviving Mars: | Relaunched|dim|icon=initials:SM Workers & | Resources: Sovie…|dim|icon=initials:WR "
+game "$L/absent/smr.app" "Surviving Mars: Relaunched" 3215050 "$pwa"
+check "LFT10 a set-up game that is absent draws its app's icon and is dim" \
+  "$(grid --games "$L/three.tsv" - "$L/absent" | awk -F'\t' '$1 == "tile" && $6 == "game" { print $8 ":" $15 }')" "dim:icon=app"
+check "LFT10 the game of a begun wrapper draws its letters, and so does an owned offer" \
+  "$(grid --games "$L/three.tsv" - "$L/begun" | awk -F'\t' '$1 == "tile" && $10 ~ /^Surviving/ { print $15 }'):$(grid --games "$T/games.tsv" - "$O/main" | awk -F'\t' '$1 == "tile" && $10 ~ /^Cities/ { print $6 ":" $15 }')" \
+  "icon=initials:SM:offer:icon=initials:CS"
+check "LFT10 paint initials: 4.5 or more with a placeholder shown, and - with none" \
+  "$(atleast "$(opaint initials)" 4.5)|$(grid - "$L/mixed" | awk -F'\t' '$1 == "paint" && $2 == "initials" { print $3 }')|$(grid --games "$L/letters.tsv" - "$L/none" | grep -c '^paint.initials')" "ok|-|1"
+echo "      (paint initials with the three titles: $(opaint initials))"
+
 # The source gates of 3.5, each a count taken from the source this run compiled (a mutant's, under MUTANT).
 WS="$T/w.swift"
 below() { awk '/- the window$/ { p = 1 } p' "$WS"; }
 code() { sed -E 's,(^|[[:space:]])//.*$,,'; }   # without the comments
-check "UT8 source gate 1: each of the 5 lines that show a sheet has, just before it, a line that sets sheet to a question or a failure" \
-  "$(awk '/beginSheetModal\(/ { n++; if (prev ~ /sheet = \.(question|failure)\(/) ok++ } { prev = $0 } END { print n + 0 ":" ok + 0 }' "$WS")" "5:5"
+check "UT8 source gate 1: each of the 8 lines that show a sheet (5 of the update and the start, 3 of the install) has, just before it, a line that sets sheet to a question or a failure" \
+  "$(awk '/beginSheetModal\(/ { n++; if (prev ~ /sheet = \.(question|failure)\(/) ok++ } { prev = $0 } END { print n + 0 ":" ok + 0 }' "$WS")" "8:8"
 check "UT8 source gate 2: \"--open\" occurs once, in openUpdate, which is called on two lines: in --update-open, and in the window after a test of sheetAnswer for open" \
   "$(grep -c '"--open"' "$WS"):$(awk '/^func openUpdate\(/ { p = 1 } p && /"--open"/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS"):$(code < "$WS" | grep 'openUpdate(' | grep -vc '^func openUpdate('):$(awk '/^    case "/ { p = /"--update-open"/ } p && /openUpdate\(/ { n++ } END { print n + 0 }' "$WS"):$(below | code | awk '/^    (@objc )?func / { g = 0 } /guard sheetAnswer\(answer\) == "open" else \{ return \}/ { g = 1 } /openUpdate\(/ { n++; if (g) ok++ } END { print n + 0 ":" ok + 0 }')" "1:1:2:1:1:1"
-check "UT8 source gate 3: /bin/bash is run once, in askUpdate; the window reaches the tool on 2 lines, each in a block sent off the main thread" \
-  "$(grep -c '"/bin/bash"' "$WS"):$(awk '/^func askUpdate\(/ { p = 1 } p && /"\/bin\/bash"/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS"):$(below | code | awk '/^    (@objc )?func / { off = 0 } /DispatchQueue\.global\(/ { off = 1 } /ask(Update|State)\(|openUpdate\(/ { n++; if (off) ok++ } /DispatchQueue\.main\.async/ { off = 0 } END { print n + 0 ":" ok + 0 }')" "1:1:2:2"
+check "UT8 source gate 3: /bin/bash is run once, in askUpdate; the window reaches the tool on 3 lines (the third is the install's), each in a block sent off the main thread" \
+  "$(grep -c '"/bin/bash"' "$WS"):$(awk '/^func askUpdate\(/ { p = 1 } p && /"\/bin\/bash"/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS"):$(below | code | awk '/^    (@objc )?func / { off = 0 } /DispatchQueue\.global\(/ { off = 1 } /ask(Update|State)\(|open(Update|Install)\(/ { n++; if (off) ok++ } /DispatchQueue\.main\.async/ { off = 0 } END { print n + 0 ":" ok + 0 }')" "1:1:3:3"
 SENT='is out|Not Now|"Update"|What changed|Quit .* first\.|leaves a running game|update did not open|did not answer|Check for Updates|switched off|not yet set up|No update is offered|could not be read|newest version|opens Terminal'
-check "UT8 the fourth count: the update's sentences are constants of Look (18 lines), and no other code holds one, below the window's marker or above it" \
-  "$(awk '/^enum Look \{/ { p = 1 } p { print } p && /^}/ { exit }' "$WS" | code | grep -cE "$SENT"):$(awk '/^enum Look \{/ { p = 1 } !p { print } p && /^}/ { p = 0 }' "$WS" | code | grep -cE "$SENT"):$(below | code | grep -cE "$SENT")" "18:0:0"
+check "UT8 the fourth count: the update's sentences are constants of Look (19 lines: the 18 of the update, and the install's sheet that says a newer version is out), and no other code holds one, below the window's marker or above it" \
+  "$(awk '/^enum Look \{/ { p = 1 } p { print } p && /^}/ { exit }' "$WS" | code | grep -cE "$SENT"):$(awk '/^enum Look \{/ { p = 1 } !p { print } p && /^}/ { p = 0 }' "$WS" | code | grep -cE "$SENT"):$(below | code | grep -cE "$SENT")" "19:0:0"
+
+# --- LFT6, the cases of LF5b (docs/plans/launcher-first-install.md, 3.7), and LFT13's window cases (3.8). A stub
+# tool in a folder of its own gives the state; the install's lock, when a case has one, is a link in that folder.
+itool() {   # <name> <state line> [<pid of a running install> [<game id, or - for no game file>]]: prints the folder
+  local d; d="$(tool "lf5b-$1" "$2")"
+  if [ -n "${3:-}" ]; then ln -s "$3" "$d/installing"; [ "${4:-3215050}" = - ] || echo "${4:-3215050}" > "$d/installing-game"; fi
+  printf '%s' "$d"
+}
+click() { act "$@" | awk -F'|' '{ print $NF }'; }   # what the last step of an --act gave
+( exit 0 ) & DEADP=$!; wait "$DEADP"
+ICUR=$(itool current "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-")
+IUNK=$(itool unknown "unknown${TAB}v0.4.0${TAB}-${TAB}-")
+INON=$(itool none "none${TAB}-${TAB}-${TAB}-")
+IOFF=$(itool off "off${TAB}-${TAB}v0.4.0${TAB}-")
+IMAN=$(itool manual "manual${TAB}v0.4.0${TAB}-${TAB}checkout")
+IRDY=$(itool ready "ready${TAB}v0.3.0${TAB}v0.4.0${TAB}-")
+IRUN=$(itool running "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" $$)
+IMANRUN=$(itool manual-running "manual${TAB}v0.4.0${TAB}-${TAB}checkout" $$)
+IRDYRUN=$(itool ready-running "ready${TAB}v0.3.0${TAB}v0.4.0${TAB}-" $$)
+pib=$(prefix lf5b-busy); manifest "$pib" 949230; ln -s $$ "$pib/.launcher.lock"; pio=$(prefix lf5b-other); manifest "$pio" 3215050
+game "$L/busy/cs2.app" "Cities: Skylines II" 949230 "$pib"
+game "$L/busy2/cs2.app" "Cities: Skylines II" 949230 "$pib"; game "$L/busy2/smr.app" "Surviving Mars: Relaunched" 3215050 "$pio"
+tiles() { grid "$@" | awk -F'\t' '$1 == "tile" && $6 == "offer" { printf "%s|%s|%s\n", $14, $16, $10 }'; }   # second line, tooltip's sentence, spoken
+check "LFT6 with a tool, a game that is not set up: its second line, its tooltip's sentence and its spoken words say that a click installs" \
+  "$(tiles --games "$L/three.tsv" --update-dir "$ICUR" - "$L/none" | sort -u)" \
+  "Not set up. Click to install.|tip=Not set up on this Mac. Click to install.|Cities: Skylines II, not set up on this Mac, asks before it installs
+Not set up. Click to install.|tip=Not set up on this Mac. Click to install.|Surviving Mars: Relaunched, not set up on this Mac, asks before it installs
+Not set up. Click to install.|tip=Not set up on this Mac. Click to install.|Workers & Resources: Soviet Republic, not set up on this Mac, asks before it installs"
+check "LFT6 ...a begun game" "$(tiles --games "$L/three.tsv" --update-dir "$ICUR" - "$L/begun" | grep '^Install')" \
+  "Install not finished. Click to carry on.|tip=Install not finished. Click to carry on.|Surviving Mars: Relaunched, install not finished, asks before it carries on"
+check "LFT6 ...a game being installed" "$(tiles --games "$L/three.tsv" --update-dir "$IRUN" - "$L/none" | grep '^Installing')" \
+  "Installing in Terminal.|tip=Installing in Terminal.|Surviving Mars: Relaunched, installing in Terminal"
+check "LFT6 ...a game a cache says the account has: the second line says so, the tooltip and the spoken words are a not-set-up game's" \
+  "$(tiles --games "$T/games.tsv" --update-dir "$ICUR" - "$O/main" | grep '^In your')" \
+  "In your Steam library. Click to install.|tip=Not set up on this Mac. Click to install.|Cities: Skylines II, not set up on this Mac, asks before it installs"
+check "LFT6 ...with a folder that holds no tool, and with none named: today's guide words for every offer" \
+  "$(tiles --games "$L/three.tsv" --update-dir "$U/absent" - "$L/none" | cut -d'|' -f1,2 | sort -u):$(tiles --games "$L/three.tsv" - "$L/none" | cut -d'|' -f1,2 | sort -u)" \
+  "Not set up. Opens its guide.|tip=Not set up on this Mac. Opens the set-up guide.:Not set up. Opens its guide.|tip=Not set up on this Mac. Opens the set-up guide."
+check "LFT6 --list with --update-dir and a live installing whose game file names a game: that game is installing; with a dead one, and without --update-dir, it is not" \
+  "$(list --games "$L/three.tsv" --update-dir "$IRUN" "$L/none" | cut -f2,3 | tr '\t\n' ': ')|$(list --games "$L/three.tsv" --update-dir "$(itool dead "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" "$DEADP")" "$L/none" | cut -f3 | sort -u)|$(list --games "$L/three.tsv" "$L/none" | cut -f3 | sort -u)" \
+  "949230:not-set-up 3215050:installing 777:not-set-up |not-set-up|not-set-up"
+# the click: one case per line of 3.7's list, in its order
+check "LFT6 the click, no tool: guide and the address, as an offer always did" "$(click start --games "$L/three.tsv" - "$L/none")" "guide https://github.com/example/cs2"
+check "LFT6 the click, the state manual: tell-manual" "$(click start --games "$L/three.tsv" --update-dir "$IMAN" - "$L/none")" "tell-manual"
+check "LFT6 the click, the state ready: tell-update-first" "$(click start --games "$L/three.tsv" --update-dir "$IRDY" - "$L/none")" "tell-update-first"
+check "LFT6 the click, an install running: tell-installing, on the game being installed and on another" \
+  "$(click start --games "$L/three.tsv" --update-dir "$IRUN" - "$L/none")|$(click right,start --games "$L/three.tsv" --update-dir "$IRUN" - "$L/none")" "tell-installing|tell-installing"
+check "LFT6 the click, a game in use: tell-quit-first and its title" "$(click down,start --games "$L/three.tsv" --update-dir "$ICUR" - "$L/busy")" "tell-quit-first Cities: Skylines II"
+for st in "$IUNK" "$ICUR" "$INON" "$IOFF"; do
+  check "LFT6 the click, the state ${st##*lf5b-}: ask-install; Return and a click give the same" \
+    "$(click start --games "$L/three.tsv" --update-dir "$st" - "$L/none")|$(click return --games "$L/three.tsv" --update-dir "$st" - "$L/none")" "ask-install|ask-install"
+done
+check "LFT6 the order: manual with an install running gives tell-manual; ready with an install running gives tell-update-first; an install running with a game in use gives tell-installing" \
+  "$(click start --games "$L/three.tsv" --update-dir "$IMANRUN" - "$L/none")|$(click start --games "$L/three.tsv" --update-dir "$IRDYRUN" - "$L/none")|$(click down,start --games "$L/three.tsv" --update-dir "$IRUN" - "$L/busy")" \
+  "tell-manual|tell-update-first|tell-installing"
+check "LFT6 a set-up game still gives start and its app; with an install running, ask-install-running; and the Steam app with an install running too" \
+  "$(click start --games "$L/three.tsv" --update-dir "$ICUR" - "$L/mixed")|$(click start --games "$L/three.tsv" --update-dir "$IRUN" - "$L/mixed")|$(click right,start --games "$L/three.tsv" --update-dir "$IRUN" - "$L/mixed")" \
+  "start $L/mixed/cs2.app|ask-install-running|ask-install-running"
+check "LFT6 ...with a busy game of another prefix as well: today's question for that game" \
+  "$(click right,start --games "$L/three.tsv" --update-dir "$IRUN" - "$L/busy2")|$(click right,start --games "$L/three.tsv" --update-dir "$ICUR" - "$L/busy2")" "ask Cities: Skylines II|ask Cities: Skylines II"
+check "LFT6 in none of those clicks was the tool asked to install anything" "$(cat "$U"/lf5b-*/args.log | grep -c -- '--install')" 0
+# the sheets, by name
+isheet() { "$P" --install-sheet "$@" 2>&1 | tr '\n' '|'; }
+ITEXT="text${TAB}Terminal opens and runs the game's installer, fetched now from GitHub; it may also bring a newer 14unch3r. It says first what the game needs, and may ask you a question there. It waits while you sign in to Steam and the game downloads. You can stop it at any time; open 14unch3r and click the game again to carry on."
+check "LFT6 the sheet that asks: its message, its text, and three buttons, the safe one first" "$(isheet ask-install --games "$L/three.tsv" 3215050 "$L/none")" \
+  "message${TAB}Install Surviving Mars: Relaunched now?|$ITEXT|button${TAB}Not Now|button${TAB}Install|button${TAB}Read the Guide|"
+check "LFT6 ...for a begun game: the other message, and Carry On" "$(isheet ask-install --games "$L/three.tsv" 3215050 "$L/begun")" \
+  "message${TAB}Carry on installing Surviving Mars: Relaunched now?|$ITEXT|button${TAB}Not Now|button${TAB}Carry On|button${TAB}Read the Guide|"
+check "LFT6 the sheet for manual: its text holds the game's folder from the table; OK, Read the Guide" "$(isheet tell-manual --games "$L/three.tsv" 3215050 "$L/none")" \
+  "message${TAB}Surviving Mars: Relaunched is not installed from this window on this Mac.|text${TAB}14unch3r or a game here was set up from a checkout or a named version. From a checkout: bash smr/scripts/install.sh. Otherwise paste the game's line from its guide.|button${TAB}OK|button${TAB}Read the Guide|"
+check "LFT6 the sheet for update first" "$(isheet tell-update-first --games "$L/three.tsv" 3215050 "$L/none")" \
+  "message${TAB}Update 1launcher first.|text${TAB}A newer version is out. Click the line at the foot of this window to update, then click the game again.|button${TAB}OK|button${TAB}Read the Guide|"
+check "LFT6 the sheet for a running install" "$(isheet tell-installing --games "$L/three.tsv" 3215050 "$L/none")" \
+  "message${TAB}An install is running in Terminal.|text${TAB}Only one install runs at a time. Its Terminal window shows how far it is; click this game again when it has finished.|button${TAB}OK|button${TAB}Read the Guide|"
+check "LFT6 the sheet for a game in use: that game's title in both sentences" "$(isheet tell-quit-first --games "$L/three.tsv" 3215050 "$L/busy")" \
+  "message${TAB}Quit Cities: Skylines II first.|text${TAB}Installing a game needs Steam, and only one Steam at a time can use your account. Quit Cities: Skylines II, then click the game again.|button${TAB}OK|button${TAB}Read the Guide|"
+check "LFT6 the question before a set-up game is started while an install runs: Don't Start first, Start Anyway" "$(isheet ask-install-running --games "$L/three.tsv" 949230 "$L/mixed")" \
+  "message${TAB}An install is running in Terminal.|text${TAB}Starting Cities: Skylines II now takes the installer's Steam offline, and the download stops until the installer is opened again. Wait for the install to finish, or start anyway.|button${TAB}Don't Start|button${TAB}Start Anyway|"
+usage "--install-sheet with a name that is no sheet" --install-sheet tell-nothing --games "$L/three.tsv" 3215050 "$L/none"
+usage "--install-sheet with no table" --install-sheet ask-install 3215050 "$L/none"
+usage "--install-sheet for an id the table does not hold" --install-sheet ask-install --games "$L/three.tsv" 12345 "$L/none"
+# the answers
+ians() { local b o=""; for b in first second third escape; do o="$o$("$P" --install-answer "$1" "$b" 2>&1) "; done; printf '%s' "$o"; }
+check "LFT6 the answer, the sheet that asks: only the second button gives open, the third the guide, the first and Escape nothing" "$(ians ask-install)" "nothing open guide nothing "
+for n in tell-manual tell-update-first tell-installing tell-quit-first; do
+  check "LFT6 the answer, $n: the first button and Escape give nothing, the second the guide, and no button gives open" "$(ians "$n")" "nothing guide nothing nothing "
+done
+check "LFT6 the answer, the question about a running install: only the second button starts" "$(ians ask-install-running)" "nothing start nothing nothing "
+usage "--install-answer for a name that is no sheet" --install-answer nothing first
+usage "--install-answer with a button that is none" --install-answer ask-install fourth
+# the opening: the one call of --install
+iopen() { "$P" --install-open --update-dir "$1" "${2:-3215050}" 2>&1; }
+IOPN=$(tool lf5b-opened "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-"); echo opened > "$IOPN/out.other"
+check "LFT6 the opening: a tool that says opened gives quit, and it was run with exactly --install and the id" "$(iopen "$IOPN")|$(calls "$IOPN")" "quit|[--install 3215050] $IOPN"
+IFLD=$(tool lf5b-failed "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-"); printf 'failed\tAn update is running in Terminal. Wait for it to finish, then click the game again.\n' > "$IFLD/out.other"
+check "LFT6 ...failed and a sentence gives that sentence" "$(iopen "$IFLD")" "failure${TAB}An update is running in Terminal. Wait for it to finish, then click the game again."
+ONE="failure${TAB}This Mac's update tool could not start the install. Paste the game's installer line from its guide."
+IEX2=$(tool lf5b-exits2 "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-"); echo opened > "$IEX2/out.other"; sed -i '' 's/^exit 0$/exit 2/' "$IEX2/updates.sh"
+ISIL=$(tool lf5b-silent "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-")
+check "LFT6 ...a tool that exits 2 (an older one's usage error), one that prints nothing, and a folder with no tool: each the one sentence" \
+  "$(iopen "$IEX2")|$(iopen "$ISIL")|$(iopen "$U/absent")" "$ONE|$ONE|$ONE"
+ISLO=$(tool lf5b-slow "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-"); echo opened > "$ISLO/out.other"; sed -i '' 's|^d="${0%/\*}"$|d="${0%/*}"; [ "${1:-}" = --install ] \&\& /bin/sleep 13|' "$ISLO/updates.sh"
+t0=$(date +%s); slow="$(iopen "$ISLO")"; t1=$(date +%s)
+check "LFT6 ...a tool that sleeps past the limit of 10 s: the one sentence, within 12 s" "$slow|$([ $((t1 - t0)) -lt 12 ] && echo in-time || echo "after $((t1 - t0)) s")" "$ONE|in-time"
+for bad in 0 -5 12x 99999999999; do usage "--install-open with the id $bad" --install-open --update-dir "$IOPN" "$bad"; done
+check "LFT6 ...and none of those reached the tool" "$(calls "$IOPN")" "[--install 3215050] $IOPN"
+# LFT10: the tile of a running install draws its letters
+check "LFT10 the tile of a running install draws its letters, and is dim" \
+  "$(grid --games "$L/three.tsv" --update-dir "$IRUN" - "$L/none" | awk -F'\t' '$1 == "tile" && $14 ~ /^Installing/ { print $15 ":" $8 }')" "icon=initials:SM:dim"
+# LFT13, the window's cases: the lock as the window reads it, on the fixtures of the rule in shell
+istate() { list --games "$L/three.tsv" --update-dir "$1" "${2:-$L/none}" | awk -F'\t' '$2 == 3215050 { print $3 }'; }
+check "LFT13 the window: a live installing whose game file names the game gives installing" "$(istate "$IRUN")" installing
+IDEAD=$(itool l-dead "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" "$DEADP")
+IPLAIN=$(itool l-plain "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-"); echo $$ > "$IPLAIN/installing"; echo 3215050 > "$IPLAIN/installing-game"
+IOLD=$(itool l-old "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" $$); touch -h -t 202001010000 "$IOLD/installing"
+INAN=$(itool l-nan "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" not-a-number)
+check "LFT13 the window: a link to a process that is gone, a plain file, a link older than the Mac's last start, and a link to no number are not installing; and a click there asks" \
+  "$(istate "$IDEAD")|$(istate "$IPLAIN")|$(istate "$IOLD")|$(istate "$INAN")|$(click right,start --games "$L/three.tsv" --update-dir "$IOLD" - "$L/none")" "not-set-up|not-set-up|not-set-up|not-set-up|ask-install"
+INOG=$(itool l-nogame "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" $$ -)
+ILNK=$(itool l-linkgame "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" $$ -); echo 3215050 > "$T/real-game"; ln -s "$T/real-game" "$ILNK/installing-game"
+IBAD=$(itool l-badgame "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" $$ 12x)
+IZER=$(itool l-zerogame "current${TAB}v0.4.0${TAB}v0.4.0${TAB}-" $$ 03215050)
+for d in "$INOG" "$ILNK" "$IBAD" "$IZER"; do
+  check "LFT13 the window: a live lock whose game file is ${d##*lf5b-l-}: it names no game, so no tile says installing, and a click still gives tell-installing" \
+    "$(istate "$d")|$(click right,start --games "$L/three.tsv" --update-dir "$d" - "$L/none")" "not-set-up|tell-installing"
+done
+wrap "$L/wlock/wrapper-3215050.app" game-wrapper 3215050; ln -s $$ "$L/wlock/wrapper-3215050.app/Contents/SharedSupport/prefix/.launcher.lock"
+check "LFT13 the window: a wrapper's live .launcher.lock with no install lock is not installing: the game is begun, and a click asks" \
+  "$(istate "$ICUR" "$L/wlock")|$(click right,start --games "$L/three.tsv" --update-dir "$ICUR" - "$L/wlock")" "begun|ask-install"
+check "LFT13 the window: a set-up game's start with a live install gives ask-install-running (the lock alone decides: no game file is needed)" \
+  "$(click start --games "$L/three.tsv" --update-dir "$INOG" - "$L/mixed")" "ask-install-running"
+
+# LFT10's source gates (docs/plans/launcher-first-install.md, 3.10)
+calls() { code < "$WS" | grep -F -- "$1" | grep -vc "^func $1"; }   # the lines that call it, its own definition apart
+check "LFT10 source gate: the generic application icon is drawn nowhere, and nothing imports the framework it needed" \
+  "$(grep -c 'applicationBundle' "$WS"):$(grep -c 'UniformTypeIdentifiers' "$WS")" "0:0"
+check "LFT10 source gate: tileIcon is called on three lines (the drawing, the tile's line of --grid, the paint line), placeholderIcon on one" \
+  "$(calls 'tileIcon('):$(awk '/^    override func draw\(/ { p = 1 } p && /tileIcon\(/ { n++ } p && /^    }/ { p = 0 } END { print n + 0 }' "$WS"):$(awk '/^@MainActor func initialsRatio\(/ { p = 1 } p && /tileIcon\(/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS"):$(calls 'placeholderIcon(')" "3:1:1:1"
+check "LFT10 source gate: the body alone and the letters' rectangle come from two helpers, each called by the picture and by the paint line" \
+  "$(calls 'drawPlaceholderBody('):$(calls 'placeholderLetters('):$(awk '/^func placeholderIcon\(/ { p = 1 } p && /drawPlaceholderBody\(|placeholderLetters\(/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS"):$(awk '/^@MainActor func initialsRatio\(/ { p = 1 } p && /drawPlaceholderBody\(|placeholderLetters\(/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS")" "2:2:2:2"
+# LFT6's source gates (docs/plans/launcher-first-install.md, 3.7), as the update's sheet has them above
+check "LFT6 source gate: \"--install\" occurs once, in openInstall, which is called on two lines: in --install-open, and in the window's install(), off the main thread" \
+  "$(grep -c '"--install"' "$WS"):$(awk '/^func openInstall\(/ { p = 1 } p && /"--install"/ { n++ } p && /^}/ { p = 0 } END { print n + 0 }' "$WS"):$(code < "$WS" | grep 'openInstall(' | grep -vc '^func openInstall('):$(awk '/^    case "/ { p = /"--install-open"/ } p && /openInstall\(/ { n++ } END { print n + 0 }' "$WS"):$(below | code | awk '/^    func install\(/ { p = 1 } p && /DispatchQueue\.global\(/ { off = 1 } p && /openInstall\(/ && off { n++ } p && /^    }/ { p = 0 } END { print n + 0 }')" "1:1:2:1:1"
+check "LFT6 source gate: the window's install() is called on one line, under the answer open of the sheet that asks" \
+  "$(below | code | grep -c 'install(r)'):$(below | code | grep 'install(r)' | grep -c 'case "open": self.install(r)')" "1:1"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

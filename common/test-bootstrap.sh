@@ -28,6 +28,16 @@
 #   MUTANT=17 ..  the checkout case made to run the checkout's driver
 #   MUTANT=18 ..  the driver's exit code dropped
 #   MUTANT=19 ..  the short form of the archive's address put back for release (UT6, also)
+# The word launcher (docs/plans/launcher-first-install.md, 3.3; LFT1); each must exit 1:
+#   MUTANT=20 ..  the word accepted in any case (Launcher)
+#   MUTANT=21 ..  no word made to install the launcher
+#   MUTANT=22 ..  what follows the word passed on to the launcher's installer (the refusal of an option dropped)
+#   MUTANT=23 ..  the launcher's installer's exit code dropped
+#   MUTANT=24 ..  the checkout case made to fetch
+#   MUTANT=25 ..  the ref ignored and release fetched
+#   MUTANT=26 ..  the ref rule skipped for launcher
+#   MUTANT=27 ..  the line about the word launcher said for a wrong word too
+# Every fixture but one holds a common/install-launcher.sh as well, a recorder like the driver's.
 # The stub curl honours -o and -w as curl does: the body goes to the file and the answer's code to standard
 # output. STUB_CURL_CODE is that code (200 when unset; 000 = no answer, nothing written) and STUB_CURL_EXIT
 # curl's exit (0 when unset): for a 404 the real one exits 0 without -f, 22 or 56 with it (built-in-update 1.5).
@@ -61,6 +71,15 @@ case "${MUTANT:-0}" in
   17) mutate 's#^    if \[ -n "\$table" \]; then echo "This is a checkout: .*#    if [ -n "$table" ]; then bash "$here/common/update-games.sh"; return $?; fi#' '^    if \[ -n "\$table" \]; then bash "\$here/common/update-games.sh"; return \$?; fi$' ;;
   18) mutate 's#^    bash "\$top/common/update-games.sh"$#    bash "$top/common/update-games.sh"; true#' '^    bash "\$top/common/update-games.sh"; true$' ;;
   19) mutate 's#^  \[ "\$ref" = release \] && url=.*#  :#' '^  :$' ;;
+  20) mutate 's#^  if \[ "\$id" = launcher \]; then$#  if [ "$(printf "%s" "$id" | tr A-Z a-z)" = launcher ]; then#' '^  if \[ "\$(printf "%s" "\$id" | tr A-Z a-z)" = launcher \]; then$' ;;
+  21) mutate 's#^  if \[ "\$id" = launcher \]; then$#  [ -n "$id" ] || id=launcher; if [ "$id" = launcher ]; then#' '^  \[ -n "\$id" \] || id=launcher; if ' ;;
+  22) mutate 's#^    if \[ \$\# -gt 0 \]; then echo "launcher takes no option: .*#    : no refusal#' '^    : no refusal$'
+      mutate 's#^    bash "\$top/common/install-launcher.sh"$#    bash "$top/common/install-launcher.sh" "$@"#' '^    bash "\$top/common/install-launcher.sh" "\$@"$' ;;
+  23) mutate 's#^    bash "\$top/common/install-launcher.sh"$#    bash "$top/common/install-launcher.sh"; true#' '^    bash "\$top/common/install-launcher.sh"; true$' ;;
+  24) mutate 's#^    launcher=1; id=0$#    launcher=1; id=0; table=""#' '^    launcher=1; id=0; table=""$' ;;
+  25) mutate 's#^    launcher=1; id=0$#    launcher=1; id=0; ref=release#' '^    launcher=1; id=0; ref=release$' ;;
+  26) mutate 's#^  case "\$ref" in$#  [ "$launcher" = 1 ] || case "$ref" in#' '^  \[ "\$launcher" = 1 \] || case "\$ref" in$' ;;
+  27) mutate 's#^      \[ -n "\$id" \] || echo "To install the launcher#      echo "To install the launcher#' '^      echo "To install the launcher' ;;
 esac
 
 fails=0
@@ -80,6 +99,10 @@ DRV='#!/bin/bash
 here="$(cd "$(dirname "$0")/.." && pwd)"
 echo "DRIVER args=$* argc=$# ref=${L1_FETCHED_REF:-} commit=${L1_FETCHED_COMMIT-unset} from=$(basename "$here")" >> "$CALLS"
 exit "${STUB_DRIVER_EXIT:-0}"'
+LCH='#!/bin/bash
+here="$(cd "$(dirname "$0")/.." && pwd)"
+echo "LAUNCHER args=$* argc=$# ref=${L1_FETCHED_REF:-} commit=${L1_FETCHED_COMMIT-unset} from=$(basename "$here")" >> "$CALLS"
+exit "${STUB_LAUNCHER_EXIT:-0}"'
 table() {   # <root> [the first game's folder]: the table, with a game that has no installer and a row gone wrong
   mkdir -p "$1/common"
   printf '949230\t%s\tCities: Skylines II\thttps://example.invalid/%s/README.md\n' "${2:-cities-skylines-2}" "${2:-cities-skylines-2}" > "$1/common/games.tsv"
@@ -91,6 +114,7 @@ repo() {    # <root> [the first game's folder]: a fixture repository
   printf '%s\n' "$REC" > "$1/${2:-cities-skylines-2}/scripts/install.sh"; : > "$1/other-game/README.md"
   table "$1" "${2:-}"
   printf '%s\n' "$DRV" > "$1/common/update-games.sh"
+  printf '%s\n' "$LCH" > "$1/common/install-launcher.sh"
 }
 G="$T/gitrepo"; repo "$G"
 ( cd "$G" && git init -q . && git add -A && git -c user.name=t -c user.email=t@example.invalid commit -q -m fixture \
@@ -99,6 +123,7 @@ COMMIT="$(git -C "$G" rev-parse HEAD)"
 repo "$F/plain/1launcher-x"; ( cd "$F/plain" && tar -czf "$F/plain.tar.gz" 1launcher-x )
 repo "$F/renamed/1launcher-x" a-new-name; ( cd "$F/renamed" && tar -czf "$F/renamed.tar.gz" 1launcher-x )
 repo "$F/nodriver/1launcher-x"; rm "$F/nodriver/1launcher-x/common/update-games.sh"; ( cd "$F/nodriver" && tar -czf "$F/nodriver.tar.gz" 1launcher-x )
+repo "$F/nolauncher/1launcher-x"; rm "$F/nolauncher/1launcher-x/common/install-launcher.sh"; ( cd "$F/nolauncher" && tar -czf "$F/nolauncher.tar.gz" 1launcher-x )
 repo "$F/two/a"; mkdir -p "$F/two/b"; ( cd "$F/two" && tar -czf "$F/two.tar.gz" a b )
 mkdir -p "$F/link"; ln -s "$F/plain/1launcher-x" "$F/link/1launcher-x"; ( cd "$F/link" && tar -czf "$F/link.tar.gz" 1launcher-x )
 echo "not an archive" > "$F/broken.tar.gz"
@@ -171,6 +196,7 @@ rc="$(pasted "$T/empty" "$F/both.tar.gz" 1launcher-install 949230 release --chec
 check "  ...and 949230 reaches Cities: Skylines II's, with its options" "$rc:$(grep -c '^INSTALLER args=--check ref=release from=1launcher-x game=cities-skylines-2$' "$CALLS"):$(calls '^INSTALLER')" "0:1:1"
 CO="$T/checkout"; mkdir -p "$CO/cities-skylines-2/scripts" "$CO/other-game"; cp "$S" "$CO/install.sh"; table "$CO"
 printf '%s\n' "$DRV" > "$CO/common/update-games.sh"
+printf '%s\n' "$LCH" > "$CO/common/install-launcher.sh"
 printf '#!/bin/bash\necho "LOCAL args=$*" >> "$CALLS"\n' > "$CO/cities-skylines-2/scripts/install.sh"
 rc="$(pasted "$CO" "$F/good.tar.gz" x 949230)"
 check "pasted from inside a checkout: still fetches, the local installer is not run" "$rc:$(calls '^CURL'):$(calls '^LOCAL'):$(calls '^INSTALLER')" "0:1:0:1"
@@ -233,6 +259,53 @@ for w in Update updates UPDATE; do
   rc="$(pasted "$T/empty" "$F/good.tar.gz" x "$w")"
   check "the word $w is still not a Steam app ID: exit 2, nothing fetched, no driver run" "$rc:$(calls '^CURL'):$(calls '^DRIVER'):$(said "^not a Steam app ID: $w\$")" "2:0:0:1"
 done
+
+# --- the word launcher (docs/plans/launcher-first-install.md, 3.3; LFT1): it names no game, and hands over to the
+#     launcher's installer that came with the fetch, or from a checkout to the checkout's
+rc="$(pasted "$T/empty" "$F/good.tar.gz" 1launcher-install launcher)"
+check "launcher, pasted: fetches release by its full name, runs the fetched installer of the launcher with no argument, the ref and the commit; exit 0" \
+  "$rc:$(calls '^CURL'):$(calls " $URL/refs/heads/release.tar.gz\$"):$(grep -c "^LAUNCHER args= argc=0 ref=release commit=$COMMIT from=1launcher-release\$" "$CALLS")" "0:1:1:1"
+check "  ...no game's installer and no driver is run, the commit is said, and no temporary folder is left" "$(calls '^INSTALLER'):$(calls '^DRIVER'):$(said "^1launcher at commit $COMMIT\$"):$(left)" "0:0:1:0"
+for x in 3 1 4 7; do
+  rc="$(STUB_LAUNCHER_EXIT=$x pasted "$T/empty" "$F/good.tar.gz" 1launcher-install launcher)"
+  check "the launcher's installer's exit code $x is this script's" "$rc:$(calls '^LAUNCHER'):$(left)" "$x:1:0"
+done
+rc="$(pasted "$T/empty" "$F/good.tar.gz" 1launcher-install launcher some-ref)"
+check "launcher with a ref: curl called with that ref's address and no other, and the ref given to the installer" \
+  "$rc:$(calls '^CURL'):$(calls " $URL/some-ref.tar.gz\$"):$(calls 'refs/heads'):$(grep -c '^LAUNCHER args= argc=0 ref=some-ref ' "$CALLS")" "0:1:1:0:1"
+rc="$(L1_FETCHED_COMMIT=0123456789abcdef0123456789abcdef01234567 pasted "$T/empty" "$F/plain.tar.gz" x launcher)"
+check "launcher, an archive with no commit in its header: no L1_FETCHED_COMMIT reaches the installer" "$rc:$(grep -c '^LAUNCHER args= argc=0 ref=release commit=unset from=1launcher-x$' "$CALLS")" "0:1"
+rc="$(pasted "$CO" "$F/good.tar.gz" x launcher)"
+check "launcher, pasted from inside a checkout: still fetches, and runs the fetched installer, not the checkout's" \
+  "$rc:$(calls '^CURL'):$(calls '^LAUNCHER .* from=1launcher-release$'):$(calls '^LAUNCHER')" "0:1:1:1"
+lbad() { check "$1: exit 2, nothing fetched, no script run" "$2:$(calls '^CURL'):$(calls '^LAUNCHER'):$(calls '^INSTALLER'):$(said "$3")" "2:0:0:0:1"; }
+lbad "launcher a..b" "$(pasted "$T/empty" "$F/good.tar.gz" x launcher 'a..b')" '^not a branch, tag or commit of this repository: a\.\.b$'
+lbad "launcher x --yes" "$(pasted "$T/empty" "$F/good.tar.gz" x launcher x --yes)" '^launcher takes no option: --yes (usage: install.sh launcher \[<ref>\])$'
+lbad "launcher --check" "$(pasted "$T/empty" "$F/good.tar.gz" x launcher --check)" '^launcher takes no option: --check '
+lbad "launcher with a third word" "$(pasted "$T/empty" "$F/good.tar.gz" x launcher release extra)" '^one word too many: extra '
+rc="$(pasted "$T/empty" "$F/nolauncher.tar.gz" x launcher)"
+check "launcher, what was fetched has no installer for it: the sentence, exit 1, nothing run, no folder left" \
+  "$rc:$(said "^This version of 1launcher has no installer for the launcher\. Paste a game's installer line from the guide instead\.\$"):$(calls '^LAUNCHER'):$(calls '^INSTALLER'):$(calls '^DRIVER'):$(left)" "1:1:0:0:0:0"
+rc="$(asfile "$CO/install.sh" "$F/good.tar.gz" launcher)"
+check "launcher from a checkout: curl not called, the checkout's installer of the launcher run with no argument and no fetched ref" \
+  "$rc:$(calls '^CURL'):$(grep -c '^LAUNCHER args= argc=0 ref= commit=unset from=checkout$' "$CALLS"):$(said '^Using this checkout of 1launcher (nothing is fetched)\.$')" "0:0:1:1"
+rc="$(STUB_LAUNCHER_EXIT=3 asfile "$CO/install.sh" "$F/good.tar.gz" launcher some-ref)"
+check "  ...with a ref too: the ref is judged and not used, and the installer's exit code is this script's" "$rc:$(calls '^CURL'):$(grep -c '^LAUNCHER args= argc=0 ref= ' "$CALLS")" "3:0:1"
+lbad "launcher a..b from a checkout" "$(asfile "$CO/install.sh" "$F/good.tar.gz" launcher 'a..b')" '^not a branch, tag or commit of this repository: a\.\.b$'
+lbad "launcher --check from a checkout" "$(asfile "$CO/install.sh" "$F/good.tar.gz" launcher --check)" '^launcher takes no option: --check '
+NEWLINE='^To install the launcher, which lists the games: the word launcher\.$'
+for w in Launcher launchers 14unch3r; do
+  rc="$(pasted "$T/empty" "$F/good.tar.gz" x "$w")"
+  check "the word $w is still not a Steam app ID: exit 2, nothing fetched, no script run, and the line about the word launcher is not said" \
+    "$rc:$(calls '^CURL'):$(calls '^LAUNCHER'):$(said "^not a Steam app ID: $w\$"):$(said "$NEWLINE")" "2:0:0:1:0"
+done
+rc="$(pasted "$T/empty" "$F/good.tar.gz")"
+check "with no word: exit 2, curl not called, Say which game, the usage line and then the line about the word launcher, no script run" \
+  "$rc:$(calls '^CURL'):$(said '^Say which game'):$(grep -A1 '^usage: install.sh <Steam app ID>' "$T/out" | tail -n 1 | grep -c "$NEWLINE"):$(said "$NEWLINE"):$(calls '^LAUNCHER'):$(calls '^INSTALLER')" "2:0:1:1:1:0:0"
+rc="$(pasted "$T/empty" "$F/good.tar.gz" x --check)"
+check "  ...options alone: the same" "$rc:$(calls '^CURL'):$(said "$NEWLINE"):$(calls '^LAUNCHER')" "2:0:1:0"
+rc="$(asfile "$CO/install.sh" "$F/good.tar.gz")"
+check "  ...as a file in a checkout: the line, and still that checkout's games" "$rc:$(calls '^CURL'):$(said "$NEWLINE"):$(said '^  949230  Cities: Skylines II$'):$(calls '^LAUNCHER')" "2:0:1:1:0"
 
 # --- refused with nothing fetched
 bad() { check "$1: exit 2, nothing fetched" "$2:$(calls '^CURL')" "2:0"; }

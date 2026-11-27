@@ -330,7 +330,8 @@ either, which costs nothing (section 1).
   the copy is as old as the last build, and a pull alone does not renew it;
   the icon (2.6, from B6 on); and an `Info.plist` with `CFBundleName` and `CFBundleDisplayName` `14unch3r`,
   `CFBundleIdentifier` `local.1launcher.window`, `CFBundleExecutable` `launcher-window`,
-  `CFBundlePackageType` `APPL`, `CFBundleVersion` `1.0`, `LSMinimumSystemVersion` `13.0`,
+  `CFBundlePackageType` `APPL`, `CFBundleVersion` `1.0`, `LSMinimumSystemVersion` `13.0` (`14.0` since
+  `docs/plans/launcher-first-install.md`, 3.2: no game of the project runs below macOS 14),
   `NSHighResolutionCapable`, and `CFBundleAlternateNames` `1launcher`, `launcher`, `game launcher`.
 - **It replaces only its own app.** The target must be absent, or a folder that is not a symlink, has no
   `Contents/SharedSupport`, and whose `CFBundleIdentifier` is `local.1launcher.window`; else it prints the
@@ -425,6 +426,9 @@ For each line whose app id has no `game` row, the window asks whether the accoun
   playable without its package being in this file, and Steam decides the licence at launch.
 - The window sends nothing anywhere. (Ended by `docs/plans/built-in-update.md`, 3.10 and UD12, from the release that carries it: the window runs `_update/updates.sh`, which asks GitHub for one public file, at most once a day and when "Check for Updates…" is chosen.) No test fixture is copied or cut from a real `packageinfo.vdf`: the
   tests write their own. A Mac with no game set up has no prefix to read and so shows no offer.
+  (Ended by `docs/plans/launcher-first-install.md`, 3.7: every game of the table that has no app is a row, made
+  from files alone, so a Mac with the launcher and no game shows them all; `owned` is now one of four states of
+  such a row, beside `not-set-up`, `begun` and `installing`.)
 
 ### 2.6 The icon
 

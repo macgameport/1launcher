@@ -25,6 +25,11 @@
 #    24 the record's folders not tested for being the user's own
 #    25 the own-files loop for paths.sh, updates.sh and games.tsv dropped
 #    26 updates.sh deployed after 14unch3r is built          27 the closing words about a game set up by an older version dropped
+#    docs/plans/launcher-first-install.md, 3.5 (LFT5):
+#    28 the launcher's stamp written when the window's builder skipped the build
+#    29 the launcher's stamp written for another destination (SM_APP set)
+#    30 the "14unch3r stays at" line said with no older stamp
+#    31 the "14unch3r stays at" line said for a stamp at this tree's own version
 set -u
 unset L1_UPDATE_DIR L1_UPDATE_NOW L1_FETCHED_REF L1_FETCHED_COMMIT L1_DATA_ROOT CS2_WRAPPER   # the record's variables are the cases' own
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
@@ -121,6 +126,18 @@ open(p, "w").write(s)
 PY
      ;;
   27) sed -i '' '/^unrecorded_games$/d' "$S" ;;
+  28) sed -i '' 's|^\(  \*) say "14unch3r" "not built .*\); launcher_stays ;;$|\1; launcher_stamp; launcher_stays ;;|' "$S" ;;
+  29) py "$S" << 'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+a = 'launcher_stamp() {\n  [ -z "${SM_APP:-}" ] || return 0\n'
+assert s.count(a) == 1
+s = s.replace(a, 'launcher_stamp() {\n')
+open(p, "w").write(s)
+PY
+     ;;
+  30) sed -i '' 's|^  old="\$(l1u_stamp_of_launcher)" \|\| return 0$|  old="$(l1u_stamp_of_launcher)" \|\| old=v0.0.0|' "$S" ;;
+  31) sed -i '' 's|^  \[ "\$old" != - \] \&\& l1u_newer "\$tree" "\$old" \|\| return 0$|  [ "$old" != - ] \|\| return 0|' "$S" ;;
   *) echo "REFUSED: no mutant $M"; exit 2 ;;
 esac
 if [ "$M" != 0 ]; then
@@ -397,6 +414,61 @@ printf 'release\t%s\t-\t100\n' "$VER" > "$UPD/installed/949230"
 check "UT5 ...a game that has a stamp is not named" "$(run):$(o "$OLDER")" "0:0"
 mk3 u9; other noprogram
 check "UT5 ...a wrapper without the game's program is not a game set up: not named" "$(run):$(o "$OLDER")" "0:0"
+H="$H1"; APP="$A1"; STATE="$T/state"
+
+# --- 14unch3r's own stamp (docs/plans/launcher-first-install.md, 3.5; LFT5): the file `launcher` of the record's
+# folder, written on the line after a build of the window that worked into ~/Applications, and by nothing else.
+# Every run above names the app's place with SM_APP, where the window is built beside it and no stamp is written:
+# runh names none, so the app and the window go to the scratch home's Applications.
+runh() {   # <args...>: setup with no SM_APP; its exit code, its output in $T/out
+  : > "$T/calls"
+  (cd "$T" && PATH="$T/bin:$PATH" HOME="$H" SM_STATE="$STATE" /bin/bash "$S" "$@") > "$T/out" 2>&1 < /dev/null
+  echo $?
+}
+lstampof() { cat "$UPD/launcher" 2>/dev/null; }
+lsum() { if [ -e "$UPD/launcher" ]; then shasum < "$UPD/launcher" | cut -c1-12; else echo none; fi; }
+older() { mkdir -p "$UPD/installed"; printf 'release\t%s\t%s\t100\n' "$1" "$HEX" > "$UPD/launcher"; }   # <version>
+STAYS='^      14unch3r stays at v0\.0\.9\. It will go on offering this update until it can be built: the line above says why\.$'
+mk3 l1
+check "LFT5 a setup whose window builder exits 0, the app in ~/Applications: the launcher's stamp holds checkout, the tree's version, no commit and the time" \
+  "$(L1_UPDATE_NOW=$NOW runh):$(lstampof):$(cat "$T/calls")" "0:checkout${TAB}$VER${TAB}-${TAB}$NOW:make-launcher-app "
+check "LFT5 ...nothing is said of a version that stays or of a stamp not written, and nothing written beside a place is left" \
+  "$(o '14unch3r stays at'):$(o 'could not be recorded'):$(find "$UPD" -name '.put.*' | wc -l | tr -d ' ')" "0:0:0"
+check "LFT5 with L1_FETCHED_REF=release and L1_FETCHED_COMMIT: it holds release and that commit, and the state is unknown at the tree's version" \
+  "$(L1_FETCHED_REF=release L1_FETCHED_COMMIT=$HEX L1_UPDATE_NOW=$NOW2 runh):$(lstampof):$(stateof)" "0:release${TAB}$VER${TAB}$HEX${TAB}$NOW2:unknown${TAB}$VER${TAB}-${TAB}-"
+# with SM_APP the window is built in another folder: nothing of the launcher's stamp is written; nor by --check or --mac-only
+keep="$(lsum)"
+check "LFT5 with SM_APP set, the builder exiting 0 with --dest: the launcher's stamp as it was" \
+  "$(L1_UPDATE_NOW=$NOW run):$(cut -d' ' -f1,2 "$T/calls"):$([ "$(lsum)" = "$keep" ] && echo same):$(lstampof | cut -f4)" "0:make-launcher-app --dest:same:$NOW2"
+before="$(snapu)"
+check "LFT5 --check and --mac-only, with no SM_APP: every file of the record as it was" \
+  "$(L1_UPDATE_NOW=$NOW runh --check):$(L1_UPDATE_NOW=$NOW runh --mac-only):$(snapu)" "0:0:$before"
+mk3 l1b
+check "LFT5 with SM_APP set on a new install: the game's stamp is written and no launcher's stamp" "$(run):$(has "$UPD/installed/3215050"):$(has "$UPD/launcher"):$(o 'could not be recorded')" "0:yes:no:0"
+# a build that failed leaves an older stamp as it is, and says so; the setup's exit code and the game's own stamp are as ever
+for wrc in 3 1; do
+  mk3 "l2-$wrc"; older v0.0.9; old="$(lsum)"
+  check "LFT5 the window builder exits $wrc with an older launcher stamp there: exit 0, that stamp byte for byte, the game's own stamp written" \
+    "$(L1_FETCHED_REF=release L1_UPDATE_NOW=$NOW WINDOW_RC=$wrc runh):$([ "$(lsum)" = "$old" ] && echo same):$(stampof | cut -f1,2,4)" "0:same:release${TAB}$VER${TAB}$NOW"
+  check "LFT5 ...the line that 14unch3r stays at its version is said once, right after the not-built line, and setup completes" \
+    "$(o "$STAYS"):$(grep -A1 '14unch3r  *not built' "$T/out" | tail -n 1 | grep -c "$STAYS"):$(o '^=== setup complete ===$')" "1:1:1"
+  check "LFT5 ...and the installed version stays the launcher's older one" "$(stateof)" "unknown${TAB}v0.0.9${TAB}-${TAB}-"
+done
+mk3 l3
+check "LFT5 the same with no older stamp: no launcher's stamp, no such line, the game's own stamp written" \
+  "$(L1_UPDATE_NOW=$NOW WINDOW_RC=3 runh):$(has "$UPD/launcher"):$(o '14unch3r stays at'):$(stampof | cut -f2,4)" "0:no:0:$VER${TAB}$NOW"
+mk3 l4; older "$VER"; old="$(lsum)"
+check "LFT5 a stamp at this tree's own version and a build that failed: the stamp as it was, and no such line (no update is held back)" \
+  "$(WINDOW_RC=3 runh):$([ "$(lsum)" = "$old" ] && echo same):$(o '14unch3r stays at')" "0:same:0"
+mk3 l5; older v0.0.9; old="$(lsum)"
+check "LFT5 with SM_APP set, a build that failed and an older stamp: the stamp as it was, and no such line (that window is not the one in ~/Applications)" \
+  "$(WINDOW_RC=3 run):$([ "$(lsum)" = "$old" ] && echo same):$(o '14unch3r stays at')" "0:same:0"
+mk3 l6; older v0.0.9
+check "LFT5 a build that worked replaces an older stamp, and says nothing of staying" \
+  "$(L1_FETCHED_REF=release L1_UPDATE_NOW=$NOW runh):$(lstampof | cut -f1,2,4):$(o '14unch3r stays at')" "0:release${TAB}$VER${TAB}$NOW:0"
+mk3 l7
+check "LFT5 a launcher's stamp that cannot be written (a fetched ref that is no line): said once, no stamp, and setup's exit code is kept" \
+  "$(L1_FETCHED_REF='a b' runh):$(o "^  !! 14unch3r's version could not be recorded ($UPDT/launcher)\. It may go on offering an update it already has\.\$"):$(has "$UPD/launcher"):$(o '^=== setup complete ===$')" "0:1:no:1"
 H="$H1"; APP="$A1"; STATE="$T/state"
 
 echo "$fails failure(s)"

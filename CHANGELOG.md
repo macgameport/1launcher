@@ -7,6 +7,30 @@ the pasted line installs it.
 
 ## Unreleased
 
+**One pasted line installs 14unch3r by itself, and its window then installs the games**
+(docs/plans/launcher-first-install.md). The line ends in the word `launcher` where a game's line has the game's
+number. It asks Apple for its Command Line Tools if this Mac has none, builds 14unch3r and opens it. The lines
+for a single game work as before.
+
+**14unch3r lists every game this project supports.** A game that is not set up on this Mac is a grey tile with
+the game's initials. Click it and 14unch3r asks first; on a yes, Terminal opens and runs that game's installer,
+fetched then from GitHub. It may ask you a question there, and it waits while you sign in to Steam and the game
+downloads. An install that was stopped shows as "Install not finished", and a click carries on.
+
+**One install runs at a time.** A second install, or an update, started while one runs stops and says so. A
+game started while an install runs is asked about first: its Steam would take the installer's offline.
+
+**The update rebuilds 14unch3r too**, and a Mac with 14unch3r and no game is offered updates like any other.
+If 14unch3r cannot be built after an update (Apple's tools left behind by a macOS upgrade), it stays at its
+version and goes on offering the update until it can be built.
+
+**14unch3r needs macOS 14 or later**, as every game it lists does. It has been built on macOS 27 only.
+
+**What a click on Install fetches.** The installer of the newest released version, with no list of changes shown
+first; it may bring a newer 14unch3r with it. Where the daily check is switched off (the file `off`), a click
+still fetches: `off` switches off the daily check, not what you click. A Mac where 14unch3r or a game was set up
+from a checkout or from a named version installs nothing from the window, and says why.
+
 **Cities: Skylines II: if the city is fuzzy since game version 1.6.4, set Upscaler to Disabled** (Options >
 Graphics). The game can have AMD FSR 3 on without your choosing it.
 The install guide's Play section says so too.

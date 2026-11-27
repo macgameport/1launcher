@@ -21,8 +21,8 @@
 >   each result). James's word on the placeholder (exit criterion 9): "Yes, keep it." Not measured: the Tab key's
 >   round of the three buttons (Keyboard navigation is off on the Studio), and LFL8's running tile as a capture
 >   (read as text). LFL8's stop went wrong by the harness and started a Steam that was never signed in. The
->   window sets its own dark appearance, so the two appearances are one picture. **Left: LFL4, LFL7, the tag,
->   LFL2c.**
+>   window sets its own dark appearance, so the two appearances are one picture. **LFL4 passed on 2026-11-27**
+>   in the Studio's own account, which is back on `release`. **Left: LFL7 (the iMac), the tag, LFL2c.**
 > - **The live steps since the merge (2026-11-26).** They run from `main`; the branch is deleted, with its
 >   worktree. On James's word (LFD15) no new macOS account is made on the Studio: LFL1, LFL2a, LFL8, LFL3 and
 >   LFL9 run in a scratch home in his own account, typed by the session; LFL2b is struck and its measurements
@@ -1875,6 +1875,22 @@ is LFL7's to read, on two accounts that have never held the project.
     with its games' stamps on `release`. **And `_update/launcher`, which this step left, goes to the Trash:**
     `v0.3.1` does not read it, and left on the line `main` it would make that Mac `manual` on the day this
     version is released.
+  - **Result (2026-11-27, the Studio's own account, on James's word "ok to continue"; outputs in
+    `<workspace>/launcher-first-lfl/lfl4/`): passed.** No Steam or game ran before. The record was copied
+    first (`_update-before/`). Both games' stamps were rewritten to the line `main` (the state then `manual`),
+    14unch3r was opened, and `install.sh update main` fetched `0848e72`: Cities: Skylines II's installer (six
+    steps, 10 of 10 patch scripts without error, the window rebuilt), then Surviving Mars's (seven steps `OK`,
+    setup, the window rebuilt again), "Cities: Skylines II: updated.", "Surviving Mars: Relaunched: updated.",
+    "Everything is up to date: 1launcher v0.3.1.", 23 s in all. Both games' stamps and the new launcher stamp
+    read `main`, `v0.3.1`, `0848e72…`; no `updating` was left. **The window left open** kept its process and
+    went on drawing its three tiles (both games and S734M) while its bundle was rebuilt twice under it; started
+    fresh, its `--grid` listed both games and S734M and no tile for a game not set up. `boot-verify.sh`, detached:
+    run `20261127-004351`, `GRACEFUL: yes`, `rc=0`, `VERDICT: PASS`. Surviving Mars, started from its app:
+    licence wait 15 s, "Steam Cloud: saves up to date.", the game to its menu and quit there (James's word:
+    "Menu reached, quit"), "Game exited (rc=0)", "Steam Cloud: saves uploaded."; no notice line, as `manual`
+    has it. Every `ntdll.dll` in the three wrappers kept its hash. **Put back:** Cities: Skylines II's
+    published line (exit 0, 11 s, `8678b48`, 10 of 10) and Surviving Mars's (exit 0, 6 s); both stamps on
+    `release`, `v0.3.1`, `8678b48…`; the state `current`; `_update/launcher` moved to the Trash.
 - **LFL7. A Mac with none of Apple's tools (RD3): the family iMac, after the merge and before the tag.**
   - **The Mac (James, 2026-11-26).** An iMac at home, another person's computer, on macOS 27, with two accounts that
     have never held anything of the project: its owner's, and James's own, kept there for troubleshooting. Apple's

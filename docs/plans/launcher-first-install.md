@@ -17,6 +17,10 @@
 >   branch's own fix, `e38f896` (the next block), came in with a second merge and replaced it: the tests take the
 >   folder from `common/paths.sh`, and the list names the two files that spell it. 50 of 50 on that merge.
 >
+> - **Run on 2026-11-26 in the scratch home:** LFL1, LFL2a's half by hand, LFL8 and LFL3 passed their
+>   measurements (section 7 has each result); LFL8's stop went wrong by the harness and started a Steam that
+>   was never signed in. **Waiting for an unlocked screen:** LFL1's captures with James's word on the
+>   placeholder, LFL2a's window half, LFL8's capture, and LFL9 whole. Then LFL4, LFL7, the tag, LFL2c.
 > - **The live steps since the merge (2026-11-26).** They run from `main`; the branch is deleted, with its
 >   worktree. On James's word (LFD15) no new macOS account is made on the Studio: LFL1, LFL2a, LFL8, LFL3 and
 >   LFL9 run in a scratch home in his own account, typed by the session; LFL2b is struck and its measurements
@@ -1756,8 +1760,8 @@ is LFL7's to read, on two accounts that have never held the project.
 
   - **Pass, each a measurement:** exit 0; `$S/open-calls` holds one line, `$S/Applications/14unch3r.app`; the
     built app's `--list --games <the bundle's table> "$S/Applications"` prints two offer rows, both
-    `not-set-up`; its `--grid` with the same table and folder prints for the two tiles `icon=initials:CS` and
-    `icon=initials:SM`; the first field of `_update/launcher` is `main`; `bash _update/updates.sh` prints
+    `not-set-up`; its `--grid` with the same table, `-` for the last game started, and the folder prints for
+    the two tiles `icon=initials:CS` and `icon=initials:SM`; the first field of `_update/launcher` is `main`; `bash _update/updates.sh` prints
     `manual`; `_update` holds no folder but `installed`; the names holding `1launcher` under `$S/Library`
     (`find "$S/Library" -name '*1launcher*'`, names only) are the one folder `Application Support/1launcher`,
     as `CLAUDE.md` names it, and `ls -R` of it shows `_update` and nothing else; James's account is as it was.
@@ -1769,11 +1773,26 @@ is LFL7's to read, on two accounts that have never held the project.
     what he asked for; his word is written here, and a change he asks for is built and captured again (exit
     criterion 9). The sheets are all captured at LFL9; the one a real state reaches here is seen again at
     LFL2a.
+  - **Result (2026-11-26, the session; outputs in `<workspace>/launcher-first-lfl/`): passed, but for the
+    captures.** Exit 0 in 8 s at commit `e72ec8b`; the stand-in recorded one call, the scratch app; `--list`
+    printed two `offer` rows, both `not-set-up`; `--grid` gave `icon=initials:CS` and `icon=initials:SM` (and,
+    without `--update-dir`, the words "Not set up. Opens its guide."); `_update/launcher` read `main`, `v0.3.1`,
+    `e72ec8b…` and a time; the state line `manual`, `v0.3.1`, `-`, `main`; `_update` held `installed` (empty), `launcher` and
+    `updates.sh`; the `find` printed one name, `Application Support/1launcher`; the app's `L1UpdateDir` named
+    the scratch record. The scratch app opened with `open -n` and listed only the scratch folder (its window,
+    400 by 202 points). **Not done: the captures.** The Studio's screen was locked (`CGSSessionScreenIsLocked`),
+    and macOS gave no picture of the window to `screencapture -l`, to a region capture or to the window tools;
+    they wait for an unlocked screen, with James's word on the placeholder. James's account was the same
+    before and after, file by file (`real-before.txt`, `real-after.txt`).
 - **LFL2a. The refusal in `manual`.** In the scratch home as LFL1 left it, with the scratch app open. A click
   on a game: the short sheet for `manual`, at once. And by hand: `bash _update/updates.sh --install 3215050`
   prints `failed` and its sentence. Pass: no folder `1launcher-install.*` under `$S/tmp` or under James's own
   `$TMPDIR` (the window's, since it was started by `open`), no `_update/installing`, and Terminal did not open
   a window. Tried here too: Return and Escape on the sheet, and "Read the Guide".
+  - **Result (2026-11-26): the half by hand passed; the window's half waits for an unlocked screen.**
+    `updates.sh --install 3215050` printed `failed` and "14unch3r or a game here was set up from a checkout or
+    a named version. …", exit 0; no `1launcher-install.*` under `$S/tmp`, none new under James's `$TMPDIR`
+    (it holds 56 from 2026-11-24 and before, left by earlier runs), no `installing`.
 - **LFL2b. Struck (LFD15).** It installed a game from a click in an account new to the project, before the
   release, through `v0.3.1`'s installer, and a scratch home cannot carry a click's install (above). What it
   alone measured is now measured elsewhere: the click, Terminal's first line, macOS's questions between and a
@@ -1786,8 +1805,11 @@ is LFL7's to read, on two accounts that have never held the project.
   `cities-skylines-2/scripts/install.sh:92-95`; `core_mac` runs `setup.sh --mac-only`, whose caution may wait
   for Return: `cities-skylines-2/scripts/setup.sh:110-114`) are read again for a write outside `$S` and for a
   wait, and what is found is
-  recorded here. It is stopped during the download of Wine with Control-C (SIGINT to its process group): no
-  Steam is started and nobody signs in. **Measured while it runs:** `_update/installing` is a link to the
+  recorded here. It is stopped during the download of Wine: no Steam is started and nobody signs in. **Run it in
+  the foreground of a terminal, or stop it with SIGTERM:** a job a non-interactive shell starts in the
+  background ignores SIGINT from birth, and bash cannot trap a signal ignored at entry (2026-11-26, below).
+  The download is about 235 MB and took under a minute on the Studio, so it is stopped by watching for
+  "making the Wine prefix", which comes before Steam, and not by a timer. **Measured while it runs:** `_update/installing` is a link to the
   installer's process and `installing-game` holds 949230; the scratch app, opened meanwhile, says "Installing
   in Terminal." on that game's tile, under its placeholder, which is captured so in both appearances (exit
   criterion 9's capture of a running install); the same line started a second time stops with "Another
@@ -1795,11 +1817,34 @@ is LFL7's to read, on two accounts that have never held the project.
   `updating`. **After Control-C:** "Stopped.", both files gone, and the tile says the install is not
   finished, or not set up if no wrapper was made yet. The state there is `manual`, so a click on the tile
   gives the sheet for `manual`: the sheet for a running install is LFL2c's to show.
+  - **Result (2026-11-26): every measurement passed; the stop went wrong, by the harness, and Steam
+    started.** The stages before Wine were read again: no write outside `$S`, and `core_mac`'s questions
+    are asked only of a terminal (`common/install-core.sh:365`). While it ran: `installing` linked to the
+    installer's process, `installing-game` held 949230, `--grid` with the scratch record gave "Installing in
+    Terminal." on the tile with `icon=initials:CS` (read as text: the screen was locked, so no capture); a
+    second start stopped with "Another install is running in another Terminal window (process …)"; `install.sh
+    update main` stopped with "An install is running in another Terminal window …" and left no `updating`.
+    **The stop:** started in the background through `nohup` and a new process group, the installer ignored
+    SIGINT, and by the time it was sent the download had finished and Steam for Windows had started in the
+    scratch wrapper (never signed in; nothing else of Steam's ran on the Mac). SIGTERM then stopped the
+    installer: "Stopped. Open the installer again: it carries on from here.", both files gone. Steam was ended
+    with `wineserver -k` for the scratch prefix, which needs `DYLD_FALLBACK_LIBRARY_PATH` set as the launcher
+    sets it (`cities-skylines-2/launchers/launch-cs2-dxmt11.sh:135`); no `kill -9`. After the stop, with the
+    wrapper made, the tile read "Install not finished. Click to carry on." (`icon=initials:CS`), and the
+    state `manual`. **One finding for later:** the wrapper's build folder,
+    `$S/Applications/.l1-wrapper.<x>/wrapper-949230.app`, was left in LaunchServices' list after the build
+    moved it, and had to be unregistered by hand (`common/make-wrapper.sh:104`); a player's Mac keeps such an
+    entry until macOS prunes it.
 - **LFL3. The update in the scratch home, with the launcher alone.** No game is set up there, so the update
   can only reach the launcher; an update that runs a game's installer is LFL4's. The launcher's stamp is
   rewritten by hand to `v0.0.9` on the line `main` (left at the fetched version, the update would run
   nothing); then `install.sh update main`. Pass: the launcher alone is updated, "Everything is up to date",
   exit 0, and its stamp holds the tree's version. And once more at once: nothing is run, the same line, exit 0.
+  - **Result (2026-11-26): passed.** With the stamp at `v0.0.9` on `main`: "=== 14unch3r ===", the window
+    rebuilt, "14unch3r: updated.", "Everything is up to date: 1launcher v0.3.1.", exit 0, the stamp back at
+    `v0.3.1` with a new time; no `open` called. Once more: "Everything is up to date: 1launcher v0.3.1.",
+    nothing built, exit 0. LFL8's begun wrapper was still in the folder (a slip of the clean-up), and the
+    update counted no game set up, as it should for a wrapper with no game.
 - **LFL4. An install that exists: the Studio's own account** (or the MacBook). With every Steam quit and no
   game running, on James's word at the time: it changes his real install, and puts it back at the end. Its
   stamps follow `release`, and the driver leaves every stamp that is not on the fetched line

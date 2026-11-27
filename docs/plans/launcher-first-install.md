@@ -17,10 +17,12 @@
 >   branch's own fix, `e38f896` (the next block), came in with a second merge and replaced it: the tests take the
 >   folder from `common/paths.sh`, and the list names the two files that spell it. 50 of 50 on that merge.
 >
-> - **Run on 2026-11-26 in the scratch home:** LFL1, LFL2a's half by hand, LFL8 and LFL3 passed their
->   measurements (section 7 has each result); LFL8's stop went wrong by the harness and started a Steam that
->   was never signed in. **Waiting for an unlocked screen:** LFL1's captures with James's word on the
->   placeholder, LFL2a's window half, LFL8's capture, and LFL9 whole. Then LFL4, LFL7, the tag, LFL2c.
+> - **Run on 2026-11-26 and 27 in the scratch home: LFL1, LFL2a, LFL8, LFL3 and LFL9 passed** (section 7 has
+>   each result). James's word on the placeholder (exit criterion 9): "Yes, keep it." Not measured: the Tab key's
+>   round of the three buttons (Keyboard navigation is off on the Studio), and LFL8's running tile as a capture
+>   (read as text). LFL8's stop went wrong by the harness and started a Steam that was never signed in. The
+>   window sets its own dark appearance, so the two appearances are one picture. **Left: LFL4, LFL7, the tag,
+>   LFL2c.**
 > - **The live steps since the merge (2026-11-26).** They run from `main`; the branch is deleted, with its
 >   worktree. On James's word (LFD15) no new macOS account is made on the Studio: LFL1, LFL2a, LFL8, LFL3 and
 >   LFL9 run in a scratch home in his own account, typed by the session; LFL2b is struck and its measurements
@@ -1781,15 +1783,27 @@ is LFL7's to read, on two accounts that have never held the project.
     `updates.sh`; the `find` printed one name, `Application Support/1launcher`; the app's `L1UpdateDir` named
     the scratch record. The scratch app opened with `open -n` and listed only the scratch folder (its window,
     400 by 202 points). **Not done: the captures.** The Studio's screen was locked (`CGSSessionScreenIsLocked`),
-    and macOS gave no picture of the window to `screencapture -l`, to a region capture or to the window tools;
-    they wait for an unlocked screen, with James's word on the placeholder. James's account was the same
+    and macOS gave no picture of the window to `screencapture -l`, to a region capture or to the window tools.
+    **Captured after midnight (2026-11-27), James unlocking the screen over Screen Sharing:** the window in the
+    light appearance, both placeholders, Cities: Skylines II selected (`lfl1-window-light.jpg`). **James's
+    word on the placeholder, 2026-11-27: "Yes, keep it."** Captured again with the system in the dark
+    appearance (`lfl1-window-dark.jpg`): the same picture, since the app sets its own dark appearance whatever
+    the system's (`common/launcher-window.swift:2431`), so "both appearances" is one look for this window and
+    its sheets. **LFL1 passed.** James's account was the same
     before and after, file by file (`real-before.txt`, `real-after.txt`).
 - **LFL2a. The refusal in `manual`.** In the scratch home as LFL1 left it, with the scratch app open. A click
   on a game: the short sheet for `manual`, at once. And by hand: `bash _update/updates.sh --install 3215050`
   prints `failed` and its sentence. Pass: no folder `1launcher-install.*` under `$S/tmp` or under James's own
   `$TMPDIR` (the window's, since it was started by `open`), no `_update/installing`, and Terminal did not open
   a window. Tried here too: Return and Escape on the sheet, and "Read the Guide".
-  - **Result (2026-11-26): the half by hand passed; the window's half waits for an unlocked screen.**
+  - **Result (2026-11-26 and 27): passed.** The window's half, after midnight: a click
+    on Cities: Skylines II gave the short sheet for `manual` at once, word for word what `--install-sheet
+    tell-manual` prints; no install folder, no `installing`, no Terminal window. Return and Escape each closed
+    it with nothing run (read on the same sheet at LFL9, state 3, with the screen taken for the keys); "Read
+    the Guide" opened the game's guide on `main` in the default browser (at LFL9, state 6). **A capture of the
+    window alone cuts a tall sheet:** with one row of tiles the window is 224 points high and a sheet is its
+    own window, up to 484 points, hanging past the window's edges (`/tmp/winlist`), so on screen it is whole;
+    a capture of the sheet needs its own window or the screen. The half by hand:
     `updates.sh --install 3215050` printed `failed` and "14unch3r or a game here was set up from a checkout or
     a named version. …", exit 0; no `1launcher-install.*` under `$S/tmp`, none new under James's `$TMPDIR`
     (it holds 56 from 2026-11-24 and before, left by earlier runs), no `installing`.
@@ -1981,6 +1995,27 @@ is LFL7's to read, on two accounts that have never held the project.
   - **Afterwards** the scratch app is deleted and then unregistered with `lsregister -u`, as
     `common/test-launcher-window.sh` does for its own; the `sleep`s are ended; the scratch folders are
     removed.
+  - **Result (2026-11-27, the session, James unlocking the screen over Screen Sharing and granting it the
+    screen for the keys; outputs in `<workspace>/launcher-first-lfl/`, `lfl9-*`): passed, but for the Tab
+    key.** The fixture was LFL1's scratch app and record, opened on a scratch folder with the fixture game.
+    Each state's sheet was captured and matched `--install-sheet` word for word: (1) "Install Surviving Mars:
+    Relaunched now?" with Not Now, Install, Read the Guide; (2) the tile "Install not finished. Click to carry
+    on." (captured, criterion 9's begun install) and "Carry on installing Surviving Mars: Relaunched now?"
+    with "Carry On"; (3) `tell-manual`, naming `surviving-mars-relaunched/scripts/install.sh`; (4) "Update
+    1launcher first." with "1launcher v0.3.1 is out. Click to see what changed." at the foot; (5) the tile
+    "Installing in Terminal." and `tell-installing`; (6) "Quit Cities: Skylines II first.", the fixture
+    game's tile reading "In use: starting, running or closing"; (7) "An install is running in Terminal." with
+    Start Anyway and Don't Start, Don't Start pressed. Return and Escape closed each of the sheets of states
+    1, 3, 4, 5, 6 and 7 with nothing run; at state 7 both meant Don't Start, and the fixture game never
+    started. "Read the Guide" opened Surviving Mars's guide on `main`. In state 1, "Install" gave "The
+    install did not open." with the sentence for `manual`, which is also the tool's sentence for a record not
+    at its default place (`common/updates.sh:486-487`); afterwards no Terminal window, no
+    `1launcher-install.*` under either `TMPDIR`, and the scratch `_update` held only `installed`, `launcher`,
+    `tried` and `updates.sh`. **Not measured: Tab.** It moved no focus: "Keyboard navigation" is off on the
+    Studio (`AppleKeyboardUIMode` unset, macOS's default), and without it macOS does not move Tab between
+    buttons. **Appearances:** state 1 was captured in both, and they are the same picture (`common/launcher-
+    window.swift:2431`). James's account was the same before and after, file by file (`real-before-2.txt`,
+    `real-after-2.txt`), and no scratch app is left in LaunchServices' list.
 - **LFL6. The third game.** Its first install on a player's Mac is from the window. This is the contract's
   own test, and it belongs to that game's plan.
 
